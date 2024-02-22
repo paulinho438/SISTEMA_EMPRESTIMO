@@ -106,6 +106,7 @@ export default function SignIn({navigation}) {
         <KeyBoardAvoidWrapper>
           <View>
             <SafeAreaView>
+              
               <CText
                 color={colors.black}
                 style={localStyles.hiText}
@@ -143,8 +144,6 @@ export default function SignIn({navigation}) {
                 isSecure={true}
               />
 
-              {pass ? <CText color={colors.red}>{pass}</CText> : null}
-
               <TouchableOpacity
                 style={localStyles.mainContainer}
                 onPress={moveToPassRec}>
@@ -179,6 +178,11 @@ export default function SignIn({navigation}) {
               {strings.SignUp}
             </CText>
           </TouchableOpacity>
+        </View>
+        <View style={localStyles.rjemprestimos}>
+          <CText color={colors.black} type={'B14'}>
+            RJ EMPRESTIMOS
+          </CText>
         </View>
       </View>
     </SafeAreaView>
@@ -246,6 +250,12 @@ const localStyles = StyleSheet.create({
     ...styles.center,
     ...styles.mb40,
     ...styles.flexRow,
+    
+  },
+  rjemprestimos: {
+    ...styles.center,
+    ...styles.flexRow,
+    top: moderateScale(-20),
   },
   SignUpTxt: {
     color: colors.SignUpTxt,
