@@ -22,6 +22,8 @@ import {authToken} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
+import api from '../../services/api';
+
 const BlurStyle = {
   borderColor: colors.white,
 };
@@ -41,20 +43,18 @@ export default function SignIn({navigation}) {
   const [pass, setPass] = useState(false);
 
   const onPressSignIn = async () => {
-    // if (email === '' || showMessage || changeValue === '') {
-    //   Alert.alert(strings.PleaseFill);
-    // } else {
-    //   await authToken(true);
-    //   navigation.reset({
-    //     index: 0,
-    //     routes: [{name: StackNav.TabNavigation}],
-    //   });
-    // }
-    await authToken(true);
-    navigation.reset({
-      index: 0,
-      routes: [{name: StackNav.TabNavigation}],
-    });
+    if (email === '' || showMessage || changeValue === '') {
+      Alert.alert(strings.PleaseFill);
+    } else {
+      let result = await api.login(email, pass);
+      if(result.error === '') {
+        await authToken(result.token);
+        navigation.reset({
+          index: 0,
+          routes: [{name: StackNav.TabNavigation}],
+        });
+      }
+    }
   };
 
   const onFocus = () => {
