@@ -38,7 +38,7 @@ const TabNavigation = () => {
         component={TabRoute.MyCardScreen}
         options={{
           headerShown: false,
-          tabBarLabel: 'My Card',
+          tabBarLabel: 'Emprestimo',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
           tabBarIcon: ({focused}) =>
@@ -59,7 +59,7 @@ const TabNavigation = () => {
         component={TabRoute.ActivityScreen}
         options={{
           headerShown: false,
-          tabBarLabel: 'Activity',
+          tabBarLabel: 'Log',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
           tabBarIcon: ({focused}) =>
@@ -71,7 +71,7 @@ const TabNavigation = () => {
         component={TabRoute.ProfileScreen}
         options={{
           headerShown: false,
-          tabBarLabel: 'Profile',
+          tabBarLabel: 'Perfil',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
           tabBarIcon: ({focused}) => (focused ? <BlackUser /> : <SilverUser />),

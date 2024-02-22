@@ -81,7 +81,7 @@ export default function ATMDetails({navigation}) {
 
             <CButton
               onPress={moveToModel}
-              text={'Get Direction'}
+              text={'Abrir no WAZE'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
                 <Community

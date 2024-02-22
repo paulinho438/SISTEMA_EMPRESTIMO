@@ -82,25 +82,39 @@ export const CountriesData = [
 
 export const HomeData = [
   {
-    image: Images.Gym,
-    name: 'Gym',
-    subName: 'Payment',
-    dollars: '- $45.99',
-    color: colors.black,
+    image: Images.Deposit2,
+    name: 'Fabio Martins',
+    subName: 'Pendente',
+    dollars: 'R$ 89,90',
+    color: colors.red,
   },
   {
     image: Images.Deposit2,
-    name: 'Bank of America',
-    subName: 'Deposit',
-    dollars: '+ $1,328.00',
-    color: colors.numbersColor,
+    name: 'Juliano Sickeira',
+    subName: 'Pendente',
+    dollars: 'R$ 105,20',
+    color: colors.red,
   },
   {
-    image: Images.Sent,
-    name: 'To Brody Armando',
-    subName: 'Sent',
-    dollars: '- $699.00',
-    color: colors.black,
+    image: Images.Deposit2,
+    name: 'Roberto justos',
+    subName: 'Pendente',
+    dollars: 'R$ 108,87',
+    color: colors.red,
+  },
+  {
+    image: Images.Deposit2,
+    name: 'Larissa Jortem',
+    subName: 'Pendente',
+    dollars: 'R$ 44,27',
+    color: colors.red,
+  },
+  {
+    image: Images.Deposit2,
+    name: 'Eric Lobo',
+    subName: 'Pendente',
+    dollars: 'R$ 28,33',
+    color: colors.red,
   },
 ];
 

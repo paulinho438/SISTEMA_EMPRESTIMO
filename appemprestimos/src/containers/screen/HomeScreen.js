@@ -66,23 +66,31 @@ export default function HomeScreen({navigation}) {
 
           <View style={localStyles.ParentImg}>
             <Image source={images.cardBalance} style={localStyles.card3Style} />
+            <View style={localStyles.parentNomeEmpresa}>
+              <CText
+                  color={colors.white}
+                  type={'B18'}
+                  style={localStyles.NameEmpresa}>
+                  {'BSB EMPRESTIMOS'}
+              </CText>
+            </View>
           </View>
         </View>
 
         <View style={localStyles.mainImg}>
           <FirstImage
             image={images.Deposit}
-            text={strings.Deposit}
+            text='Clientes'
             onPress={moveToDeposit}
           />
           <FirstImage
             image={images.Transfer}
-            text={strings.Transfers}
+            text='Pendentes'
             onPress={moveToTrans}
           />
           <FirstImage
             image={images.Withdraw}
-            text={strings.Withdraw}
+            text='Historico'
             onPress={moveToWith}
           />
           <FirstImage
@@ -99,7 +107,7 @@ export default function HomeScreen({navigation}) {
 
           <TouchableOpacity onPress={moveToAll}>
             <CText color={colors.black} type={'M14'}>
-              {strings.AllTrans}
+              Todos os pendentes
             </CText>
           </TouchableOpacity>
         </View>
@@ -174,6 +182,14 @@ const localStyles = StyleSheet.create({
     ...styles.mt20,
   },
   AnnaTxt: {
+    ...styles.mt10,
+  },
+  parentNomeEmpresa: {
+    ...styles.flexRow,
+    top:moderateScale(-50),
+    width: moderateScale(300),
+  },
+  NameEmpresa: {
     ...styles.mt10,
   },
   parent: {

@@ -67,7 +67,7 @@ export default function ATMDetails({navigation}) {
 
           <View style={localStyles.outerComponent}>
             <View style={localStyles.outerContainer}>
-              <Image style={localStyles.iconSty} source={images.SquareFlag} />
+              <Image style={localStyles.iconSty} source={images.Boy} />
 
               <View style={{gap: moderateScale(4)}}>
                 <CText color={colors.black} type={'B16'}>
@@ -81,7 +81,7 @@ export default function ATMDetails({navigation}) {
 
             <CButton
               onPress={moveToModel}
-              text={'Get Direction'}
+              text={'Abrir no WAZE'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
                 <Community
