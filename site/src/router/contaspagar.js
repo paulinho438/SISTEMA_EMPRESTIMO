@@ -18,11 +18,11 @@ const contaspagarRoutes = [
 				name: 'contaspagarAdd',
 				component: () => import('@/views/contaspagar/ContaspagarForm.vue')
 			},
-			{
-				path: '/contaspagar/:id/view',
-				name: 'contaspagarView',
-				component: () => import('@/views/contaspagar/ContaspagarView.vue')
-			},
+			// {
+			// 	path: '/contaspagar/:id/view',
+			// 	name: 'contaspagarView',
+			// 	component: () => import('@/views/contaspagar/ContaspagarView.vue')
+			// },
 		]
 	}
 ];

@@ -74,6 +74,8 @@ Route::middleware('auth:api')->group(function(){
     Route::put('/cliente/{id}', [ClientController::class, 'update']);
     Route::post('/cliente', [ClientController::class, 'insert']);
 
+    Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
+
     Route::get('/contaspagar', [ContaspagarController::class, 'all']);
     Route::get('/contaspagar/{id}', [ContaspagarController::class, 'id']);
     Route::get('/contaspagar/{id}/delete', [ContaspagarController::class, 'delete']);

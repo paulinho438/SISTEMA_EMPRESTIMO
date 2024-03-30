@@ -8,11 +8,11 @@ const aprovacaoRoutes = [
 				name: 'aprovacaoList',
 				component: () => import('@/views/aprovacao/AprovacaoList.vue')
 			},
-			{
-				path: '/aprovacao/:id/view',
-				name: 'aprovacaoView',
-				component: () => import('@/views/aprovacao/AprovacaoView.vue')
-			},
+			// {
+			// 	path: '/aprovacao/:id/view',
+			// 	name: 'aprovacaoView',
+			// 	component: () => import('@/views/aprovacao/AprovacaoView.vue')
+			// },
 		]
 	}
 ];

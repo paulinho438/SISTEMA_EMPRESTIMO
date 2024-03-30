@@ -18,11 +18,11 @@ const movimentacaofinanceiraRoutes = [
 				name: 'movimentacaofinanceiraAdd',
 				component: () => import('@/views/movimentacaofinanceira/MovimentacaofinanceiraForm.vue')
 			},
-			{
-				path: '/movimentacaofinanceira/:id/view',
-				name: 'movimentacaofinanceiraView',
-				component: () => import('@/views/movimentacaofinanceira/MovimentacaofinanceiraView.vue')
-			},
+			// {
+			// 	path: '/movimentacaofinanceira/:id/view',
+			// 	name: 'movimentacaofinanceiraView',
+			// 	component: () => import('@/views/movimentacaofinanceira/MovimentacaofinanceiraView.vue')
+			// },
 		]
 	}
 ];
