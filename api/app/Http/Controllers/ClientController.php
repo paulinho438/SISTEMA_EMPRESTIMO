@@ -6,11 +6,14 @@ use Illuminate\Http\Request;
 
 use App\Models\Address;
 use App\Models\Client;
+use App\Models\Parcela;
 use App\Models\CustomLog;
 use App\Models\User;
 
 use DateTime;
 use App\Http\Resources\ClientResource;
+use App\Http\Resources\ParcelaResource;
+use Illuminate\Support\Carbon;
 
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +30,25 @@ class ClientController extends Controller
 
     public function id(Request $r, $id){
         return new ClientResource(Client::find($id));
+    }
+
+    public function parcelasAtrasadas(Request $request){
+
+        $this->custom_log->create([
+            'user_id' => auth()->user()->id,
+            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Clientes Pendentes no APLICATIVO',
+            'operation' => 'index'
+        ]);
+
+        $companyId = $request->header('Company_id');
+
+        return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
+            ->where('dt_baixa', null)
+            ->whereDate('dt_ult_cobranca', '!=', Carbon::now()->toDateString())
+            ->whereHas('emprestimo', function ($query) use ($companyId) {
+                $query->where('company_id', $companyId);
+            })->get());
+
     }
 
     public function all(Request $request){

@@ -18,11 +18,11 @@ const contasreceberRoutes = [
 				name: 'contasreceberAdd',
 				component: () => import('@/views/contasreceber/ContasreceberForm.vue')
 			},
-			{
-				path: '/contasreceber/:id/view',
-				name: 'contasreceberView',
-				component: () => import('@/views/contasreceber/ContasreceberView.vue')
-			},
+			// {
+			// 	path: '/contasreceber/:id/view',
+			// 	name: 'contasreceberView',
+			// 	component: () => import('@/views/contasreceber/ContasreceberView.vue')
+			// },
 		]
 	}
 ];

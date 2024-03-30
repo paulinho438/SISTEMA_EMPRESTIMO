@@ -22,15 +22,72 @@ class ParcelaResource extends JsonResource
             "id"                    => $this->id,
             "emprestimo_id"         => $this->emprestimo_id,
             "parcela"               => $this->parcela,
-            "valor"                 => $this->valor,
-            "saldo"                 => $this->saldo,
+            "valor"                 => $this->formatarMoeda($this->valor),
+            "saldo"                 => $this->formatarMoeda($this->saldo),
             "venc"                  => (new DateTime($this->venc))->format('d/m/Y'),
             "venc_real"             => (new DateTime($this->venc_real))->format('d/m/Y'),
             "dt_lancamento"         => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
             "dt_baixa"              => ($this->dt_baixa != null) ? (new DateTime($this->dt_baixa))->format('d/m/Y') : '',
             "identificador"         => $this->identificador,
             "chave_pix"             => $this->chave_pix,
+            "nome_cliente"          => $this->emprestimo->client->nome_completo,
+            "telefone_celular_1"    => $this->emprestimo->client->telefone_celular_1,
+            "telefone_celular_2"    => $this->emprestimo->client->telefone_celular_2,
+            "atrasadas"             => $this->atrasadas,
+            "latitude"              => $this->getLatitudeFromAddress(),
+            "longitude"             => $this->getLongitudeFromAddress(),
+            "endereco"              => $this->getEnderecoFromAddress(),
         ];
+    }
+
+    /**
+     * Retorna a latitude do endereço.
+     *
+     * @return string|null
+     */
+    protected function getLatitudeFromAddress()
+    {
+        if (isset($this->emprestimo->client->address[0]->latitude)) {
+            return $this->emprestimo->client->address[0]->latitude;
+        }
+        return null;
+    }
+
+    /**
+     * Retorna a latitude do endereço.
+     *
+     * @return string|null
+     */
+    protected function getLongitudeFromAddress()
+    {
+        if (isset($this->emprestimo->client->address[0]->longitude)) {
+            return $this->emprestimo->client->address[0]->longitude;
+        }
+        return null;
+    }
+
+    /**
+     * Retorna a latitude do endereço.
+     *
+     * @return string|null
+     */
+    protected function getEnderecoFromAddress()
+    {
+        if (isset($this->emprestimo->client->address[0]->address)) {
+            return $this->emprestimo->client->address[0]->neighborhood. ' ' .$this->emprestimo->client->address[0]->address. ' ' .$this->emprestimo->client->address[0]->number ;
+        }
+        return null;
+    }
+
+    /**
+     * Formata um valor decimal como uma string formatada no formato de moeda brasileira (R$).
+     *
+     * @param float $valor O valor decimal a ser formatado.
+     * @return string A string formatada no formato de moeda brasileira (R$).
+     */
+    function formatarMoeda(float $valor): string
+    {
+        return 'R$ ' . number_format($valor, 2, ',', '.');
     }
 }
 
