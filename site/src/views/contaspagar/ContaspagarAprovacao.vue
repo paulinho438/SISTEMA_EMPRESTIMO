@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import contaspagarService from '@/service/contaspagarService';
+import contaspagarService from '@/service/ContaspagarService';
 import UtilService from '@/service/UtilService';
 import EmprestimoService from '@/service/EmprestimoService';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
