@@ -24,15 +24,13 @@
         "vue-the-mask": "^0.11.1",
         "vue3-google-map": "^0.18.0",
         "vuex": "^4.0.2",
-        "vuex-persistedstate": "^4.1.0",
-        "webpack": "^3.11.0"
+        "vuex-persistedstate": "^4.1.0"
     },
     "devDependencies": {
         "@babel/plugin-syntax-optional-chaining": "^7.8.3",
         "@rushstack/eslint-patch": "^1.1.4",
         "@vitejs/plugin-vue": "^4.1.0",
         "@vue/eslint-config-prettier": "^7.0.0",
-        "copy-webpack-plugin": "^12.0.2",
         "eslint": "^8.22.0",
         "eslint-plugin-vue": "^9.3.0",
         "prettier": "^2.7.1",
