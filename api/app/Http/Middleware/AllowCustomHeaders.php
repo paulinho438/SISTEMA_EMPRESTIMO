@@ -18,6 +18,7 @@ class AllowCustomHeaders
         // Adiciona o cabeçalho Access-Control-Allow-Headers para permitir todos os cabeçalhos personalizados
         $response = $next($request);
         $response->headers->set('Access-Control-Allow-Headers', '*');
+        $response->headers->set('Access-Control-Allow-Credentials', true);
 
         return $response;
     }
