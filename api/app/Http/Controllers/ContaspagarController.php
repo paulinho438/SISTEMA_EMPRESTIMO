@@ -37,7 +37,7 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('Company_id'))->get());
+        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->get());
     }
 
     public function pagamentoPendentes(Request $request){
@@ -48,7 +48,7 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('Company_id'))->where('status', 'Aguardando Pagamento')->get());
+        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->get());
     }
 
     public function insert(Request $request){

@@ -37,7 +37,7 @@ class MovimentacaofinanceiraController extends Controller
             'operation' => 'index'
         ]);
 
-        return MovimentacaofinanceiraResource::collection(Movimentacaofinanceira::where('company_id', $request->header('Company_id'))->get());
+        return MovimentacaofinanceiraResource::collection(Movimentacaofinanceira::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){

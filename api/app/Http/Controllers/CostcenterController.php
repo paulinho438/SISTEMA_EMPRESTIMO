@@ -35,7 +35,7 @@ class CostcenterController extends Controller
             'operation' => 'index'
         ]);
 
-        return CostcenterResource::collection(Costcenter::where('company_id', $request->header('Company_id'))->get());
+        return CostcenterResource::collection(Costcenter::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){

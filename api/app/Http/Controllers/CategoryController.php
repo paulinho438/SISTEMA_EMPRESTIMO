@@ -35,7 +35,7 @@ class CategoryController extends Controller
             'operation' => 'index'
         ]);
 
-        return CategoryResource::collection(Category::where('company_id', $request->header('Company_id'))->get());
+        return CategoryResource::collection(Category::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){

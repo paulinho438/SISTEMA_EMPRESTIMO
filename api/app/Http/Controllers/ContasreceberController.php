@@ -37,7 +37,7 @@ class ContasreceberController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContasreceberResource::collection(Contasreceber::where('company_id', $request->header('Company_id'))->get());
+        return ContasreceberResource::collection(Contasreceber::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){

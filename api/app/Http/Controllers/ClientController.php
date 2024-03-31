@@ -59,7 +59,7 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        return ClientResource::collection(Client::where('company_id', $request->header('Company_id'))->get());
+        return ClientResource::collection(Client::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){
