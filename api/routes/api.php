@@ -29,7 +29,7 @@ Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
 Route::get('/users', [UserController::class, 'index']);
 Route::get('/users/{id}', [UserController::class, 'id']);
 
-Route::get('/setup', function (Request $request){
+Route::get('/setup-teste', function (Request $request){
     var_dump($request->headers);
 });
 
