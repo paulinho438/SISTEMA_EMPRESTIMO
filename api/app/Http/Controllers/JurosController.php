@@ -24,7 +24,7 @@ class JurosController extends Controller
     }
 
     public function get(Request $request){
-        return Juros::select('juros')->where('company_id', $request->header('Company_id'))->first();
+        return Juros::select('juros')->where('company_id', $request->header('company-id'))->first();
     }
 
     public function update(Request $request){
@@ -44,7 +44,7 @@ class JurosController extends Controller
             $dados = $request->all();
             if(!$validator->fails()){
 
-                $EditJuros = Juros::where('company_id', $request->header('Company_id'))->first();
+                $EditJuros = Juros::where('company_id', $request->header('company-id'))->first();
 
                 $EditJuros->juros = $dados['juros'];
 

@@ -13,7 +13,7 @@ axios.interceptors.request.use(
 	(config) => {
 		if (localStorage.getItem('app.emp.token')) {
 			config.headers['Authorization'] = `Bearer ${localStorage.getItem('app.emp.token')}`
-			config.headers['Company_id'] = `${store?.getters?.isCompany?.id}`
+			config.headers['company-id'] = `${store?.getters?.isCompany?.id}`
 		}
 		
 		return config;

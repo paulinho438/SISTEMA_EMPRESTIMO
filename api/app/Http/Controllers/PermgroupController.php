@@ -33,7 +33,7 @@ class PermgroupController extends Controller
             'operation' => 'index'
         ]);
 
-        return GroupResource::collection(Permgroup::withCount('users')->where('company_id', $request->header('Company_id'))->get());
+        return GroupResource::collection(Permgroup::withCount('users')->where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){

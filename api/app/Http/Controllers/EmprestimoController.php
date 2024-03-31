@@ -66,7 +66,7 @@ class EmprestimoController extends Controller
             'operation' => 'index'
         ]);
 
-        return EmprestimoResource::collection(Emprestimo::where('company_id', $request->header('Company_id'))->orderBy('id', 'desc')->get());
+        return EmprestimoResource::collection(Emprestimo::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
     public function recalcularParcelas(Request $r){
@@ -294,32 +294,32 @@ class EmprestimoController extends Controller
     }
 
     public function feriados(Request $request){
-        return FeriadoResource::collection(Feriado::where('company_id', $request->header('Company_id'))->orderBy('id', 'desc')->get());
+        return FeriadoResource::collection(Feriado::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
     public function searchFornecedor(Request $request){
 
-        return FornecedorResource::collection(Fornecedor::where("nome_completo", "LIKE", "%{$request->name}%")->where('company_id', $request->header('Company_id'))->get());
+        return FornecedorResource::collection(Fornecedor::where("nome_completo", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
     public function searchCliente(Request $request){
 
-        return ClientResource::collection(Client::where("nome_completo", "LIKE", "%{$request->name}%")->where('company_id', $request->header('Company_id'))->get());
+        return ClientResource::collection(Client::where("nome_completo", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
     public function searchBanco(Request $request){
 
-        return BancosResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('Company_id'))->get());
+        return BancosResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
     public function searchCostcenter(Request $request){
 
-        return CostcenterResource::collection(Costcenter::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('Company_id'))->get());
+        return CostcenterResource::collection(Costcenter::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
     public function searchConsultor(Request $request){
 
-        // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('Company_id'))->get();
+        // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get();
         return User::where("nome_completo", "LIKE", "%{$request->name}%")
             ->whereHas('groups', function ($query) {
                 $query->where('name', 'Consultor');

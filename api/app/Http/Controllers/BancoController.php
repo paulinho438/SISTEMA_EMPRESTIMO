@@ -35,7 +35,7 @@ class BancoController extends Controller
             'operation' => 'index'
         ]);
 
-        return BancosResource::collection(Banco::where('company_id', $request->header('Company_id'))->get());
+        return BancosResource::collection(Banco::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){
