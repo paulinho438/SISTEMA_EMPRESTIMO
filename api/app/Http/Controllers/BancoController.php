@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 class BancoController extends Controller
 {
 
@@ -53,6 +55,21 @@ class BancoController extends Controller
         if(!$validator->fails()){
 
             $dados['company_id'] = $request->header('Company_id');
+
+            if(isset($_FILES['certificado'])){
+
+                $certificado = $request->file('certificado');
+
+                // Gerar um nome único para o arquivo
+                $nomeArquivo = Str::uuid() . '.' . $certificado->getClientOriginalExtension();
+
+                // Salvar o arquivo na pasta 'public/fotos'
+                $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
+
+                $dados['certificado'] = 'storage/documentos/'.$nomeArquivo;
+
+
+            }
 
             $newGroup = Banco::create($dados);
 
@@ -94,6 +111,37 @@ class BancoController extends Controller
                 $EditBanco->conta   = $dados['conta'];
                 $EditBanco->saldo   = $dados['saldo'];
                 $EditBanco->efibank = $dados['efibank'];
+                if($dados['efibank'] == 1) {
+                    $EditBanco->clienteid = $dados['clienteid'];
+                    $EditBanco->clientesecret = $dados['clientesecret'];
+                    $EditBanco->chavepix = $dados['chavepix'];
+                    $EditBanco->juros = $dados['juros'];
+                }else{
+                    $EditBanco->clienteid = null;
+                    $EditBanco->clientesecret = null;
+                    $EditBanco->chavepix = null;
+                    $EditBanco->juros = null;
+                }
+
+
+                if(isset($_FILES['certificado'])){
+
+                    $certificado = $request->file('certificado');
+
+                    // Gerar um nome único para o arquivo
+                    $nomeArquivo = Str::uuid() . '.' . $certificado->getClientOriginalExtension();
+
+                    // Salvar o arquivo na pasta 'public/fotos'
+                    $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
+
+                    $dados['certificado'] = 'storage/documentos/'.$nomeArquivo;
+
+
+                }
+
+                $EditBanco->certificado = $dados['certificado'];
+
+
                 $EditBanco->save();
 
             } else {

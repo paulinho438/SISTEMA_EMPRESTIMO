@@ -15,6 +15,11 @@ class Banco extends Model
         'conta',
         'saldo',
         'efibank',
+        'clienteid',
+        'clientesecret',
+        'juros',
+        'certificado',
+        'chavepix',
         'company_id',
     ];
 

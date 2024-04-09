@@ -71,7 +71,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/bancos', [BancoController::class, 'all']);
     Route::get('/bancos/{id}', [BancoController::class, 'id']);
     Route::get('/bancos/{id}/delete', [BancoController::class, 'delete']);
-    Route::put('/bancos/{id}', [BancoController::class, 'update']);
+    Route::post('/bancos/{id}', [BancoController::class, 'update']);
     Route::post('/bancos', [BancoController::class, 'insert']);
 
     Route::get('/cliente', [ClientController::class, 'all']);
