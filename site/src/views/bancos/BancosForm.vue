@@ -65,11 +65,17 @@ export default {
 		changeEnabled(enabled) {
 			this.banco.enabled = enabled;
 		},
+		uploadCertificado(){
+			this.banco.certificado = this.$refs.certificado.files[0];
+
+		},
 		save() {
 			this.changeLoading();
 			this.errors = [];
 
-			this.bancoService.save(this.banco)
+			this.banco.efibank = (this.banco.efibank) ? 1 : 0;
+
+			this.bancoService.saveComCertificado(this.banco)
 			.then((response) => {
 				if (undefined != response.data.data) {
 					this.banco = response.data.data;
@@ -158,6 +164,47 @@ export default {
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="name">Saldo</label>
 					<InputNumber id="inputnumber" :modelValue="banco?.saldo" v-model="banco.saldo" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
+				</div>
+			</div>
+
+			<div v-if="banco?.efibank" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">Chave Client ID</label>
+					<InputText :modelValue="banco?.clienteid" v-model="banco.clienteid" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.efibank" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">Chave Client Secret</label>
+					<InputText :modelValue="banco?.clientesecret" v-model="banco.clientesecret" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.efibank" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">Chave Pix</label>
+					<InputText :modelValue="banco?.chavepix" v-model="banco.chavepix" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.efibank" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">Juros de cobrança</label>
+					<InputText :modelValue="banco?.juros" v-model="banco.juros" id="name" type="text" class="w-full p-inputtext-sm" placeholder="Exemplo 1.9" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+				</div>
+			</div>
+
+			<Chip v-if="banco?.efibank && typeof banco?.certificado === 'string' " :label="banco?.certificado" class="w-full p-inputtext-sm"></Chip>
+
+			<div v-if="banco?.efibank" class="field col-3 md:col-3 lg:col-3 xl:col-3 justify-content-center align-items-center">
+				<div class="field">
+					<FileUpload mode="basic" type="file" :modelValue="banco?.certificado" name="certificado" id="certificado" ref="certificado" accept=".p12" label="Anexar Certificado" chooseLabel="Anexar Certificado" 
+					@change="uploadCertificado" class="w-full mb-3" />
 				</div>
 			</div>
 

@@ -23,6 +23,11 @@ class BancosResource extends JsonResource
             "conta"                 => $this->conta,
             "saldo"                 => $this->saldo,
             "efibank"               => ($this->efibank) ? true : false,
+            "clienteid"             => $this->clienteid,
+            "clientesecret"         => $this->clientesecret,
+            "juros"                 => $this->juros,
+            "certificado"           => $this->certificado,
+            "chavepix"              => $this->chavepix,
             "created_at"            => $this->created_at->format('d/m/Y H:i:s'),
             "name_agencia_conta"    => "{$this->name} - Agência {$this->agencia} Cc {$this->conta}",
         ];
