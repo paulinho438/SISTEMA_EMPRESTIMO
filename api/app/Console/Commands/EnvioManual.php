@@ -56,7 +56,7 @@ class EnvioManual extends Command
 
         $ultimoRegistro = Parcela::where('dt_baixa', null)->orderBy('venc_real', 'desc')->first();
 
-        $caminhoAbsoluto = storage_path('app/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
+        $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
