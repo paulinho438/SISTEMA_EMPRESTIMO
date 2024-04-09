@@ -127,11 +127,11 @@ class EmprestimoController extends Controller
 
         $ultimoRegistro = Parcela::where('dt_baixa', null)->orderBy('venc_real', 'desc')->first();
 
-        $caminhoAbsoluto = storage_path('app/certificados/producao-526004-SISTEMA.p12');
+        $caminhoAbsoluto = storage_path('app/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_1effa929eeb769ab15d3ff65f2f63d93cf3c8959',
-            'client_secret' => 'Client_Secret_ac6fbe6e7cf2c7273fff08cebfa9b63165a6b69b',
+            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
             'timeout' => 30,
@@ -189,11 +189,11 @@ class EmprestimoController extends Controller
     public function efibank() {
 
 
-        $caminhoAbsoluto = storage_path('app/certificados/producao-526004-SISTEMA.p12');
+        $caminhoAbsoluto = storage_path('app/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_1effa929eeb769ab15d3ff65f2f63d93cf3c8959',
-            'client_secret' => 'Client_Secret_ac6fbe6e7cf2c7273fff08cebfa9b63165a6b69b',
+            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
             'timeout' => 30,
@@ -240,7 +240,7 @@ class EmprestimoController extends Controller
                 //     ]
                 // ]
             ],
-            "chave" => "21e1f495-b437-4795-b724-bc98464cf19e", // Pix key registered in the authenticated Efí account
+            "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
             "solicitacaoPagador" => "Parcela 004 / 015",
             "infoAdicionais" => [
                 [
@@ -335,11 +335,11 @@ class EmprestimoController extends Controller
 
         $return = [];
 
-        $caminhoAbsoluto = storage_path('app/certificados/producao-526004-SISTEMA.p12');
+        $caminhoAbsoluto = storage_path('app/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_1effa929eeb769ab15d3ff65f2f63d93cf3c8959',
-            'client_secret' => 'Client_Secret_ac6fbe6e7cf2c7273fff08cebfa9b63165a6b69b',
+            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
             'timeout' => 30,
@@ -352,7 +352,7 @@ class EmprestimoController extends Controller
         $body = [
             "valor" => $dados['valor'],
             "pagador" => [
-                "chave" => "21e1f495-b437-4795-b724-bc98464cf19e", // Pix key registered in the authenticated Efí account
+                "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
                 "infoPagador" => $dados['informacao']
             ],
             "favorecido" => [
@@ -390,11 +390,11 @@ class EmprestimoController extends Controller
 
         $return = [];
 
-        $caminhoAbsoluto = storage_path('app/certificados/producao-526004-SISTEMA.p12');
+        $caminhoAbsoluto = storage_path('app/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_1effa929eeb769ab15d3ff65f2f63d93cf3c8959',
-            'client_secret' => 'Client_Secret_ac6fbe6e7cf2c7273fff08cebfa9b63165a6b69b',
+            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
             'timeout' => 30,
@@ -417,7 +417,7 @@ class EmprestimoController extends Controller
                 "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
 
             ],
-            "chave" => "21e1f495-b437-4795-b724-bc98464cf19e", // Pix key registered in the authenticated Efí account
+            "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
             "solicitacaoPagador" => "Parcela ". $dados['parcela']['parcela'],
             "infoAdicionais" => [
                 [
@@ -537,11 +537,11 @@ class EmprestimoController extends Controller
             $addParcela['venc']             = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real']        = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
-            $caminhoAbsoluto = storage_path('app/certificados/producao-526004-SISTEMA.p12');
+            $caminhoAbsoluto = storage_path('app/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-                'client_id' => 'Client_Id_1effa929eeb769ab15d3ff65f2f63d93cf3c8959',
-                'client_secret' => 'Client_Secret_ac6fbe6e7cf2c7273fff08cebfa9b63165a6b69b',
+                'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+                'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
                 'certificate' => $caminhoAbsoluto,
                 'sandbox' => false,
                 'timeout' => 30,
@@ -564,7 +564,7 @@ class EmprestimoController extends Controller
                     "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
 
                 ],
-                "chave" => "21e1f495-b437-4795-b724-bc98464cf19e", // Pix key registered in the authenticated Efí account
+                "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
                 "solicitacaoPagador" => "Parcela ". $addParcela['parcela'],
                 "infoAdicionais" => [
                     [
