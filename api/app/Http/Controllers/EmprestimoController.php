@@ -476,8 +476,6 @@ class EmprestimoController extends Controller
 
         $dados = $request->all();
 
-        return $dados['banco'];
-
         $emprestimoAdd = [];
 
         $emprestimoAdd['dt_lancamento'] = date('Y-m-d');
