@@ -13,7 +13,11 @@ class EmprestimoResource extends JsonResource
 
     public function porcent($vl1, $vl2)
     {
-        return number_format(($vl2 / $vl1) * 100, 1);
+        if ($vl1 != 0) {
+            return number_format(($vl2 / $vl1) * 100, 1);
+        } else {
+            return 0;
+        }
     }
 
     /**
