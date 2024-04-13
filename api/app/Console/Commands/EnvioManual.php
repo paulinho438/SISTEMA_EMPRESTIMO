@@ -133,7 +133,7 @@ class EnvioManual extends Command
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                             $movimentacaoFinanceira['valor'] = $editParcela->saldo;
@@ -149,13 +149,12 @@ class EnvioManual extends Command
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Juros de '.$editParcela->emprestimo->banco->juros.'% referente a baixa automatica via pix da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = 'Juros de '.$editParcela->emprestimo->banco->juros.'% referente a baixa automática via pix da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
                             $movimentacaoFinanceira['tipomov'] = 'S';
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                             $movimentacaoFinanceira['valor'] = $juros;
 
                             Movimentacaofinanceira::create($movimentacaoFinanceira);
-
 
                         }
                         $editParcela->save();
