@@ -58,8 +58,10 @@ class EnvioManual extends Command
 
         foreach($bancos as $banco){
 
-            $parcelas = Parcela::where('dt_baixa', null)::whereHas('emprestimo.banco', function ($query) {
-                $query->where('id', 1);
+            $parcelas = Parcela::where('dt_baixa', null)::whereHas('emprestimo', function ($query) {
+                $query->whereHas('banco', function ($query) {
+                    $query->where('id', 1);
+                });
             })->get();
 
             print_r("<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>");
