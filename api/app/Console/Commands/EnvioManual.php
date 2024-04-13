@@ -122,7 +122,7 @@ class EnvioManual extends Command
                         $editParcela->dt_baixa = date('Y-m-d');
                         if ($editParcela->contasreceber) {
                             $editParcela->contasreceber->status = 'Pago';
-                            $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
+                            $editParcela->contasreceber->dt_baixa = date('Y-m-d');
                             $editParcela->contasreceber->forma_recebto = 'PIX';
                             $editParcela->contasreceber->save();
 
