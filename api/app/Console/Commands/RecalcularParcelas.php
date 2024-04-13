@@ -95,8 +95,6 @@ class RecalcularParcelas extends Command
             }
         }
 
-        return $parcelasVencidas;
-
         exit;
     }
 
