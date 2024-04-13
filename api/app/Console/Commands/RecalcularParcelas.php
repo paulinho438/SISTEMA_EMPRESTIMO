@@ -14,6 +14,8 @@ use Efi\EfiPay;
 
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Str;
+
 use Carbon\Carbon;
 
 class RecalcularParcelas extends Command
