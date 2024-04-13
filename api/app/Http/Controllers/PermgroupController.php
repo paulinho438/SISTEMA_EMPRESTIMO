@@ -46,7 +46,7 @@ class PermgroupController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('Company_id');
+            $dados['company_id'] = $request->header('company-id');
 
             $newGroup = Permgroup::create($dados);
 
@@ -86,7 +86,7 @@ class PermgroupController extends Controller
 
                 $EditGroup = Permgroup::find($id);
 
-                $EditGroup->company_id = $request->header('Company_id');
+                $EditGroup->company_id = $request->header('company-id');
                 $EditGroup->name = $dados['name'];
                 $EditGroup->items()->detach();
 

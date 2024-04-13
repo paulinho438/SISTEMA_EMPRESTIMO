@@ -57,7 +57,7 @@ class ContasreceberController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('Company_id');
+            $dados['company_id'] = $request->header('company-id');
             $dados['lanc'] = (DateTime::createFromFormat('d/m/Y', $dados['lanc']))->format('Y-m-d');
             $dados['venc'] = (DateTime::createFromFormat('d/m/Y', $dados['venc']))->format('Y-m-d');
 

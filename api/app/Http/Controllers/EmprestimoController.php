@@ -486,7 +486,7 @@ class EmprestimoController extends Controller
         $emprestimoAdd['banco_id'] = $dados['banco']['id'];
         $emprestimoAdd['client_id'] = $dados['cliente']['id'];
         $emprestimoAdd['user_id'] = $dados['consultor']['id'];
-        $emprestimoAdd['company_id'] = $request->header('Company_id');
+        $emprestimoAdd['company_id'] = $request->header('company-id');
 
         gerarPixParcelas::dispatch();
 
@@ -505,12 +505,12 @@ class EmprestimoController extends Controller
             $contaspagar['venc'] = date('Y-m-d');
             $contaspagar['valor'] = $dados['valor'];
             $contaspagar['descricao'] = 'Empréstimo Nº '.$emprestimoAdd->id.' para '.$dados['cliente']['nome_completo'];
-            $contaspagar['company_id'] = $request->header('Company_id');
+            $contaspagar['company_id'] = $request->header('company-id');
             Contaspagar::create($contaspagar);
 
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $dados['banco']['id'];
-            $movimentacaoFinanceira['company_id'] = $request->header('Company_id');
+            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
             $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº '.$emprestimoAdd->id.' para '.$dados['cliente']['nome_completo'];
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -535,11 +535,11 @@ class EmprestimoController extends Controller
             $addParcela['venc']             = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real']        = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
-            $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
+            $caminhoAbsoluto = storage_path('app/public/documentos/' .$dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-                'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-                'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+                'client_id' => $dados['banco']['clienteid'],
+                'client_secret' => $dados['banco']['clientesecret'],
                 'certificate' => $caminhoAbsoluto,
                 'sandbox' => false,
                 'timeout' => 30,
@@ -562,7 +562,7 @@ class EmprestimoController extends Controller
                     "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
 
                 ],
-                "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
+                "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
                 "solicitacaoPagador" => "Parcela ". $addParcela['parcela'],
                 "infoAdicionais" => [
                     [
@@ -616,7 +616,7 @@ class EmprestimoController extends Controller
 
                 if($parcela) {
                     $contasreceber = [];
-                    $contasreceber['company_id'] = $request->header('Company_id');
+                    $contasreceber['company_id'] = $request->header('company-id');
                     $contasreceber['parcela_id'] = $parcela->id;
                     $contasreceber['client_id'] = $dados['cliente']['id'];
                     $contasreceber['banco_id'] = $dados['banco']['id'];
