@@ -54,7 +54,7 @@ class EnvioManual extends Command
 
 
 
-        $bancos = Banco:::where('efibank', 1)->get();
+        $bancos = Banco::where('efibank', 1)->get();
 
         foreach($bancos as $banco){
 
