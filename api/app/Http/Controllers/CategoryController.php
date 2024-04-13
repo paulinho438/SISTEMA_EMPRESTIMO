@@ -49,7 +49,7 @@ class CategoryController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('Company_id');
+            $dados['company_id'] = $request->header('company-id');
 
             $newGroup = Category::create($dados);
 

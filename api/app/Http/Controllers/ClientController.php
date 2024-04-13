@@ -40,7 +40,7 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        $companyId = $request->header('Company_id');
+        $companyId = $request->header('company-id');
 
         return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
             ->where('dt_baixa', null)
@@ -80,7 +80,7 @@ class ClientController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('Company_id');
+            $dados['company_id'] = $request->header('company-id');
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
             $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
 

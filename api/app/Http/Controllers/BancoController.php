@@ -54,7 +54,7 @@ class BancoController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('Company_id');
+            $dados['company_id'] = $request->header('company-id');
 
             if(isset($_FILES['certificado'])){
 
@@ -134,7 +134,7 @@ class BancoController extends Controller
                     // Salvar o arquivo na pasta 'public/fotos'
                     $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
 
-                    $dados['certificado'] = 'storage/documentos/'.$nomeArquivo;
+                    $dados['certificado'] = $nomeArquivo;
 
 
                 }

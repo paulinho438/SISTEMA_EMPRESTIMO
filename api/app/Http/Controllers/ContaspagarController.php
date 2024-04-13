@@ -63,7 +63,7 @@ class ContaspagarController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('Company_id');
+            $dados['company_id'] = $request->header('company-id');
             $dados['lanc'] = date('Y-m-d');
             $dados['venc'] = date('Y-m-d');
             $dados['costcenter_id'] = $dados['costcenter']['id'];
