@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 
 use App\Models\Banco;
 use App\Models\Parcela;
+use App\Models\User;
 use App\Models\Movimentacaofinanceira;
 
 use Efi\Exception\EfiException;
@@ -54,18 +55,18 @@ class EnvioManual extends Command
 
 
 
-        $bancos = Banco::where('efibank', 1)->get();
+        $bancos = Banco::all();
+        $parcela = new Parcela;
+
 
         foreach($bancos as $banco){
-
-            $parcelas = Parcela::where('dt_baixa', null)::whereHas('emprestimo', function ($query) {
-                $query->whereHas('banco', function ($query) {
-                    $query->where('id', 1);
+            $parcelas = $parcela->where('dt_baixa', null)->whereDate('venc_real', '<=', Carbon::now()->toDateString())->whereHas('emprestimo', function ($query) use ($banco) {
+                $query->whereHas('banco', function ($query) use ($banco) {
+                    $query->where('id', $banco->id);
                 });
             })->get();
 
-            print_r("<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>");
-
+            $this->info("<pre>" . print_r($parcelas, true) . "</pre>");
         }
 
         exit;
