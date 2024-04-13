@@ -4,11 +4,17 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
+use Illuminate\Support\Facades\Http;
+
 use App\Models\Juros;
 use App\Models\Parcela;
 
+use Efi\Exception\EfiException;
+use Efi\EfiPay;
+
+use Illuminate\Support\Facades\DB;
+
 use Carbon\Carbon;
-use Illuminate\Support\Str;
 
 class RecalcularParcelas extends Command
 {
