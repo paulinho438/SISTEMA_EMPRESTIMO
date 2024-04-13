@@ -8,6 +8,7 @@ use App\Models\Juros;
 use App\Models\Parcela;
 
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class RecalcularParcelas extends Command
 {
