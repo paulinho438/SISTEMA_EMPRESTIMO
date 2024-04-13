@@ -7,6 +7,8 @@ use Illuminate\Console\Command;
 use App\Models\Juros;
 use App\Models\Parcela;
 
+use Carbon\Carbon;
+
 class RecalcularParcelas extends Command
 {
     /**
