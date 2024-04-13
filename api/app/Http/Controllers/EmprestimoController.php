@@ -325,7 +325,7 @@ class EmprestimoController extends Controller
                 $query->where('name', 'Consultor');
             })
             ->whereHas('companies', function ($query) use ($request) {
-                $query->where('id', $request->header('Company_id'));
+                $query->where('id', $request->header('company-id'));
             })
             ->get();
     }
