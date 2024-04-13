@@ -6,7 +6,9 @@ use Illuminate\Console\Command;
 
 use Illuminate\Support\Facades\Http;
 
+use App\Models\Banco;
 use App\Models\Parcela;
+use App\Models\Movimentacaofinanceira;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -22,14 +24,14 @@ class EnvioManual extends Command
      *
      * @var string
      */
-    protected $signature = 'envio:EnvioManual';
+    protected $signature = 'baixa:Automatica';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Envio Manual das Ocorrencias';
+    protected $description = 'Realizando as Baixas Automaticas';
 
     /**
      * Create a new command instance.
@@ -48,9 +50,26 @@ class EnvioManual extends Command
      */
     public function handle()
     {
-        $this->info('Iniciou Envio');
+        $this->info('Realizando as Baixas');
 
-        $parcelas = Parcela::where('dt_baixa', null)->get();
+
+
+        $bancos = Banco:::where('efibank', 1)->get();
+
+        foreach($bancos as $banco){
+
+            $parcelas = Parcela::where('dt_baixa', null)::whereHas('emprestimo.banco', function ($query) {
+                $query->where('id', 1);
+            })->get();
+
+            print_r("<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>");
+
+        }
+
+        exit;
+
+
+
 
         $primeiroRegistro = Parcela::where('dt_baixa', null)->orderBy('venc_real')->first();
 
@@ -97,6 +116,38 @@ class EnvioManual extends Command
                         $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
                         $editParcela->contasreceber->forma_recebto = 'PIX';
                         $editParcela->contasreceber->save();
+
+
+
+                        # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $editParcela->saldo;
+
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        # MOVIMENTAÇÃO FINANCEIRA DE SAIDA REFERENTE A TAXA DE JUROS
+
+                        $valor  =   $editParcela->saldo;
+                        $taxa   =   $editParcela->emprestimo->banco->juros / 100;
+                        $juros  =   $valor * $taxa;
+
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Juros de '.$editParcela->emprestimo->banco->juros.'% referente a baixa automatica via pix da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'S';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $juros;
+
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+
                     }
                     $editParcela->save();
                 }

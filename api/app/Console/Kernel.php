@@ -25,7 +25,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('envio:EnvioManual')->everyMinute();
+        $schedule->command('baixa:Automatica')->everyMinute();
     }
 
     /**
