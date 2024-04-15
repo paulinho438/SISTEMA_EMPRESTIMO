@@ -64,7 +64,6 @@ export default function TransferMoney({navigation}) {
           item.nome_completo_cpf.toLocaleLowerCase().indexOf(search.toLocaleLowerCase()) > -1
         );
       });
-      console.log(newData)
       setFilterData(newData);
     } else {
       setFilterData(clientes);
