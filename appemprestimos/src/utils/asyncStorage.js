@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ACCESS_TOKEN, ON_BOARDING } from '../common/constant';
+import { ACCESS_TOKEN, ON_BOARDING, AUTH_COMPANY, USER } from '../common/constant';
 
 const StorageValue = async () => {
   let asyncData = await AsyncStorage.multiGet([ON_BOARDING, ACCESS_TOKEN]);
@@ -15,9 +15,39 @@ const OnBoardingToken = async value => {
 };
 
 const authToken = async value => {
-  const stringData = JSON.stringify(value);
-  await AsyncStorage.setItem(ACCESS_TOKEN, stringData);
+  await AsyncStorage.setItem(ACCESS_TOKEN, value);
   return;
 };
 
-export {OnBoardingToken, authToken, StorageValue};
+const getAuthToken = async () => {
+  return await AsyncStorage.getItem(ACCESS_TOKEN);
+};
+
+const authCompany = async value => {
+  const stringData = JSON.stringify(value);
+  await AsyncStorage.setItem(AUTH_COMPANY, stringData);
+  return;
+};
+
+const getAuthCompany = async () => {
+  let req = await AsyncStorage.getItem(AUTH_COMPANY);
+  return JSON.parse(req);
+};
+
+const user = async value => {
+  const stringData = JSON.stringify(value);
+  await AsyncStorage.setItem(USER, stringData);
+  return;
+};
+
+const getUser = async () => {
+  let req = await AsyncStorage.getItem(USER);
+  return JSON.parse(req);
+};
+
+const removeAuthToken = async () => {
+  await AsyncStorage.removeItem(ACCESS_TOKEN);
+  return;
+};
+
+export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser};

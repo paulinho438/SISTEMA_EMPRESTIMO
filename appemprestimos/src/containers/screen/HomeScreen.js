@@ -7,7 +7,7 @@ import {
   FlatList,
   ScrollView,
 } from 'react-native';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
 // Local imports
 import {colors} from '../../themes/colors';
@@ -20,7 +20,54 @@ import {moderateScale} from '../../common/constant';
 import {HomeData} from '../../api/constants';
 import {StackNav} from '../../navigation/navigationKeys';
 
+import {getAuthCompany, getUser} from '../../utils/asyncStorage';
+import { useFocusEffect } from '@react-navigation/native';
+
+import api from '../../services/api';
+
+
+
 export default function HomeScreen({navigation}) {
+
+  const [company, setCompany] = useState(null);
+  const [user, setUser] = useState(null);
+  const [clientes, setClientes] = useState([]);
+
+  useFocusEffect(() => {
+    
+    return () => {
+    };
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getInfo()
+      
+      return () => {
+      };
+    }, [])
+  );
+
+  const getInfo =  async () => {
+    let companyReq = await getAuthCompany();
+    setCompany( companyReq )
+
+    let userReq = await getUser();
+    setUser(userReq);
+
+    let reqClientes = await api.getClientesPendentes();
+
+    setClientes(reqClientes.data);
+
+  }
+
+  const cobrancaMap = (item) => {
+    navigation.navigate(StackNav.CobrancaMap, {
+      clientes : item
+    });
+   
+  }
+
   const moveToTrans = () => {
     navigation.navigate(StackNav.TransferMoney);
   };
@@ -30,16 +77,24 @@ export default function HomeScreen({navigation}) {
   };
 
   const moveToWith = () => {
-    navigation.navigate(StackNav.WithDrawBalance);
+    navigation.navigate(StackNav.Clientes);
   };
 
   const moveToAll = () => {
     navigation.navigate(StackNav.HistoryTrans);
   };
 
-  const moveToNot = () => {
+  const moveToNot = async () => {
     navigation.navigate(StackNav.Notification);
   };
+
+  const dataAtual = () => {
+    const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const data = new Date();
+    const dia = data.getDate();
+    const mes = meses[data.getMonth()];
+    return `Hoje, ${dia} de ${mes}`;
+  }
 
   const moveToOpt = () => {
     navigation.navigate(StackNav.MoreOptions);
@@ -57,7 +112,7 @@ export default function HomeScreen({navigation}) {
                 color={colors.white}
                 type={'B18'}
                 style={localStyles.AnnaTxt}>
-                {strings.Anna}
+                {user?.nome_completo}
               </CText>
             </View>
 
@@ -71,7 +126,7 @@ export default function HomeScreen({navigation}) {
                   color={colors.white}
                   type={'B18'}
                   style={localStyles.NameEmpresa}>
-                  {'BSB EMPRESTIMOS'}
+                  {company?.company}
               </CText>
             </View>
           </View>
@@ -90,7 +145,7 @@ export default function HomeScreen({navigation}) {
           />
           <FirstImage
             image={images.Withdraw}
-            text='Historico'
+            text='Emprestimo'
             onPress={moveToWith}
           />
           <FirstImage
@@ -102,7 +157,7 @@ export default function HomeScreen({navigation}) {
 
         <View style={localStyles.parentTodayTxt}>
           <CText type={'B14'} color={colors.tabColor}>
-            {strings.Today}
+            {dataAtual()}
           </CText>
 
           <TouchableOpacity onPress={moveToAll}>
@@ -128,26 +183,26 @@ export default function HomeScreen({navigation}) {
 
   const renderHomeData = ({item}) => {
     return (
-      <TouchableOpacity style={localStyles.parentTrans}>
+      <TouchableOpacity style={localStyles.parentTrans} onPress={() => {cobrancaMap(item)}} >
         <View style={localStyles.oneBox}>
           <Image
-            source={item.image}
+            source={images.Deposit2}
             resizeMode="cover"
             style={localStyles.GymImg}
           />
           <View style={localStyles.mainCText}>
             <CText color={colors.black} type={'B16'} style={localStyles.name}>
-              {item.name}
+              {item.nome_cliente}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-              {item.subName}
+              2 Km de distancia
             </CText>
           </View>
         </View>
 
         <View>
-          <CText type={'B16'} color={item.color}>
-            {item.dollars}
+          <CText type={'B16'} color={colors.red}>
+            {item.saldo}
           </CText>
         </View>
       </TouchableOpacity>
@@ -159,7 +214,7 @@ export default function HomeScreen({navigation}) {
       <ScrollView showsVerticalScrollIndicator={false}>
         <FlatList
           keyExtractor={(item, index) => index.toString()}
-          data={HomeData}
+          data={clientes}
           ListHeaderComponent={ListHeaderComponent}
           renderItem={renderHomeData}
           scrollEnabled={false}

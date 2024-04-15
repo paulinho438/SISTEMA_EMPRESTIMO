@@ -5,6 +5,8 @@ import axios from 'axios';
 
 import { baseUrl, MapsApi } from './Config';
 
+import {getAuthToken, removeAuthToken, getAuthCompany} from '../utils/asyncStorage';
+
 const request = async (method, endpoint, params, token = null) => {
     method = method.toLowerCase();
     let fullUrl = `${baseUrl}${endpoint}`;
@@ -24,7 +26,10 @@ const request = async (method, endpoint, params, token = null) => {
 
     let headers = {'Content-Type': 'application/json'};
     if(token) {
+
         headers.Authorization = `Bearer ${token}`;
+        let authCompany = await getAuthCompany();
+        headers['company-id'] = authCompany?.id;
     }
 
     let req = await fetch(fullUrl, { method, headers, body });
@@ -46,21 +51,26 @@ export default {
         return true;
     },
     getToken: async () => {
-        return await AsyncStorage.getItem('token');
+        return await getAuthToken();
     },
     validateToken: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/auth/validate', {}, token);
         return json;
     },
     updatetokenpush: async (mobile) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/auth/updatetokenpush', {mobile}, token);
         return json;
     },
     getMyInfo: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/auth/myinfo', {}, token);
+        return json;
+    },
+    buscarClientes: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/cliente', {}, token);
         return json;
     },
     recuperarsenha: async (cpf) => {
@@ -82,11 +92,12 @@ export default {
         let json = await req.json();
         return json;
     },
-    login: async (usuario, password, device_token) => {
+    login: async (usuario, password) => {
         
         try {
       
-            let json = await request('post', '/auth/login', {usuario, password, device_token});
+            let json = await request('post', '/auth/login', {usuario, password});
+            console.log(json)
             return json;
         } catch (error) {
             console.error('Erro na requisição:', error);
@@ -94,9 +105,24 @@ export default {
         }
     },
     logout: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/auth/logout', {}, token);
-        await AsyncStorage.removeItem('token');
+        await removeAuthToken();
+        return json;
+    },
+    baixaManual: async (id, dt) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt}, token);
+        return json;
+    },
+    getAllClientes: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/cliente', {}, token);
+        return json;
+    },
+    getClientesPendentes: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/cobranca/atrasadas', {}, token);
         return json;
     },
     register: async (nome_completo, nome_social,  cpf,  password,  telefone_celular, email, data_nascimento, sexo, pcd, rg, usar_social, pcd_tipo) => {
@@ -106,44 +132,44 @@ export default {
         return json;
     },
     alterUsuario: async (nome_social,  password,  telefone_celular, data_nascimento, sexo, pcd, rg, usar_social, pcd_tipo ) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/auth/alterusuario', {
             nome_social,  password,  telefone_celular, data_nascimento, sexo, pcd, rg, usar_social, pcd_tipo
         }, token);
         return json;
     },
     getMyAllEnderecos: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/endereco/getmyall', {}, token);
         return json;
     },
     getMyNotificacoes: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/notificacao', {}, token);
         return json;
     },
     updateNotificacao: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', `/notificacao/update`, {}, token);
         return json;
     },
     getUltimasOcorrencias: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/ocorrencia/getminhasultimasocorrencias', {}, token);
         return json;
     },
     getOcorrenciasApi: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/ocorrencias', {}, token);
         return json;
     },
     getCentralDeServicosApi: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/centralservicos', {}, token);
         return json;
     },
     hasOccurrence2Hours: async (ocorrencia_tipo) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/ocorrencia/has2hours', {
             "ocorrencia_tipo": [
               "DISPARO DE ARMA DE FOGO COM VÍTIMA",
@@ -155,7 +181,7 @@ export default {
         return json;
     },
     hasOccurrence2Hours: async (ocorrencia_tipo) => {
-        const token = await AsyncStorage.getItem('token');
+        const token = await getAuthToken();
 
         try {
       
@@ -175,32 +201,32 @@ export default {
         }
     },
     addCadastroLocalFavorito: async (location_tipo, location_desc, location_referencia, location_geolocation) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/endereco/add', {location_tipo, location_desc, location_referencia, location_geolocation}, token);
         return json;
     },
     saveOcorrencia: async (ocorrencia_tipo, ocorrencia_perguntas, ocorrencia_endereco, ocorrencia_pontoreferencia, ocorrencia_geolocation) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', '/ocorrencia/add', {ocorrencia_tipo, ocorrencia_perguntas, ocorrencia_endereco, ocorrencia_pontoreferencia, ocorrencia_geolocation}, token);
         return json;
     },
     getWall: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/walls', {}, token);
         return json;
     },
     likeWallPost: async (id) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('post', `/wall/${id}/like`, {}, token);
         return json;
     },
     getDocs: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/docs', {}, token);
         return json;
     },
     getBillets: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
         let json = await request('get', '/billets', {
@@ -209,7 +235,7 @@ export default {
         return json;
     },
     getWarnings: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
         let json = await request('get', '/warnings', {
@@ -218,7 +244,7 @@ export default {
         return json;
     },
     addWarningFile: async (file) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let formData = new FormData();
         formData.append('photo', {
             uri: file.uri,
@@ -237,7 +263,7 @@ export default {
         return json;
     },
     addWarning: async (title, list) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
         let json = await request('post', '/warning', {
@@ -248,22 +274,22 @@ export default {
         return json;
     },
     getReservations: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', '/reservations', {}, token);
         return json;
     },
     getDisabledDates: async (id) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', `/reservation/${id}/disableddates`, {}, token);
         return json;
     },
     getReservationTimes: async (id, date) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', `/reservation/${id}/times`, {date}, token);
         return json;
     },
     setReservation: async (id, date, time) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
         let json = await request('post', `/reservation/${id}`, {
@@ -274,7 +300,7 @@ export default {
         return json;
     },
     getMyReservations: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
         let json = await request('get', '/myreservations', {
@@ -283,24 +309,24 @@ export default {
         return json;
     },
     removeReservation: async (id) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('delete', `/myreservations/${id}`, {}, token);
         return json;
     },
     getFoundAndLost: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('get', `/foundandlost`, {}, token);
         return json;
     },
     setRecovered: async (id) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let json = await request('put', `/foundandlost/${id}`, {
             status: 'recovered'
         }, token);
         return json;
     },
     addLostItem: async (photo, description, where) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let formData = new FormData();
         formData.append('description', description);
         formData.append('where', where);
@@ -321,14 +347,14 @@ export default {
         return json;
     },
     getUnitInfo: async () => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
         let json = await request('get', `/unit/${property.id}`, {}, token);
         return json;
     },
     removeUnitItem: async (type, id) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
 
@@ -338,7 +364,7 @@ export default {
         return json;
     },
     addUnitItem: async (type, body) => {
-        let token = await AsyncStorage.getItem('token');
+        let token = await getAuthToken();
         let property = await AsyncStorage.getItem('property');
         property = JSON.parse(property);
 

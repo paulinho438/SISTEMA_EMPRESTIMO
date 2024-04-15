@@ -38,20 +38,11 @@ const TabNavigation = () => {
         component={TabRoute.MyCardScreen}
         options={{
           headerShown: false,
-          tabBarLabel: 'Emprestimos',
+          tabBarLabel: 'Emprestimo',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
           tabBarIcon: ({focused}) =>
             focused ? <BlackCreditCard /> : <SilverCreditCard />,
-        }}
-      />
-      <Tab.Screen
-        name={TabNav.ScanScreen}
-        component={TabRoute.ScanScreen}
-        options={{
-          headerShown: false,
-          tabBarLabel: () => null,
-          tabBarIcon: () => <Scan style={localStyles.ScanImg} />,
         }}
       />
       <Tab.Screen

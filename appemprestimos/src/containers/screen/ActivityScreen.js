@@ -19,11 +19,11 @@ import {styles} from '../../themes';
 import {TimeData, miniCardDetails} from '../../api/constants';
 import CText from '../../components/common/CText';
 import strings from '../../i18n/strings';
-import {VictoryAxis, VictoryChart, VictoryLine} from 'victory-native';
+// import {VictoryAxis, VictoryChart, VictoryLine} from 'victory-native';
 import images from '../../assets/images/index';
 import {StackNav} from '../../navigation/navigationKeys';
 
-export default function MyCardScreen({navigation}) {
+export default function ActivityScreen({navigation}) {
   const [OnBoardingDetails, setOnBoardingDetails] = useState(0);
   const [data, setData] = useState(1);
 
@@ -167,7 +167,7 @@ export default function MyCardScreen({navigation}) {
             horizontal
           />
 
-          <VictoryChart minDomain={{y: 1}}>
+          {/* <VictoryChart minDomain={{y: 1}}>
             <VictoryAxis />
             <VictoryLine
               style={{
@@ -186,7 +186,7 @@ export default function MyCardScreen({navigation}) {
                 {x: 'S', y: 60},
               ]}
             />
-          </VictoryChart>
+          </VictoryChart> */}
         </View>
 
         <View style={styles.mh20}>
