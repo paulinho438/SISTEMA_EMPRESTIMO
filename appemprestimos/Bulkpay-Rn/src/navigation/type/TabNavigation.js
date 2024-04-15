@@ -46,15 +46,6 @@ const TabNavigation = () => {
         }}
       />
       <Tab.Screen
-        name={TabNav.ScanScreen}
-        component={TabRoute.ScanScreen}
-        options={{
-          headerShown: false,
-          tabBarLabel: () => null,
-          tabBarIcon: () => <Scan style={localStyles.ScanImg} />,
-        }}
-      />
-      <Tab.Screen
         name={TabNav.ActivityScreen}
         component={TabRoute.ActivityScreen}
         options={{

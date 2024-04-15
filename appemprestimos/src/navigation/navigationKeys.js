@@ -51,7 +51,6 @@ export const AuthNav = {
 export const TabNav = {
   HomeScreen: 'HomeScreen',
   MyCardScreen: 'MyCardScreen',
-  ScanScreen: 'ScanScreen',
   ActivityScreen: 'ActivityScreen',
   ProfileScreen: 'ProfileScreen'
 };

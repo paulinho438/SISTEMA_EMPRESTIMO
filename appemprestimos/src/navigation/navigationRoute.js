@@ -18,7 +18,6 @@ import CardStyle from '../containers/auth/CardStyle';
 import NewCard from '../containers/auth/NewCard';
 import HomeScreen from '../containers/screen/HomeScreen';
 import MyCardScreen from '../containers/screen/MyCardScreen';
-import ScanScreen from '../containers/screen/ScanScreen';
 import ActivityScreen from '../containers/screen/ActivityScreen';
 import ProfileScreen from '../containers/screen/ProfileScreen';
 import TransferMoney from '../components/homeTab/TransferMoney';
@@ -101,7 +100,6 @@ export const AuthRoute = {
 export const TabRoute = {
   HomeScreen,
   MyCardScreen,
-  ScanScreen,
   ActivityScreen,
   ProfileScreen,
 };
