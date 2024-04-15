@@ -4,6 +4,7 @@ export const StackNav = {
   AuthNavigation: 'AuthNavigation',
   TabNavigation: 'TabNavigation',
   TransferMoney: 'TransferMoney',
+  Clientes: 'Clientes',
   SendMoney: 'SendMoney',
   TransferProof: 'TransferProof',
   TopUpScreen: 'TopUpScreen',
@@ -25,6 +26,7 @@ export const StackNav = {
   MoreOptions: 'MoreOptions',
   ChatScreen: 'CHatScreen',
   ATMDetails: 'ATMDetails',
+  CobrancaMap: 'CobrancaMap',
   SelectProvider: 'SelectProvider',
   TopUpModal: 'TopUpModal',
   PhoneBook: 'PhoneBook',
@@ -37,6 +39,7 @@ export const AuthNav = {
   OtpAuth: 'OtpAuth',
   VerifyIdentity: 'VerifyIdentity',
   CreatePass: 'CreatePass',
+  SelecionarEmpresa: 'SelecionarEmpresa',
   SignUp: 'SignUp',
   CountryRes: 'CountryRes',
   Reasons: 'Reasons',
@@ -51,7 +54,6 @@ export const AuthNav = {
 export const TabNav = {
   HomeScreen: 'HomeScreen',
   MyCardScreen: 'MyCardScreen',
-  ScanScreen: 'ScanScreen',
   ActivityScreen: 'ActivityScreen',
   ProfileScreen: 'ProfileScreen'
 };

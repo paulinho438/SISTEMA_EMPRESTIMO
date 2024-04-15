@@ -35,7 +35,7 @@ export default function TransferProof({route, navigation}) {
           style={localStyles.successTxt}
           type={'B24'}
           align={'center'}>
-          {strings.TransSuccess}
+          Empréstimo em aprovação
         </CText>
         <CText
           color={colors.black}
@@ -50,12 +50,12 @@ export default function TransferProof({route, navigation}) {
             align={'center'}
             type={'B32'}
             style={localStyles.amountTxt}>
-            {'$' + parseFloat(amount).toFixed(2)}
+            {'R$' + parseFloat(amount).toFixed(2)}
           </CText>
         </View>
       </View>
       <CButton
-        text={'Back to Home'}
+        text={'Voltar para o inicio'}
         containerStyle={localStyles.cButton}
         onPress={backToHome}
       />

@@ -1,4 +1,4 @@
-import {StyleSheet, View, Image, Text, Linking, Alert} from 'react-native';
+import {StyleSheet, View, Image, Text} from 'react-native';
 import React from 'react';
 import ActionSheet, {FlatList} from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
@@ -13,13 +13,9 @@ import {colors} from '../../themes/colors';
 import {LocationData} from '../../api/constants';
 import CButton from '../common/CButton';
 import {TouchableOpacity} from 'react-native-gesture-handler';
-import {useNavigation} from '@react-navigation/native';
-import {StackNav, TabNav} from '../../navigation/navigationKeys';
-import api from '../../services/api';
 
 export default function Location(props) {
   let {sheetRef, cliente} = props;
-  const navigation = useNavigation();
 
   const renderData = ({item}) => {
     return (
@@ -34,70 +30,12 @@ export default function Location(props) {
     );
   };
 
-  const obterDataAtual = () => {
-    const data = new Date();
-    const ano = data.getFullYear();
-    let mes = data.getMonth() + 1; // Os meses vão de 0 a 11 em JavaScript, então adicionamos 1
-    let dia = data.getDate();
-  
-    // Adicionar um zero à esquerda se o mês ou o dia for menor que 10
-    mes = mes < 10 ? '0' + mes : mes;
-    dia = dia < 10 ? '0' + dia : dia;
-  
-    return `${ano}-${mes}-${dia}`;
-  };
-
-  const baixaManual = async () => {
-    let req = await api.baixaManual(cliente.id, obterDataAtual());
-
-    Alert.alert('Baixa realizada com sucesso!');
-
-    navigation.navigate(StackNav.TabNavigation);
-  }
-
-  const openWhatsApp = () => {
-    let url = `whatsapp://send?phone=${cliente.telefone_celular_1}`;
-    url += `&text=${encodeURIComponent('message')}`;
-
-    Linking.openURL(url)
-      .then((data) => {
-        console.log('WhatsApp abierto:', data);
-      })
-      .catch(() => {
-        console.log('Error al abrir WhatsApp');
-        Alert.alert('Error ao abrir WhatsApp');
-      });
-  };
-
-  const openGoogleMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${cliente.latitude},${cliente.longitude}`;
-    Linking.openURL(url)
-      .then((data) => {
-        console.log('Google Maps abierto:', data);
-      })
-      .catch(() => {
-        console.log('Error al abrir Google Maps');
-      });
-  };
-
   const cancelModel = () => {
     sheetRef.current?.hide();
   };
 
   const arrowRightTopIcon = () => (
     <Community size={24} name={'arrow-u-right-top'} color={colors.white} />
-  );
-
-  const whatsapp = () => (
-    <Community size={24} name={'whatsapp'} color={colors.white} />
-  );
-
-  const check = () => (
-    <Community size={24} name={'check'} color={colors.white} />
-  );
-
-  const waze = () => (
-    <Community size={24} name={'waze'} color={colors.white} />
   );
 
   return (
@@ -122,27 +60,18 @@ export default function Location(props) {
             <Fonisto name={'bookmark'} size={24} color={colors.black} />
           </View>
 
-          <CButton
-            onPress={openGoogleMaps}
-            text={'Abrir no waze'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={waze}
-          />
-          <CButton
-            onPress={openWhatsApp}
-            text={'Ir para o Whatsapp'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={whatsapp}
-          />
-          <CButton
-            onPress={baixaManual}
-            text={'Realizar Baixa'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={check}
-          />
+          <View style={localStyles.outerContainer}>
+            <FlatList
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              data={LocationData}
+              renderItem={renderData}
+            />
+          </View>
+
           <CButton
             onPress={cancelModel}
-            text={'Cobrar Amanha'}
+            text={'Abrir no waze'}
             containerStyle={localStyles.buttonContainer}
             RightIcon={arrowRightTopIcon}
           />

@@ -2,5 +2,5 @@ export const MapsApi = 'AIzaSyDvNypCJVAfgPJ1nmrqZvz25wSbW3JOjUc';
 export const Language = 'pt-br';
 export const Currency = 'BRL';
 export const CurrencyStyle = 'currency';
-export const baseUrl = 'https://hom-backofficeapp190.ssp.ba.gov.br/api';
-//export const baseUrl = 'https://f4cf-186-209-189-56.ngrok-free.app/api';
+//export const baseUrl = 'https://hom-backofficeapp190.ssp.ba.gov.br/api';
+export const baseUrl = 'https://api.rjemprestimos.com.br/api';
