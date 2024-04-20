@@ -89,19 +89,19 @@ export default function MoreOptions({navigation}) {
             <FirstImage
               style={localStyles.parentDep}
               image={images.Deposit}
-              text={strings.Deposit}
+              text='Clientes'
               onPress={moveToDeposit}
             />
             <FirstImage
               style={localStyles.parentDep}
               image={images.Transfer}
-              text={strings.Transfers}
+              text='Criar Emprestimo'
               onPress={moveToTrans}
             />
             <FirstImage
               style={localStyles.parentDep}
               image={images.Withdraw}
-              text={strings.Withdraw}
+              text='Pendentes'
               onPress={moveToWith}
             />
           </View>
@@ -109,13 +109,13 @@ export default function MoreOptions({navigation}) {
             <FirstImage
               style={localStyles.parentDep2}
               image={images.Deposit}
-              text={strings.ATM}
+              text='Efetuar baixa'
               onPress={moveToAtm}
             />
             <FirstImage
               style={localStyles.parentDep2}
               image={images.Deposit}
-              text={strings.TopUp}
+              text='Outros'
               onPress={moveToMobile}
             />
             <FirstImage
@@ -127,13 +127,13 @@ export default function MoreOptions({navigation}) {
           </View>
         </View>
 
-        <View style={localStyles.outerComponent}>
+        {/* <View style={localStyles.outerComponent}>
           <FlatList
             keyExtractor={(item, index) => index.toString()}
             data={[...HomeData, ...HomeData, ...HomeData]}
             renderItem={renderItems}
           />
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );

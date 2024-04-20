@@ -18,7 +18,7 @@ import CTextInput from '../../components/common/CTextInput';
 import CButton from '../../components/common/CButton';
 import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
-import {authToken} from '../../utils/asyncStorage';
+import {authToken, authCompany, user} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
@@ -43,17 +43,45 @@ export default function SignIn({navigation}) {
   const [pass, setPass] = useState(false);
 
   const onPressSignIn = async () => {
-    if (email === '' || showMessage || changeValue === '') {
+    if (email === '' || changeValue === '') {
       Alert.alert(strings.PleaseFill);
     } else {
-      let result = await api.login(email, pass);
+      let result = await api.login(email, changeValue);
       if(result.error === '') {
-        await authToken(result.token);
-        navigation.reset({
-          index: 0,
-          routes: [{name: StackNav.TabNavigation}],
-        });
+        if(result.user.companies.length == 0){
+            Alert.alert('Você não está cadastrado em nenhuma empresa.');
+        }else if(result.user.companies.length == 1){
+            await user(result.user);
+            await authToken(result.token);
+            await authCompany(result.user.companies[0]);
+            if(result.user.permissions.length > 0){
+                let res = result.user.permissions.filter(item => item.company_id === result.user.companies[0]['id'])
+                //this.$store.commit("setPermissions", res[0]['permissions']);
+            }else{
+                //this.$store.commit("setPermissions", []);
+            }
+            navigation.reset({
+                index: 0,
+                routes: [{name: StackNav.TabNavigation}],
+                });
+        }else{
+            await user(result.user);
+            await authToken(result.token);
+            navigation.reset({
+                index: 0,
+                routes: [{
+                  name: AuthNav.SelecionarEmpresa,
+                  params: {
+                    companies: result.user.companies,
+                  }
+                }],
+              });
+            //this.$store.commit("setPermissions", response.data.user.permissions);
+        }
+      }else{
+        Alert.alert(result.message);
       }
+
     }
   };
 
@@ -123,16 +151,12 @@ export default function SignIn({navigation}) {
 
               <CTextInput
                 value={email}
-                onChangeText={setEmailFunction}
+                onChangeText={setEmail}
                 onFocus={onFocus2}
                 onBlur={onBlur2}
                 mainTxtInp={[localStyles.PassTxt, focus2]}
                 text={'Email'}
               />
-
-              {showMessage ? (
-                <CText color={colors.red}>{showMessage}</CText>
-              ) : null}
 
               <CTextInput
                 onFocus={onFocus}

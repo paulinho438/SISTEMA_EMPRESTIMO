@@ -21,6 +21,8 @@ import MyCardScreen from '../containers/screen/MyCardScreen';
 import ActivityScreen from '../containers/screen/ActivityScreen';
 import ProfileScreen from '../containers/screen/ProfileScreen';
 import TransferMoney from '../components/homeTab/TransferMoney';
+import SelecionarEmpresa from '../components/homeTab/SelecionarEmpresa';
+import Clientes from '../components/homeTab/Clientes';
 import SendMoney from '../components/homeTab/SendMoney';
 import TransferProof from '../components/homeTab/TransferProof';
 import TopUpScreen from '../components/homeTab/TopUpScreen';
@@ -42,6 +44,7 @@ import ActivityGraph from '../components/activityTab/ActivityGraph';
 import MoreOptions from '../components/homeTab/MoreOptions';
 import ChatScreen from '../containers/moreOpctions/ChatAssistant/ChatScreen';
 import ATMDetails from '../containers/moreOpctions/ATMFinder/ATMDetails';
+import CobrancaMap from '../containers/moreOpctions/ATMFinder/CobrancaMap';
 import SelectProvider from '../containers/moreOpctions/MobileTopUp/SelectProvider';
 import TopUpModal from '../components/modals/TopUpModal';
 import PhoneBook from '../containers/moreOpctions/MobileTopUp/PhoneBook';
@@ -53,6 +56,7 @@ export const StackRoute = {
   AuthNavigation,
   TabNavigation,
   TransferMoney,
+  Clientes,
   SendMoney,
   TransferProof,
   TopUpScreen,
@@ -74,6 +78,7 @@ export const StackRoute = {
   MoreOptions,
   ChatScreen,
   ATMDetails,
+  CobrancaMap,
   SelectProvider,
   TopUpModal,
   PhoneBook,
@@ -86,6 +91,7 @@ export const AuthRoute = {
   OtpAuth,
   VerifyIdentity,
   CreatePass,
+  SelecionarEmpresa,
   SignUp,
   CountryRes,
   Reasons,

@@ -40,6 +40,11 @@ const AuthNavigation = ({navigation}) => {
         options={{headerShown: false}}
       />
       <Stack.Screen
+        name={AuthNav.SelecionarEmpresa}
+        component={AuthRoute.SelecionarEmpresa}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
         name={AuthNav.SignUp}
         component={AuthRoute.SignUp}
         options={{headerShown: false}}

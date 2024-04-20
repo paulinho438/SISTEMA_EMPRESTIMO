@@ -38,7 +38,7 @@ const TabNavigation = () => {
         component={TabRoute.MyCardScreen}
         options={{
           headerShown: false,
-          tabBarLabel: 'Emprestimos',
+          tabBarLabel: 'Emprestimo',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
           tabBarIcon: ({focused}) =>

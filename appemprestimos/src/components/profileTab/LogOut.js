@@ -27,18 +27,18 @@ export default function LogOut() {
   return (
     <View style={localStyles.mainContainer}>
       <CText align={'center'} type={'B24'} color={colors.black}>
-        {strings.LogOutConfirm}
+        Você confirma que deseja sair do RJ EMPRESTIMOS ?
       </CText>
 
       <View style={localStyles.outerComponentOfCButtons}>
         <CButton
           onPress={moveToSignIn}
-          text={'Yes'}
+          text={'Sim'}
           containerStyle={localStyles.ParentCButtonContainerYes}
         />
         <CButton
           onPress={moveToProfile}
-          text={'No'}
+          text={'Não'}
           containerStyle={localStyles.ParentCButtonContainerNo}
         />
       </View>
