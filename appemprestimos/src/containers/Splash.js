@@ -30,7 +30,7 @@ const Splash = ({navigation}) => {
         }
       }
     } catch (e) {
-      console.log('error', e);
+      navigation.replace(StackNav.TabNavigation);
     }
   };
 

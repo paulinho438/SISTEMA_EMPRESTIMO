@@ -86,14 +86,14 @@ export default function TransferPopUp(props) {
               <View style={localStyles.innerContainer}>
                 <View>
                   <CText color={colors.black} type={'S18'} align="center">
-                    {strings.TransConf}
+                    Confirmar Empréstimo
                   </CText>
 
                   <Detail
-                    header={strings.From}
-                    bankName={strings.BOA}
+                    header='Banco'
+                    bankName='Itau'
                     name={strings.Anabella}
-                    cardNumber={strings.AnnaNumber}
+                    cardNumber=''
                   />
                   <Detail
                     header={strings.To}
@@ -105,11 +105,11 @@ export default function TransferPopUp(props) {
                   <Detail
                     isTotal={true}
                     total={strings.Total}
-                    prize={'$' + parseFloat(amount).toFixed(2)}
+                    prize={'R$' + parseFloat(amount).toFixed(2)}
                   />
                 </View>
                 <CButton
-                  text={'Ok, Send Now!'}
+                  text={'Aprovar'}
                   containerStyle={[
                     localStyles.ParentLgnBtn,
                     {

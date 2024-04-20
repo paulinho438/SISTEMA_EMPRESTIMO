@@ -516,19 +516,19 @@ export const LocationData = [
   {
     id: 1,
     image: Images.Star,
-    reviews: strings.Reviews,
+    reviews: '3 finalizados',
     color: colors.tabColor,
   },
   {
     id: 2,
     image: Images.MiniCar,
-    reviews: strings.Mils,
+    reviews: '2 KM',
     color: colors.tabColor,
   },
   {
     id: 3,
     image: Images.Time,
-    reviews: strings.Time,
+    reviews: '2 pendentes',
     color: colors.tabColor,
   },
 ];

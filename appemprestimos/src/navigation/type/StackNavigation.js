@@ -36,6 +36,11 @@ const StackNavigation = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
+        name={StackNav.Clientes}
+        component={StackRoute.Clientes}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
         name={StackNav.SendMoney}
         component={StackRoute.SendMoney}
         options={{headerShown: false}}
@@ -138,6 +143,11 @@ const StackNavigation = () => {
       <Stack.Screen
         name={StackNav.ATMDetails}
         component={StackRoute.ATMDetails}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.CobrancaMap}
+        component={StackRoute.CobrancaMap}
         options={{headerShown: false}}
       />
       <Stack.Screen

@@ -17,7 +17,9 @@ import TransferPopUp from '../modals/TransferPopUp';
 import {Dropdown} from 'react-native-element-dropdown';
 import {CurrencyList} from '../../api/constants';
 
-export default function SendMoney() {
+export default function SendMoney({navigation, route}) {
+  const { cliente } = route.params;
+
   const [visible, setVisible] = useState(false);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
@@ -38,7 +40,7 @@ export default function SendMoney() {
     <SafeAreaView style={localStyles.main}>
       <KeyBoardAvoidWrapper containerStyle={localStyles.keyBoardSty}>
         <View>
-          <CHeader color={colors.black} title={'Send Money'} />
+          <CHeader color={colors.black} title={'Empréstimo'} />
           <View style={localStyles.mainImg}>
             <Image source={images.Girl} style={localStyles.girlImg} />
           </View>
@@ -47,7 +49,7 @@ export default function SendMoney() {
             align={'center'}
             type={'M14'}
             style={localStyles.mariaTxt}>
-            {strings.ToMaria}
+            {cliente.nome_completo_cpf}
           </CText>
 
           <View style={localStyles.mainBorder}>
@@ -61,22 +63,7 @@ export default function SendMoney() {
             </View>
 
             <View style={localStyles.parentTxtInp}>
-              <Dropdown
-                style={localStyles.dropdownStyle}
-                data={CurrencyList}
-                value={currency}
-                maxHeight={moderateScale(180)}
-                labelField="label"
-                valueField="value"
-                label={strings.usd}
-                onChange={onChangeCurrency}
-                selectedTextStyle={localStyles.miniContainer}
-                itemTextStyle={localStyles.miniContainer}
-                itemContainerStyle={{
-                  backgroundColor: colors.GreyScale,
-                  width: 'auto',
-                }}
-              />
+              
 
               <CTextInput
                 mainTxtInp={localStyles.CTxtInp}
@@ -91,7 +78,7 @@ export default function SendMoney() {
       </KeyBoardAvoidWrapper>
       <CButton
         containerStyle={localStyles.mainCButton}
-        text={'Send Money'}
+        text={'Calcular'}
         onPress={onPressClose}
         disabled={!!!amount}
       />
