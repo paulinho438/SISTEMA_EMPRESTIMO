@@ -57,7 +57,7 @@ app.get('/logar', (req, res) => {
   res.send(
     { 
       loggedIn: isClientLoggedIn,
-      url:  `http://localhost:3000/static/qrcode.png`,
+      url:  `http://rjemprestimo.com.br:${port}/static/qrcode.png`,
     }
     );
 });
