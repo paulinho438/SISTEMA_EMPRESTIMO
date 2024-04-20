@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const qrcode = require('qrcode-terminal');
 const qrcode2 = require('qrcode');
@@ -8,6 +9,10 @@ const app = express();
 const port = 3000;
 
 // Middleware para analisar o corpo da solicitação como JSON
+app.use(cors({
+  origin: 'http://localhost:5173'
+}));
+
 app.use(express.json());
 
 let isClientLoggedIn = false;
@@ -19,7 +24,7 @@ const client = new Client({
   type: 'remote',
   remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
   }
-  });
+});
 
 const minhaString = '2@1pEsoTpn6mw/2nCvtfOnd2cbinxV4s+C85RiA5NPAdEcWSYdbuZVjewJImnOEzZUk7BnXYS5+VHs/A==,dbS6uLDmGoBAE/Cmy8eo2YFMR8ukQDmk99oL9/oV8EQ=,Q0YxCg/SbEU8yGFlMQNEAHkqg7XVD3zfW1ZhG0qfUT8=,mklbm++D24DTNuZRvh94BzaY2EvZvZz+PAZK/vDTZOI=,1';
 
@@ -112,7 +117,7 @@ app.post('/renovar', async (req, res) => {
   const { numero } = req.body;
 
   const mensagem = `
-Boas notícicias, a penúltima parcela foi paga, você deseja renovar seu emprestimo?
+Boas notícias, a penúltima parcela foi paga, você deseja renovar seu emprestimo?
 
     Digite uma opção:
 

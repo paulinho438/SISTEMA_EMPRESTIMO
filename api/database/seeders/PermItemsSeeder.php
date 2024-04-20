@@ -354,5 +354,13 @@ class PermItemsSeeder extends Seeder
             ]
         );
 
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Alteração de Parâmetros da Empresa",
+                "slug"             => "edit_empresa",
+                "group"            => "alteracaoempresa"
+            ]
+        );
+
     }
 }

@@ -82,6 +82,9 @@ Route::middleware('auth:api')->group(function(){
 
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
 
+    Route::get('/empresa', [CompanyController::class, 'get']);
+
+
     Route::get('/contaspagar', [ContaspagarController::class, 'all']);
     Route::get('/contaspagar/{id}', [ContaspagarController::class, 'id']);
     Route::get('/contaspagar/{id}/delete', [ContaspagarController::class, 'delete']);
