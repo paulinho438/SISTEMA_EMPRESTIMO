@@ -60,6 +60,7 @@ app.use('/static', express.static(path.join(__dirname, 'static')));
 
 app.get('/logar', (req, res) => {
   // const qrCode = qrcode2.generate(qr, { small: true });
+
   res.send(
     { 
       loggedIn: isClientLoggedIn,
@@ -75,7 +76,11 @@ client.on('authenticated', (session) => {
 
 client.on('disconnected', (reason) => {
   console.log(`Desconectado: ${reason}`);
+  client.destroy();
+
   isClientLoggedIn = false;
+  client.initialize();
+
 });
 
 app.get('/status', (req, res) => {
