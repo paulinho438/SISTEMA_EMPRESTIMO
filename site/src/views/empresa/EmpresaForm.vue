@@ -25,6 +25,7 @@ export default {
 	data() {
 		return {
 			contaspagar: ref({}),
+			intervalId: null,
 			empresa: ref({}),
 			zap: ref({}),
 			oldcontaspagar: ref(null),
@@ -63,6 +64,7 @@ export default {
 					this.empresa = response.data;
 					if(this.empresa?.whatsapp != null){
 						this.getInfoZap();
+						this.intervalId = setInterval(this.getInfoZap, 10000);
 					}
 				})
 				.catch((error) => {
@@ -78,9 +80,11 @@ export default {
 			
 		},
 		getInfoZap(){
+			this.zap = ref({});
 			this.empresaService.zap(this.empresa.whatsapp)
 				.then((response) => {
-					this.zap = response.data;
+					
+					this.zap = response;
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -197,7 +201,10 @@ export default {
 	},
 	mounted() {
 		this.getinfoempresa();
-	}
+	},
+	beforeDestroy() {
+		clearInterval(this.intervalId); // Limpa o intervalo quando o componente é destruído
+	},
 };
 </script>
 
@@ -225,15 +232,18 @@ export default {
                         <label for="firstname2">Juros</label>
                         <InputText id="firstname2" :modelValue="empresa?.juros" v-model="empresa.juros" type="text" />
                     </div>
-					<div class="field col-12 md:col-6">
-                        <label for="firstname2">Integração whatsapp</label>
-						<Chip :label="`${empresa?.whatsapp}`" class="w-full p-inputtext-sm"></Chip>
-                    </div>
-					<div v-if="empresa?.whatsapp != null" class="field col-12 md:col-6">
-                        <label for="firstname2">QRCODE</label>
-						<Image class="mb-5" :src="uploadedImage" v-if="uploadedImage" alt="Image" width="80" preview />
-                    </div>
                 </div>
+				<div class="card">
+					
+					<div v-if="empresa?.whatsapp != null" class="field col-12 md:col-12">
+						<h5>Integração whatsapp</h5>
+						<Button v-if="zap?.loggedIn" label="Conectado" class="p-button-rounded p-button-success mr-2 mb-2" />
+						<Button v-if="!zap?.loggedIn" label="Aguardando Conexão" class="p-button-rounded p-button-danger mr-2 mb-2" />
+                    </div>
+					<div v-if="empresa?.whatsapp != null && !zap?.loggedIn" class="field col-12 md:col-12">
+						<Image class="mb-5" :src="`${zap?.url}?t=${Date.now()}`" v-if="zap?.url" alt="Image" width="450" preview />
+                    </div>
+				</div>
             
         	</div>
 		</template>

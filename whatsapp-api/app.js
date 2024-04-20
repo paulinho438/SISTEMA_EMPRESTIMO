@@ -155,7 +155,7 @@ client.on('message', async (message) => {
       await client.sendMessage(message.from, 'Você escolheu a opção 3. Muito Obrigado pelo retorno.');
       break;
     default:
-      await client.sendMessage(message.from, 'Opção inválida. Por favor, digite uma opção válida.');
+      // await client.sendMessage(message.from, 'Opção inválida. Por favor, digite uma opção válida.');
       break;
   }
 });
