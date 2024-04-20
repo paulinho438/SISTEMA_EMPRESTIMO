@@ -53,9 +53,10 @@ app.use('/static', express.static(path.join(__dirname, 'static')));
 
 
 app.get('/logar', (req, res) => {
-  const qrCode = qrcode.generate(qr, { small: true });
+  const qrCode = qrcode2.generate(qr, { small: true });
   res.send(
     { 
+      qrCode: qrCode,
       loggedIn: isClientLoggedIn,
       url:  `http://rjemprestimos.com.br:${port}/static/qrcode.png`,
     }
