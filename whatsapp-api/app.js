@@ -53,7 +53,7 @@ app.use('/static', express.static(path.join(__dirname, 'static')));
 
 
 app.get('/logar', (req, res) => {
-  // const qrCode = qrcode.generate(qr, { small: true });
+  const qrCode = qrcode.generate(qr, { small: true });
   res.send(
     { 
       loggedIn: isClientLoggedIn,
