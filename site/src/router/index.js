@@ -14,6 +14,7 @@ import ContaspagarRoutes from './contaspagar.js';
 import ContasreceberRoutes from './contasreceber.js';
 import MovimentacaofinanceiraRoutes from './movimentacaofinanceira.js';
 import AprovacaoRoutes from './aprovacao.js';
+import EmpresaRoutes from './empresa.js';
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -38,6 +39,7 @@ const router = createRouter({
                 ...ContasreceberRoutes,
                 ...MovimentacaofinanceiraRoutes,
                 ...AprovacaoRoutes,
+                ...EmpresaRoutes,
                 {
                     path: '/uikit/formlayout',
                     name: 'formlayout',

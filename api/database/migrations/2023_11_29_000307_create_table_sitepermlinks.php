@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('permgroups_permitems');
+        Schema::dropIfExists('permgroup_permitem');
     }
 };
