@@ -18,6 +18,8 @@ class CompanySeeder extends Seeder
         DB::table("companies")->insert(
             [
                 "company" => "BSB EMPRESTIMOS",
+                "juros" => 0.5,
+                "whatsapp" => "http://rjemprestimos.com.br:3000",
             ]
         );
 
