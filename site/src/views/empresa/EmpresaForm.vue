@@ -233,7 +233,7 @@ export default {
                         <InputText id="firstname2" :modelValue="empresa?.juros" v-model="empresa.juros" type="text" />
                     </div>
                 </div>
-				<div class="card">
+				<div v-if="empresa?.whatsapp != null" class="card">
 					
 					<div v-if="empresa?.whatsapp != null" class="field col-12 md:col-12">
 						<h5>Integração whatsapp</h5>
