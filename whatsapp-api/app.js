@@ -13,7 +13,7 @@ app.use(express.json());
 let isClientLoggedIn = false;
 
 // Configurações do cliente do WhatsApp
-const client = new Client();
+const client = new Client({puppeteer: {args: ["--no-sandbox"]}});
 
 const minhaString = '2@1pEsoTpn6mw/2nCvtfOnd2cbinxV4s+C85RiA5NPAdEcWSYdbuZVjewJImnOEzZUk7BnXYS5+VHs/A==,dbS6uLDmGoBAE/Cmy8eo2YFMR8ukQDmk99oL9/oV8EQ=,Q0YxCg/SbEU8yGFlMQNEAHkqg7XVD3zfW1ZhG0qfUT8=,mklbm++D24DTNuZRvh94BzaY2EvZvZz+PAZK/vDTZOI=,1';
 
