@@ -61,12 +61,6 @@ app.use('/static', express.static(path.join(__dirname, 'static')));
 app.get('/logar', (req, res) => {
   // const qrCode = qrcode2.generate(qr, { small: true });
 
-  if(!isClientLoggedIn){
-    client.destroy();
-
-    client.initialize();
-  }
-
   res.send(
     { 
       loggedIn: isClientLoggedIn,
