@@ -98,7 +98,7 @@ export default {
 				});
 		},
 		back() {
-			this.router.push(`/contaspagar`);
+			this.router.go(-1);
 		},
 		changeEnabled(enabled) {
 			this.contaspagar.enabled = enabled;
