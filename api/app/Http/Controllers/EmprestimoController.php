@@ -86,6 +86,7 @@ class EmprestimoController extends Controller
 
                 $parcela->saldo = $novoValor;
                 $parcela->venc_real = date('Y-m-d');
+                $parcela->atrasadas = $parcela->atrasadas + 1;
 
                 if($parcela->chave_pix){
                     $gerarPix = self::gerarPix([
