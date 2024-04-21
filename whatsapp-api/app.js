@@ -69,7 +69,7 @@ app.get('/logar', (req, res) => {
   res.send(
     { 
       loggedIn: isClientLoggedIn,
-      url:  `http://rjemprestimos.com.br:${port}/static/qrcode.png`,
+      url:  `https://node1.rjemprestimos.com.br/static/qrcode.png`,
     }
     );
 });
