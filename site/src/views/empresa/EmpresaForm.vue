@@ -80,7 +80,6 @@ export default {
 			
 		},
 		getInfoZap(){
-			this.zap = ref({});
 			this.empresaService.zap(this.empresa.whatsapp)
 				.then((response) => {
 					
@@ -241,7 +240,7 @@ export default {
 						<Button v-if="!zap?.loggedIn" label="Aguardando Conexão" class="p-button-rounded p-button-danger mr-2 mb-2" />
                     </div>
 					<div v-if="empresa?.whatsapp != null && !zap?.loggedIn" class="field col-12 md:col-12">
-						<Image class="mb-5" :src="`${zap?.url}?t=${Date.now()}`" v-if="zap?.url" alt="Image" width="450" preview />
+						<Image class="mb-5" :src="`${zap?.url}?t=${Date.now()}`" v-if="zap?.url" alt="Image" preview />
                     </div>
 				</div>
             
