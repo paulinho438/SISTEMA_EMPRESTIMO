@@ -43,6 +43,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+
+use Illuminate\Support\Facades\Http;
+
 class EmprestimoController extends Controller
 {
 
@@ -69,6 +72,45 @@ class EmprestimoController extends Controller
         return EmprestimoResource::collection(Emprestimo::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
+    public function cobrancaAutomatica(){
+        $parcelas = Parcela::where('venc_real', '<=', Carbon::now())->where('dt_baixa', null)->where('atrasadas', '>', 0)->get();
+        $r = [];
+        foreach($parcelas as $parcela){
+            if(isset($parcela->emprestimo->company->whatsapp)){
+                try {
+                    $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+                    if ($response->successful()) {
+                        $r = $response->json();
+                        if($r['loggedIn']){
+                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                            $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
+                            $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
+                            $ultima_parcela = $parcela->saldo - $valor_acrecimo;
+                            $data = [
+                                "numero" => "55".$telefone,
+                                "mensagem" => '
+Bom dia, '.$parcela->emprestimo->client->nome_completo.'!
+
+Espero que esteja tudo bem com você. Verificamos em nosso sistema que a parcela '.$parcela->parcela.' no valor de R$ '.number_format($ultima_parcela, 2, ',', '.').' ainda não foi quitada. Para sua conveniência, encaminho abaixo o link atualizado para o pagamento, já incluindo os acréscimos de R$ '.number_format($valor_acrecimo, 2, ',', '.').' referente a juros.
+
+'.$parcela->chave_pix.'
+
+Estamos à disposição para qualquer esclarecimento que seja necessário.'
+                            ];
+                            $response = Http::asJson()->post($baseUrl, $data);
+                            sleep(4);
+                        }
+                    }
+                } catch (\Throwable $th) {
+
+                }
+
+            }
+        }
+
+        return $parcelas;
+    }
+
     public function recalcularParcelas(Request $r){
 
         $juros = Juros::value('juros');
@@ -80,7 +122,7 @@ class EmprestimoController extends Controller
 
             if ($parcela->emprestimo) {
 
-                $valorJuros = $parcela->emprestimo->valor * ($juros / 100);
+                $valorJuros = $parcela->emprestimo->valor * ($parcela->emprestimo->company->juros / 100);
 
                 $novoValor = $valorJuros + $parcela->saldo;
 

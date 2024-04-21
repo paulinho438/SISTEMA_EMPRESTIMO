@@ -9,9 +9,18 @@ const app = express();
 const port = 3000;
 
 // Middleware para analisar o corpo da solicitação como JSON
-app.use(cors({
-  origin: 'https://sistema.rjemprestimos.com.br'
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = ['https://sistema.rjemprestimos.com.br', 'https://api.rjemprestimos.com.br', 'http://localhost:5173'];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
@@ -69,7 +78,7 @@ app.get('/logar', (req, res) => {
   res.send(
     { 
       loggedIn: isClientLoggedIn,
-      url:  `https://node1.rjemprestimos.com.br/static/qrcode.png`,
+      url:  `http://localhost:3000/static/qrcode.png`,
     }
     );
 });
