@@ -168,10 +168,10 @@ client.on('message', message => {
 });
  
 
-// Inicia o servidor
-app.listen(port, () => {
-  console.log(`Servidor iniciado em http://localhost:${port}`);
-});
+// // Inicia o servidor
+// app.listen(port, () => {
+//   console.log(`Servidor iniciado em http://localhost:${port}`);
+// });
 
 async function startServer() {
   // Lê o certificado e a chave
