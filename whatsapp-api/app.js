@@ -174,8 +174,8 @@ app.listen(port, () => {
 });
 
 const options = {
-  key: fs.readFileSync('ssl/code.key'),
-  cert: fs.readFileSync('ssl/code.crt'),
+  key: fs.readFile('ssl/code.key'),
+  cert: fs.readFile('ssl/code.crt'),
 };
 
 https.createServer(options, (req, res) => {
