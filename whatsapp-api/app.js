@@ -10,7 +10,7 @@ const port = 3000;
 
 // Middleware para analisar o corpo da solicitação como JSON
 app.use(cors({
-  origin: 'http://localhost:5173'
+  origin: 'https://sistema.rjemprestimos.com.br'
 }));
 
 app.use(express.json());
