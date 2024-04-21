@@ -19,7 +19,7 @@ class CompanySeeder extends Seeder
             [
                 "company" => "BSB EMPRESTIMOS",
                 "juros" => 0.5,
-                "whatsapp" => "http://rjemprestimos.com.br:3000",
+                "whatsapp" => "https://node1.rjemprestimos.com.br",
             ]
         );
 
