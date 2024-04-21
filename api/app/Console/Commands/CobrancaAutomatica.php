@@ -18,21 +18,23 @@ use Illuminate\Support\Str;
 
 use Carbon\Carbon;
 
-class RecalcularParcelas extends Command
+use Illuminate\Support\Facades\Http;
+
+class CobrancaAutomatica extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'recalcular:Parcelas';
+    protected $signature = 'cobranca:Automatica';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Recalcular Parcelas em atrasos';
+    protected $description = 'Cobrança automatica das parcelas em atraso';
 
     /**
      * Execute the console command.
@@ -42,59 +44,42 @@ class RecalcularParcelas extends Command
     public function handle()
     {
 
-        $this->info('Recalculando as Parcelas em Atrasos');
+        $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
-        $juros = Juros::value('juros');
+            $parcelas = Parcela::where('venc_real', '<=', Carbon::now())->where('dt_baixa', null)->where('atrasadas', '>', 0)->get();
+            $r = [];
+            foreach($parcelas as $parcela){
+                if(isset($parcela->emprestimo->company->whatsapp)){
+                    try {
+                        $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+                        if ($response->successful()) {
+                            $r = $response->json();
+                            if($r['loggedIn']){
+                                $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                                $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
+                                $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
+                                $ultima_parcela = $parcela->saldo - $valor_acrecimo;
+                                $data = [
+                                    "numero" => "55".$telefone,
+                                    "mensagem" => '
+    Bom dia, '.$parcela->emprestimo->client->nome_completo.'!
 
-        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now())->where('dt_baixa', null)->get();
+    Espero que esteja tudo bem com você. Verificamos em nosso sistema que a parcela '.$parcela->parcela.' no valor de R$ '.number_format($ultima_parcela, 2, ',', '.').' ainda não foi quitada. Para sua conveniência, encaminho abaixo o link atualizado para o pagamento, já incluindo os acréscimos de R$ '.number_format($valor_acrecimo, 2, ',', '.').' referente a juros.
 
-        // Faça algo com as parcelas vencidas, por exemplo, exiba-as
-        foreach ($parcelasVencidas as $parcela) {
+    '.$parcela->chave_pix.'
 
-            if ($parcela->emprestimo) {
+    Estamos à disposição para qualquer esclarecimento que seja necessário.'
+                                ];
+                                $response = Http::asJson()->post($baseUrl, $data);
+                                sleep(4);
+                            }
+                        }
+                    } catch (\Throwable $th) {
 
-                $valorJuros = $parcela->emprestimo->valor * ($juros / 100);
-
-                $novoValor = $valorJuros + $parcela->saldo;
-
-                $parcela->saldo = $novoValor;
-                $parcela->venc_real = date('Y-m-d');
-
-                if($parcela->chave_pix){
-                    $gerarPix = self::gerarPix([
-                            'banco' => [
-                                'client_id' => $parcela->emprestimo->banco->clienteid,
-                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
-                                'certificado' => $parcela->emprestimo->banco->certificado,
-                                'chave' => $parcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $novoValor,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
-
-                    $parcela->identificador = $gerarPix['identificador'];
-                    $parcela->atrasadas = $parcela->atrasadas + 1;
-                    $parcela->chave_pix = $gerarPix['chave_pix'];
+                    }
 
                 }
-
-                if($parcela->contasreceber){
-                    $parcela->contasreceber->venc = $parcela->venc_real;
-                    $parcela->contasreceber->valor = $parcela->saldo;
-                    $parcela->contasreceber->save();
-                }
-                $parcela->save();
-
             }
-        }
 
         exit;
     }

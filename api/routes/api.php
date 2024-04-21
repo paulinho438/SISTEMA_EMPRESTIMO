@@ -118,6 +118,10 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/juros', [JurosController::class, 'get']);
     Route::put('/juros/update', [JurosController::class, 'update']);
 
+
+    Route::get('/cobrancaautomatica', [EmprestimoController::class, 'cobrancaAutomatica']);
+
+
     Route::get('/emprestimo', [EmprestimoController::class, 'all']);
     Route::get('/emprestimo/{id}', [EmprestimoController::class, 'id']);
     Route::get('/emprestimo/{id}/delete', [EmprestimoController::class, 'delete']);
