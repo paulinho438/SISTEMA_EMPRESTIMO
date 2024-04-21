@@ -173,15 +173,24 @@ app.listen(port, () => {
   console.log(`Servidor iniciado em http://localhost:${port}`);
 });
 
-const options = {
-  key: fs.readFile('ssl/code.key'),
-  cert: fs.readFile('ssl/code.crt'),
-};
+async function startServer() {
+  // Lê o certificado e a chave
+  const cert = await fs.readFile('ssl/code.crt');
+  const key = await fs.readFile('ssl/code.key');
 
-https.createServer(options, (req, res) => {
-  res.writeHead(200);
-  res.end('hello world\n');
-}).listen(8000); 
+  // Cria o servidor HTTPS
+  const server = https.createServer({ cert, key }, (req, res) => {
+    res.writeHead(200);
+    res.end('Olá, mundo!');
+  });
+
+  // Inicia o servidor
+  server.listen(3001, () => {
+    console.log('Servidor HTTPS rodando na porta 3001');
+  });
+}
+
+startServer();
 
 // Inicia a sessão do cliente do WhatsApp
 client.initialize();
