@@ -89,9 +89,9 @@ client.on('disconnected', (reason) => {
 
 });
 
-// app.get('/status', (req, res) => {
-//   res.json({ loggedIn: isClientLoggedIn });
-// });
+app.get('/status', (req, res) => {
+  res.json({ loggedIn: isClientLoggedIn });
+});
 
 client.on('message', (message) => {
   console.log(`Nova mensagem de ${message.from}: ${message.body}`);
@@ -180,9 +180,8 @@ async function startServer() {
 
   // Cria o servidor HTTPS
   const server = https.createServer({ cert, key }, (req, res) => {
-    app.get('/status', (req, res) => {
-      res.json({ loggedIn: isClientLoggedIn });
-    });
+    res.writeHead(200);
+    res.end('Olá, mundo!');
   });
 
   // Inicia o servidor
