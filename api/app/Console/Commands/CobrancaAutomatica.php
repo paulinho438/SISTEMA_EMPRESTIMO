@@ -18,8 +18,6 @@ use Illuminate\Support\Str;
 
 use Carbon\Carbon;
 
-use Illuminate\Support\Facades\Http;
-
 class CobrancaAutomatica extends Command
 {
     /**
