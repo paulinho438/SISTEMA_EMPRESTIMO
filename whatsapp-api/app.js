@@ -5,7 +5,6 @@ const qrcode = require('qrcode-terminal');
 const qrcode2 = require('qrcode');
 const fs = require('fs').promises;
 const { Client } = require('whatsapp-web.js');
-const https = require('https');
 const app = express();
 const port = 3000;
 
@@ -168,29 +167,10 @@ client.on('message', message => {
 });
  
 
-// // Inicia o servidor
-// app.listen(port, () => {
-//   console.log(`Servidor iniciado em http://localhost:${port}`);
-// });
-
-async function startServer() {
-  // Lê o certificado e a chave
-  const cert = await fs.readFile('ssl/code.crt');
-  const key = await fs.readFile('ssl/code.key');
-
-  // Cria o servidor HTTPS
-  const server = https.createServer({ cert, key }, (req, res) => {
-    res.writeHead(200);
-    res.end('Olá, mundo!');
-  });
-
-  // Inicia o servidor
-  server.listen(3001, () => {
-    console.log('Servidor HTTPS rodando na porta 3001');
-  });
-}
-
-startServer();
+// Inicia o servidor
+app.listen(port, () => {
+  console.log(`Servidor iniciado em http://localhost:${port}`);
+});
 
 // Inicia a sessão do cliente do WhatsApp
 client.initialize();
