@@ -46,7 +46,7 @@ class ClientController extends Controller
             ->where('dt_baixa', null)
             ->whereDate('dt_ult_cobranca', '!=', Carbon::now()->toDateString())
             ->whereHas('emprestimo', function ($query) use ($companyId) {
-                $query->where('company-id', $companyId);
+                $query->where('company_id', $companyId);
             })->get());
 
     }
@@ -59,7 +59,7 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        return ClientResource::collection(Client::where('company-id', $request->header('company-id'))->get());
+        return ClientResource::collection(Client::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request){
