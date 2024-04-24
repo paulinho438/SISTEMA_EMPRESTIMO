@@ -55,6 +55,14 @@ export default function Location(props) {
     navigation.navigate(StackNav.TabNavigation);
   }
 
+  const cobrarAmanha = async () => {
+    let req = await api.cobrarAmanha(cliente.id, obterDataAtual());
+
+    Alert.alert('Cobranca alterada com sucesso!');
+
+    navigation.navigate(StackNav.TabNavigation);
+  }
+
   const openWhatsApp = () => {
     let url = `whatsapp://send?phone=${cliente.telefone_celular_1}`;
     url += `&text=${encodeURIComponent('message')}`;
@@ -141,7 +149,7 @@ export default function Location(props) {
             RightIcon={check}
           />
           <CButton
-            onPress={cancelModel}
+            onPress={cobrarAmanha}
             text={'Cobrar Amanha'}
             containerStyle={localStyles.buttonContainer}
             RightIcon={arrowRightTopIcon}
