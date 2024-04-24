@@ -43,15 +43,15 @@ class ClientController extends Controller
         $companyId = $request->header('company-id');
 
         return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
-            ->where('dt_baixa', null)
-            ->where(function($query) {
-                $today = Carbon::now()->toDateString();
-                $query->whereNull('dt_ult_cobranca')
-                      ->orWhereDate('dt_ult_cobranca', '!=', $today);
-            })
-            ->whereHas('emprestimo', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
-            })
+            //->where('dt_baixa', null)
+            //->where(function($query) {
+            //    $today = Carbon::now()->toDateString();
+            //    $query->whereNull('dt_ult_cobranca')
+            //          ->orWhereDate('dt_ult_cobranca', '!=', $today);
+            //})
+            //->whereHas('emprestimo', function ($query) use ($companyId) {
+            //    $query->where('company_id', $companyId);
+            //})
             ->get());
 
     }
