@@ -28,6 +28,7 @@ class ParcelaResource extends JsonResource
             "venc_real"             => (new DateTime($this->venc_real))->format('d/m/Y'),
             "dt_lancamento"         => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
             "dt_baixa"              => ($this->dt_baixa != null) ? (new DateTime($this->dt_baixa))->format('d/m/Y') : '',
+            "dt_ult_cobranca"       => ($this->dt_ult_cobranca != null) ? (new DateTime($this->dt_ult_cobranca))->format('d/m/Y') : '',
             "identificador"         => $this->identificador,
             "chave_pix"             => $this->chave_pix,
             "nome_cliente"          => $this->emprestimo->client->nome_completo,
