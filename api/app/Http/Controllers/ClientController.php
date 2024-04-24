@@ -44,7 +44,6 @@ class ClientController extends Controller
 
         return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
             ->where('dt_baixa', null)
-            ->whereDate('dt_ult_cobranca', '!=', Carbon::now()->toDateString())
             ->whereHas('emprestimo', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             })->get());
