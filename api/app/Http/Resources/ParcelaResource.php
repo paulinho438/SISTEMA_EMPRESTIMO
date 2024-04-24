@@ -30,7 +30,7 @@ class ParcelaResource extends JsonResource
             "dt_baixa"              => ($this->dt_baixa != null) ? (new DateTime($this->dt_baixa))->format('d/m/Y') : '',
             "dt_ult_cobranca"       => $this->dt_ult_cobranca,
             "identificador"         => $this->identificador,
-            "chave_pix"             => $this->chave_pix,
+            "chave_pix"             => ($this->chave_pix != null) ? $this->chave_pix : '',
             "nome_cliente"          => $this->emprestimo->client->nome_completo,
             "telefone_celular_1"    => $this->emprestimo->client->telefone_celular_1,
             "telefone_celular_2"    => $this->emprestimo->client->telefone_celular_2,
