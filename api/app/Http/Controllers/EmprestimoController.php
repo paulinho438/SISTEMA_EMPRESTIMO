@@ -959,6 +959,39 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
         }
     }
 
+    public function cobrarAmanha(Request $request, $id){
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $editParcela = Parcela::find($id);
+            $editParcela->dt_ult_cobranca = $request->dt_ult_cobranca;
+            $editParcela->save();
+
+            DB::commit();
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: '.auth()->user()->nome_completo.' deixou a cobrança para amanha da parcela: '.$id,
+                'operation' => 'index'
+            ]);
+
+            return response()->json(['message' => 'Cobrança atualizada com sucesso.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao mudar cobrança da parcela do Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
     public function delete(Request $r, $id)
     {
         DB::beginTransaction();

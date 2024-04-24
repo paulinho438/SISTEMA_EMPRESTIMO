@@ -115,6 +115,11 @@ export default {
         let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt}, token);
         return json;
     },
+    cobrarAmanha: async (id, dt) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/parcela/${id}/cobraramanha`, { dt_ult_cobranca:  dt}, token);
+        return json;
+    },
     getAllClientes: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/cliente', {}, token);
