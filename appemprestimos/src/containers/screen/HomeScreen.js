@@ -1,11 +1,14 @@
 import {
   StyleSheet,
   View,
+  Text,
   SafeAreaView,
   Image,
   TouchableOpacity,
   FlatList,
   ScrollView,
+  Platform, 
+  PermissionsAndroid
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 
@@ -23,7 +26,11 @@ import {StackNav} from '../../navigation/navigationKeys';
 import {getAuthCompany, getUser} from '../../utils/asyncStorage';
 import { useFocusEffect } from '@react-navigation/native';
 
+import Geolocation from 'react-native-geolocation-service';
+
 import api from '../../services/api';
+
+
 
 
 
@@ -32,6 +39,11 @@ export default function HomeScreen({navigation}) {
   const [company, setCompany] = useState(null);
   const [user, setUser] = useState(null);
   const [clientes, setClientes] = useState([]);
+  const [location, setLocation] = useState(null);
+
+  useEffect(() => {
+    
+  }, []);
 
   useFocusEffect(() => {
     
@@ -41,14 +53,54 @@ export default function HomeScreen({navigation}) {
 
   useFocusEffect(
     React.useCallback(() => {
-      getInfo()
+      const requestLocationPermission = async () => {
+        if (Platform.OS === 'ios') {
+          Geolocation.requestAuthorization('whenInUse');
+          getLocation();
+        } else {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: "Location Access Permission",
+              message: "We need access to your location",
+              buttonNeutral: "Ask Me Later",
+              buttonNegative: "Cancel",
+              buttonPositive: "OK"
+            }
+          );
+  
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            getLocation();
+          } else {
+            console.log("Location permission denied");
+          }
+        }
+      };
+  
+      const getLocation = () => {
+        Geolocation.getCurrentPosition(
+          (position) => {
+            setLocation(position);
+            getInfo(position)
+
+          },
+          (error) => {
+            console.log(error.code, error.message);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+      };
+  
+      requestLocationPermission();
+
+
       
       return () => {
       };
     }, [])
   );
 
-  const getInfo =  async () => {
+  const getInfo =  async (position) => {
     let companyReq = await getAuthCompany();
     setCompany( companyReq )
 
@@ -57,8 +109,33 @@ export default function HomeScreen({navigation}) {
 
     let reqClientes = await api.getClientesPendentes();
 
-    setClientes(reqClientes.data);
+    reqClientes.data.forEach(item => {
+      item.distance = haversineDistance(position.coords.latitude, position.coords.longitude, parseFloat(item.latitude), parseFloat(item.longitude));
+    });
 
+    const sortedArray = reqClientes.data.sort((a, b) => a.distance - b.distance);
+
+    console.log(sortedArray)
+
+    setClientes(sortedArray);
+
+  }
+
+  const haversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Raio da Terra em Km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+  
+    lat1 = lat1 * Math.PI / 180;
+    lat2 = lat2 * Math.PI / 180;
+  
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1) * Math.cos(lat2) * 
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distância em km
+  
+    return distance;
   }
 
   const cobrancaMap = (item) => {
@@ -102,6 +179,9 @@ export default function HomeScreen({navigation}) {
   const ListHeaderComponent = () => {
     return (
       <View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      
+    </View>
         <View style={localStyles.main}>
           <View style={localStyles.mainParent}>
             <View>
@@ -133,26 +213,26 @@ export default function HomeScreen({navigation}) {
         </View>
 
         <View style={localStyles.mainImg}>
-          <FirstImage
+          {/* <FirstImage 
             image={images.Deposit}
             text='Clientes'
             onPress={moveToDeposit}
-          />
-          <FirstImage
+          /> */}
+          {/* <FirstImage
             image={images.Transfer}
             text='Pendentes'
             onPress={moveToTrans}
-          />
+          /> */}
           <FirstImage
             image={images.Withdraw}
             text='Emprestimo'
             onPress={moveToWith}
           />
-          <FirstImage
+          {/* <FirstImage
             image={images.More}
             text={strings.More}
             onPress={moveToOpt}
-          />
+          /> */}
         </View>
 
         <View style={localStyles.parentTodayTxt}>
@@ -195,7 +275,7 @@ export default function HomeScreen({navigation}) {
               {item.nome_cliente}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-              2 Km de distancia
+            {item.distance.toFixed(2)} Km de distancia
             </CText>
           </View>
         </View>

@@ -618,10 +618,9 @@ export const ReasonsData = [
 ];
 
 export const CurrencyList = [
-  {label: 'usd', value: 'usd'},
-  {label: 'inr', value: 'inr'},
-  {label: 'yen', value: 'yen'},
-  {label: 'lev', value: 'lev'},
+  {label: 'Segunda a Sexta', value: '1'},
+  {label: 'Segunda a Sàbado', value: '2'},
+  {label: 'Segunda a Domingo', value: '3'},
 ];
 
 export const MeSectionData = [

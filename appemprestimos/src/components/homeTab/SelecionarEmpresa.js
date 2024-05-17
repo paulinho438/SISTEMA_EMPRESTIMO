@@ -36,7 +36,6 @@ export default function TransferMoney({navigation, route}) {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    console.log('outra tela', companies)
   }, [search]);
 
   const avancarHome = async () => {

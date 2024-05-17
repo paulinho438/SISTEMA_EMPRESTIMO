@@ -120,14 +120,85 @@ export default function SignUp({navigation}) {
               color={colors.black}
               type={'B24'}
               style={localStyles.mainTxt}>
-              {strings.CreateAcc}
+              Cadastrar 
               <CText color={colors.black} style={localStyles.bulkpay}>
-                {strings.BulkPay}
+                 Cliente
               </CText>
             </CText>
-            <CText color={colors.black} type={'B24'}>
-              {strings.acc}
-            </CText>
+          
+
+            <View style={localStyles.threeEle}>
+              <CTextInput
+                value={name}
+                onChangeText={nameValidation}
+                mainTxtInp={[localStyles.border, focus]}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                text={'Nome Completo'}
+              />
+
+              {message ? <CText color={colors.red}>{message}</CText> : null}
+
+              <CTextInput
+                value={email}
+                onChangeText={emailValidation}
+                mainTxtInp={[localStyles.border, focus2]}
+                onFocus={onFocus2}
+                onBlur={onBlur2}
+                text={'E-mail'}
+              />
+
+              <CTextInput
+                value={name}
+                onChangeText={nameValidation}
+                mainTxtInp={[localStyles.border, focus]}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                text={'Telefone Principal'}
+              />
+
+              <CTextInput
+                value={name}
+                onChangeText={nameValidation}
+                mainTxtInp={[localStyles.border, focus]}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                text={'Telefone Secundario'}
+              />    
+
+              <CTextInput
+                value={name}
+                onChangeText={nameValidation}
+                mainTxtInp={[localStyles.border, focus]}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                text={'CPF'}
+              /> 
+
+              <CTextInput
+                value={name}
+                onChangeText={nameValidation}
+                mainTxtInp={[localStyles.border, focus]}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                text={'RG'}
+              /> 
+
+              {message2 ? <CText color={colors.red}>{message2}</CText> : null}
+
+              <CTextInput
+                mainTxtInp={[localStyles.border, focus3]}
+                onFocus={onFocus3}
+                onBlur={onBlur3}
+                text={'password'}
+                value={pass}
+                onChangeText={passValidation}
+                isSecure={true}
+              />
+
+              {message3 ? <CText color={colors.red}>{message3}</CText> : null}
+
+            </View>
 
             <View style={localStyles.threeEle}>
               <CTextInput
@@ -163,43 +234,23 @@ export default function SignUp({navigation}) {
               />
 
               {message3 ? <CText color={colors.red}>{message3}</CText> : null}
-            </View>
 
-            <CButton text={'Sign Up'} onPress={onPressSignUp} />
+            </View>
+            
+
+            <CButton text={'Cadastrar'} onPress={onPressSignUp} />
 
             <View style={localStyles.parentOr}>
               <View style={localStyles.firstLine} />
               <CText color={colors.black} style={localStyles.OrTxt}>
-                {strings.or}
               </CText>
               <View style={localStyles.firstLine} />
             </View>
 
-            <View style={localStyles.mainSocial}>
-              <TouchableOpacity style={localStyles.parentGoogle} onPress={onPressSignUp}>
-                <Image source={images.Google} style={localStyles.google} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={localStyles.parentGoogle} onPress={onPressSignUp}>
-                <Image source={images.Apple} style={localStyles.Apple} />
-              </TouchableOpacity>
-            </View>
+            
           </View>
         </KeyBoardAvoidWrapper>
-        <CText
-          color={colors.black}
-          type={'B14'}
-          align={'center'}
-          style={localStyles.AlreadyTxt}>
-          {strings.AlreadyAcc}
-          <CText
-            type={'B16'}
-            color={colors.black}
-            style={localStyles.SignInTxt}
-            onPress={backToSignIn}>
-            {strings.SignIn}
-          </CText>
-        </CText>
+        
       </View>
     </SafeAreaView>
   );

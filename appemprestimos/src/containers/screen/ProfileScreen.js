@@ -89,7 +89,7 @@ export default function ProfileScreen({navigation}) {
         <RenderHeaderComponent />
 
         <View style={styles.mv20}>
-          <RenderData
+          {/* <RenderData
             name={strings.RC}
             image={images.Refer}
             onPress={moveToRefer}
@@ -124,8 +124,8 @@ export default function ProfileScreen({navigation}) {
             name={strings.FQA}
             image={images.FQA}
             onPress={moveToFQA}
-          />
-          <RenderData name={strings.Rate} image={images.RateUs} />
+          /> */}
+          {/* <RenderData name={strings.Rate} image={images.RateUs} /> */}
           <RenderData
             onPress={moveToLogOut}
             name={strings.LogOut}

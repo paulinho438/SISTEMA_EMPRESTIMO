@@ -69,7 +69,7 @@ export default {
 				this.emprestimo.valortotal = this.emprestimo.parcelas * this.emprestimo.mensalidade;
 				this.emprestimo.lucro = this.emprestimo.valortotal - this.emprestimo.valor;
 
-				const porcentagem = ((this.emprestimo.valortotal - this.emprestimo.valor) / this.emprestimo.valor) * 100;
+				const porcentagem = (((this.emprestimo.parcelas * this.emprestimo.mensalidade) - this.emprestimo.valor) / this.emprestimo.valor) * 100;
         		this.emprestimo.juros = porcentagem.toFixed(2); 
 			}
 

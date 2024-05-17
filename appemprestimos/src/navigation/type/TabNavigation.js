@@ -33,7 +33,7 @@ const TabNavigation = () => {
           tabBarIcon: ({focused}) => (focused ? <BlackHome /> : <SilverHome />),
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name={TabNav.MyCardScreen}
         component={TabRoute.MyCardScreen}
         options={{
@@ -56,7 +56,7 @@ const TabNavigation = () => {
           tabBarIcon: ({focused}) =>
             focused ? <BlackActivity /> : <SilverActivity />,
         }}
-      />
+      /> */}
       <Tab.Screen
         name={TabNav.ProfileScreen}
         component={TabRoute.ProfileScreen}
