@@ -155,7 +155,7 @@ export default function SignIn({navigation}) {
                 onFocus={onFocus2}
                 onBlur={onBlur2}
                 mainTxtInp={[localStyles.PassTxt, focus2]}
-                text={'Email'}
+                text={'CPF'}
               />
 
               <CTextInput
@@ -164,7 +164,7 @@ export default function SignIn({navigation}) {
                 onChangeText={changeText}
                 value={changeValue}
                 mainTxtInp={[localStyles.PassTxt, focus]}
-                text={'Password'}
+                text={'Senha'}
                 isSecure={true}
               />
 
@@ -189,7 +189,7 @@ export default function SignIn({navigation}) {
             
           </View>
         </KeyBoardAvoidWrapper>
-        <View style={localStyles.NoHaveAcc}>
+        {/* <View style={localStyles.NoHaveAcc}>
           <CText color={colors.black} type={'B16'}>
             {strings.NoHaveAcc}
           </CText>
@@ -202,7 +202,7 @@ export default function SignIn({navigation}) {
               {strings.SignUp}
             </CText>
           </TouchableOpacity>
-        </View>
+        </View> */}
         <View style={localStyles.rjemprestimos}>
           <CText color={colors.black} type={'B14'}>
             RJ EMPRESTIMOS

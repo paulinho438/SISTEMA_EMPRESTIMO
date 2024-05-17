@@ -24,7 +24,7 @@ import {colors} from '../../themes/colors';
 import CButton from '../common/CButton';
 import {ContactsData} from '../../api/constants';
 import MetarialIcon from 'react-native-vector-icons/MaterialIcons';
-import {StackNav} from '../../navigation/navigationKeys';
+import {StackNav, AuthNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
 
 export default function TransferMoney({navigation}) {
@@ -51,9 +51,9 @@ export default function TransferMoney({navigation}) {
 
   const buscarClientes =  async () => {
       const clientes = await api.buscarClientes();
-      console.log('cliente', clientes)
       if(clientes?.data){
         setFilterData(clientes.data);
+        setClientes(clientes.data);
       }
   }
 
@@ -74,7 +74,10 @@ export default function TransferMoney({navigation}) {
     navigation.navigate(StackNav.SendMoney, {
       cliente : clienteSelecionado
     });
+  };
 
+  const moveToCadastroUsuario = () => {
+    navigation.navigate(AuthNav.SignUp);
   };
 
   const onChangeSearch = text => setSearch(text);
@@ -124,7 +127,7 @@ export default function TransferMoney({navigation}) {
       <View style={localStyles.mainContainer}>
         <ScrollView>
           <CHeader color={colors.black} title='Cliente' />
-          
+          <CButton text='Cadastrar Cliente' containerStyle={localStyles.ContBtn} onPress={moveToCadastroUsuario} />
 
           <CTextInput
             mainTxtInp={localStyles.CTxtInp}
@@ -152,6 +155,7 @@ export default function TransferMoney({navigation}) {
       {clienteSelecionado && 
         <CButton containerStyle={localStyles.ContBtn} onPress={moveToMoney} />
       }
+      
     </SafeAreaView>
   );
 }

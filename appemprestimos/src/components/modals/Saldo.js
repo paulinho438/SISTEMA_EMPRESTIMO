@@ -5,30 +5,47 @@ import {
   TouchableOpacity,
   ImageBackground,
   Platform,
+  Alert
 } from 'react-native';
-import React from 'react';
+import React, {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 
 // Local imports
 import {styles} from '../../themes';
 import {colors} from '../../themes/colors';
-import {moderateScale} from '../../common/constant';
 import CButton from '../common/CButton';
 import images from '../../assets/images/index';
 import {StackNav} from '../../navigation/navigationKeys';
 import CText from '../common/CText';
 import strings from '../../i18n/strings';
+import typography from '../../themes/typography';
+import {getHeight, moderateScale} from '../../common/constant';
+
+import CTextInput from '../common/CTextInput';
 
 import api from '../../services/api';
 
-export default function TransferPopUp(props) {
-  let {visible, onPressClose, amount, valores, feriados} = props;
+export default function Saldo(props) {
+  let {visible, onPressClose, cliente, feriados} = props;
 
   const navigation = useNavigation();
 
-  const moveToHome = () => {
-    navigation.navigate(StackNav.TransferProof, {valores: valores, feriados: feriados});
-    gerarParcelas();
+  const [valores, setValores] = useState(cliente.saldo);
+
+  function converterParaNumero(valor) {
+    return parseFloat(valor.replace("R$", "").replace(/\./g, "").replace(",", "."));
+  }
+
+  const moveToHome = async () => {
+    if(converterParaNumero(valores) > converterParaNumero(cliente.saldo)){
+      Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
+      return
+    }
+    let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
+
+    Alert.alert('Baixa realizada com sucesso!');
+
+    navigation.navigate(StackNav.TabNavigation);
   };
 
   
@@ -170,6 +187,19 @@ export default function TransferPopUp(props) {
     return feriados.some(feriado => feriado.data_feriado === dataFormatada);
   }
 
+  const handleSaldo = (text) => {
+    let cleaned = text.replace(/\D/g, ''); // Remove tudo que não é número
+    let number = parseFloat(cleaned) / 100; // Divide por 100 para obter o decimal correto
+
+    let currency = number.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }); // Formata o número para o formato monetário brasileiro
+
+    setValores(currency);
+
+  };
+
   const Detail = ({
     header,
     bankName,
@@ -216,47 +246,34 @@ export default function TransferPopUp(props) {
 
   return (
     <View style={localStyles.flex}>
-      <Modal animationType={'fade'} transparent={true} visible={visible}>
+      <Modal animationType={'fade'} transparent={false} visible={visible}>
         <TouchableOpacity
           style={localStyles.modalMainContainer}
           onPress={onPressClose}>
-          <TouchableOpacity activeOpacity={1} onPress={onPressClose}>
+          <TouchableOpacity activeOpacity={1}>
             <ImageBackground
-              source={images.TransferPopUp}
+              source={images.Saldo}
               style={localStyles.imgStyle}>
               <View style={localStyles.innerContainer}>
                 <View>
-                  <CText color={colors.black} type={'S18'} align="center">
-                    Confirmar Empréstimo
-                  </CText>
+                  <View style={localStyles.parentAmt}>
+                    <CText type={'M20'} color={colors.tabColor}>
+                    Valor da Baixa:
+                    </CText>
+                  </View>
 
-                  <Detail
-                    isTotal={false}
-                    header={'Valor do Empréstimo'}
-                    bankName={`Qt. de Parcelas`}
-                    name={valores?.valor}
-                    cardNumber={valores?.parcela}
-                  />
-
-                  <Detail
-                    isTotal={false}
-                    header={'Juros'}
-                    bankName={`Vl. das Parcelas`}
-                    name={valores?.juros}
-                    cardNumber={valores?.mensalidade}
-                  />
-
-                  <Detail
-                    isTotal={false}
-                    header={'Lucro'}
-                    bankName={`Total a pagar`}
-                    name={valores?.lucro}
-                    cardNumber={valores?.valortotal}
-                  />
-
+                  <View style={localStyles.parentTxtInp}>
+                    <CTextInput
+                      mainTxtInp={localStyles.CTxtInp}
+                      textInputStyle={localStyles.ChildTxtInp}
+                      keyboardType={'numeric'}
+                      value={valores}
+                      onChangeText={handleSaldo}
+                    />
+                  </View>
                 </View>
                 <CButton
-                  text={'Aprovar'}
+                  text={'Realizar Baixa'}
                   containerStyle={[
                     localStyles.ParentLgnBtn,
                     {
@@ -267,6 +284,19 @@ export default function TransferPopUp(props) {
                     },
                   ]}
                   onPress={moveToHome}
+                />
+                <CButton
+                  text={'Cancelar'}
+                  containerStyle={[
+                    localStyles.ParentLgnBtnCancelar,
+                    {
+                      bottom:
+                        Platform.OS === 'ios'
+                          ? moderateScale(0)
+                          : moderateScale(40),
+                    },
+                  ]}
+                  onPress={onPressClose}
                 />
               </View>
             </ImageBackground>
@@ -281,7 +311,7 @@ const localStyles = StyleSheet.create({
   modalMainContainer: {
     ...styles.flex,
     ...styles.center,
-    backgroundColor: colors.transparent,
+    backgroundColor: colors.white,
   },
   imgStyle: {
     width: moderateScale(327),
@@ -290,10 +320,13 @@ const localStyles = StyleSheet.create({
     ...styles.ph20,
   },
   innerContainer: {
-    ...styles.justifyBetween,
     marginTop: moderateScale(120),
     ...styles.flex,
     ...styles.mv15,
+  },
+  ParentLgnBtnCancelar: {
+    backgroundColor: '#f00'
+    // bottom: moderateScale(40),
   },
   ParentLgnBtn: {
     // bottom: moderateScale(40),
@@ -314,5 +347,86 @@ const localStyles = StyleSheet.create({
   totalPrize: {
     ...styles.rowSpaceBetween,
     ...styles.mv5,
+  },
+  main: {
+    ...styles.flex,
+    backgroundColor: colors.white,
+    ...styles.justifyBetween,
+  },
+  mainImg: {
+    borderWidth: moderateScale(1.5),
+    borderRadius: moderateScale(60),
+    borderColor: colors.numbersColor,
+    ...styles.selfCenter,
+    ...styles.p10,
+  },
+  girlImg: {
+    width: moderateScale(88),
+    height: moderateScale(88),
+  },
+  parentImg: {
+    ...styles.center,
+  },
+  mariaTxt: {
+    ...styles.mv30,
+  },
+  parentAmt: {
+    ...styles.flexRow,
+    ...styles.justifyCenter,
+    ...styles.mt10,
+  },
+  mainBorder: {
+    borderWidth: moderateScale(1),
+    borderColor: colors.bottomBorder,
+    borderRadius: moderateScale(16),
+    ...styles.ph20,
+  },
+  parentUsd: {
+    borderWidth: moderateScale(1),
+    borderColor: colors.bottomBorder,
+    borderRadius: moderateScale(8),
+    width: moderateScale(67),
+    backgroundColor: colors.GreyScale,
+    ...styles.rowCenter,
+    ...styles.mv15,
+  },
+  UsdTxt: {
+    ...styles.p5,
+  },
+  CTxtInp: {
+    width: moderateScale(210),
+    borderRadius: moderateScale(15),
+    height: moderateScale(35),
+    ...styles.mv15,
+    backgroundColor: colors.GreyScale,
+  },
+  parentTxtInp: {
+    ...styles.flexRow,
+    ...styles.justifyCenter,
+  },
+  ChildTxtInp: {
+    ...typography.fontSizes.f24,
+    ...typography.fontWeights.SemiBold,
+  },
+  mainCButton: {
+    ...styles.mv30,
+    width: '90%',
+  },
+  keyBoardSty: {
+    ...styles.ph20,
+    ...styles.flexGrow1,
+    ...styles.mainContainerSurface,
+  },
+  dropdownStyle: {
+    backgroundColor: colors.GreyScale,
+    height: getHeight(52),
+    borderRadius: moderateScale(15),
+    borderWidth: moderateScale(1),
+    ...styles.ph20,
+    width: '100%',
+    ...styles.mv10,
+  },
+  miniContainer: {
+    color: colors.black,
   },
 });

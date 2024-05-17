@@ -1,5 +1,5 @@
 import {StyleSheet, View, Image, Text, Linking, Alert} from 'react-native';
-import React from 'react';
+import React, {useState} from 'react';
 import ActionSheet, {FlatList} from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -15,11 +15,13 @@ import CButton from '../common/CButton';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {StackNav, TabNav} from '../../navigation/navigationKeys';
+import Saldo from '../modals/Saldo';
 import api from '../../services/api';
 
 export default function Location(props) {
   let {sheetRef, cliente} = props;
   const navigation = useNavigation();
+  const [visible, setVisible] = useState(false);
 
   const renderData = ({item}) => {
     return (
@@ -108,6 +110,10 @@ export default function Location(props) {
     <Community size={24} name={'waze'} color={colors.white} />
   );
 
+  const onPressClose = () => {
+    setVisible(!visible);
+  };
+
   return (
     <View>
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef}>
@@ -143,7 +149,7 @@ export default function Location(props) {
             RightIcon={whatsapp}
           />
           <CButton
-            onPress={baixaManual}
+            onPress={onPressClose}
             text={'Realizar Baixa'}
             containerStyle={localStyles.buttonContainer}
             RightIcon={check}
@@ -154,8 +160,17 @@ export default function Location(props) {
             containerStyle={localStyles.buttonContainer}
             RightIcon={arrowRightTopIcon}
           />
+          
         </View>
+        <Saldo
+            visible={visible}
+            onPressClose={onPressClose}
+            cliente={cliente}
+            //valores={valores}
+            //feriados={feriados}
+          />
       </ActionSheet>
+         
     </View>
   );
 }
@@ -206,3 +221,5 @@ const localStyles = StyleSheet.create({
     ...styles.ph20,
   },
 });
+
+

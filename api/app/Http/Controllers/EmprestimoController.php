@@ -920,32 +920,59 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
             $user = auth()->user();
 
             $editParcela = Parcela::find($id);
-            $editParcela->dt_baixa = $request->dt_baixa;
-            if ($editParcela->contasreceber) {
-                $editParcela->contasreceber->status = 'Pago';
-                $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
-                $editParcela->contasreceber->forma_recebto = 'PIX';
-                $editParcela->contasreceber->save();
+
+            if($request->valor == $editParcela->contasreceber->saldo ){
+                $editParcela->dt_baixa = $request->dt_baixa;
+                if ($editParcela->contasreceber) {
+                    $editParcela->contasreceber->status = 'Pago';
+                    $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
+                    $editParcela->contasreceber->forma_recebto = 'PIX';
+                    $editParcela->contasreceber->save();
+                }
+                $editParcela->save();
+    
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
+                $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
+                $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = $editParcela->saldo;
+    
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+    
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => 'O usuário: '.auth()->user()->nome_completo.' realizou a baixa manual da parcela: '.$id,
+                    'operation' => 'index'
+                ]);
+            }else{
+                $editParcela->dt_baixa = $request->dt_baixa;
+                if ($editParcela->contasreceber) {
+                    $editParcela->contasreceber->saldo = $editParcela->contasreceber->saldo - $request->valor;
+                    $editParcela->contasreceber->save();
+                }
+                $editParcela->save();
+
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
+                $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
+                $movimentacaoFinanceira['descricao'] = 'Baixa parcial da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = $request->valor;
+
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => 'O usuário: '.auth()->user()->nome_completo.' realizou a baixa parcial da parcela: '.$id,
+                    'operation' => 'index'
+                ]);
+
             }
-            $editParcela->save();
-
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
-            $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-            $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
-            $movimentacaoFinanceira['tipomov'] = 'E';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $editParcela->saldo;
-
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
 
             DB::commit();
-
-            $this->custom_log->create([
-                'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' realizou a baixa manual da parcela: '.$id,
-                'operation' => 'index'
-            ]);
 
             return response()->json(['message' => 'Baixa realizada com sucesso.']);
 

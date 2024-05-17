@@ -14,7 +14,7 @@ import {StackNav} from '../../navigation/navigationKeys';
 import CHeader from '../common/CHeader';
 
 export default function TransferProof({route, navigation}) {
-  const {amount} = route.params;
+  const {amount, valores} = route.params;
 
   const backToHome = () => {
     navigation.navigate(StackNav.TabNavigation);
@@ -50,7 +50,7 @@ export default function TransferProof({route, navigation}) {
             align={'center'}
             type={'B32'}
             style={localStyles.amountTxt}>
-            {'R$' + parseFloat(amount).toFixed(2)}
+            {valores?.valor}
           </CText>
         </View>
       </View>

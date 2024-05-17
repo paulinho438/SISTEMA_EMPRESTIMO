@@ -96,7 +96,7 @@ export default function ATMDetails({navigation, route}) {
           </View>
         </View>
 
-        <View style={localStyles.mainContainer}>
+        {/* <View style={localStyles.mainContainer}>
           <CTextInput
             value={empty}
             onChangeText={nonEmpty}
@@ -115,7 +115,7 @@ export default function ATMDetails({navigation, route}) {
             text={'Enter the name of ATM'}
             mainTxtInp={localStyles.TxtInpSty}
           />
-        </View>
+        </View> */}
 
         <Location sheetRef={Search} cliente={clientes} />
       </SafeAreaView>

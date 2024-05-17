@@ -10,7 +10,6 @@ import {moderateScale} from '../../common/constant';
 export default function CDropdownInput(props) {
   const {data, placeholder, value, onChange} = props;
 
-  console.log(data, value);
   return (
     <View>
       <Dropdown

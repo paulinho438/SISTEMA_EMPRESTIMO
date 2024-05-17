@@ -110,9 +110,9 @@ export default {
         await removeAuthToken();
         return json;
     },
-    baixaManual: async (id, dt) => {
+    baixaManual: async (id, dt, valor) => {
         let token = await getAuthToken();
-        let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt}, token);
+        let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt, valor: valor}, token);
         return json;
     },
     cobrarAmanha: async (id, dt) => {
@@ -130,6 +130,27 @@ export default {
         let json = await request('get', '/cobranca/atrasadas', {}, token);
         return json;
     },
+    getFeriados: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/feriados', {}, token);
+        return json;
+    },
+    searchbanco: async () => {
+        let token = await getAuthToken();
+        let json = await request('post', '/emprestimo/search/banco', { name: '' }, token);
+        return json;
+	},
+	searchCostcenter: async () => {
+        let token = await getAuthToken();
+        let json = await request('post', '/emprestimo/search/costcenter', { name: `` }, token);
+        return json;
+	},
+    saveEmprestimo: async (permissions) => {
+        let token = await getAuthToken();
+        let json = await request('post', '/emprestimo', permissions, token);
+
+        return json;
+	},
     register: async (nome_completo, nome_social,  cpf,  password,  telefone_celular, email, data_nascimento, sexo, pcd, rg, usar_social, pcd_tipo) => {
         let json = await request('post', '/auth/register', {
             nome_completo, nome_social,  cpf,  password,  telefone_celular, email, data_nascimento, sexo, pcd, rg, usar_social, pcd_tipo

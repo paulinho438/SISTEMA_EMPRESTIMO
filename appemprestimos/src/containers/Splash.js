@@ -22,11 +22,13 @@ const Splash = ({navigation}) => {
       if (Data) {
         let {OnBoardingDataValue, authDataValue} = Data;
         if (!!authDataValue) {
-          navigation.replace(StackNav.TabNavigation);
+          // navigation.replace(StackNav.TabNavigation);
+          navigation.replace(StackNav.AuthNavigation);
         } else if (!!OnBoardingDataValue) {
           navigation.replace(StackNav.AuthNavigation);
         } else {
-          navigation.replace(StackNav.OnBoarding);
+          // navigation.replace(StackNav.OnBoarding);
+          navigation.replace(StackNav.AuthNavigation);
         }
       }
     } catch (e) {
