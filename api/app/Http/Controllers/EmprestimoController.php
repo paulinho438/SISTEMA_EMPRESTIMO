@@ -949,9 +949,9 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
                     'operation' => 'index'
                 ]);
             }else{
-                $editParcela->dt_baixa = $request->dt_baixa;
+                $editParcela->saldo = $editParcela->saldo - $request->valor;
                 if ($editParcela->contasreceber) {
-                    $editParcela->contasreceber->saldo = $editParcela->contasreceber->saldo - $request->valor;
+                    $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
                     $editParcela->contasreceber->save();
                 }
                 $editParcela->save();
