@@ -950,6 +950,7 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
                 ]);
             }else{
                 $editParcela->saldo = $editParcela->saldo - $request->valor;
+                $editParcela->dt_ult_cobranca = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
                     $editParcela->contasreceber->save();
