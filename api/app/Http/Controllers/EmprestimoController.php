@@ -519,6 +519,8 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
 
         $dados = $request->all();
 
+        return $dados;
+
         $emprestimoAdd = [];
 
         $emprestimoAdd['dt_lancamento'] = date('Y-m-d');
@@ -921,7 +923,7 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
 
             $editParcela = Parcela::find($id);
 
-            if($request->valor == $editParcela->contasreceber->saldo ){
+            if($request->valor == $editParcela->saldo ){
                 $editParcela->dt_baixa = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->status = 'Pago';
@@ -930,7 +932,7 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
                     $editParcela->contasreceber->save();
                 }
                 $editParcela->save();
-    
+
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
@@ -938,9 +940,9 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $editParcela->saldo;
-    
+
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
-    
+
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
                     'content' => 'O usuário: '.auth()->user()->nome_completo.' realizou a baixa manual da parcela: '.$id,
