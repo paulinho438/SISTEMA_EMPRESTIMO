@@ -68,20 +68,24 @@ class EmprestimoResource extends JsonResource
             }
         }
 
-        if($this->isMaiorMetade($qtAtrasadas, $qtParcelas)){
-            $status = 'Muito Atrasado';
-        }else{
-            $status = 'Atrasado';
+        if($qtAtrasadas > 0){
+            if($this->isMaiorQuatro($qtAtrasadas, $qtParcelas)){
+                $status = 'Muito Atrasado';
+            }else{
+                $status = 'Atrasado';
+            }
+
+            if($qtAtrasadas == $qtParcelas){
+                $status = 'Vencido';
+            }
         }
 
-        if($qtAtrasadas == $qtParcelas){
-            $status = 'Vencido';
-        }
+
 
         return $status;
     }
 
-    private function isMaiorMetade($x, $y){
-        return $x > ($y / 2);
+    private function isMaiorQuatro($x, $y){
+        return $x > 4;
     }
 }
