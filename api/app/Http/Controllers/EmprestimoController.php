@@ -519,8 +519,6 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
 
         $dados = $request->all();
 
-        return $dados;
-
         $emprestimoAdd = [];
 
         $emprestimoAdd['dt_lancamento'] = date('Y-m-d');
