@@ -49,8 +49,39 @@ class EmprestimoResource extends JsonResource
             "consultor"         => $this->user,
             "parcelas"          => ParcelaResource::collection($this->parcelas),
             "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
+            "status"            => $this->getStatus(),
 
 
         ];
+    }
+
+    // Método para calcular o status das parcelas
+    private function getStatus()
+    {
+        $status = 'Em Dias'; // Padrão
+        $qtParcelas = count($this->parcelas);
+        $qtAtrasadas = 0;
+
+        foreach ($this->parcelas as $parcela) {
+            if ($parcela->atrasadas > 0 && $parcela->saldo > 0) {
+                $qtAtrasadas++;
+            }
+        }
+
+        if($this->isMaiorMetade($qtAtrasadas, $qtParcelas)){
+            $status = 'Muito Atrasado';
+        }else{
+            $status = 'Atrasado';
+        }
+
+        if($qtAtrasadas == $qtParcelas){
+            $status = 'Vencido';
+        }
+
+        return $status;
+    }
+
+    private function isMaiorMetade($x, $y){
+        return $x > ($y / 2);
     }
 }
