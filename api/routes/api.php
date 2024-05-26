@@ -128,6 +128,7 @@ Route::middleware('auth:api')->group(function(){
     Route::put('/emprestimo/{id}', [EmprestimoController::class, 'update']);
     Route::post('/emprestimo', [EmprestimoController::class, 'insert']);
     Route::post('/parcela/{id}/baixamanual', [EmprestimoController::class, 'baixaManual']);
+    Route::post('/parcela/{id}/infoemprestimo', [EmprestimoController::class, 'infoEmprestimo']);
     Route::post('/parcela/{id}/cobraramanha', [EmprestimoController::class, 'cobrarAmanha']);
     Route::get('/parcela/{id}/cancelarbaixamanual', [EmprestimoController::class, 'cancelarBaixaManual']);
 
