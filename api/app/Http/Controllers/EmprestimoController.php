@@ -987,6 +987,24 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
         }
     }
 
+    public function infoEmprestimo(Request $request, $id){
+
+        $array = ['error' => ''];
+
+        $user = auth()->user();
+
+        $parcela = Parcela::find($id);
+        if($parcela){
+            return $parcela->emprestimo->parcelas;
+        }
+
+
+
+            return response()->json(['message' => 'Baixa realizada com sucesso.']);
+
+
+    }
+
     public function cobrarAmanha(Request $request, $id){
 
         DB::beginTransaction();
