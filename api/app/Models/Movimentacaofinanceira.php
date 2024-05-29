@@ -18,6 +18,7 @@ class Movimentacaofinanceira extends Model
         'tipomov',
         'dt_movimentacao',
         'valor',
+        'parcela_id',
     ];
 
     public function banco()
@@ -28,6 +29,11 @@ class Movimentacaofinanceira extends Model
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id', 'id');
+    }
+
+    public function parcela()
+    {
+        return $this->belongsTo(Parcela::class, 'parcela_id', 'id');
     }
 
 

@@ -36,4 +36,14 @@ class Parcela extends Model
         return $this->hasOne(Contasreceber::class, 'parcela_id', 'id');
     }
 
+    public function movimentacao()
+    {
+        return $this->hasMany(Movimentacaofinanceira::class, 'parcela_id', 'id');
+    }
+
+    public function totalPago()
+    {
+        return $this->movimentacao()->sum('valor');
+    }
+
 }

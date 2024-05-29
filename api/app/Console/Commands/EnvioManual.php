@@ -137,6 +137,7 @@ class EnvioManual extends Command
                                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
                                 $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
                                 $movimentacaoFinanceira['tipomov'] = 'E';
+                                $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                                 $movimentacaoFinanceira['valor'] = $editParcela->saldo;
 

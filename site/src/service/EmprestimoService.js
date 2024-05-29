@@ -67,5 +67,9 @@ export default class EmprestimoService {
 		return await axios.post(`${apiPath}/contaspagar/pagamentos/reprovaremprestimo/${id}`);
 	};
 
+	infoEmprestimoFront = async (id) => {
+		return await axios.post(`${apiPath}/parcela/${id}/infoemprestimofront`);
+	};
+
 
 }

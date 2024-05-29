@@ -936,6 +936,7 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
                 $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
                 $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $editParcela->saldo;
 
@@ -996,6 +997,27 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
         $parcela = Parcela::find($id);
         if($parcela){
             return $parcela->emprestimo->parcelas;
+        }
+
+
+
+            return response()->json(['message' => 'Baixa realizada com sucesso.']);
+
+
+    }
+
+    public function infoEmprestimoFront(Request $request, $id){
+
+        $array = ['error' => '', 'data' => []];
+
+        $user = auth()->user();
+
+
+        $parcela = Parcela::find($id);
+
+        if($parcela){
+            $array['data']['emprestimo'] = new EmprestimoResource($parcela->emprestimo);
+            return $array;
         }
 
 

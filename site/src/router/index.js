@@ -171,10 +171,15 @@ const router = createRouter({
             ]
         },
         {
-            path: '/landing',
+            path: '/parcela/:id_pedido',
             name: 'landing',
             component: () => import('@/views/pages/Landing.vue')
         },
+        // {
+        //     path: '/landing',
+        //     name: 'landing',
+        //     component: () => import('@/views/pages/Landing.vue')
+        // },
         {
             path: '/pages/notfound',
             name: 'notfound',
