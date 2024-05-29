@@ -69,7 +69,7 @@ class CobrancaAutomatica extends Command
     Estamos à disposição para qualquer esclarecimento que seja necessário.'
                                 ];
                                 $response = Http::asJson()->post($baseUrl, $data);
-                                sleep(4);
+                                sleep(8);
                             }
                         }
                     } catch (\Throwable $th) {
