@@ -27,6 +27,10 @@ export default class EmprestimoService {
 
 	};
 
+	baixaDesconto = async (id, valor, saldo) => {
+		return await axios.post(`${apiPath}/emprestimo/baixadesconto/${id}`, { valor: valor, saldo: saldo });
+	};
+
 	searchFornecedor = async (value) => {
 		return await axios.post(`${apiPath}/emprestimo/search/fornecedor`, { name: value });
 	};
@@ -51,8 +55,8 @@ export default class EmprestimoService {
 		return await axios.get(`${apiPath}/feriados`);
 	};
 
-	baixaParcela = async (id, dt_baixa) => {
-		return await axios.post(`${apiPath}/parcela/${id}/baixamanual`, { dt_baixa: dt_baixa });
+	baixaParcela = async (id, dt_baixa, valor) => {
+		return await axios.post(`${apiPath}/parcela/${id}/baixamanual`, { dt_baixa: dt_baixa, valor: valor });
 	};
 
 	cancelarBaixaParcela = async (id) => {
@@ -65,6 +69,10 @@ export default class EmprestimoService {
 
 	reprovarEmprestimo = async (id) => {
 		return await axios.post(`${apiPath}/contaspagar/pagamentos/reprovaremprestimo/${id}`);
+	};
+
+	infoEmprestimoFront = async (id) => {
+		return await axios.post(`${apiPath}/parcela/${id}/infoemprestimofront`);
 	};
 
 

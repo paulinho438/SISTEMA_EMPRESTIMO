@@ -40,6 +40,8 @@ Route::get('/setup-teste', function (Request $request){
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, 'infoEmprestimoFront']);
+
 
 Route::middleware('auth:api')->group(function(){
     Route::post('/auth/validate', [AuthController::class, 'validateToken']);
@@ -128,11 +130,14 @@ Route::middleware('auth:api')->group(function(){
     Route::put('/emprestimo/{id}', [EmprestimoController::class, 'update']);
     Route::post('/emprestimo', [EmprestimoController::class, 'insert']);
     Route::post('/parcela/{id}/baixamanual', [EmprestimoController::class, 'baixaManual']);
+    Route::post('/parcela/{id}/baixamanualcobrador', [EmprestimoController::class, 'baixaManualCobrador']);
+    Route::post('/parcela/{id}/infoemprestimo', [EmprestimoController::class, 'infoEmprestimo']);
     Route::post('/parcela/{id}/cobraramanha', [EmprestimoController::class, 'cobrarAmanha']);
     Route::get('/parcela/{id}/cancelarbaixamanual', [EmprestimoController::class, 'cancelarBaixaManual']);
 
 
 
+    Route::post('/emprestimo/baixadesconto/{id}', [EmprestimoController::class, 'baixaDesconto']);
     Route::post('/emprestimo/search/fornecedor', [EmprestimoController::class, 'searchFornecedor']);
     Route::post('/emprestimo/search/cliente', [EmprestimoController::class, 'searchCliente']);
     Route::post('/emprestimo/search/banco', [EmprestimoController::class, 'searchBanco']);

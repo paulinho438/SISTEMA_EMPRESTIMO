@@ -34,7 +34,7 @@ class EmprestimoResource extends JsonResource
             "valor"             => $this->valor,
             "lucro"             => $this->lucro,
             "juros"             => $this->juros,
-            "saldoareceber"     => $this->parcelas->sum(function ($parcela) {
+            "saldoareceber" => $this->parcelas->where('dt_baixa', null)->sum(function ($parcela) {
                 return $parcela->saldo;
             }),
             "porcentagem"       => $this->porcent($this->parcelas->sum(function ($parcela) {return $parcela->saldo;}), $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
@@ -49,8 +49,54 @@ class EmprestimoResource extends JsonResource
             "consultor"         => $this->user,
             "parcelas"          => ParcelaResource::collection($this->parcelas),
             "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
+            "status"            => $this->getStatus(),
 
 
         ];
+    }
+
+    // Método para calcular o status das parcelas
+    private function getStatus()
+    {
+        $status = 'Em Dias'; // Padrão
+        $qtParcelas = count($this->parcelas);
+        $qtPagas = 0;
+        $qtAtrasadas = 0;
+
+        foreach ($this->parcelas as $parcela) {
+            if ($parcela->atrasadas > 0 && $parcela->saldo > 0) {
+                $qtAtrasadas++;
+            }
+        }
+
+        if($qtAtrasadas > 0){
+            if($this->isMaiorQuatro($qtAtrasadas, $qtParcelas)){
+                $status = 'Muito Atrasado';
+            }else{
+                $status = 'Atrasado';
+            }
+
+            if($qtAtrasadas == $qtParcelas){
+                $status = 'Vencido';
+            }
+        }
+
+        foreach ($this->parcelas as $parcela) {
+            if ($parcela->dt_baixa != null) {
+                $qtPagas++;
+            }
+        }
+
+        if($qtParcelas == $qtPagas){
+            $status = 'Pago';
+        }
+
+
+
+        return $status;
+    }
+
+    private function isMaiorQuatro($x, $y){
+        return $x > 4;
     }
 }
