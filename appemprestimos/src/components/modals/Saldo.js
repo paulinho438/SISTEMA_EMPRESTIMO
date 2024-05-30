@@ -7,7 +7,7 @@ import {
   Platform,
   Alert
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 
 // Local imports
@@ -28,24 +28,74 @@ import api from '../../services/api';
 export default function Saldo(props) {
   let {visible, onPressClose, cliente, feriados} = props;
 
+
   const navigation = useNavigation();
 
   const [valores, setValores] = useState(cliente.saldo);
+
+  useEffect(() => {
+    console.log()
+    if(typeof cliente.saldo !== 'string'){
+      handleSaldoNovo(cliente.saldo);
+    }
+
+    function handleSaldoNovo() {
+      let number = parseFloat(cliente.saldo); // Divide por 100 para obter o decimal correto
+
+      let currency = number.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }); // Formata o número para o formato monetário brasileiro
+
+      setValores(currency);
+    }
+  },[visible])
 
   function converterParaNumero(valor) {
     return parseFloat(valor.replace("R$", "").replace(/\./g, "").replace(",", "."));
   }
 
+  const obterDataAtual = () => {
+    const data = new Date();
+    const ano = data.getFullYear();
+    let mes = data.getMonth() + 1; // Os meses vão de 0 a 11 em JavaScript, então adicionamos 1
+    let dia = data.getDate();
+  
+    // Adicionar um zero à esquerda se o mês ou o dia for menor que 10
+    mes = mes < 10 ? '0' + mes : mes;
+    dia = dia < 10 ? '0' + dia : dia;
+  
+    return `${ano}-${mes}-${dia}`;
+  };
+
   const moveToHome = async () => {
-    if(converterParaNumero(valores) > converterParaNumero(cliente.saldo)){
-      Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
-      return
+
+    if(typeof cliente.saldo !== 'string'){
+
+      if(converterParaNumero(valores) > cliente.saldo){
+        Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
+        return
+      }
+  
+      let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
+  
+      Alert.alert('Baixa realizada com sucesso!');
+  
+      navigation.navigate(StackNav.TabNavigation);
+
+    }else{
+
+      if(converterParaNumero(valores) > converterParaNumero(cliente.saldo)){
+        Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
+        return
+      }
+  
+      let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
+  
+      Alert.alert('Baixa realizada com sucesso!');
+  
+      navigation.navigate(StackNav.TabNavigation);
     }
-    let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
-
-    Alert.alert('Baixa realizada com sucesso!');
-
-    navigation.navigate(StackNav.TabNavigation);
   };
 
   
@@ -114,6 +164,7 @@ export default function Saldo(props) {
     onPressClose();
 
     const res = await api.saveEmprestimo(client);
+
 
 
 

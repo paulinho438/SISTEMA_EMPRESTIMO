@@ -18,10 +18,13 @@ import {styles} from '../../themes';
 import strings from '../../i18n/strings';
 import CText from '../../components/common/CText';
 import CNotification from '../../components/common/CNotification';
+import CTextInput from '../../components/common/CTextInput';
 import images from '../../assets/images/index';
-import {moderateScale} from '../../common/constant';
 import {HomeData} from '../../api/constants';
 import {StackNav} from '../../navigation/navigationKeys';
+import {Dropdown} from 'react-native-element-dropdown';
+import {ListClient} from '../../api/constants';
+import {getHeight, moderateScale} from '../../common/constant';
 
 import {getAuthCompany, getUser} from '../../utils/asyncStorage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -31,29 +34,26 @@ import Geolocation from 'react-native-geolocation-service';
 import api from '../../services/api';
 
 
-
-
-
 export default function HomeScreen({navigation}) {
 
   const [company, setCompany] = useState(null);
   const [user, setUser] = useState(null);
   const [clientes, setClientes] = useState([]);
+  const [clientesOrig, setClientesOrig] = useState([]);
   const [location, setLocation] = useState(null);
+  const [tipoCliente, setTipoCliente] = useState('');
+  const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    
-  }, []);
-
-  useFocusEffect(() => {
-    
-    return () => {
-    };
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      setFilterSearch();
+    }, [search])
+  );
 
   useFocusEffect(
     React.useCallback(() => {
       const requestLocationPermission = async () => {
+        setTipoCliente('')
         if (Platform.OS === 'ios') {
           Geolocation.requestAuthorization('whenInUse');
           getLocation();
@@ -100,6 +100,50 @@ export default function HomeScreen({navigation}) {
     }, [])
   );
 
+  useEffect(()=>{
+
+
+    if(tipoCliente.value == 1){
+
+      setClientes(clientesOrig);
+
+    }else if(tipoCliente.value == 2){
+
+    const filteredData = clientesOrig.filter(item => item.atrasadas > 6);
+
+    setClientes(filteredData)
+
+
+    }else if(tipoCliente.value == 3){
+
+      const filteredData = clientesOrig.filter(item => (item.atrasadas > 4 && item.atrasadas <=6));
+
+      setClientes(filteredData)
+
+    }else{
+      const filteredData = clientesOrig.filter(item => item.atrasadas <= 4);
+
+      setClientes(filteredData)
+    }
+
+
+    //console.log(clientes)
+
+  },[tipoCliente]);
+
+  const setFilterSearch = () => {
+    if (search) {
+      const newData = clientesOrig.filter(item => {
+        return (
+          item.nome_cliente.toLocaleLowerCase().indexOf(search.toLocaleLowerCase()) > -1
+        );
+      });
+      setClientes(newData);
+    } else {
+      setClientes(clientesOrig);
+    }
+  };
+
   const getInfo =  async (position) => {
     let companyReq = await getAuthCompany();
     setCompany( companyReq )
@@ -114,10 +158,10 @@ export default function HomeScreen({navigation}) {
     });
 
     const sortedArray = reqClientes.data.sort((a, b) => a.distance - b.distance);
-
-    console.log(sortedArray)
+  
 
     setClientes(sortedArray);
+    setClientesOrig(sortedArray)
 
   }
 
@@ -173,15 +217,33 @@ export default function HomeScreen({navigation}) {
     return `Hoje, ${dia} de ${mes}`;
   }
 
+
+
   const moveToOpt = () => {
     navigation.navigate(StackNav.MoreOptions);
   };
+
+  const BotaoComponent = () => {
+    return (
+        <View style={localStyles.parentTodayTxt}>
+          <CTextInput
+              mainTxtInp={localStyles.CTxtInp}
+              value={search}
+              onChangeText={(text) => setSearch(text)}
+              text={'Pesquisar Cliente...'}
+            />
+        </View>
+    )
+  }
+
   const ListHeaderComponent = () => {
     return (
+      
       <View>
+         
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       
-    </View>
+      </View>
         <View style={localStyles.main}>
           <View style={localStyles.mainParent}>
             <View>
@@ -235,20 +297,54 @@ export default function HomeScreen({navigation}) {
           /> */}
         </View>
 
+       {BotaoComponent()}
+        
+
         <View style={localStyles.parentTodayTxt}>
           <CText type={'B14'} color={colors.tabColor}>
             {dataAtual()}
           </CText>
 
-          <TouchableOpacity onPress={moveToAll}>
+          <View style={localStyles.parentTxtInp}>
+              <Dropdown
+                style={localStyles.dropdownStyle}
+                data={ListClient}
+                value={tipoCliente}
+                maxHeight={moderateScale(150)}
+                labelField="label"
+                valueField="value"
+                placeholder="Selecione o Status"
+                onChange={setTipoCliente}
+                selectedTextStyle={localStyles.miniContainer}
+                itemTextStyle={localStyles.miniContainer}
+                itemContainerStyle={{
+                  backgroundColor: colors.GreyScale,
+                  width: 'auto',
+                }}
+              />
+            </View>
+
+          {/*<TouchableOpacity onPress={moveToAll}>
             <CText color={colors.black} type={'M14'}>
               Todos os pendentes
             </CText>
-          </TouchableOpacity>
+              </TouchableOpacity>*/}
         </View>
       </View>
     );
   };
+
+  const corSelect = (at) => {
+
+      if(at <= 4){
+        return '#17a2b8'
+      }else if(at > 4 && at <= 6){
+        return '#ffc107'
+      }else if(at > 6){
+        return '#dc3545'
+      }
+      
+  }
 
   const FirstImage = ({image, text, onPress}) => {
     return (
@@ -265,14 +361,18 @@ export default function HomeScreen({navigation}) {
     return (
       <TouchableOpacity style={localStyles.parentTrans} onPress={() => {cobrancaMap(item)}} >
         <View style={localStyles.oneBox}>
+          
           <Image
             source={images.Deposit2}
             resizeMode="cover"
-            style={localStyles.GymImg}
+            style={[localStyles.GymImg, {backgroundColor: corSelect(item.atrasadas)}]}
           />
           <View style={localStyles.mainCText}>
             <CText color={colors.black} type={'B16'} style={localStyles.name}>
               {item.nome_cliente}
+            </CText>
+            <CText type={'M12'} color={colors.tabColor}>
+            Emprestimo {item.emprestimo_id} Parcela {item.parcela} 
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
             {item.distance.toFixed(2)} Km de distancia
@@ -292,10 +392,10 @@ export default function HomeScreen({navigation}) {
   return (
     <SafeAreaView style={[styles.mainContainerSurface]}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        {ListHeaderComponent()}
         <FlatList
           keyExtractor={(item, index) => index.toString()}
           data={clientes}
-          ListHeaderComponent={ListHeaderComponent}
           renderItem={renderHomeData}
           scrollEnabled={false}
           showsVerticalScrollIndicator={false}
@@ -362,8 +462,8 @@ const localStyles = StyleSheet.create({
     ...styles.rowSpaceBetween,
   },
   GymImg: {
-    width: moderateScale(48),
-    height: moderateScale(48),
+    width: moderateScale(49),
+    height: moderateScale(49),
   },
   parentTrans: {
     ...styles.mh25,
@@ -383,5 +483,24 @@ const localStyles = StyleSheet.create({
   },
   name: {
     ...styles.pv5,
+  },
+  parentTxtInp: {
+    ...styles.flexRow,
+    ...styles.justifyEnd,
+  },
+  miniContainer: {
+    color: colors.black,
+  },
+  dropdownStyle: {
+    backgroundColor: colors.GreyScale,
+    height: getHeight(36),
+    borderRadius: moderateScale(20),
+    borderWidth: moderateScale(1),
+    ...styles.ph15,
+    width: moderateScale(190),
+    ...styles.mv0,
+  },
+  CTxtInp: {
+    ...styles.mv0,
   },
 });

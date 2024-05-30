@@ -1,5 +1,5 @@
-import {StyleSheet, View, Image, Text, Linking, Alert} from 'react-native';
-import React, {useRef, useState} from 'react';
+import {StyleSheet, View, Image, Text, Linking, Alert, ScrollView} from 'react-native';
+import React, {useState} from 'react';
 import ActionSheet, {FlatList} from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -15,13 +15,15 @@ import CButton from '../common/CButton';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {StackNav, TabNav} from '../../navigation/navigationKeys';
-import Saldo from '../modals/Saldo';
 import api from '../../services/api';
+import Saldo from '../modals/Saldo';
 
-export default function Location(props) {
-  let {sheetRef, cliente, parcelas} = props;
+export default function InfoParcelas(props) {
+  let {sheetRef, parcelas} = props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
+  const [cliente, setCliente] = useState({});
+  
 
   const renderData = ({item}) => {
     return (
@@ -50,7 +52,7 @@ export default function Location(props) {
   };
 
   const baixaManual = async () => {
-    let req = await api.baixaManual(cliente.id, obterDataAtual());
+    let req = await api.baixaManual(parcelas.id, obterDataAtual());
 
     Alert.alert('Baixa realizada com sucesso!');
 
@@ -58,7 +60,7 @@ export default function Location(props) {
   }
 
   const cobrarAmanha = async () => {
-    let req = await api.cobrarAmanha(cliente.id, obterDataAtual());
+    let req = await api.cobrarAmanha(parcelas.id, obterDataAtual());
 
     Alert.alert('Cobranca alterada com sucesso!');
 
@@ -66,7 +68,7 @@ export default function Location(props) {
   }
 
   const infoParcelas = async () => {
-    let req = await api.cobrarAmanha(cliente.id, obterDataAtual());
+    let req = await api.cobrarAmanha(parcelas.id, obterDataAtual());
 
     Alert.alert('Cobranca alterada com sucesso!');
 
@@ -74,10 +76,8 @@ export default function Location(props) {
   }
 
   const openWhatsApp = () => {
-
-    console.log(montarStringParcelas(parcelas))
-    let url = `whatsapp://send?phone=${cliente.telefone_celular_1}`;
-    url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
+    let url = `whatsapp://send?phone=${parcelas.telefone_celular_1}`;
+    url += `&text=${encodeURIComponent('message')}`;
 
     Linking.openURL(url)
       .then((data) => {
@@ -90,7 +90,7 @@ export default function Location(props) {
   };
 
   const openGoogleMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${cliente.latitude},${cliente.longitude}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${parcelas.latitude},${parcelas.longitude}`;
     Linking.openURL(url)
       .then((data) => {
         console.log('Google Maps abierto:', data);
@@ -104,45 +104,9 @@ export default function Location(props) {
     sheetRef.current?.hide();
   };
 
-  const formatDate = (dateString) => {
-    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-    return new Date(dateString).toLocaleDateString('pt-BR', options);
-  };
-  
-
-  const montarStringParcelas = (parcelas) => {
-    const fraseInicial = `
-  Relatório de Parcelas Pendentes:
-  
-  Segue link para acessar todo o histórico de parcelas.
-
-  https://sistema.rjemprestimos.com.br/#/parcela/${parcelas[0].id}
-
-
-  Segue abaixo as parcelas pendentes.
-  
-`;
-
-    const parcelasString = parcelas
-      .filter(item => item.atrasadas > 0 && !item.dt_baixa)
-      .map(item => {
-              return `Data: ${formatDate(item.venc)}
-        Parcela: ${item.parcela}
-        Atrasos: ${item.atrasadas}
-        Valor: R$ ${item.valor.toFixed(2)}
-        Juros: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
-        Multa: R$ ${(item.multa || 0).toFixed(2)}
-        Pago: R$ ${(item.pago || 0).toFixed(2)}
-        PIX: ${item.chave_pix || 'Não Contém'}
-        Status: Pendente
-        RESTANTE: R$ ${item.saldo.toFixed(2)}`
-            })
-          .join('\n\n');
-
-        return fraseInicial + parcelasString;
-  };
-
-  
+  const arrowParcelaIcon = () => (
+    <Community size={24} name={'account-cash-outline'} color={colors.white} />
+  );
 
   const arrowRightTopIcon = () => (
     <Community size={24} name={'arrow-u-right-top'} color={colors.white} />
@@ -152,69 +116,81 @@ export default function Location(props) {
     <Community size={24} name={'whatsapp'} color={colors.white} />
   );
 
+  const close = () => (
+    <Community size={24} name={'close-outline'} color={colors.white} />
+  );
+
   const check = () => (
     <Community size={24} name={'check'} color={colors.white} />
   );
 
-  const waze = () => (
-    <Community size={24} name={'waze'} color={colors.white} />
+  const timer = () => (
+    <Community size={24} name={'timer-sand-empty'} color={colors.white} />
   );
 
-  const onPressClose = () => {
+  const onPressClose = (item) => {
+    if(item?.id){
+      setCliente(item)
+    }
     setVisible(!visible);
   };
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  };
+
 
   return (
     <View>
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef}>
-        <View style={localStyles.mainContainer}>
-        <TouchableOpacity style={localStyles.parentDepEnd}  onPress={cancelModel}>
-          <Community size={40} name={'close'} color={colors.black} />
-        </TouchableOpacity>
-
-          <View style={localStyles.outerComponent}>
-            <View style={{gap: moderateScale(7)}}>
-              <CText
-                color={colors.black}
-                style={localStyles.BOATxt}
-                type={'B24'}>
-                {cliente.nome_cliente}
-              </CText>
-              <CText color={colors.black} type={'M12'}>
-                {cliente.endereco}
-              </CText>
-            </View>
-
-            <Fonisto name={'bookmark'} size={24} color={colors.black} />
-          </View>
-
-          <CButton
-            onPress={openGoogleMaps}
-            text={'Abrir no waze'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={waze}
-          />
-          <CButton
-            onPress={openWhatsApp}
-            text={'Ir para o Whatsapp'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={whatsapp}
-          />
-          <CButton
-            onPress={onPressClose}
-            text={'Realizar Baixa'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={check}
-          />
-          <CButton
-            onPress={cobrarAmanha}
-            text={'Cobrar Amanha'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={arrowRightTopIcon}
-          />
-          
-          
+      <TouchableOpacity style={localStyles.parentDepEnd}  onPress={cancelModel}>
+        <Community size={40} name={'close'} color={colors.black} />
+      </TouchableOpacity>
+      <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={localStyles.mainContainer}>
+      
+      
+      <View style={localStyles.outerComponent}>
+        <View style={{gap: moderateScale(7)}}>
+          <CText
+            color={colors.black}
+            type={'B24'}>
+            Informações do Empréstimo
+          </CText>
+          <CText color={colors.black} type={'M16'}>
+            Clique na parcela para efetuar a baixa!
+          </CText>
         </View>
+      </View>
+
+      {parcelas.map(item => (
+        <CButton
+          key={item.id}
+          onPress={() => onPressClose(item)}
+          text={
+            item.atrasadas > 0 && !item.dt_baixa ? `Venc. ${formatDate(item.venc)} R$ ${item.saldo.toFixed(2)}` :
+            item.dt_baixa ? `Dt. Baixa ${formatDate(item.dt_baixa)} R$ ${item.saldo.toFixed(2)}` :
+            `Venc. ${formatDate(item.venc)} R$ ${item.saldo.toFixed(2)}`
+          }
+          containerStyle={
+            item.atrasadas > 0 && !item.dt_baixa ? localStyles.buttonContainerRed :
+            item.dt_baixa ? localStyles.buttonContainerGreen :
+            localStyles.buttonContainerPrimary
+          }
+          RightIcon={
+            item.atrasadas > 0 && !item.dt_baixa ? close :
+            item.dt_baixa ? check :
+            timer
+          }
+          disabled={
+            item.dt_baixa ? true :
+            false
+          }
+        />
+      ))}
+
+      </View>
         <Saldo
             visible={visible}
             onPressClose={onPressClose}
@@ -222,8 +198,10 @@ export default function Location(props) {
             //valores={valores}
             //feriados={feriados}
           />
+      </ScrollView>
+        
       </ActionSheet>
-      
+         
     </View>
   );
 }
@@ -241,9 +219,7 @@ const localStyles = StyleSheet.create({
   mainContainer: {
     ...styles.m20,
   },
-  BOATxt: {
-    ...styles.mt30,
-  },
+
   outerComponent: {
     ...styles.flexRow,
     ...styles.alignCenter,
@@ -272,9 +248,31 @@ const localStyles = StyleSheet.create({
     ...styles.flexRow,
     ...styles.justifyBetween,
     ...styles.ph20,
+    backgroundColor: colors.red,
+  },
+  buttonContainerRed: {
+    ...styles.flexRow,
+    ...styles.justifyBetween,
+    ...styles.ph20,
+    backgroundColor: colors.red,
+  },
+  buttonContainerGreen: {
+    ...styles.flexRow,
+    ...styles.justifyBetween,
+    ...styles.ph20,
+    backgroundColor: colors.Green,
+  },
+  buttonContainerPrimary: {
+    ...styles.flexRow,
+    ...styles.justifyBetween,
+    ...styles.ph20,
+    backgroundColor: colors.Primary,
   },
   parentDepEnd: {
     ...styles.alignEnd,
+    ...styles.mr25,
+    ...styles.mt30,
+    ...styles.mb20
   },
 });
 

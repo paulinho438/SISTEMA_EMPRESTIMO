@@ -112,12 +112,35 @@ export default {
     },
     baixaManual: async (id, dt, valor) => {
         let token = await getAuthToken();
-        let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt, valor: valor}, token);
+        let json = await request('post', `/parcela/${id}/baixamanualcobrador`, { dt_baixa:  dt, valor: valor}, token);
+        return json;
+    },
+    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/cliente`, {
+            nome_completo       : name,
+            cpf                 : cpf,
+            rg                  : rg,
+            data_nascimento     : '01/01/2024',
+            sexo                : 'M',
+            telefone_celular_1  : cellphone,
+            telefone_celular_2  : cellphone2,
+            email               : email,
+            observation         : '',
+            limit               : 1000,
+            password            : 1234,
+            address             : []
+        }, token);
         return json;
     },
     cobrarAmanha: async (id, dt) => {
         let token = await getAuthToken();
         let json = await request('post', `/parcela/${id}/cobraramanha`, { dt_ult_cobranca:  dt}, token);
+        return json;
+    },
+    getParcelasInfoEmprestimo: async (id, dt) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/parcela/${id}/infoemprestimo`, {}, token);
         return json;
     },
     getAllClientes: async () => {

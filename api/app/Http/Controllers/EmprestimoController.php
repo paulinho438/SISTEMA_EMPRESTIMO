@@ -921,7 +921,7 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
 
             $editParcela = Parcela::find($id);
 
-            if($request->valor == $editParcela->contasreceber->saldo ){
+            if($request->valor == $editParcela->saldo ){
                 $editParcela->dt_baixa = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->status = 'Pago';
