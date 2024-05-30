@@ -6,7 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 
-class GroupResource extends JsonResource
+class EmpresaResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,9 +18,11 @@ class GroupResource extends JsonResource
     {
         return [
             "id"                => $this->id,
-            "name"              => $this->name,
-            "total_users"       => $this->users_count,
-            "users"             => UsuarioResource::collection($this->users)
+            "company"           => $this->company,
+            "created_at"        => $this->created_at,
+            "updated_at"        => $this->updated_at,
+            "juros"             => $this->juros,
+            "whatsapp"          => $this->whatsapp,
         ];
     }
 }

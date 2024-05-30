@@ -12,6 +12,10 @@ export default class EmpresaService {
 		return await axios.get(`${apiPath}/empresa`);
 	};
 
+	getAll = async () => {
+		return await axios.get(`${apiPath}/empresas`);
+	};
+
 	zap = async (zap) => {
 
 		try {

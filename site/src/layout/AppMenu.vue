@@ -114,7 +114,10 @@ const model = ref([
     {
         label: 'Empresa',
         permission: 'edit_empresa',
-        items: [{ label: 'Informações da Empresa', icon: 'pi pi-fw pi-building', to: '/empresa', permission: 'edit_empresa' }]
+        items: [
+        { label: 'Informações da Empresa', icon: 'pi pi-fw pi-building', to: '/empresa', permission: 'edit_empresa' },
+        { label: 'Usuários', icon: 'pi pi-user pi-building', to: '/usuarios', permission: 'edit_empresa' },
+        ],
     },
     // {
     //     label: 'UI Componentss',
