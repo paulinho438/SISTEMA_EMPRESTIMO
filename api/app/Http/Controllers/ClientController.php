@@ -43,26 +43,43 @@ class ClientController extends Controller
         $companyId = $request->header('company-id');
 
         return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
-            ->where('dt_baixa', null)
-            ->where('valor_recebido', null)
-            ->where(function($query) {
-                $today = Carbon::now()->toDateString();
-                $query->whereNull('dt_ult_cobranca')
-                    ->orWhereDate('dt_ult_cobranca', '!=', $today);
-            })
-            ->whereHas('emprestimo', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
-            })
-            ->get()
-            ->groupBy('emprestimo_id'))
-            ->map(function($parcelas) {
-                $saldoTotal = $parcelas->sum('saldo');
+    ->where('dt_baixa', null)
+    ->where('valor_recebido', null)
+    ->where(function($query) {
+        $today = Carbon::now()->toDateString();
+        $query->whereNull('dt_ult_cobranca')
+              ->orWhereDate('dt_ult_cobranca', '!=', $today);
+    })
+    ->whereHas('emprestimo', function ($query) use ($companyId) {
+        $query->where('company_id', $companyId);
+    })
+    ->with('emprestimo.client') // Carrega o cliente associado ao empréstimo
+    ->get())
+    ->groupBy('emprestimo_id')
+    ->map(function($parcelas) {
+        $saldoPendente = $parcelas->sum('saldo');
+        return [
+            'emprestimo' => $parcelas->first()->emprestimo, // Dados do empréstimo
+            'cliente' => $parcelas->first()->emprestimo->client, // Dados do cliente
+            'saldo_pendente' => $saldoPendente,
+            'parcelas' => $parcelas->map(function ($parcela) {
                 return [
-                    'saldo_pendente' => $saldoTotal,
+                    'id' => $parcela->id,
+                    'venc' => $parcela->venc,
+                    'parcela' => $parcela->parcela,
+                    'atrasadas' => $parcela->atrasadas,
+                    'valor' => $parcela->valor,
+                    'saldo' => $parcela->saldo,
+                    'multa' => $parcela->multa,
+                    'pago' => $parcela->pago,
+                    'chave_pix' => $parcela->chave_pix,
+                    'status' => 'Pendente', // Status fixo como pendente
                 ];
-            })
-            ->values()
-            ->toArray();
+            }),
+        ];
+    })
+    ->values()
+    ->toArray();
 
     }
 
