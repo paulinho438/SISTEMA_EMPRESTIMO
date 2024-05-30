@@ -53,7 +53,7 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             })
-            ->get());
+            ->get()->unique('emprestimo_id'));
 
     }
 
