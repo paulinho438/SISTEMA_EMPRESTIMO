@@ -34,7 +34,7 @@ class EmprestimoResource extends JsonResource
             "valor"             => $this->valor,
             "lucro"             => $this->lucro,
             "juros"             => $this->juros,
-            "saldoareceber"     => $this->parcelas->sum(function ($parcela) {
+            "saldoareceber" => $this->parcelas->where('dt_baixa', null)->sum(function ($parcela) {
                 return $parcela->saldo;
             }),
             "porcentagem"       => $this->porcent($this->parcelas->sum(function ($parcela) {return $parcela->saldo;}), $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
@@ -60,6 +60,7 @@ class EmprestimoResource extends JsonResource
     {
         $status = 'Em Dias'; // Padrão
         $qtParcelas = count($this->parcelas);
+        $qtPagas = 0;
         $qtAtrasadas = 0;
 
         foreach ($this->parcelas as $parcela) {
@@ -78,6 +79,16 @@ class EmprestimoResource extends JsonResource
             if($qtAtrasadas == $qtParcelas){
                 $status = 'Vencido';
             }
+        }
+
+        foreach ($this->parcelas as $parcela) {
+            if ($parcela->dt_baixa != null) {
+                $qtPagas++;
+            }
+        }
+
+        if($qtParcelas == $qtPagas){
+            $status = 'Pago';
         }
 
 

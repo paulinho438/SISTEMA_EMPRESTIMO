@@ -988,6 +988,100 @@ Estamos à disposição para qualquer esclarecimento que seja necessário.'
         }
     }
 
+    public function baixaDesconto(Request $request, $id){
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $emprestimo = Emprestimo::find($id);
+
+            if($emprestimo){
+                $dataHoje = date('Y-m-d');
+
+                foreach($emprestimo->parcelas as $parcela) {
+                    if(!$parcela->dt_baixa){
+                        $parcela->dt_baixa = $dataHoje;
+                        $parcela->saldo = 0;
+                        $parcela->save();
+
+                        if ($parcela->contasreceber) {
+                            $parcela->contasreceber->status = 'Pago';
+                            $parcela->contasreceber->dt_baixa = $dataHoje;
+                            $parcela->contasreceber->forma_recebto = 'BAIXA COM DESCONTO';
+                            $parcela->contasreceber->save();
+                        }
+                    }
+
+
+
+                }
+
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
+                $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+                $movimentacaoFinanceira['descricao'] = 'Baixa com desconto no Empréstimo Nº '.$emprestimo->id.', que tinha um saldo pendente de R$ '. number_format($request->saldo, 2, ',', '.').' e recebeu um desconto de R$ '. number_format(($request->saldo - $request->valor), 2, ',', '.');
+                $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = $request->valor;
+
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Baixa realizada com sucesso.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao editar o Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function baixaManualCobrador(Request $request, $id){
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $editParcela = Parcela::find($id);
+
+            $editParcela->valor_recebido = $request->valor;
+            $editParcela->dt_ult_cobranca = $request->dt_baixa;
+
+            $editParcela->save();
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: '.auth()->user()->nome_completo.' recebeu a baixa parcial da parcela: '.$id,
+                'operation' => 'index'
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'Baixa realizada com sucesso.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao editar o Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
     public function infoEmprestimo(Request $request, $id){
 
         $array = ['error' => ''];
