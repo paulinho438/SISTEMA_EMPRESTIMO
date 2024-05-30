@@ -150,7 +150,7 @@ export default function Location(props) {
           />
           <CButton
             onPress={onPressClose}
-            text={'Realizar Baixa'}
+            text={'Receber Valor'}
             containerStyle={localStyles.buttonContainer}
             RightIcon={check}
           />

@@ -112,7 +112,7 @@ export default {
     },
     baixaManual: async (id, dt, valor) => {
         let token = await getAuthToken();
-        let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt, valor: valor}, token);
+        let json = await request('post', `/parcela/${id}/baixamanualcobrador`, { dt_baixa:  dt, valor: valor}, token);
         return json;
     },
     cobrarAmanha: async (id, dt) => {

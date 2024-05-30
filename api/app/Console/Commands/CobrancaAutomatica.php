@@ -57,16 +57,23 @@ class CobrancaAutomatica extends Command
                                 $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
                                 $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
                                 $ultima_parcela = $parcela->saldo - $valor_acrecimo;
+
+                                // Obtenha a saudação baseada na hora atual
+                                $saudacao = obterSaudacao();
+
                                 $data = [
-                                    "numero" => "55".$telefone,
+                                    "numero" => "55" . $telefone,
                                     "mensagem" => '
-    Bom dia, '.$parcela->emprestimo->client->nome_completo.'!
+                                    ' . $saudacao . ', ' . $parcela->emprestimo->client->nome_completo . '!
 
-    Espero que esteja tudo bem com você. Verificamos em nosso sistema que a parcela '.$parcela->parcela.' no valor de R$ '.number_format($ultima_parcela, 2, ',', '.').' ainda não foi quitada. Para sua conveniência, encaminho abaixo o link atualizado para o pagamento, já incluindo os acréscimos de R$ '.number_format($valor_acrecimo, 2, ',', '.').' referente a juros.
+                                    Espero que você esteja bem. Gostaríamos de informá-lo que a parcela ' . $parcela->parcela . ' no valor de R$ ' . number_format($ultima_parcela, 2, ',', '.') . ' ainda não foi quitada. Para sua conveniência, segue abaixo o link atualizado para o pagamento, incluindo os acréscimos de R$ ' . number_format($valor_acrecimo, 2, ',', '.') . ' referentes a juros.
 
-    '.$parcela->chave_pix.'
+                                    Chave PIX: ' . $parcela->chave_pix . '
 
-    Estamos à disposição para qualquer esclarecimento que seja necessário.'
+                                    Caso tenha alguma dúvida ou precise de mais informações, estamos à disposição para ajudá-lo.
+
+                                    Atenciosamente,
+                                    RJ EMPRESTIMOS'
                                 ];
                                 $response = Http::asJson()->post($baseUrl, $data);
                                 sleep(8);
@@ -80,6 +87,22 @@ class CobrancaAutomatica extends Command
             }
 
         exit;
+    }
+
+    function obterSaudacao()
+    {
+        $hora = date('H');
+        $saudacoesManha = ['Bom dia', 'Olá, bom dia', 'Tenha um excelente dia'];
+        $saudacoesTarde = ['Boa tarde', 'Olá, boa tarde', 'Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['Boa noite', 'Olá, boa noite', 'Espero que sua noite esteja ótima'];
+
+        if ($hora < 12) {
+            return $saudacoesManha[array_rand($saudacoesManha)];
+        } elseif ($hora < 18) {
+            return $saudacoesTarde[array_rand($saudacoesTarde)];
+        } else {
+            return $saudacoesNoite[array_rand($saudacoesNoite)];
+        }
     }
 
 }
