@@ -53,7 +53,11 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             })
-            ->get()->unique('emprestimo_id'));
+            ->get()->unique('emprestimo_id'))
+            ->additional(['total_saldo_pendente' => DB::table('parcelas')
+                ->where('dt_baixa', null)
+                ->sum('saldo')
+            ]);
 
     }
 
