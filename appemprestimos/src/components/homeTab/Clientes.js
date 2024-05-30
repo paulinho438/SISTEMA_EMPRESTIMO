@@ -77,7 +77,7 @@ export default function TransferMoney({navigation}) {
   };
 
   const moveToCadastroUsuario = () => {
-    navigation.navigate(AuthNav.SignUp);
+    navigation.navigate(StackNav.CadastroCliente);
   };
 
   const onChangeSearch = text => setSearch(text);

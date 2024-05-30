@@ -22,14 +22,36 @@ import strings from '../../../i18n/strings';
 import CButton from '../../../components/common/CButton';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import Location from '../../../components/modals/Location';
+import InfoParcelas from '../../../components/modals/InfoParcelas';
+import { useFocusEffect } from '@react-navigation/native';
+import api from '../../../services/api';
+
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
 
 export default function ATMDetails({navigation, route}) {
   const { clientes } = route.params;
   
   const [empty, nonEmpty] = useState('');
+  const [parcelas, setParcelas] = useState([]);
+  useFocusEffect(
+    React.useCallback(() => {
+      getInfo();
+    }, [])
+  );
+
+  const getInfo =  async (position) => {
+
+    let reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
+    setParcelas(reqClientes)
+
+  }
 
   const Search = useRef(null);
+  const Info = useRef(null);
+
+  const moveToInfoModel = () => {
+    Info.current.show();
+  };
 
   const onPress = () => {
     nonEmpty('');
@@ -83,12 +105,25 @@ export default function ATMDetails({navigation, route}) {
 
             <CButton
               onPress={moveToModel}
-              text={'Mais Informação'}
+              text={'Opçōes'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
                 <Community
                   size={24}
                   name={'arrow-u-right-top'}
+                  color={colors.white}
+                />
+              )}
+            />
+
+            <CButton
+            onPress={moveToInfoModel}
+            text={'Informações das Parcelas'}
+            containerStyle={localStyles.buttonContainer}
+            RightIcon={() => (
+                <Community
+                  size={24}
+                  name={'account-cash-outline'}
                   color={colors.white}
                 />
               )}
@@ -117,7 +152,8 @@ export default function ATMDetails({navigation, route}) {
           />
         </View> */}
 
-        <Location sheetRef={Search} cliente={clientes} />
+        <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
+        <InfoParcelas sheetRef={Info} parcelas={parcelas} />
       </SafeAreaView>
     </KeyBoardAvoidWrapper> 
   );

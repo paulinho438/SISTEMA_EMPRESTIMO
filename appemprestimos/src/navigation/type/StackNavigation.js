@@ -170,6 +170,11 @@ const StackNavigation = () => {
         component={StackRoute.LogOut}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={StackNav.CadastroCliente}
+        component={StackRoute.CadastroCliente}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };

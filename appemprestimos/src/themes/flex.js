@@ -5,6 +5,10 @@ export default StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
+  alignEnd: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   center: {
     alignItems: 'center',
     justifyContent: 'center',

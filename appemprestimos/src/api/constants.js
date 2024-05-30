@@ -623,6 +623,13 @@ export const CurrencyList = [
   {label: 'Segunda a Domingo', value: '3'},
 ];
 
+export const ListClient = [
+  {label: 'Todos os Status', value: '1'},
+  {label: 'Vermelho', value: '2'},
+  {label: 'Amarelo', value: '3'},
+  {label: 'Azul', value: '4'},
+];
+
 export const MeSectionData = [
   {label: 'Student', value: 'Student'},
   {label: 'BusinessMan', value: 'BusinessMan'},
