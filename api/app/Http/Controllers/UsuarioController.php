@@ -91,7 +91,10 @@ class UsuarioController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
+            $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
+
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
+            $dados['cpf'] = $cpf;
             $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
 
             $newGroup = User::create($dados);
@@ -134,10 +137,12 @@ class UsuarioController extends Controller
             $dados = $request->all();
             if(!$validator->fails()){
 
+                $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
+
                 $EditUser = User::find($id);
 
                 $EditUser->nome_completo = $dados['nome_completo'];
-                $EditUser->cpf = $dados['cpf'];
+                $EditUser->cpf =  $cpf;
                 $EditUser->rg = $dados['rg'];
                 $EditUser->data_nascimento = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
                 $EditUser->sexo = $dados['sexo'];
