@@ -105,7 +105,12 @@ export default {
                             <Column field="valor" header="Parcela"></Column>
                             <Column field="saldo" header="Saldo c/ Juros"></Column>
                             <Column field="total_pago" header="Pago"></Column>
-                            <Column field="status" header="Status"></Column>
+                            <Column field="status" header="Status">
+                                <template #body="slotProps">
+                                    <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
+                                    <Button v-else label="Pendente" class="p-button-raised p-button-danger mr-2 mb-2" />
+                                </template>
+                            </Column>
                         </DataTable>
                     </div>
 
