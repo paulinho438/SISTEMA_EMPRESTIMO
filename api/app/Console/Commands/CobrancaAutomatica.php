@@ -44,74 +44,74 @@ class CobrancaAutomatica extends Command
 
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
-            $parcelas = Parcela::where('venc_real', '<=', Carbon::now())->where('dt_baixa', null)->where('atrasadas', '>', 0)->get()->unique('emprestimo_id');
-            $r = [];
-            foreach($parcelas as $parcela){
-                if(isset($parcela->emprestimo->company->whatsapp)){
-                    try {
-                        $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
-                        if ($response->successful()) {
-                            $r = $response->json();
-                            if($r['loggedIn']){
+        $parcelas = Parcela::where('dt_baixa', null)->where('atrasadas', '>', 0)->get()->unique('emprestimo_id');
+        $r = [];
+        foreach($parcelas as $parcela){
+            if(isset($parcela->emprestimo->company->whatsapp)){
+                try {
+                    $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+                    if ($response->successful()) {
+                        $r = $response->json();
+                        if($r['loggedIn']){
 
-                                $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                                $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
-                                $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
-                                $ultima_parcela = $parcela->saldo - $valor_acrecimo;
+                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                            $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
+                            $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
+                            $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
-                                $saudacao = obterSaudacao();
+                            $saudacao = obterSaudacao();
 
-                                $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                                $fraseInicial = "
-                                    Relatório de Parcelas Pendentes:
+                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                            $fraseInicial = "
+                                Relatório de Parcelas Pendentes:
 
-                                    Segue link para acessar todo o histórico de parcelas:
-                                    https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+                                Segue link para acessar todo o histórico de parcelas:
+                                https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
-                                    Segue abaixo as parcelas pendentes:
-                                ";
+                                Segue abaixo as parcelas pendentes:
+                            ";
 
-                                // Montagem das parcelas pendentes
-                                $parcelasString = $parcela->emprestimo->parcelas
-                                ->filter(function($item) {
-                                    return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                                })
-                                ->map(function($item) {
-                                    return "
-                                        Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-                                        Parcela: {$item->parcela}
-                                        Atrasos: {$item->atrasadas}
-                                        Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-                                        Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-                                        Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-                                        Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-                                        PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-                                        Status: Pendente
-                                        RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                                })
-                                ->implode("\n\n");
+                            // Montagem das parcelas pendentes
+                            $parcelasString = $parcela->emprestimo->parcelas
+                            ->filter(function($item) {
+                                return $item->atrasadas > 0 && is_null($item->dt_baixa);
+                            })
+                            ->map(function($item) {
+                                return "
+                                    Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+                                    Parcela: {$item->parcela}
+                                    Atrasos: {$item->atrasadas}
+                                    Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+                                    Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+                                    Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+                                    Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+                                    PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+                                    Status: Pendente
+                                    RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+                            })
+                            ->implode("\n\n");
 
 
 
-                                // Obtenha a saudação baseada na hora atual
+                            // Obtenha a saudação baseada na hora atual
 
-                                $frase =  $saudacaoTexto . $fraseInicial . $parcelasString;
+                            $frase =  $saudacaoTexto . $fraseInicial . $parcelasString;
 
-                                $data = [
-                                    "numero" => "55" . $telefone,
-                                    "mensagem" => $frase
-                                ];
+                            $data = [
+                                "numero" => "55" . $telefone,
+                                "mensagem" => $frase
+                            ];
 
-                                $response = Http::asJson()->post($baseUrl, $data);
-                                sleep(8);
-                            }
+                            $response = Http::asJson()->post($baseUrl, $data);
+                            sleep(8);
                         }
-                    } catch (\Throwable $th) {
-
                     }
+                } catch (\Throwable $th) {
 
                 }
+
             }
+        }
 
         exit;
     }
