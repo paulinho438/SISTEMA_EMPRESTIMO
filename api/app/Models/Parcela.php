@@ -48,7 +48,9 @@ class Parcela extends Model
 
     public function totalPendente()
     {
-        return $this->emprestimo()->parcelas()->where('dt_baixa', null)->sum('saldo');
+        return Parcela::where('emprestimo_id', $this->emprestimo_id)
+            ->where('dt_baixa', null)
+            ->sum('saldo');
     }
 
 }
