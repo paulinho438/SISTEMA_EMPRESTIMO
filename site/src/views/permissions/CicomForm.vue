@@ -31,12 +31,14 @@ export default {
 			oldCicom: ref(null),
 			errors: ref([]),
 			loading: ref(false),
+			multiselectValueUsers: ref(null),
 			multiselectValueDashboard: ref(null),
 			multiselectValueEmpresa: ref(null),
 			multiselectValueUsuario: ref(null),
 			multiselectValuePermissoes: ref(null),
-			multiselectValues : ref([]),
-			checkboxValue : ref([])
+			multiselectValues: ref([]),
+			checkboxValue: ref([]),
+			users: ref([]),
 		}
 	},
 	methods: {
@@ -50,14 +52,13 @@ export default {
 		changeLoading() {
 			this.loading = !this.loading;
 		},
-		getGroup() {
+		getUsers() {
 
-			if (this.route.params?.id) {
-				this.cicom = ref(null);
-				this.loading = true;
-				this.permissionsService.get(this.route.params.id)
+			this.users = ref([]);
+			this.loading = true;
+			this.permissionsService.getAllUsers()
 				.then((response) => {
-					this.cicom = response.data;
+					this.users = response.data.data;
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -70,28 +71,53 @@ export default {
 					this.loading = false;
 					this.setOldCicom();
 				});
-			} 
-			
+
+		},
+		getGroup() {
+
+			if (this.route.params?.id) {
+				this.cicom = ref(null);
+				this.loading = true;
+				this.permissionsService.get(this.route.params.id)
+					.then((response) => {
+						this.cicom = response.data.data;
+						this.multiselectValueUsers = response.data.data.users
+
+
+					})
+					.catch((error) => {
+						this.toast.add({
+							severity: ToastSeverity.ERROR,
+							detail: UtilService.message(e),
+							life: 3000
+						});
+					})
+					.finally(() => {
+						this.loading = false;
+						this.setOldCicom();
+					});
+			}
+
 		},
 		getItems() {
 			this.multiselectValues = ref(null);
 			this.loading = true;
 			this.permissionsService.getItems()
-			.then((response) => {
-				this.multiselectValues = response.data;
-			})
-			.catch((error) => {
-				this.toast.add({
-					severity: ToastSeverity.ERROR,
-					detail: UtilService.message(e),
-					life: 3000
+				.then((response) => {
+					this.multiselectValues = response.data;
+				})
+				.catch((error) => {
+					this.toast.add({
+						severity: ToastSeverity.ERROR,
+						detail: UtilService.message(e),
+						life: 3000
+					});
+				})
+				.finally(() => {
+					this.loading = false;
+					this.setOldCicom();
 				});
-			})
-			.finally(() => {
-				this.loading = false;
-				this.setOldCicom();
-			});
-			
+
 		},
 		getItemsGroup() {
 			this.multiselectValue = ref(null);
@@ -100,26 +126,26 @@ export default {
 			this.multiselectValueUsuario = ref(null);
 			this.multiselectValuePermissoes = ref(null);
 			this.checkboxValue = ref([])
-			
+
 
 			if (this.route.params?.id) {
 				this.loading = true;
 				this.permissionsService.getItemsGroup(this.route.params.id)
-				.then((response) => {
-					this.checkboxValue = response.data?.data;
-				})
-				.catch((error) => {
-					this.toast.add({
-						severity: ToastSeverity.ERROR,
-						detail: UtilService.message(e),
-						life: 3000
+					.then((response) => {
+						this.checkboxValue = response.data?.data;
+					})
+					.catch((error) => {
+						this.toast.add({
+							severity: ToastSeverity.ERROR,
+							detail: UtilService.message(e),
+							life: 3000
+						});
+					})
+					.finally(() => {
+						this.loading = false;
+						this.setOldCicom();
 					});
-				})
-				.finally(() => {
-					this.loading = false;
-					this.setOldCicom();
-				});
-			} 
+			}
 		},
 		back() {
 			this.router.push(`/permissoes`);
@@ -133,41 +159,43 @@ export default {
 
 			this.cicom.permissions = this.checkboxValue;
 
+			this.cicom.users = this.multiselectValueUsers;
+
 			this.permissionsService.save(this.cicom)
-			.then((response) => {
-				if (undefined != response.data.data) {
-					this.cicom = response.data.data;
-					
-				}
+				.then((response) => {
+					if (undefined != response.data.data) {
+						this.cicom = response.data.data;
 
-				this.toast.add({
-					severity: ToastSeverity.SUCCESS,
-					detail: this.cicom?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
-					life: 3000
+					}
+
+					this.toast.add({
+						severity: ToastSeverity.SUCCESS,
+						detail: this.cicom?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
+						life: 3000
+					});
+
+					setTimeout(() => {
+						this.router.push({ name: 'permissionsList' })
+					}, 1200)
+
+				})
+				.catch((error) => {
+					this.changeLoading();
+					this.errors = error?.response?.data?.errors;
+
+					// if (error?.response?.status != 422) {
+					// 	this.toast.add({
+					// 		severity: ToastSeverity.ERROR,
+					// 		detail: UtilService.message(error.response.data),
+					// 		life: 3000
+					// 	});
+					// }
+
+					this.changeLoading();
+				})
+				.finally(() => {
+					this.changeLoading();
 				});
-
-				setTimeout(() => {
-					this.router.push({ name: 'permissionsList'})
-				}, 1200)
-
-			})
-			.catch((error) => {
-				this.changeLoading();
-				this.errors = error?.response?.data?.errors;
-
-				// if (error?.response?.status != 422) {
-				// 	this.toast.add({
-				// 		severity: ToastSeverity.ERROR,
-				// 		detail: UtilService.message(error.response.data),
-				// 		life: 3000
-				// 	});
-				// }
-
-				this.changeLoading();
-			})
-			.finally(() => {
-				this.changeLoading();
-			});
 		},
 		clearCicom() {
 			this.loading = true;
@@ -183,6 +211,7 @@ export default {
 		}
 	},
 	mounted() {
+		this.getUsers();
 		this.getGroup();
 		this.getItems();
 		this.getItemsGroup();
@@ -198,8 +227,10 @@ export default {
 			<h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
 		</div>
 		<div class="col-4 px-0 py-0 text-right">
-			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm" :icon="icons.ANGLE_LEFT" @click.prevent="back" />
-			<Button label="Salvar" class="p-button p-button-info p-button-sm ml-3" :icon="icons.SAVE" type="button" @click.prevent="save" />
+			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm" :icon="icons.ANGLE_LEFT"
+				@click.prevent="back" />
+			<Button label="Salvar" class="p-button p-button-info p-button-sm ml-3" :icon="icons.SAVE" type="button"
+				@click.prevent="save" />
 		</div>
 	</div>
 	<Card>
@@ -207,61 +238,89 @@ export default {
 			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="name">Nome</label>
-					<InputText :modelValue="cicom?.name" v-model="cicom.name" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.name }" />
+					<InputText :modelValue="cicom?.name" v-model="cicom.name" id="name" type="text"
+						class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.name }" />
 					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
 				</div>
 			</div>
+
+			<div class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">Usuários</label>
+				</div>
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<MultiSelect v-model="multiselectValueUsers" class="-mt-8" :options="users" optionLabel="company"
+					placeholder="Selecione os Usuários" :filter="true">
+					<template #value="slotProps">
+						<div class="inline-flex align-items-center py-1 px-2 bg-primary text-primary border-round mr-2"
+							v-for="option of slotProps.value" :key="option.company">
+
+							<div>{{ option.nome_completo }}</div>
+						</div>
+						<template v-if="!slotProps.value || slotProps.value.length === 0">
+							<div class="p-1">Selecione as Empresas</div>
+						</template>
+					</template>
+					<template #option="slotProps">
+						<div class="flex align-items-center">
+							<div>{{ slotProps.option.nome_completo }}</div>
+						</div>
+					</template>
+				</MultiSelect>
+				</div>
+			</div>
+			
 			<h5>Dashboard</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.dashboard" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Cadastro</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.cadastro" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Permissões</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.permissoes" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Categorias</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.categorias" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Centro de Custo</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.centrodecusto" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Bancos</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.bancos" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
@@ -269,9 +328,9 @@ export default {
 			<h5>Clientes</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.clientes" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
@@ -279,9 +338,9 @@ export default {
 			<h5>Fornecedores</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.fornecedores" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
@@ -289,68 +348,68 @@ export default {
 			<h5>Emprestimos</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.emprestimos" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Contas a Pagar</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.contaspagar" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Contas a Receber</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.contasreceber" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Movimentacao Financeira</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.movimentacaofinanceira" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Empresa</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.empresa" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Usuário</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.usuario" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
 			<h5>Alteração das Informações da Empresa</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.alteracaoempresa" :key="option.id">
-					<div class="field-checkbox mb-0" >
-						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue"  />
-						<label for="checkOption1">{{option.name}}</label>
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
 					</div>
 				</div>
 			</div>
-			
-			
+
+
 		</template>
 	</Card>
 

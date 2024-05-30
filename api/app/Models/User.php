@@ -52,5 +52,10 @@ class User extends Authenticatable implements JWTSubject
     public function groups() {
         return $this->belongsToMany(Permgroup::class);
     }
+
+    public function getCompaniesAsString()
+    {
+        return $this->companies()->pluck('company')->implode(', ');
+    }
 }
 

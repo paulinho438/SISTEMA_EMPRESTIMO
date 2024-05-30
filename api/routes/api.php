@@ -16,6 +16,7 @@ use App\Http\Controllers\{
     ContaspagarController,
     ContasreceberController,
     MovimentacaofinanceiraController,
+    UsuarioController,
 
 };
 
@@ -82,9 +83,17 @@ Route::middleware('auth:api')->group(function(){
     Route::put('/cliente/{id}', [ClientController::class, 'update']);
     Route::post('/cliente', [ClientController::class, 'insert']);
 
+    Route::get('/usuariocompanies', [UsuarioController::class, 'allCompany']);
+    Route::get('/usuario', [UsuarioController::class, 'all']);
+    Route::get('/usuario/{id}', [UsuarioController::class, 'id']);
+    Route::get('/usuario/{id}/delete', [UsuarioController::class, 'delete']);
+    Route::put('/usuario/{id}', [UsuarioController::class, 'update']);
+    Route::post('/usuario', [UsuarioController::class, 'insert']);
+
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
 
     Route::get('/empresa', [CompanyController::class, 'get']);
+    Route::get('/empresas', [CompanyController::class, 'getAll']);
 
 
     Route::get('/contaspagar', [ContaspagarController::class, 'all']);

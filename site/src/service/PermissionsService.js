@@ -26,6 +26,10 @@ export default class PermissionsService {
 		return await axios.get(`${apiPath}/permission_groups`);
 	};
 
+    getAllUsers = async () => {
+		return await axios.get(`${apiPath}/usuariocompanies`);
+	};
+
     getItems = async () => {
 		return await axios.get(`${apiPath}/permission_items`);
 	};
