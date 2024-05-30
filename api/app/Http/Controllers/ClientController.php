@@ -48,16 +48,21 @@ class ClientController extends Controller
             ->where(function($query) {
                 $today = Carbon::now()->toDateString();
                 $query->whereNull('dt_ult_cobranca')
-                      ->orWhereDate('dt_ult_cobranca', '!=', $today);
+                    ->orWhereDate('dt_ult_cobranca', '!=', $today);
             })
             ->whereHas('emprestimo', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             })
-            ->get()->unique('emprestimo_id'))
-            ->additional(['total_saldo_pendente' => DB::table('parcelas')
-                ->where('dt_baixa', null)
-                ->sum('saldo')
-            ]);
+            ->get()
+            ->groupBy('emprestimo_id'))
+            ->map(function($parcelas) {
+                $saldoTotal = $parcelas->sum('saldo');
+                return [
+                    'saldo_pendente' => $saldoTotal,
+                ];
+            })
+            ->values()
+            ->toArray();
 
     }
 
