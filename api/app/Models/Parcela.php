@@ -48,8 +48,9 @@ class Parcela extends Model
 
     public function totalPago()
     {
-        return Movimentacaofinanceira::where('parcela_id', $this->id)
-            ->sum('valor');
+        return Movimentacaofinanceira::whereHas('parcela', function($query) {
+            $query->where('emprestimo_id', $this->emprestimo_id);
+        })->sum('valor');
     }
 
     public function totalPendente()
