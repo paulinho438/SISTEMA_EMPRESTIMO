@@ -44,7 +44,7 @@ class CobrancaAutomatica extends Command
 
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
-            $parcelas = Parcela::where('venc_real', '<=', Carbon::now())->where('dt_baixa', null)->where('atrasadas', '>', 0)->get();
+            $parcelas = Parcela::where('venc_real', '<=', Carbon::now())->where('dt_baixa', null)->where('atrasadas', '>', 0)->get()->unique('emprestimo_id');
             $r = [];
             foreach($parcelas as $parcela){
                 if(isset($parcela->emprestimo->company->whatsapp)){
@@ -53,28 +53,55 @@ class CobrancaAutomatica extends Command
                         if ($response->successful()) {
                             $r = $response->json();
                             if($r['loggedIn']){
+
                                 $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                                 $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
                                 $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
                                 $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
-                                // Obtenha a saudação baseada na hora atual
                                 $saudacao = obterSaudacao();
+
+                                $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                                $fraseInicial = "
+                                    Relatório de Parcelas Pendentes:
+
+                                    Segue link para acessar todo o histórico de parcelas:
+                                    https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+
+                                    Segue abaixo as parcelas pendentes:
+                                ";
+
+                                // Montagem das parcelas pendentes
+                                $parcelasString = $parcela->emprestimo->parcelas
+                                ->filter(function($item) {
+                                    return $item->atrasadas > 0 && is_null($item->dt_baixa);
+                                })
+                                ->map(function($item) {
+                                    return "
+                                        Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+                                        Parcela: {$item->parcela}
+                                        Atrasos: {$item->atrasadas}
+                                        Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+                                        Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+                                        Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+                                        Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+                                        PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+                                        Status: Pendente
+                                        RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+                                })
+                                ->implode("\n\n");
+
+
+
+                                // Obtenha a saudação baseada na hora atual
+
+                                $frase =  $saudacaoTexto . $fraseInicial . $parcelasString;
 
                                 $data = [
                                     "numero" => "55" . $telefone,
-                                    "mensagem" => '
-                                    ' . $saudacao . ', ' . $parcela->emprestimo->client->nome_completo . '!
-
-                                    Espero que você esteja bem. Gostaríamos de informá-lo que a parcela ' . $parcela->parcela . ' no valor de R$ ' . number_format($ultima_parcela, 2, ',', '.') . ' ainda não foi quitada. Para sua conveniência, segue abaixo o link atualizado para o pagamento, incluindo os acréscimos de R$ ' . number_format($valor_acrecimo, 2, ',', '.') . ' referentes a juros.
-
-                                    Chave PIX: ' . $parcela->chave_pix . '
-
-                                    Caso tenha alguma dúvida ou precise de mais informações, estamos à disposição para ajudá-lo.
-
-                                    Atenciosamente,
-                                    RJ EMPRESTIMOS'
+                                    "mensagem" => $frase
                                 ];
+
                                 $response = Http::asJson()->post($baseUrl, $data);
                                 sleep(8);
                             }
