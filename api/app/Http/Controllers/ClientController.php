@@ -44,6 +44,7 @@ class ClientController extends Controller
 
         return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
             ->where('dt_baixa', null)
+            ->where('valor_recebido', null)
             ->where(function($query) {
                 $today = Carbon::now()->toDateString();
                 $query->whereNull('dt_ult_cobranca')

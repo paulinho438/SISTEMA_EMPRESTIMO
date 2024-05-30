@@ -171,10 +171,15 @@ const router = createRouter({
             ]
         },
         {
-            path: '/landing',
+            path: '/parcela/:id_pedido',
             name: 'landing',
             component: () => import('@/views/pages/Landing.vue')
         },
+        // {
+        //     path: '/landing',
+        //     name: 'landing',
+        //     component: () => import('@/views/pages/Landing.vue')
+        // },
         {
             path: '/pages/notfound',
             name: 'notfound',
@@ -209,7 +214,7 @@ router.beforeEach((to, from, next) => {
 
 	// Usuário não Autenticado
 	if (!token && !isAuthenticated) {
-		if (to.name !== 'login' && to.name !== 'forgot') next({ name: 'login' });
+		if (to.name !== 'login' && to.name !== 'forgot' && to.name !== 'landing') next({ name: 'login' });
 	}
 
 	// Segue rota de destino

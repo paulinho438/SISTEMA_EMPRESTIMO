@@ -136,7 +136,12 @@ export default {
 				return false;
 			}
 
-			this.emprestimoService.baixaParcela(this.displayConfirmation.ref, moment(this.displayBaixaManual.dt_baixa, 'DD/MM/YYYY').format('YYYY-MM-DD'))
+			if(!this.displayBaixaManual.valor) {
+				alert('Informe o valor.');
+				return false;
+			}
+
+			this.emprestimoService.baixaParcela(this.displayConfirmation.ref, moment(this.displayBaixaManual.dt_baixa, 'DD/MM/YYYY').format('YYYY-MM-DD'), this.displayBaixaManual.valor)
 			.then((e) => {
 				this.toast.add({
 					severity: ToastSeverity.SUCCESS,
@@ -267,6 +272,12 @@ export default {
 				<div class="p-fluid formgrid grid p-3">
 					<label class="mb-3" for="zip"><b>Data da Baixa</b></label>
 					<InputMask id="inputmask" mask="99/99/9999" v-model="displayBaixaManual.dt_baixa"></InputMask>
+				</div>
+				<div class="p-fluid formgrid grid p-3">
+					<label class="mb-3" for="zip"><b>Valor</b></label>
+					<InputNumber id="inputnumber" :modelValue="displayBaixaManual.valor" v-model="displayBaixaManual.valor"
+								:mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2"
+								class="w-full p-inputtext-sm"></InputNumber>
 				</div>
 				<template #footer>
 					<Button label="Realizar Baixa" @click="yesConfirmation" icon="pi pi-check" class="p-button-outlined" />

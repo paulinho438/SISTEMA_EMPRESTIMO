@@ -28,8 +28,12 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('baixa:Automatica')->everyMinute();
+
         $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
+
         $schedule->command('cobranca:Automatica')->dailyAt('08:00');
+        $schedule->command('cobranca:Automatica')->dailyAt('12:00');
+        $schedule->command('cobranca:Automatica')->dailyAt('16:00');
     }
 
     /**
