@@ -48,28 +48,36 @@ class CobrancaAutomatica extends Command
         $r = [];
         foreach($parcelas as $parcela){
             if(isset($parcela->emprestimo->company->whatsapp)){
+
                 try {
+
                     $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+
                     if ($response->successful()) {
                         $r = $response->json();
                         if($r['loggedIn']){
+
 
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                             $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
-                            $saudacao = obterSaudacao();
+                            $saudacao = self::obterSaudacao();
 
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
-                                Relatório de Parcelas Pendentes:
 
-                                Segue link para acessar todo o histórico de parcelas:
-                                https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+Relatório de Parcelas Pendentes:
 
-                                Segue abaixo as parcelas pendentes:
+Segue link para acessar todo o histórico de parcelas:
+https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+
+Segue abaixo as parcelas pendentes:
                             ";
+
+
+
 
                             // Montagem das parcelas pendentes
                             $parcelasString = $parcela->emprestimo->parcelas
@@ -78,16 +86,16 @@ class CobrancaAutomatica extends Command
                             })
                             ->map(function($item) {
                                 return "
-                                    Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-                                    Parcela: {$item->parcela}
-                                    Atrasos: {$item->atrasadas}
-                                    Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-                                    Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-                                    Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-                                    Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-                                    PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-                                    Status: Pendente
-                                    RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+Parcela: {$item->parcela}
+Atrasos: {$item->atrasadas}
+Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+Status: Pendente
+RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                             })
                             ->implode("\n\n");
 
@@ -107,6 +115,7 @@ class CobrancaAutomatica extends Command
                         }
                     }
                 } catch (\Throwable $th) {
+                    dd($th);
 
                 }
 

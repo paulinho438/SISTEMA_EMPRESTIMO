@@ -77,28 +77,36 @@ class EmprestimoController extends Controller
         $r = [];
         foreach($parcelas as $parcela){
             if(isset($parcela->emprestimo->company->whatsapp)){
+
                 try {
+
                     $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+
                     if ($response->successful()) {
                         $r = $response->json();
                         if($r['loggedIn']){
+
 
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                             $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
-                            $saudacao = obterSaudacao();
+                            $saudacao = self::obterSaudacao();
 
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
-                                Relatório de Parcelas Pendentes:
 
-                                Segue link para acessar todo o histórico de parcelas:
-                                https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+Relatório de Parcelas Pendentes:
 
-                                Segue abaixo as parcelas pendentes:
+Segue link para acessar todo o histórico de parcelas:
+https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+
+Segue abaixo as parcelas pendentes:
                             ";
+
+
+
 
                             // Montagem das parcelas pendentes
                             $parcelasString = $parcela->emprestimo->parcelas
@@ -107,16 +115,16 @@ class EmprestimoController extends Controller
                             })
                             ->map(function($item) {
                                 return "
-                                    Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-                                    Parcela: {$item->parcela}
-                                    Atrasos: {$item->atrasadas}
-                                    Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-                                    Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-                                    Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-                                    Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-                                    PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-                                    Status: Pendente
-                                    RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+Parcela: {$item->parcela}
+Atrasos: {$item->atrasadas}
+Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+Status: Pendente
+RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                             })
                             ->implode("\n\n");
 
@@ -132,11 +140,11 @@ class EmprestimoController extends Controller
                             ];
 
                             $response = Http::asJson()->post($baseUrl, $data);
-                            return $response;
                             sleep(8);
                         }
                     }
                 } catch (\Throwable $th) {
+                    dd($th);
 
                 }
 
@@ -144,6 +152,22 @@ class EmprestimoController extends Controller
         }
 
         return $parcelas;
+    }
+
+    function obterSaudacao()
+    {
+        $hora = date('H');
+        $saudacoesManha = ['Bom dia', 'Olá, bom dia', 'Tenha um excelente dia'];
+        $saudacoesTarde = ['Boa tarde', 'Olá, boa tarde', 'Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['Boa noite', 'Olá, boa noite', 'Espero que sua noite esteja ótima'];
+
+        if ($hora < 12) {
+            return $saudacoesManha[array_rand($saudacoesManha)];
+        } elseif ($hora < 18) {
+            return $saudacoesTarde[array_rand($saudacoesTarde)];
+        } else {
+            return $saudacoesNoite[array_rand($saudacoesNoite)];
+        }
     }
 
     public function recalcularParcelas(Request $r){
