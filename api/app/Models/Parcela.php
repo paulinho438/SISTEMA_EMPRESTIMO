@@ -46,4 +46,9 @@ class Parcela extends Model
         return $this->movimentacao()->sum('valor');
     }
 
+    public function totalPendente()
+    {
+        return $this->emprestimo()->parcelas()->where('dt_baixa', null)->sum('saldo');
+    }
+
 }
