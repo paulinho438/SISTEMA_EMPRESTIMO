@@ -17,6 +17,7 @@ use App\Http\Controllers\{
     ContasreceberController,
     MovimentacaofinanceiraController,
     UsuarioController,
+    FeriadoController
 
 };
 
@@ -157,6 +158,12 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/testebank', [EmprestimoController::class, 'testeBank']);
 
     Route::get('/recalcularparcelas', [EmprestimoController::class, 'recalcularParcelas']);
+
+    Route::get('/feriado', [FeriadoController::class, 'all']);
+    Route::get('/feriado/{id}', [FeriadoController::class, 'id']);
+    Route::get('/feriado/{id}/delete', [FeriadoController::class, 'delete']);
+    Route::put('/feriado/{id}', [FeriadoController::class, 'update']);
+    Route::post('/feriado', [FeriadoController::class, 'insert']);
 
 
 

@@ -12,6 +12,8 @@ class Feriado extends Model
 {
     public $table = 'feriados';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'description',
         'data_feriado',
