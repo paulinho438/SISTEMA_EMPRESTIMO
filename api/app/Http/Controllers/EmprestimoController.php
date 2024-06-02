@@ -33,7 +33,7 @@ use App\Http\Resources\EmprestimoResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\BancosResource;
 use App\Http\Resources\CostcenterResource;
-use App\Http\Resources\FeriadoResource;
+use App\Http\Resources\FeriadoEmprestimoResource;
 use App\Http\Resources\FornecedorResource;
 
 use App\Jobs\gerarPixParcelas;
@@ -396,7 +396,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
     }
 
     public function feriados(Request $request){
-        return FeriadoResource::collection(Feriado::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
+        return FeriadoEmprestimoResource::collection(Feriado::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
     public function searchFornecedor(Request $request){

@@ -139,7 +139,7 @@ class AuthController extends Controller
 
         if(!$validator->fails()){
 
-            $validTentativas = User::where('email', $request->usuario)->orWhere('cpf', $request->usuario)->first();
+            $validTentativas = User::where('login', $request->usuario)->orWhere('cpf', $request->usuario)->first();
 
             if($validTentativas && $validTentativas->tentativas == '5'){
                 return response()->json([
@@ -162,14 +162,14 @@ class AuthController extends Controller
 
             if(!$token){
                 $token = Auth::attempt([
-                    'email' => $request->usuario,
+                    'login' => $request->usuario,
                     'password' => $request->password
                 ]);
 
                 if(!$token){
                     $tentativas = 0;
 
-                    $validTentativas = User::where('email', $request->usuario)->orWhere('cpf', $request->usuario)->first();
+                    $validTentativas = User::where('login', $request->usuario)->orWhere('cpf', $request->usuario)->first();
                     if($validTentativas){
                         $tentativas = ++$validTentativas->tentativas;
                         $validTentativas->tentativas = $tentativas;

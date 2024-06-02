@@ -28,7 +28,7 @@ export default {
 	},
 	setup() {
 		return {
-			cpf: ref(''),
+			usuario: ref(''),
 			password: ref(''),
 			contextPath: useLayout(),
 			layoutConfig: useLayout(),
@@ -64,7 +64,7 @@ export default {
 			this.error = '';
 
 			const data = {
-				usuario: this.cpf.replaceAll('.', '').replaceAll('-', ''),
+				usuario: this.usuario,
 				password: this.password
 			};
 
@@ -179,8 +179,8 @@ export default {
                     </div>
 
                     <div class="z-1">
-                        <label for="cpf" class="block text-900 text-xl font-medium mb-2">CPF</label>
-						<InputMask :modelValue="cpf" v-model="cpf" mask="999.999.999-99" id="cpf" type="text" class="w-full md:w-30rem mb-5" :disabled="loadingLogin" />
+                        <label for="usuario" class="block text-900 text-xl font-medium mb-2">Usuario</label>
+						<InputText :modelValue="usuario" v-model="usuario" id="usuario" type="text" class="w-full md:w-30rem mb-5" :disabled="loadingLogin" />
 
                         <label for="password1" class="block text-900 font-medium text-xl mb-2">SENHA</label>
                         <Password id="password1" v-model="password" placeholder="Senha" :toggleMask="true" :feedback="false" class="w-full mb-3" inputClass="w-full" :inputStyle="{ padding: '1rem' }"></Password>

@@ -8,7 +8,7 @@ use App\Models\Permgroup;
 
 use DateTime;
 
-class FeriadoResource extends JsonResource
+class FeriadoEmprestimoResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -19,8 +19,6 @@ class FeriadoResource extends JsonResource
     public function toArray($request)
     {
         return [
-            "id"                    => $this->id,
-            "description"           => $this->description,
             "data_feriado"          => (new DateTime($this->data_feriado))->format('d/m/Y'),
         ];
     }

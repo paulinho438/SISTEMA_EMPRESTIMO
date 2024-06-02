@@ -116,6 +116,7 @@ const model = ref([
         permission: 'edit_empresa',
         items: [
         { label: 'Informações da Empresa', icon: 'pi pi-fw pi-building', to: '/empresa', permission: 'edit_empresa' },
+        { label: 'Feriados', icon: 'pi pi-fw pi-calendar-plus', to: '/feriados', permission: 'edit_empresa' },
         { label: 'Usuários', icon: 'pi pi-user pi-building', to: '/usuarios', permission: 'edit_empresa' },
         ],
     },
