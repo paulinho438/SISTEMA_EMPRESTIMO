@@ -126,7 +126,11 @@ export default {
 								</span>
 							</div>
 						</template>
-
+						<Column field="email" header="Login" :sortable="true" class="w-1">
+							<template #body="slotProps">
+								{{ slotProps.data.login }}
+							</template>
+						</Column>
 						<Column field="email" header="Nome Completo" :sortable="true" class="w-1">
 							<template #body="slotProps">
 								{{ slotProps.data.nome_completo }}

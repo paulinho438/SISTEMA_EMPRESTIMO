@@ -239,6 +239,11 @@ export default {
 							</template>
 						</MultiSelect>
 					</div>
+					<div v-if="(!this.route.params?.id)" class="field col-12 md:col-3">
+						<label for="firstname2">Login</label>
+						<InputText id="firstname2" :modelValue="usuario?.login" v-model="usuario.login"
+							type="text" />
+					</div>
 					<div class="field col-12 md:col-3">
 						<label for="firstname2">Nome Completo</label>
 						<InputText id="firstname2" :modelValue="usuario?.nome_completo" v-model="usuario.nome_completo"

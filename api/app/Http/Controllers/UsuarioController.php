@@ -80,6 +80,7 @@ class UsuarioController extends Controller
         $array = ['error' => ''];
 
         $validator = Validator::make($request->all(), [
+            'login' => 'required|unique:users,login',
             'nome_completo' => 'required',
             'cpf' => 'required',
             'rg' => 'required',
