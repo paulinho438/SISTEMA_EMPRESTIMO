@@ -907,7 +907,6 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 $EditEmprestimo = Emprestimo::find($id);
 
-                $EditEmprestimo->dt_lancamento = $dados['dt_lancamento'];
                 $EditEmprestimo->valor = $dados['valor'];
                 $EditEmprestimo->lucro = $dados['lucro'];
                 $EditEmprestimo->juros = $dados['juros'];
