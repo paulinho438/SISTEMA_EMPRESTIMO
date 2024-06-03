@@ -134,6 +134,12 @@ export default {
 			}
 
 		},
+		formatarDataParaString(data) {
+			const dia = String(data.getDate()).padStart(2, '0');
+			const mes = String(data.getMonth() + 1).padStart(2, '0');
+			const ano = data.getFullYear();
+			return `${dia}/${mes}/${ano}`;
+		},
 		back() {
 			this.router.push(`/emprestimos`);
 		},
@@ -149,6 +155,7 @@ export default {
 			this.client.costcenter = this.costcenter;
 			this.client.consultor = this.consultor;
 			this.client.parcelas = this.parcelas;
+			this.client.dt_lancamento = this.formatarDataParaString(this.client.dt_lancamento);
 
 			this.toast.add({
 				severity: ToastSeverity.SUCCESS,
