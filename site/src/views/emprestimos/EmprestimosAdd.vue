@@ -10,7 +10,10 @@ export default {
 	props: {
 		address: Object,
 		oldCicom: Object,
-		loading: Boolean
+		loading: Boolean,
+		emp: Object,
+
+
 	},
 	emits: ['updateCicom', 'addCityBeforeSave', 'changeLoading'],
 	setup() {
@@ -83,9 +86,9 @@ export default {
 		gerarParcelas() {
 			let parcela = {};
 			// Defina a data inicial
-			const dataLanc = new Date();
+			const dataLanc = this.address.dt_lancamento;
 
-			const dataInicial = new Date();
+			const dataInicial = this.address.dt_lancamento;
 
 			// Array para armazenar as parcelas
 			const parcelas = [];
