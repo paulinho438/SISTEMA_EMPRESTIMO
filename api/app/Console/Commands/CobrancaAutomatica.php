@@ -44,22 +44,28 @@ class CobrancaAutomatica extends Command
 
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
-        $parcelas = Parcela::where('dt_baixa', null)->where('atrasadas', '>', 0)->get()->unique('emprestimo_id');
+        $parcelas = Parcela::where('dt_baixa', null)
+            ->where('atrasadas', '>', 0)
+            ->whereDate('venc_real', Carbon::today()->toDateString())
+            ->get()
+            ->unique('emprestimo_id');
+
+
         $r = [];
-        foreach($parcelas as $parcela){
-            if(isset($parcela->emprestimo->company->whatsapp)){
+        foreach ($parcelas as $parcela) {
+            if (isset($parcela->emprestimo->company->whatsapp)) {
 
                 try {
 
-                    $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
                     if ($response->successful()) {
                         $r = $response->json();
-                        if($r['loggedIn']){
+                        if ($r['loggedIn']) {
 
 
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
+                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
@@ -81,11 +87,11 @@ Segue abaixo as parcelas pendentes:
 
                             // Montagem das parcelas pendentes
                             $parcelasString = $parcela->emprestimo->parcelas
-                            ->filter(function($item) {
-                                return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                            })
-                            ->map(function($item) {
-                                return "
+                                ->filter(function ($item) {
+                                    return $item->atrasadas > 0 && is_null($item->dt_baixa);
+                                })
+                                ->map(function ($item) {
+                                    return "
 Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
 Parcela: {$item->parcela}
 Atrasos: {$item->atrasadas}
@@ -96,14 +102,14 @@ Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
 PIX: " . ($item->chave_pix ?? 'Não Contém') . "
 Status: Pendente
 RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                            })
-                            ->implode("\n\n");
+                                })
+                                ->implode("\n\n");
 
 
 
                             // Obtenha a saudação baseada na hora atual
 
-                            $frase =  $saudacaoTexto . $fraseInicial . $parcelasString;
+                            $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
 
                             $data = [
                                 "numero" => "55" . $telefone,
