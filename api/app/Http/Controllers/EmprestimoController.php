@@ -23,6 +23,8 @@ use App\Traits\VerificarPermissao;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
+use DateTime;
+
 use Ramsey\Uuid\Uuid;
 
 use Illuminate\Support\Str;
@@ -53,42 +55,46 @@ class EmprestimoController extends Controller
 
     use VerificarPermissao;
 
-    public function __construct(Customlog $custom_log){
+    public function __construct(Customlog $custom_log)
+    {
         $this->custom_log = $custom_log;
     }
 
-    public function id(Request $r, $id){
+    public function id(Request $r, $id)
+    {
         return new EmprestimoResource(Emprestimo::find($id));
     }
 
-    public function all(Request $request){
+    public function all(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Emprestimos',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Emprestimos',
             'operation' => 'index'
         ]);
 
         return EmprestimoResource::collection(Emprestimo::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
-    public function cobrancaAutomatica(){
+    public function cobrancaAutomatica()
+    {
         $parcelas = Parcela::where('dt_baixa', null)->where('atrasadas', '>', 0)->get()->unique('emprestimo_id');
         $r = [];
-        foreach($parcelas as $parcela){
-            if(isset($parcela->emprestimo->company->whatsapp)){
+        foreach ($parcelas as $parcela) {
+            if (isset($parcela->emprestimo->company->whatsapp)) {
 
                 try {
 
-                    $response = Http::get($parcela->emprestimo->company->whatsapp.'/logar');
+                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
                     if ($response->successful()) {
                         $r = $response->json();
-                        if($r['loggedIn']){
+                        if ($r['loggedIn']) {
 
 
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp.'/enviar-mensagem';
+                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
@@ -110,11 +116,11 @@ Segue abaixo as parcelas pendentes:
 
                             // Montagem das parcelas pendentes
                             $parcelasString = $parcela->emprestimo->parcelas
-                            ->filter(function($item) {
-                                return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                            })
-                            ->map(function($item) {
-                                return "
+                                ->filter(function ($item) {
+                                    return $item->atrasadas > 0 && is_null($item->dt_baixa);
+                                })
+                                ->map(function ($item) {
+                                    return "
 Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
 Parcela: {$item->parcela}
 Atrasos: {$item->atrasadas}
@@ -125,14 +131,14 @@ Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
 PIX: " . ($item->chave_pix ?? 'Não Contém') . "
 Status: Pendente
 RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                            })
-                            ->implode("\n\n");
+                                })
+                                ->implode("\n\n");
 
 
 
                             // Obtenha a saudação baseada na hora atual
 
-                            $frase =  $saudacaoTexto . $fraseInicial . $parcelasString;
+                            $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
 
                             $data = [
                                 "numero" => "55" . $telefone,
@@ -170,7 +176,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function recalcularParcelas(Request $r){
+    public function recalcularParcelas(Request $r)
+    {
 
         $juros = Juros::value('juros');
 
@@ -189,8 +196,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $parcela->venc_real = date('Y-m-d');
                 $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                if($parcela->chave_pix){
-                    $gerarPix = self::gerarPix([
+                if ($parcela->chave_pix) {
+                    $gerarPix = self::gerarPix(
+                        [
                             'parcela' => [
                                 'parcela' => $parcela->parcela,
                                 'valor' => $novoValor,
@@ -208,7 +216,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 }
 
-                if($parcela->contasreceber){
+                if ($parcela->contasreceber) {
                     $parcela->contasreceber->venc = $parcela->venc_real;
                     $parcela->contasreceber->valor = $parcela->saldo;
                     $parcela->contasreceber->save();
@@ -222,7 +230,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
     }
 
-    public function testeBank() {
+    public function testeBank()
+    {
         $parcelas = Parcela::where('dt_baixa', null)->get();
 
         $primeiroRegistro = Parcela::where('dt_baixa', null)->orderBy('venc_real')->first();
@@ -240,8 +249,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         ];
 
         $params = [
-            "inicio" => $primeiroRegistro->venc_real."T00:00:00Z",
-            "fim" => $ultimoRegistro->venc_real."T23:59:59Z",
+            "inicio" => $primeiroRegistro->venc_real . "T00:00:00Z",
+            "fim" => $ultimoRegistro->venc_real . "T23:59:59Z",
             "status" => "CONCLUIDA", // "ATIVA","CONCLUIDA", "REMOVIDA_PELO_USUARIO_RECEBEDOR", "REMOVIDA_PELO_PSP"
         ];
 
@@ -261,7 +270,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 }
             }
 
-            foreach($parcelas as $item){
+            foreach ($parcelas as $item) {
                 if (in_array($item->identificador, $arrayIdsLoc)) {
                     $editParcela = Parcela::find($item->id);
                     $editParcela->dt_baixa = date('Y-m-d');
@@ -288,7 +297,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
     }
 
-    public function efibank() {
+    public function efibank()
+    {
 
 
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
@@ -395,31 +405,37 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function feriados(Request $request){
+    public function feriados(Request $request)
+    {
         return FeriadoEmprestimoResource::collection(Feriado::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
-    public function searchFornecedor(Request $request){
+    public function searchFornecedor(Request $request)
+    {
 
         return FornecedorResource::collection(Fornecedor::where("nome_completo", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
-    public function searchCliente(Request $request){
+    public function searchCliente(Request $request)
+    {
 
         return ClientResource::collection(Client::where("nome_completo", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
-    public function searchBanco(Request $request){
+    public function searchBanco(Request $request)
+    {
 
         return BancosResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
-    public function searchCostcenter(Request $request){
+    public function searchCostcenter(Request $request)
+    {
 
         return CostcenterResource::collection(Costcenter::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
-    public function searchConsultor(Request $request){
+    public function searchConsultor(Request $request)
+    {
 
         // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get();
         return User::where("nome_completo", "LIKE", "%{$request->name}%")
@@ -432,7 +448,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             ->get();
     }
 
-    public function enviarPix($dados){
+    public function enviarPix($dados)
+    {
 
 
         $return = [];
@@ -488,7 +505,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
     }
 
-    public function gerarPix($dados) {
+    public function gerarPix($dados)
+    {
 
         $return = [];
 
@@ -520,11 +538,11 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             ],
             "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Parcela ". $dados['parcela']['parcela'],
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
             "infoAdicionais" => [
                 [
                     "nome" => "Emprestimo",
-                    "valor" => "R$ ".$dados['parcela']['valor'],
+                    "valor" => "R$ " . $dados['parcela']['valor'],
                 ],
                 [
                     "nome" => "Parcela",
@@ -572,7 +590,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function insert(Request $request){
+    public function insert(Request $request)
+    {
 
         $array = ['error' => ''];
 
@@ -580,7 +599,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
         $emprestimoAdd = [];
 
-        $emprestimoAdd['dt_lancamento'] = date('Y-m-d');
+        $emprestimoAdd['dt_lancamento'] = isset($dados['dt_lancamento']) && !empty($dados['dt_lancamento']) ? DateTime::createFromFormat('d/m/Y', $dados['dt_lancamento'])->format('Y-m-d') : Carbon::today()->format('Y-m-d');
         $emprestimoAdd['valor'] = $dados['valor'];
         $emprestimoAdd['lucro'] = $dados['lucro'];
         $emprestimoAdd['juros'] = $dados['juros'];
@@ -595,7 +614,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
         $emprestimoAdd = Emprestimo::create($emprestimoAdd);
 
-        if($emprestimoAdd){
+        if ($emprestimoAdd) {
 
             $contaspagar = [];
             $contaspagar['banco_id'] = $dados['banco']['id'];
@@ -606,14 +625,14 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $contaspagar['lanc'] = date('Y-m-d');
             $contaspagar['venc'] = date('Y-m-d');
             $contaspagar['valor'] = $dados['valor'];
-            $contaspagar['descricao'] = 'Empréstimo Nº '.$emprestimoAdd->id.' para '.$dados['cliente']['nome_completo'];
+            $contaspagar['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
             $contaspagar['company_id'] = $request->header('company-id');
             Contaspagar::create($contaspagar);
 
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $dados['banco']['id'];
             $movimentacaoFinanceira['company_id'] = $request->header('company-id');
-            $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº '.$emprestimoAdd->id.' para '.$dados['cliente']['nome_completo'];
+            $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
             $movimentacaoFinanceira['valor'] = $dados['valor'];
@@ -626,18 +645,18 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
-        foreach($dados['parcelas'] as $parcela){
+        foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
-            $addParcela['emprestimo_id']    = $emprestimoAdd->id;
-            $addParcela['dt_lancamento']    = date('Y-m-d');
-            $addParcela['parcela']          = $parcela['parcela'];
-            $addParcela['valor']            = $parcela['valor'];
-            $addParcela['saldo']            = $parcela['saldo'];
-            $addParcela['venc']             = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
-            $addParcela['venc_real']        = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+            $addParcela['emprestimo_id'] = $emprestimoAdd->id;
+            $addParcela['dt_lancamento'] = date('Y-m-d');
+            $addParcela['parcela'] = $parcela['parcela'];
+            $addParcela['valor'] = $parcela['valor'];
+            $addParcela['saldo'] = $parcela['saldo'];
+            $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
+            $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
-            $caminhoAbsoluto = storage_path('app/public/documentos/' .$dados['banco']['certificado']);
+            $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
                 'client_id' => $dados['banco']['clienteid'],
@@ -665,15 +684,15 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 ],
                 "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-                "solicitacaoPagador" => "Parcela ". $addParcela['parcela'],
+                "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
                 "infoAdicionais" => [
                     [
                         "nome" => "Emprestimo",
-                        "valor" => "R$ ".$emprestimoAdd->valor,
+                        "valor" => "R$ " . $emprestimoAdd->valor,
                     ],
                     [
                         "nome" => "Parcela",
-                        "valor" => $addParcela['parcela']." / ". $ultimaParcela['parcela']
+                        "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
                     ]
                 ]
             ];
@@ -714,25 +733,25 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             }
 
 
-                $parcela = Parcela::create($addParcela);
+            $parcela = Parcela::create($addParcela);
 
-                if($parcela) {
-                    $contasreceber = [];
-                    $contasreceber['company_id'] = $request->header('company-id');
-                    $contasreceber['parcela_id'] = $parcela->id;
-                    $contasreceber['client_id'] = $dados['cliente']['id'];
-                    $contasreceber['banco_id'] = $dados['banco']['id'];
-                    $contasreceber['descricao'] = 'Parcela N° '.$parcela->parcela.' do Emprestimo N° '.$emprestimoAdd->id;
-                    $contasreceber['status'] = 'Aguardando Pagamento';
-                    $contasreceber['tipodoc'] = 'Empréstimo';
-                    $contasreceber['lanc'] = $parcela->dt_lancamento;
-                    $contasreceber['venc'] = $parcela->venc_real;
-                    $contasreceber['valor'] = $parcela->valor;
+            if ($parcela) {
+                $contasreceber = [];
+                $contasreceber['company_id'] = $request->header('company-id');
+                $contasreceber['parcela_id'] = $parcela->id;
+                $contasreceber['client_id'] = $dados['cliente']['id'];
+                $contasreceber['banco_id'] = $dados['banco']['id'];
+                $contasreceber['descricao'] = 'Parcela N° ' . $parcela->parcela . ' do Emprestimo N° ' . $emprestimoAdd->id;
+                $contasreceber['status'] = 'Aguardando Pagamento';
+                $contasreceber['tipodoc'] = 'Empréstimo';
+                $contasreceber['lanc'] = $parcela->dt_lancamento;
+                $contasreceber['venc'] = $parcela->venc_real;
+                $contasreceber['valor'] = $parcela->valor;
 
-                    Contasreceber::create($contasreceber);
+                Contasreceber::create($contasreceber);
 
-                }
             }
+        }
 
         return $emprestimoAdd;
 
@@ -741,12 +760,13 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         return $array;
     }
 
-    public function pagamentoTransferencia(Request $request, $id) {
+    public function pagamentoTransferencia(Request $request, $id)
+    {
 
-        if(!$this->contem($request->header('Company_id'), auth()->user(), 'view_fornecedores_create')){
+        if (!$this->contem($request->header('Company_id'), auth()->user(), 'view_fornecedores_create')) {
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' não tem permissão para autorizar o pagamento do emprestimo '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' não tem permissão para autorizar o pagamento do emprestimo ' . $id,
                 'operation' => 'error'
             ]);
 
@@ -766,19 +786,19 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $emprestimo = Emprestimo::find($id);
 
-            if($emprestimo){
-               $envio = self::enviarPix([
-                    'valor'          =>  $emprestimo->valor,
-                    'informacao'     =>  'Emprestimo de R$ '.$emprestimo->valor.' para o '.$emprestimo->client->nome_completo,
-                    'pix_cliente'    =>  $emprestimo->client->cpf
-               ]);
+            if ($emprestimo) {
+                $envio = self::enviarPix([
+                    'valor' => $emprestimo->valor,
+                    'informacao' => 'Emprestimo de R$ ' . $emprestimo->valor . ' para o ' . $emprestimo->client->nome_completo,
+                    'pix_cliente' => $emprestimo->client->cpf
+                ]);
 
-               if($envio['error_code'] != null){
+                if ($envio['error_code'] != null) {
                     return response()->json([
                         "message" => $envio['error_description'],
                         "error" => ''
                     ], Response::HTTP_FORBIDDEN);
-               }
+                }
 
             }
 
@@ -788,7 +808,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' autorizou o pagamento do emprestimo '.$id. 'no valor de R$ '.$emprestimo->valor.' para o cliente '.$emprestimo->client->nome_completo,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $emprestimo->valor . ' para o cliente ' . $emprestimo->client->nome_completo,
                 'operation' => 'edit'
             ]);
 
@@ -806,12 +826,13 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function reprovarEmprestimo(Request $request, $id) {
+    public function reprovarEmprestimo(Request $request, $id)
+    {
 
-        if(!$this->contem($request->header('Company_id'), auth()->user(), 'view_fornecedores_create')){
+        if (!$this->contem($request->header('Company_id'), auth()->user(), 'view_fornecedores_create')) {
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' não tem permissão para autorizar o pagamento do emprestimo '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' não tem permissão para autorizar o pagamento do emprestimo ' . $id,
                 'operation' => 'error'
             ]);
 
@@ -831,7 +852,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $emprestimo = Emprestimo::find($id);
 
-            if($emprestimo){
+            if ($emprestimo) {
                 $emprestimo->contaspagar->status = 'Empréstimo Reprovado';
                 $emprestimo->contaspagar->save();
             }
@@ -840,7 +861,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' reprovou o pagamento do emprestimo '.$id. 'no valor de R$ '.$emprestimo->valor.' para o cliente '.$emprestimo->client->nome_completo,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' reprovou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $emprestimo->valor . ' para o cliente ' . $emprestimo->client->nome_completo,
                 'operation' => 'edit'
             ]);
 
@@ -858,7 +879,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
 
 
         DB::beginTransaction();
@@ -881,19 +903,19 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             ]);
 
             $dados = $request->all();
-            if(!$validator->fails()){
+            if (!$validator->fails()) {
 
                 $EditEmprestimo = Emprestimo::find($id);
 
-                $EditEmprestimo->dt_lancamento  = $dados['dt_lancamento'];
-                $EditEmprestimo->valor          = $dados['valor'];
-                $EditEmprestimo->lucro          = $dados['lucro'];
-                $EditEmprestimo->juros          = $dados['juros'];
-                $EditEmprestimo->saldo          = $dados['saldo'];
-                $EditEmprestimo->costcenter_id  = $dados['costcenter_id'];
-                $EditEmprestimo->banco_id       = $dados['banco_id'];
-                $EditEmprestimo->client_id      = $dados['client_id'];
-                $EditEmprestimo->user_id        = $dados['user_id'];
+                $EditEmprestimo->dt_lancamento = $dados['dt_lancamento'];
+                $EditEmprestimo->valor = $dados['valor'];
+                $EditEmprestimo->lucro = $dados['lucro'];
+                $EditEmprestimo->juros = $dados['juros'];
+                $EditEmprestimo->saldo = $dados['saldo'];
+                $EditEmprestimo->costcenter_id = $dados['costcenter_id'];
+                $EditEmprestimo->banco_id = $dados['banco_id'];
+                $EditEmprestimo->client_id = $dados['client_id'];
+                $EditEmprestimo->user_id = $dados['user_id'];
 
                 $EditEmprestimo->save();
 
@@ -916,7 +938,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function cancelarBaixaManual(Request $request, $id){
+    public function cancelarBaixaManual(Request $request, $id)
+    {
 
 
         DB::beginTransaction();
@@ -929,7 +952,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $editParcela = Parcela::find($id);
             $editParcela->saldo = $editParcela->valor;
             $editParcela->dt_baixa = null;
-            if($editParcela->contasreceber){
+            if ($editParcela->contasreceber) {
                 $editParcela->contasreceber->status = 'Aguardando Pagamento';
                 $editParcela->contasreceber->dt_baixa = null;
                 $editParcela->contasreceber->forma_recebto = null;
@@ -941,7 +964,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
             $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-            $movimentacaoFinanceira['descricao'] = 'Cancelamento da Baixa da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+            $movimentacaoFinanceira['descricao'] = 'Cancelamento da Baixa da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
             $movimentacaoFinanceira['valor'] = $editParcela->saldo;
@@ -954,7 +977,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' cancelou a baixa manual da parcela: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' cancelou a baixa manual da parcela: ' . $id,
                 'operation' => 'index'
             ]);
 
@@ -969,7 +992,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             ], Response::HTTP_FORBIDDEN);
         }
     }
-    public function baixaManual(Request $request, $id){
+    public function baixaManual(Request $request, $id)
+    {
 
         DB::beginTransaction();
 
@@ -980,7 +1004,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $editParcela = Parcela::find($id);
 
-            if($request->valor == $editParcela->saldo ){
+            if ($request->valor == $editParcela->saldo) {
                 $editParcela->dt_baixa = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->status = 'Pago';
@@ -993,7 +1017,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -1003,10 +1027,10 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
-                    'content' => 'O usuário: '.auth()->user()->nome_completo.' realizou a baixa manual da parcela: '.$id,
+                    'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa manual da parcela: ' . $id,
                     'operation' => 'index'
                 ]);
-            }else{
+            } else {
                 $editParcela->saldo = $editParcela->saldo - $request->valor;
                 $editParcela->dt_ult_cobranca = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
@@ -1018,7 +1042,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Baixa parcial da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                $movimentacaoFinanceira['descricao'] = 'Baixa parcial da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $request->valor;
@@ -1027,7 +1051,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
-                    'content' => 'O usuário: '.auth()->user()->nome_completo.' realizou a baixa parcial da parcela: '.$id,
+                    'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa parcial da parcela: ' . $id,
                     'operation' => 'index'
                 ]);
 
@@ -1047,7 +1071,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function baixaDesconto(Request $request, $id){
+    public function baixaDesconto(Request $request, $id)
+    {
 
         DB::beginTransaction();
 
@@ -1058,11 +1083,11 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $emprestimo = Emprestimo::find($id);
 
-            if($emprestimo){
+            if ($emprestimo) {
                 $dataHoje = date('Y-m-d');
 
-                foreach($emprestimo->parcelas as $parcela) {
-                    if(!$parcela->dt_baixa){
+                foreach ($emprestimo->parcelas as $parcela) {
+                    if (!$parcela->dt_baixa) {
                         $parcela->dt_baixa = $dataHoje;
                         $parcela->saldo = 0;
                         $parcela->save();
@@ -1082,7 +1107,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Baixa com desconto no Empréstimo Nº '.$emprestimo->id.', que tinha um saldo pendente de R$ '. number_format($request->saldo, 2, ',', '.').' e recebeu um desconto de R$ '. number_format(($request->saldo - $request->valor), 2, ',', '.');
+                $movimentacaoFinanceira['descricao'] = 'Baixa com desconto no Empréstimo Nº ' . $emprestimo->id . ', que tinha um saldo pendente de R$ ' . number_format($request->saldo, 2, ',', '.') . ' e recebeu um desconto de R$ ' . number_format(($request->saldo - $request->valor), 2, ',', '.');
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $request->valor;
@@ -1105,7 +1130,8 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function baixaManualCobrador(Request $request, $id){
+    public function baixaManualCobrador(Request $request, $id)
+    {
 
         DB::beginTransaction();
 
@@ -1123,7 +1149,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' recebeu a baixa parcial da parcela: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' recebeu a baixa parcial da parcela: ' . $id,
                 'operation' => 'index'
             ]);
 
@@ -1141,25 +1167,27 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         }
     }
 
-    public function infoEmprestimo(Request $request, $id){
+    public function infoEmprestimo(Request $request, $id)
+    {
 
         $array = ['error' => ''];
 
         $user = auth()->user();
 
         $parcela = Parcela::find($id);
-        if($parcela){
+        if ($parcela) {
             return $parcela->emprestimo->parcelas;
         }
 
 
 
-            return response()->json(['message' => 'Baixa realizada com sucesso.']);
+        return response()->json(['message' => 'Baixa realizada com sucesso.']);
 
 
     }
 
-    public function infoEmprestimoFront(Request $request, $id){
+    public function infoEmprestimoFront(Request $request, $id)
+    {
 
         $array = ['error' => '', 'data' => []];
 
@@ -1168,19 +1196,20 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
         $parcela = Parcela::find($id);
 
-        if($parcela){
+        if ($parcela) {
             $array['data']['emprestimo'] = new EmprestimoResource($parcela->emprestimo);
             return $array;
         }
 
 
 
-            return response()->json(['message' => 'Baixa realizada com sucesso.']);
+        return response()->json(['message' => 'Baixa realizada com sucesso.']);
 
 
     }
 
-    public function cobrarAmanha(Request $request, $id){
+    public function cobrarAmanha(Request $request, $id)
+    {
 
         DB::beginTransaction();
 
@@ -1197,7 +1226,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' deixou a cobrança para amanha da parcela: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' deixou a cobrança para amanha da parcela: ' . $id,
                 'operation' => 'index'
             ]);
 
@@ -1226,7 +1255,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' deletou o Emprestimo: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' deletou o Emprestimo: ' . $id,
                 'operation' => 'destroy'
             ]);
 
@@ -1237,7 +1266,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' tentou deletar o Emprestimo: '.$id.' ERROR: '.$e->getMessage(),
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' tentou deletar o Emprestimo: ' . $id . ' ERROR: ' . $e->getMessage(),
                 'operation' => 'error'
             ]);
 

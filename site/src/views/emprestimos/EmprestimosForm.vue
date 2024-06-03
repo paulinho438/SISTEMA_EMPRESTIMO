@@ -48,13 +48,13 @@ export default {
 				geolocalizacao: '17.23213, 12.455345'
 			}),
 			loading: ref(false),
-			selectedTipoSexo : ref(''),
+			selectedTipoSexo: ref(''),
 			sexo: ref([
-					{ name: 'Masculino', value: 'M' },
-					{ name: 'Feminino', value: 'F' },
-				])
-			}
-			
+				{ name: 'Masculino', value: 'M' },
+				{ name: 'Feminino', value: 'F' },
+			])
+		}
+
 	},
 	methods: {
 		changeLoading() {
@@ -103,33 +103,36 @@ export default {
 		},
 		getemprestimo() {
 
+
+
 			if (this.route.params?.id) {
 				this.client = ref(null);
 				this.loading = true;
 				this.emprestimoService.get(this.route.params.id)
-				.then((response) => {
-					this.client = response.data?.data;
-					this.city = response.data?.data.cliente;
-					this.banco = response.data?.data.banco;
-					this.costcenter = response.data?.data.costcenter;
-					this.consultor = response.data?.data.consultor;
-					this.parcelas = response.data?.data.parcelas;
-				})
-				.catch((error) => {
-					this.toast.add({
-						severity: ToastSeverity.ERROR,
-						detail: UtilService.message(e),
-						life: 3000
+					.then((response) => {
+						this.client = response.data?.data;
+						this.city = response.data?.data.cliente;
+						this.banco = response.data?.data.banco;
+						this.costcenter = response.data?.data.costcenter;
+						this.consultor = response.data?.data.consultor;
+						this.parcelas = response.data?.data.parcelas;
+					})
+					.catch((error) => {
+						this.toast.add({
+							severity: ToastSeverity.ERROR,
+							detail: UtilService.message(e),
+							life: 3000
+						});
+					})
+					.finally(() => {
+						this.loading = false;
 					});
-				})
-				.finally(() => {
-					this.loading = false;
-				});
-			}else{
+			} else {
 				this.client = ref({});
+				this.client.dt_lancamento = new Date(new Date());
 				this.client.address = [];
 			}
-			
+
 		},
 		back() {
 			this.router.push(`/emprestimos`);
@@ -154,42 +157,42 @@ export default {
 			});
 
 			this.emprestimoService.save(this.client)
-			.then((response) => {
-				if (undefined != response.data.data) {
-					this.client = response.data.data;
-					
-				}
+				.then((response) => {
+					if (undefined != response.data.data) {
+						this.client = response.data.data;
 
-				this.toast.add({
-					severity: ToastSeverity.SUCCESS,
-					detail: this.client?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
-					life: 3000
-				});
+					}
 
-				setTimeout(() => {
-					this.router.push({ name: 'emprestimosList'})
-				}, 1200)
-
-			})
-			.catch((error) => {
-				this.changeLoading();
-				this.errors = error?.response?.data?.errors;
-
-				if (error?.response?.status != 422) {
 					this.toast.add({
-						severity: ToastSeverity.ERROR,
-						detail: UtilService.message(error.response.data),
+						severity: ToastSeverity.SUCCESS,
+						detail: this.client?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
 						life: 3000
 					});
-				}
 
-				this.changeLoading();
-			})
-			.finally(() => {
-				this.changeLoading();
-			});
+					setTimeout(() => {
+						this.router.push({ name: 'emprestimosList' })
+					}, 1200)
+
+				})
+				.catch((error) => {
+					this.changeLoading();
+					this.errors = error?.response?.data?.errors;
+
+					if (error?.response?.status != 422) {
+						this.toast.add({
+							severity: ToastSeverity.ERROR,
+							detail: UtilService.message(error.response.data),
+							life: 3000
+						});
+					}
+
+					this.changeLoading();
+				})
+				.finally(() => {
+					this.changeLoading();
+				});
 		},
-		
+
 		clearclient() {
 			this.loading = true;
 		},
@@ -218,8 +221,10 @@ export default {
 			<h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
 		</div>
 		<div class="col-4 px-0 py-0 text-right">
-			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm" :icon="icons.ANGLE_LEFT" @click.prevent="back" />
-			<Button v-if="!this.route.params?.id" label="Salvar" class="p-button p-button-info p-button-sm ml-3" :icon="icons.SAVE" type="button" @click.prevent="save" />
+			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm" :icon="icons.ANGLE_LEFT"
+				@click.prevent="back" />
+			<Button v-if="!this.route.params?.id" label="Salvar" class="p-button p-button-info p-button-sm ml-3"
+				:icon="icons.SAVE" type="button" @click.prevent="save" />
 		</div>
 	</div>
 	<skeletonEmprestimos :loading="loading" />
@@ -229,33 +234,55 @@ export default {
 			<template #content>
 				<div class="col-12">
 					<div class="p-fluid formgrid grid">
-						<div class="field col-12 md:col-12">
+						<div class="field col-12 md:col-12 m-0 p-0">
+							<div class="field col-12 md:col-3 ">
+								<label for="firstname2">Data Lançamento</label>
+								<Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'"
+								v-model="client.dt_lancamento" showIcon :showOnFocus="false" class="" />
+							</div>
+						</div>
+						<div class="field col-12 md:col-3">
 							<label for="firstname2">Consultor</label>
-							<AutoComplete :modelValue="consultor" v-model="consultor" :dropdown="true" :suggestions="consultores" placeholder="Informe o nome do consultor" class="w-full" inputClass="w-full p-inputtext-sm" @complete="searchConsultor($event)" optionLabel="nome_completo" />
+							<AutoComplete :modelValue="consultor" v-model="consultor" :dropdown="true"
+								:suggestions="consultores" placeholder="Informe o nome do consultor" class="w-full"
+								inputClass="w-full p-inputtext-sm" @complete="searchConsultor($event)"
+								optionLabel="nome_completo" />
 						</div>
-						<div class="field col-12 md:col-12">
+						<div class="field col-12 md:col-3">
 							<label for="firstname2">Cliente</label>
-							<AutoComplete :modelValue="city" v-model="city" :dropdown="true" :suggestions="cities" placeholder="Informe o nome do cliente" class="w-full" inputClass="w-full p-inputtext-sm" @complete="searchCliente($event)" optionLabel="nome_completo_cpf" />
+							<AutoComplete :modelValue="city" v-model="city" :dropdown="true" :suggestions="cities"
+								placeholder="Informe o nome do cliente" class="w-full" inputClass="w-full p-inputtext-sm"
+								@complete="searchCliente($event)" optionLabel="nome_completo_cpf" />
 						</div>
-						<div class="field col-12 md:col-12">
+						<div class="field col-12 md:col-3">
 							<label for="firstname2">Banco</label>
-							<AutoComplete :modelValue="banco" v-model="banco" :dropdown="true" :suggestions="bancos" placeholder="Informe o nome do banco" class="w-full" inputClass="w-full p-inputtext-sm" @complete="searchBanco($event)" optionLabel="name_agencia_conta" />
+							<AutoComplete :modelValue="banco" v-model="banco" :dropdown="true" :suggestions="bancos"
+								placeholder="Informe o nome do banco" class="w-full" inputClass="w-full p-inputtext-sm"
+								@complete="searchBanco($event)" optionLabel="name_agencia_conta" />
 						</div>
-						<div class="field col-12 md:col-12">
+						<div class="field col-12 md:col-3">
 							<label for="firstname2">Centro de Custo</label>
-							<AutoComplete :modelValue="costcenter" :dropdown="true" v-model="costcenter" :suggestions="costcenters" placeholder="Informe o centro de custo" class="w-full" inputClass="w-full p-inputtext-sm" @complete="searchCostcenter($event)" optionLabel="name" />
+							<AutoComplete :modelValue="costcenter" :dropdown="true" v-model="costcenter"
+								:suggestions="costcenters" placeholder="Informe o centro de custo" class="w-full"
+								inputClass="w-full p-inputtext-sm" @complete="searchCostcenter($event)"
+								optionLabel="name" />
 						</div>
 						<div class="field col-12 md:col-3">
 							<label for="firstname2">Valor do Emprestimo</label>
-							<InputNumber id="inputnumber" disabled="true" :modelValue="client?.valor" v-model="client.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
+							<InputNumber id="inputnumber" disabled="true" :modelValue="client?.valor" v-model="client.valor"
+								:mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2"
+								class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
 						</div>
 						<div class="field col-12 md:col-3">
 							<label for="firstname2">Lucro Previsto</label>
-							<InputNumber id="inputnumber" disabled="true" :modelValue="client?.lucro" v-model="client.lucro" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
+							<InputNumber id="inputnumber" disabled="true" :modelValue="client?.lucro" v-model="client.lucro"
+								:mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2"
+								class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
 						</div>
 						<div class="field col-12 md:col-3">
 							<label for="firstname2">Parcelas</label>
-							<InputText type="text" :placeholder="`${parcelas?.length.toString().padStart(3, '0')}`" :disabled="true"></InputText>
+							<InputText type="text" :placeholder="`${parcelas?.length.toString().padStart(3, '0')}`"
+								:disabled="true"></InputText>
 						</div>
 						<div class="field col-12 md:col-3">
 							<label for="firstname2">Juros</label>
@@ -263,28 +290,12 @@ export default {
 						</div>
 					</div>
 				</div>
-				<EmprestimoAdd 
-					:address="this.client" 
-					:oldCicom="this.oldClient"
-					:loading="loading" 
-					@updateCicom="clearCicom" 
-					@addCityBeforeSave="addCityBeforeSave" 
-					@changeLoading="changeLoading" 
-					@saveParcela="saveNewParcela"
-					@saveInfoEmprestimo="saveInfoDoEmprestimo"
-					v-if="true"
-				/>
-				<AddressClient 
-					:address="this.parcelas" 
-					:oldCicom="this.oldClient"
-					:loading="loading" 
-					@updateCicom="clearCicom" 
-					@addCityBeforeSave="addCityBeforeSave" 
-					@changeLoading="changeLoading" 
-					v-if="true"
-				/>
+				<EmprestimoAdd :address="this.client" :oldCicom="this.oldClient" :loading="loading" 
+					@updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading"
+					@saveParcela="saveNewParcela" @saveInfoEmprestimo="saveInfoDoEmprestimo" v-if="true" />
+				<AddressClient :address="this.parcelas" :oldCicom="this.oldClient" :loading="loading"
+					@updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading"
+					v-if="true" />
 			</template>
-		</Card>
-	</div>
-
-</template>
+	</Card>
+</div></template>
