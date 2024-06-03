@@ -599,7 +599,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
         $emprestimoAdd = [];
 
-        $emprestimoAdd['dt_lancamento'] = (DateTime::createFromFormat('d/m/Y', $dados['dt_lancamento']))->format('Y-m-d');
+        $emprestimoAdd['dt_lancamento'] = Carbon::createFromFormat('d/m/Y', $dados['dt_lancamento'])->format('Y-m-d');
         $emprestimoAdd['valor'] = $dados['valor'];
         $emprestimoAdd['lucro'] = $dados['lucro'];
         $emprestimoAdd['juros'] = $dados['juros'];
