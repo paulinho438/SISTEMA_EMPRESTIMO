@@ -715,21 +715,42 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                         $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     } catch (EfiException $e) {
+
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'Error ao gerar a parcela '.$e->code.' '.$e->error.' '.$e->errorDescription,
+                            'operation' => 'error'
+                        ]);
+
                         print_r($e->code . "<br>");
                         print_r($e->error . "<br>");
                         print_r($e->errorDescription) . "<br>";
                     } catch (Exception $e) {
-                        print_r($e->getMessage());
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => $e->getMessage(),
+                            'operation' => 'error'
+                        ]);
                     }
                 } else {
-                    echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                        'operation' => 'error'
+                    ]);
                 }
             } catch (EfiException $e) {
-                print_r($e->code . "<br>");
-                print_r($e->error . "<br>");
-                print_r($e->errorDescription) . "<br>";
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => 'Error ao gerar a parcela '.$e->code.' '.$e->error.' '.$e->errorDescription,
+                    'operation' => 'error'
+                ]);
             } catch (Exception $e) {
-                print_r($e->getMessage());
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => $e->getMessage(),
+                    'operation' => 'error'
+                ]);
             }
 
 
