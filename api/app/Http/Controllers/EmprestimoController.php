@@ -663,7 +663,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 'client_secret' => $dados['banco']['clientesecret'],
                 'certificate' => $caminhoAbsoluto,
                 'sandbox' => false,
-                'timeout' => 30,
+                'timeout' => 300,
             ];
 
             $params = [
