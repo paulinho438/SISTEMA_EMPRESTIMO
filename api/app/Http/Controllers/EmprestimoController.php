@@ -979,6 +979,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $editParcela->contasreceber->save();
             }
 
+            $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa - $editParcela->saldo;
+            $editParcela->emprestimo->company->save();
+
             $editParcela->save();
 
             $movimentacaoFinanceira = [];
@@ -1032,6 +1035,10 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                     $editParcela->contasreceber->forma_recebto = 'PIX';
                     $editParcela->contasreceber->save();
                 }
+
+                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $editParcela->saldo;
+                $editParcela->emprestimo->company->save();
+
                 $editParcela->save();
 
                 $movimentacaoFinanceira = [];
@@ -1057,6 +1064,10 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                     $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
                     $editParcela->contasreceber->save();
                 }
+
+                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
+                $editParcela->emprestimo->company->save();
+
                 $editParcela->save();
 
                 $movimentacaoFinanceira = [];
