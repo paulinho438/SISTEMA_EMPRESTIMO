@@ -6,6 +6,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 
+use App\Models\CustomLog;
+
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
@@ -60,13 +62,13 @@ class BancosResource extends JsonResource
 
 
         } catch (EfiException $e) {
-            $this->custom_log->create([
+            Customlog::create([
                 'user_id' => auth()->user()->id,
                 'content' => 'Error ao buscar saldo' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                 'operation' => 'error'
             ]);
         } catch (Exception $e) {
-            $this->custom_log->create([
+            Customlog::create([
                 'user_id' => auth()->user()->id,
                 'content' => $e->getMessage(),
                 'operation' => 'error'
