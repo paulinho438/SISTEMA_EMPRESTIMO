@@ -12,6 +12,8 @@ class Company extends Model
 
     protected $fillable = [
         'company',
+        'juros',
+        'caixa'
     ];
 
     use HasFactory;
