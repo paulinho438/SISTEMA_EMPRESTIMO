@@ -233,7 +233,7 @@ export default {
                     </div>
 					<div class="field col-12 md:col-4">
                         <label for="firstname2">Caixa</label>
-                        <InputText id="firstname2" :modelValue="empresa?.caixa" v-model="empresa.caixa" type="text" />
+						<InputNumber id="inputnumber" :modelValue="empresa?.caixa" v-model="empresa.caixa" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
                     </div>
                 </div>
 				<div v-if="empresa?.whatsapp != null" class="card">
