@@ -128,6 +128,11 @@ class EnvioManual extends Command
                                 $editParcela->contasreceber->forma_recebto = 'PIX';
                                 $editParcela->contasreceber->save();
 
+                                # MOVIMENTAÇÃO FINANCEIRA DE SAIDA REFERENTE A TAXA DE JUROS
+
+                                $valor  =   $editParcela->saldo;
+                                $taxa   =   $editParcela->emprestimo->banco->juros / 100;
+                                $juros  =   $valor * $taxa;
 
 
                                 # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
@@ -139,15 +144,15 @@ class EnvioManual extends Command
                                 $movimentacaoFinanceira['tipomov'] = 'E';
                                 $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                                $movimentacaoFinanceira['valor'] = $editParcela->saldo;
+                                $movimentacaoFinanceira['valor'] = $editParcela->saldo - $juros;
 
                                 Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                                # MOVIMENTAÇÃO FINANCEIRA DE SAIDA REFERENTE A TAXA DE JUROS
+                                # ADICIONANDO O VALOR NO SALDO DO BANCO
 
-                                $valor  =   $editParcela->saldo;
-                                $taxa   =   $editParcela->emprestimo->banco->juros / 100;
-                                $juros  =   $valor * $taxa;
+                                $editParcela->emprestimo->banco->saldo = $editParcela->emprestimo->banco->saldo + $editParcela->saldo - $juros;
+                                $editParcela->emprestimo->banco->save();
+
 
                                 $movimentacaoFinanceira = [];
                                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;

@@ -105,6 +105,12 @@ const model = ref([
                         to: '/movimentacaofinanceira', 
                         permission: 'view_movimentacaofinanceira' 
                     },
+                    { 
+                        label: 'Fechamento de Caixa', 
+                        icon: 'pi pi-fw pi-globe', 
+                        to: '/fechamentocaixa', 
+                        permission: 'view_movimentacaofinanceira' 
+                    },
                    
                 ]
             },

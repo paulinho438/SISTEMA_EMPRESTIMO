@@ -28,6 +28,7 @@ class BancosResource extends JsonResource
             "conta" => $this->conta,
             "saldo" => $this->saldo,
             "saldo_banco" => $this->getSaldoBanco(),
+            "caixa_empresa" => $this->company->caixa,
             "efibank" => ($this->efibank) ? true : false,
             "clienteid" => $this->clienteid,
             "clientesecret" => $this->clientesecret,
