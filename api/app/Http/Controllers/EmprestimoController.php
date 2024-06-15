@@ -639,6 +639,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
+            $emprestimoAdd->banco->saldo = $emprestimoAdd->banco->saldo - $dados['valor'];
+            $emprestimoAdd->banco->save();
+
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -1144,6 +1147,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $movimentacaoFinanceira['valor'] = $request->valor;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                $emprestimo->company->caixa = $emprestimo->company->caixa + $request->valor;
+                $emprestimo->company->save();
 
             }
 

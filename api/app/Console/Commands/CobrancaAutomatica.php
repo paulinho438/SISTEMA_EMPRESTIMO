@@ -45,8 +45,6 @@ class CobrancaAutomatica extends Command
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
         $parcelas = Parcela::where('dt_baixa', null)
-            ->where('atrasadas', '>', 0)
-            ->whereDate('venc_real', Carbon::today()->toDateString())
             ->get()
             ->unique('emprestimo_id');
 
