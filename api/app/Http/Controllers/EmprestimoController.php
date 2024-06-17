@@ -125,8 +125,8 @@ Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
 Parcela: {$item->parcela}
 Atrasos: {$item->atrasadas}
 Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
 Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
 PIX: " . ($item->chave_pix ?? 'Não Contém') . "
 Status: Pendente
@@ -1031,6 +1031,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $editParcela = Parcela::find($id);
 
             if ($request->valor == $editParcela->saldo) {
+
                 $editParcela->dt_baixa = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->status = 'Pago';
@@ -1055,6 +1056,10 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
 
+
+                $editParcela->saldo = 0;
+                $editParcela->save();
+
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
                     'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa manual da parcela: ' . $id,
@@ -1078,6 +1083,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
                 $movimentacaoFinanceira['descricao'] = 'Baixa parcial da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
                 $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $request->valor;
 
