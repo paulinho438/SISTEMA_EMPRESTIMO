@@ -333,10 +333,17 @@ export default {
 					</div>
 				</template>
 				<Column field="parcela" header="Parcela" :sortable="false" class="w-1"></Column>
-				<Column field="valor" header="Valor Pago" :sortable="false" class="w-1">
+				<Column field="saldo" header="Saldo Pendente" :sortable="false" class="w-1">
+					<template #body="slotProps">
+						<span class="p-column-title">Saldo Pendente</span>
+						{{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+
+					</template>
+				</Column>
+				<Column field="total_pago_parcela" header="Valor Pago" :sortable="false" class="w-1">
 					<template #body="slotProps">
 						<span class="p-column-title">Valor Pago</span>
-						{{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+						{{ slotProps.data.total_pago_parcela.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
 
 					</template>
 				</Column>

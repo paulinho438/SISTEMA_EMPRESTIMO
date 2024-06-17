@@ -38,7 +38,8 @@ class ParcelaResource extends JsonResource
             "latitude"              => $this->getLatitudeFromAddress(),
             "longitude"             => $this->getLongitudeFromAddress(),
             "endereco"              => $this->getEnderecoFromAddress(),
-            "total_pago"            => $this->formatarMoeda($this->totalPago()),
+            "total_pago_emprestimo" => $this->formatarMoeda($this->totalPagoEmprestimo()),
+            "total_pago_parcela"    => $this->formatarMoeda($this->totalPagoParcela()),
             "total_pendente"        => $this->formatarMoeda($this->totalPendente()),
         ];
     }

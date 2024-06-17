@@ -94,8 +94,8 @@ Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
 Parcela: {$item->parcela}
 Atrasos: {$item->atrasadas}
 Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
 Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
 PIX: " . ($item->chave_pix ?? 'Não Contém') . "
 Status: Pendente
