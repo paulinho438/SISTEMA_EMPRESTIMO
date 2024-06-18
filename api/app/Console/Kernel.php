@@ -15,7 +15,9 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\EnvioManual::class,
         Commands\RecalcularParcelas::class,
-        Commands\CobrancaAutomatica::class,
+        Commands\CobrancaAutomaticaA::class,
+        Commands\CobrancaAutomaticaB::class,
+        Commands\CobrancaAutomaticaC::class,
     ];
 
 
@@ -31,9 +33,9 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 
-        $schedule->command('cobranca:Automatica')->dailyAt('08:00');
-        $schedule->command('cobranca:Automatica')->dailyAt('16:00');
-        $schedule->command('cobranca:Automatica')->dailyAt('20:30');
+        $schedule->command('cobranca:AutomaticaA')->weekdays()->dailyAt('08:00');
+        $schedule->command('cobranca:AutomaticaB')->weekdays()->dailyAt('16:00');
+        $schedule->command('cobranca:AutomaticaC')->weekdays()->dailyAt('20:30');
     }
 
     /**
