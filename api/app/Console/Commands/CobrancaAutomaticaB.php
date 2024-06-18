@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 
 use Carbon\Carbon;
 
-class CobrancaAutomatica extends Command
+class CobrancaAutomaticaB extends Command
 {
     /**
      * The name and signature of the console command.
@@ -44,9 +44,19 @@ class CobrancaAutomatica extends Command
 
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
-        $parcelas = Parcela::where('dt_baixa', null)
-            ->get()
-            ->unique('emprestimo_id');
+        $today = Carbon::today()->toDateString();
+        // Verificando se hoje é um feriado
+        $isHoliday = Feriado::where('data_feriado', $today)->exists();
+
+        $parcelas = collect(); // Coleção vazia se hoje for um feriado
+
+        if (!$isHoliday) {
+            $parcelas = Parcela::where('dt_baixa', null)
+                ->whereDate('venc_real', $today)
+                ->get()
+                ->unique('emprestimo_id');
+        }
+
 
 
         $r = [];

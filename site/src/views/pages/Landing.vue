@@ -27,6 +27,17 @@ export default {
         }
     },
 
+    methods: {
+        goToPixLink() {
+            const pixLink = this.slotProps.data.chave_pix;
+            if (pixLink) {
+                window.location.href = pixLink;
+            } else {
+                console.error('Pix link is not available');
+            }
+        }
+    },
+
     beforeMount: function () {
         //Requisição para buscar informações do pedido
 
@@ -107,8 +118,10 @@ export default {
                             <Column field="total_pago_parcela" header="Pago"></Column>
                             <Column field="status" header="Status">
                                 <template #body="slotProps">
-                                    <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
-                                    <Button v-else label="Pendente" class="p-button-raised p-button-danger mr-2 mb-2" />
+                                    <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
+                                        class="p-button-raised p-button-success mr-2 mb-2" />
+                                    <Button v-else label="Pendente Pagar com Pix" @click="goToPixLink"
+                                        class="p-button-raised p-button-danger mr-2 mb-2" />
                                 </template>
                             </Column>
                         </DataTable>
