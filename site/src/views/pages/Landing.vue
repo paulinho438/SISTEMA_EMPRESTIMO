@@ -28,8 +28,7 @@ export default {
     },
 
     methods: {
-        goToPixLink() {
-            const pixLink = this.slotProps.data.chave_pix;
+        goToPixLink(pixLink) {
             if (pixLink) {
                 window.location.href = pixLink;
             } else {
@@ -120,7 +119,8 @@ export default {
                                 <template #body="slotProps">
                                     <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
                                         class="p-button-raised p-button-success mr-2 mb-2" />
-                                    <Button v-else label="Pendente Pagar com Pix" @click="goToPixLink"
+                                    <Button v-else label="Pendente Pagar com Pix"
+                                        @click="goToPixLink(slotProps.data?.chave_pix)"
                                         class="p-button-raised p-button-danger mr-2 mb-2" />
                                 </template>
                             </Column>
