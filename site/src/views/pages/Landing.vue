@@ -122,7 +122,7 @@ export default {
                         <div
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" :label="`Parcela Pendente n° ${this.encontrarPrimeiraParcelaPendente().parcela} no Valor ${this.encontrarPrimeiraParcelaPendente().valor}`"
+                                <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Clique aqui para pagar a parcela do dia"
                                     class="p-button-raised p-button-danger mr-2 mb-2" style="height: 60px;" />
                             </div>
                         </div>
