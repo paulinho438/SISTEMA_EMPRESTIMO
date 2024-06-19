@@ -58,7 +58,7 @@ class Emprestimo extends Model
 
     public function quitacao()
     {
-        return $this->belongsTo(Quitacao::class, 'emprestimo_id', 'id');
+        return $this->belongsTo(Quitacao::class, 'id', 'emprestimo_id');
     }
 
 }
