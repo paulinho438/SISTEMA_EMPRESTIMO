@@ -63,17 +63,9 @@ class BancosResource extends JsonResource
 
 
         } catch (EfiException $e) {
-            Customlog::create([
-                'user_id' => auth()->user()->id,
-                'content' => 'Error ao buscar saldo' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                'operation' => 'error'
-            ]);
+            return null;
         } catch (Exception $e) {
-            Customlog::create([
-                'user_id' => auth()->user()->id,
-                'content' => $e->getMessage(),
-                'operation' => 'error'
-            ]);
+            return null;
         }
 
     }
