@@ -145,13 +145,32 @@ class EnvioManualQuitacao extends Command
                                 }
                             }
 
+                            $valor = $q->saldo;
+                            $taxa = $q->emprestimo->banco->juros / 100;
+                            $juros = $valor * $taxa;
+
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $q->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $q->emprestimo->company_id;
                             $movimentacaoFinanceira['descricao'] = 'Baixa automática do emprestimo Nº ' . $q->emprestimo_id;
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $q->saldo;
+                            $movimentacaoFinanceira['valor'] = $q->saldo - $juros;
+
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                            # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                            $q->emprestimo->banco->saldo = $q->emprestimo->banco->saldo + $q->saldo - $juros;
+                            $q->emprestimo->banco->save();
+
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $q->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $q->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = 'Juros de ' . $q->emprestimo->banco->juros . '% referente a baixa automática do emprestimo Nº ' . $q->emprestimo_id;
+                            $movimentacaoFinanceira['tipomov'] = 'S';
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $juros;
 
                             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
