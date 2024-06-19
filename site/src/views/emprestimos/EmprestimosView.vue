@@ -7,6 +7,7 @@ import UtilService from '@/service/UtilService';
 import EmprestimoParcelas from '../parcelas/Parcelas.vue';
 import skeletonEmprestimos from '../skeleton/SkeletonEmprestimos.vue';
 import EmprestimoAdd from '../emprestimos/EmprestimosAdd.vue';
+import EmprestimoRecalc from '../emprestimos/EmprestimosRecalc.vue';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
 
 import LoadingComponent from '../../components/Loading.vue';
@@ -27,6 +28,7 @@ export default {
 		EmprestimoParcelas,
 		skeletonEmprestimos,
 		EmprestimoAdd,
+		EmprestimoRecalc,
 	},
 	data() {
 		return {
@@ -65,6 +67,28 @@ export default {
 			this.display.value = true;
 
 		},
+		async refinanciamento() {
+
+			try {
+				await this.emprestimoService.refinanciamento(this.route.params.id, this.saldoTotal);
+
+				this.toast.add({
+					severity: ToastSeverity.SUCCESS,
+					detail: this.client?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
+					life: 3000
+				});
+
+				setTimeout(() => {
+					this.router.push({ name: 'emprestimosList' })
+				}, 1200)
+
+			} catch (e) {
+				console.log(e);
+			}
+
+			this.display = false;
+			this.valorDesconto = 0;
+		},
 		async close() {
 			if (this.saldoTotal < this.valorDesconto) {
 				this.error = `O valor de desconto de ${this.valorDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} não pode ultrapassar o valor a pagar ${this.saldoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
@@ -84,7 +108,7 @@ export default {
 				});
 
 				setTimeout(() => {
-					this.router.push({ name: 'emprestimosList'})
+					this.router.push({ name: 'emprestimosList' })
 				}, 1200)
 
 			} catch (e) {
@@ -135,11 +159,19 @@ export default {
 		saveNewParcela(address) {
 			this.parcelas.push(address);
 		},
-		saveInfoDoEmprestimo(emprestimo) {
+		eliminarParcelasModal() {
+			this.parcelas = [];
+		},
+		async saveInfoDoEmprestimo(emprestimo) {
 
 			this.client.valor = emprestimo.valor
 			this.client.lucro = emprestimo.lucro
 			this.client.juros = emprestimo.juros
+
+			await this.refinanciamento();
+
+			this.save();
+
 		},
 		getemprestimo() {
 
@@ -199,7 +231,7 @@ export default {
 				life: 3000
 			});
 
-			this.emprestimoService.save(this.client)
+			this.emprestimoService.saveRefinanciamento(this.client)
 				.then((response) => {
 					if (undefined != response.data.data) {
 						this.client = response.data.data;
@@ -324,9 +356,15 @@ export default {
 					</div>
 				</div>
 
+				<EmprestimoRecalc :address="this.client" :oldCicom="this.oldClient" :loading="loading"
+					:parcela="this.parcelas[0]" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave"
+					@changeLoading="changeLoading" @saveParcela="saveNewParcela" @eliminarParcelas="eliminarParcelasModal"
+					@saveInfoEmprestimo="saveInfoDoEmprestimo" v-if="true" />
+
 				<EmprestimoAdd :address="this.client" :oldCicom="this.oldClient" :loading="loading"
 					@updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading"
 					@saveParcela="saveNewParcela" @saveInfoEmprestimo="saveInfoDoEmprestimo" v-if="true" />
+
 				<EmprestimoParcelas :address="this.parcelas" :oldCicom="this.oldClient" :loading="loading"
 					:viewCreated="false" :aprovacao="false" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave"
 					@changeLoading="changeLoading" v-if="true" />
@@ -334,14 +372,14 @@ export default {
 				<Dialog header="Baixa com desconto" v-model:visible="display" :breakpoints="{ '960px': '75vw' }"
 					:style="{ width: '30vw' }" :modal="true">
 					<p class="line-height-3 mb-4">
-						Para realizar a baixa com desconto atualmente o valor que falta receber é de <b
-							style="color:red">{{ saldoTotal.toLocaleString('pt-BR', {
+						Para realizar a baixa com desconto atualmente o valor que falta receber é de <b style="color:red">{{
+							saldoTotal.toLocaleString('pt-BR', {
 								style: 'currency', currency:
 									'BRL'
 							}) }}</b> <br><br>
 						Digite abaixo o valor do desconto, automaticamente o sistema efetuara a baixa de todas as parcelas,
-						em movimentação financeira vai conter exatamente o valor de <b
-							style="color:red">{{ saldoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }} -
+						em movimentação financeira vai conter exatamente o valor de <b style="color:red">{{
+							saldoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }} -
 							o valor a ser descontado</b>.
 					</p>
 					<div class="p-fluid formgrid grid">
@@ -359,4 +397,5 @@ export default {
 				</Dialog>
 			</template>
 		</Card>
-</div></template>
+	</div>
+</template>

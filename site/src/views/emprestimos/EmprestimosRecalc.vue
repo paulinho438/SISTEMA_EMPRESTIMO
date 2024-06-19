@@ -12,6 +12,7 @@ export default {
 		oldCicom: Object,
 		loading: Boolean,
 		emp: Object,
+		parcela: Object
 
 
 	},
@@ -43,37 +44,37 @@ export default {
 	},
 	methods: {
 		handleLucro() {
-		
-			if(this.emprestimo.valor && this.emprestimo.mensalidade && this.emprestimo.parcelas){
+
+			if (this.emprestimo.valor && this.emprestimo.mensalidade && this.emprestimo.parcelas) {
 
 				this.emprestimo.valortotal = this.emprestimo.lucro + this.emprestimo.valor;
 				this.emprestimo.mensalidade = this.emprestimo.valortotal / this.emprestimo.parcelas;
 
 				const porcentagem = ((this.emprestimo.valortotal - this.emprestimo.valor) / this.emprestimo.valor) * 100;
-        		this.emprestimo.juros = porcentagem.toFixed(2); 
+				this.emprestimo.juros = porcentagem.toFixed(2);
 			}
 
 		},
 		handleParcela() {
-		
-			if(this.emprestimo.valor && this.emprestimo.mensalidade){
+
+			if (this.emprestimo.valor && this.emprestimo.mensalidade) {
 				this.emprestimo.valortotal = this.emprestimo.parcelas * this.emprestimo.mensalidade;
 				this.emprestimo.lucro = this.emprestimo.valortotal - this.emprestimo.valor;
 
 				const porcentagem = ((this.emprestimo.valortotal - this.emprestimo.valor) / this.emprestimo.valor) * 100;
-        		this.emprestimo.juros = porcentagem.toFixed(2); 
+				this.emprestimo.juros = porcentagem.toFixed(2);
 
 			}
 
 		},
 		handleValormensalidade() {
-		
-			if(this.emprestimo.valor && this.emprestimo.parcelas){
+
+			if (this.emprestimo.valor && this.emprestimo.parcelas) {
 				this.emprestimo.valortotal = this.emprestimo.parcelas * this.emprestimo.mensalidade;
 				this.emprestimo.lucro = this.emprestimo.valortotal - this.emprestimo.valor;
 
 				const porcentagem = (((this.emprestimo.parcelas * this.emprestimo.mensalidade) - this.emprestimo.valor) / this.emprestimo.valor) * 100;
-        		this.emprestimo.juros = porcentagem.toFixed(2); 
+				this.emprestimo.juros = porcentagem.toFixed(2);
 			}
 
 		},
@@ -86,9 +87,12 @@ export default {
 		gerarParcelas() {
 			let parcela = {};
 			// Defina a data inicial
-			const dataLanc = this.address.dt_lancamento;
 
-			const dataInicial = this.address.dt_lancamento;
+			this.$emit('eliminarParcelas');
+			
+			const dataLanc = new Date();
+
+			const dataInicial = new Date();
 
 			// Array para armazenar as parcelas
 			const parcelas = [];
@@ -107,11 +111,11 @@ export default {
 
 				// Verifica se o dia da semana é sábado (6) ou domingo (0)
 				// Se for, adiciona mais um dia até encontrar um dia útil (segunda a sexta)
-				if(this.dropdownValue?.code == '1'){
+				if (this.dropdownValue?.code == '1') {
 					while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
 						dataInicial.setDate(dataInicial.getDate() + 1);
 					}
-				}else if(this.dropdownValue?.code == '2'  ){
+				} else if (this.dropdownValue?.code == '2') {
 					while (dataInicial.getDay() === 0) {
 						dataInicial.setDate(dataInicial.getDate() + 1);
 					}
@@ -120,14 +124,14 @@ export default {
 				parcela.venc = this.formatarDataParaString(new Date(dataInicial));
 
 
-				if(this.isFeriado(dataInicial)){
+				if (this.isFeriado(dataInicial)) {
 					dataInicial.setDate(dataInicial.getDate() + 1);
 				}
 
 				parcela.venc_real = this.formatarDataParaString(new Date(dataInicial));
 
 				this.$emit('saveParcela', parcela);
-				
+
 				parcelas.push(this.formatarDataParaString(new Date(dataInicial)));
 
 				this.enviado = true;
@@ -143,26 +147,30 @@ export default {
 		},
 		isFeriado(data) {
 			const dataFormatada = this.formatarDataParaString(data);
-			
+
 			return this.feriados.some(feriado => feriado.data_feriado === dataFormatada);
 		},
 		getFeriados() {
+
+			this.emprestimo.valor = this.convertStringToFloat(this.parcela?.total_pendente);
+
+
 			this.feriados = ref(null);
 			this.emprestimoService.feriados()
-			.then((response) => {
-				this.feriados = response.data?.data;
-				console.log('feriados', this.feriados);
-			})
-			.catch((error) => {
-				this.toast.add({
-					severity: ToastSeverity.ERROR,
-					detail: UtilService.message(e),
-					life: 3000
+				.then((response) => {
+					this.feriados = response.data?.data;
+					console.log('feriados', this.feriados);
+				})
+				.catch((error) => {
+					this.toast.add({
+						severity: ToastSeverity.ERROR,
+						detail: UtilService.message(e),
+						life: 3000
+					});
+				})
+				.finally(() => {
 				});
-			})
-			.finally(() => {
-			});
-			
+
 
 		},
 		async searchCity(event) {
@@ -248,10 +256,10 @@ export default {
 				rejectClass: 'p-button-sm',
 				acceptClass: 'p-button-outlined p-button-sm',
 				accept: () => {
-					toast.add({severity:'info', summary:'Confirmed', detail:'You have accepted', life: 3000});
+					toast.add({ severity: 'info', summary: 'Confirmed', detail: 'You have accepted', life: 3000 });
 				},
 				reject: () => {
-					toast.add({severity:'error', summary:'Rejected', detail:'You have rejected', life: 3000});
+					toast.add({ severity: 'error', summary: 'Rejected', detail: 'You have rejected', life: 3000 });
 				}
 			});
 		},
@@ -280,6 +288,25 @@ export default {
 					}
 				}
 			});
+		},
+		convertStringToFloat(value) {
+			if (value) {
+
+				// Remover o símbolo R$
+				let result = value.replace('R$', '').trim();
+
+				// Remover os pontos (separador de milhar)
+				result = result.replace(/\./g, '');
+
+				// Substituir a vírgula (separador decimal) por ponto
+				result = result.replace(',', '.');
+
+				// Converter a string para float
+				return parseFloat(result);
+			}
+			
+			return 0;
+
 		}
 	},
 	mounted() {
@@ -290,80 +317,93 @@ export default {
 
 <template>
 	<ConfirmPopup group="templating">
-        <template #message="slotProps">
-            <div class="flex flex-column align-items-center w-full gap-3 border-bottom-1 surface-border p-3 mb-3">
-                <i :class="slotProps.message.icon" class="text-6xl text-danger-500"></i>
-                <p>{{ slotProps.message.message }}</p>
-                <p>{{ slotProps.message.message }}</p>
-                <p>{{ slotProps.message.message }}</p>
-            </div>
-        </template>
-    </ConfirmPopup>
+		<template #message="slotProps">
+			<div class="flex flex-column align-items-center w-full gap-3 border-bottom-1 surface-border p-3 mb-3">
+				<i :class="slotProps.message.icon" class="text-6xl text-danger-500"></i>
+				<p>{{ slotProps.message.message }}</p>
+				<p>{{ slotProps.message.message }}</p>
+				<p>{{ slotProps.message.message }}</p>
+			</div>
+		</template>
+	</ConfirmPopup>
 	<div class="grid flex flex-wrap mb-3 px-4 pt-2">
 		<div class="col-12 px-0 py-0 text-right">
-			<Button v-if="!this.address?.parcelas && !this.enviado" label="Gerar Emprestimo" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="visibleRight = true" />
+			<Button label="Refinanciar Empréstimo" class="p-button-sm p-button-success" :icon="icons.PLUS"
+				@click="visibleRight = true" />
 		</div>
 	</div>
 	<Sidebar v-model:visible="visibleRight" :baseZIndex="1000" position="right">
-		<h1 style="font-weight: normal">Informações</h1>
+		<h1 style="font-weight: normal">Refinanciar</h1>
 		<div class="col-12">
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
-					<label for="zip">Valor do Emprestimo</label>
-					<InputNumber id="inputnumber" :modelValue="emprestimo?.valor" v-model="emprestimo.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
+					<label for="zip">Valor Pendente</label>
+					<InputNumber id="inputnumber" :modelValue="emprestimo?.valor" v-model="emprestimo.valor"
+						:mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" disabled
+						class="w-full p-inputtext-sm">
+					</InputNumber>
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="firstname2">Parcelas</label>
-					<InputNumber :modelValue="emprestimo?.parcelas" v-model="emprestimo.parcelas" inputId="minmax-buttons" mode="decimal" showButtons :min="0" :max="100" @blur="handleParcela" />
+					<InputNumber :modelValue="emprestimo?.parcelas" v-model="emprestimo.parcelas" inputId="minmax-buttons"
+						mode="decimal" showButtons :min="0" :max="100" @blur="handleParcela" />
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="zip">Valor da Mensalidade</label>
-					<InputNumber id="inputnumber" v-model="emprestimo.mensalidade" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"  @blur="handleValormensalidade"></InputNumber>
+					<InputNumber id="inputnumber" v-model="emprestimo.mensalidade" :mode="'currency'" :currency="'BRL'"
+						:locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" @blur="handleValormensalidade">
+					</InputNumber>
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="firstname2">Juros</label>
-					<InputNumber disabled="true" prefix="%" :modelValue="emprestimo?.juros" v-model="emprestimo.juros" inputId="minmaxfraction" :minFractionDigits="2" :maxFractionDigits="5" locale="en-US" />
+					<InputNumber disabled="true" prefix="%" :modelValue="emprestimo?.juros" v-model="emprestimo.juros"
+						inputId="minmaxfraction" :minFractionDigits="2" :maxFractionDigits="5" locale="en-US" />
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="firstname2">Lucro</label>
-					<InputNumber id="inputnumber" :modelValue="emprestimo?.lucro" v-model="emprestimo.lucro" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" @blur="handleLucro" ></InputNumber>
+					<InputNumber id="inputnumber" :modelValue="emprestimo?.lucro" v-model="emprestimo.lucro"
+						:mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"
+						@blur="handleLucro"></InputNumber>
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="firstname2">Valor Total</label>
-					<InputNumber disabled="true" id="inputnumber" :modelValue="emprestimo?.valortotal" v-model="emprestimo.valortotal" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
+					<InputNumber disabled="true" id="inputnumber" :modelValue="emprestimo?.valortotal"
+						v-model="emprestimo.valortotal" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'"
+						:precision="2" class="w-full p-inputtext-sm"></InputNumber>
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="firstname2">Intervalo entre as parcelas</label>
-					<InputNumber :modelValue="emprestimo?.intervalo" v-model="emprestimo.intervalo" placeholder="Dias" inputId="minmax-buttons" mode="decimal" showButtons :min="0" :max="100" @blur="handleParcela" />
+					<InputNumber :modelValue="emprestimo?.intervalo" v-model="emprestimo.intervalo" placeholder="Dias"
+						inputId="minmax-buttons" mode="decimal" showButtons :min="0" :max="100" @blur="handleParcela" />
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
 					<label for="firstname2">Opção de cobrança</label>
-					<Dropdown v-model="dropdownValue" :options="dropdownValues" optionLabel="name" placeholder="Selecione" />
+					<Dropdown v-model="dropdownValue" :options="dropdownValues" optionLabel="name"
+						placeholder="Selecione" />
 				</div>
 			</div>
 			<div class="p-fluid formgrid grid">
 				<div class="field col-12 md:col-12">
-					<Button ref="popup" @click="gerarParcelas" icon="pi pi-check" label="Confirmar" class="mr-2"></Button>
+					<Button ref="popup" @click="gerarParcelas" icon="pi pi-check" label="Refinanciar" class="mr-2"></Button>
 
 				</div>
 			</div>
-			
+
 		</div>
 	</Sidebar>
-	<AddressAlter :occurrence="occurrence" @close="closeDetail" @saveNew="saveNewAddress" />	
-
+	<AddressAlter :occurrence="occurrence" @close="closeDetail" @saveNew="saveNewAddress" />
 </template>
