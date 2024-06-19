@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\EnvioManual::class,
+        Commands\EnvioManualQuitacao::class,
         Commands\RecalcularParcelas::class,
         Commands\CobrancaAutomaticaA::class,
         Commands\CobrancaAutomaticaB::class,
@@ -30,6 +31,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('baixa:Automatica')->everyMinute();
+        $schedule->command('baixa:AutomaticaQuitacao')->everyMinute();
 
         $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 
