@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Emprestimo;
 use App\Models\Parcela;
+use App\Models\Quitacao;
 use App\Models\Client;
 use App\Models\Fornecedor;
 use App\Models\Banco;
@@ -80,7 +81,7 @@ class EmprestimoController extends Controller
     public function cobrancaAutomatica()
     {
 
-         // Obtendo a data de hoje no formato YYYY-MM-DD
+        // Obtendo a data de hoje no formato YYYY-MM-DD
         $today = Carbon::today()->toDateString();
 
         // Verificando se hoje é um feriado
@@ -736,7 +737,7 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
                         $this->custom_log->create([
                             'user_id' => auth()->user()->id,
-                            'content' => 'Error ao gerar a parcela '.$e->code.' '.$e->error.' '.$e->errorDescription,
+                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                             'operation' => 'error'
                         ]);
 
@@ -760,7 +761,7 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
             } catch (EfiException $e) {
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
-                    'content' => 'Error ao gerar a parcela '.$e->code.' '.$e->error.' '.$e->errorDescription,
+                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                     'operation' => 'error'
                 ]);
             } catch (Exception $e) {
@@ -791,6 +792,113 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
             }
         }
+
+        // $quitacao = [];
+        // $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+        // $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
+        // $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
+
+
+
+
+
+
+        // $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        // $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        // $options = [
+        //     'client_id' => $dados['banco']['clienteid'],
+        //     'client_secret' => $dados['banco']['clientesecret'],
+        //     'certificate' => $caminhoAbsoluto,
+        //     'sandbox' => false,
+        //     'timeout' => 300,
+        // ];
+
+        // $params = [
+        //     "txid" => Str::random(32)
+        // ];
+
+        // $body = [
+        //     "calendario" => [
+        //         "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
+        //         "validadeAposVencimento" => 0
+        //     ],
+        //     "devedor" => [
+        //         "nome" => $dados['cliente']['nome_completo'],
+        //         "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+        //     ],
+        //     "valor" => [
+        //         "original" => number_format(str_replace(',', '', $emprestimoAdd->parcelas[0]->totalPendente()), 2, '.', ''),
+
+        //     ],
+        //     "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
+        //     "solicitacaoPagador" => "Quitação do Emprestimo ",
+        //     "infoAdicionais" => [
+        //         [
+        //             "nome" => "Emprestimo",
+        //             "valor" => "R$ " . $emprestimoAdd->valor,
+        //         ]
+        //     ]
+        // ];
+
+        // try {
+        //     $api = new EfiPay($options);
+        //     $pix = $api->pixCreateDueCharge($params, $body);
+
+        //     if ($pix["txid"]) {
+        //         $params = [
+        //             "id" => $pix["loc"]["id"]
+        //         ];
+
+        //         $quitacao['identificador'] = $pix["loc"]["id"];
+
+
+        //         try {
+        //             $qrcode = $api->pixGenerateQRCode($params);
+
+        //             $quitacao['chave_pix'] = $qrcode['linkVisualizacao'];
+
+        //         } catch (EfiException $e) {
+
+        //             $this->custom_log->create([
+        //                 'user_id' => auth()->user()->id,
+        //                 'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+        //                 'operation' => 'error'
+        //             ]);
+
+        //             print_r($e->code . "<br>");
+        //             print_r($e->error . "<br>");
+        //             print_r($e->errorDescription) . "<br>";
+        //         } catch (Exception $e) {
+        //             $this->custom_log->create([
+        //                 'user_id' => auth()->user()->id,
+        //                 'content' => $e->getMessage(),
+        //                 'operation' => 'error'
+        //             ]);
+        //         }
+        //     } else {
+        //         $this->custom_log->create([
+        //             'user_id' => auth()->user()->id,
+        //             'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+        //             'operation' => 'error'
+        //         ]);
+        //     }
+        // } catch (EfiException $e) {
+        //     $this->custom_log->create([
+        //         'user_id' => auth()->user()->id,
+        //         'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+        //         'operation' => 'error'
+        //     ]);
+        // } catch (Exception $e) {
+        //     $this->custom_log->create([
+        //         'user_id' => auth()->user()->id,
+        //         'content' => $e->getMessage(),
+        //         'operation' => 'error'
+        //     ]);
+        // }
+
+
+
+        // Quitacao::create($quitacao);
 
         return $emprestimoAdd;
 
@@ -928,7 +1036,7 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
                         $this->custom_log->create([
                             'user_id' => auth()->user()->id,
-                            'content' => 'Error ao gerar a parcela '.$e->code.' '.$e->error.' '.$e->errorDescription,
+                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                             'operation' => 'error'
                         ]);
 
@@ -952,7 +1060,7 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
             } catch (EfiException $e) {
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
-                    'content' => 'Error ao gerar a parcela '.$e->code.' '.$e->error.' '.$e->errorDescription,
+                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                     'operation' => 'error'
                 ]);
             } catch (Exception $e) {
