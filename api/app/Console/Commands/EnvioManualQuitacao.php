@@ -142,37 +142,45 @@ class EnvioManualQuitacao extends Command
                                     $parcela->contasreceber->forma_recebto = 'PIX';
                                     $parcela->contasreceber->save();
 
+                                    # MOVIMENTAÇÃO FINANCEIRA DE SAIDA REFERENTE A TAXA DE JUROS
+
+                                    $valor = $parcela->saldo;
+                                    $taxa = $parcela->emprestimo->banco->juros / 100;
+                                    $juros = $valor * $taxa;
+
+
+                                    # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+
+                                    $movimentacaoFinanceira = [];
+                                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                                    $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                                    $movimentacaoFinanceira['tipomov'] = 'E';
+                                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                                    $movimentacaoFinanceira['valor'] = $parcela->saldo - $juros;
+
+                                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                                    # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                                    $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $parcela->saldo - $juros;
+                                    $parcela->emprestimo->banco->save();
+
+
+                                    $movimentacaoFinanceira = [];
+                                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                                    $movimentacaoFinanceira['descricao'] = 'Juros de ' . $parcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                                    $movimentacaoFinanceira['tipomov'] = 'S';
+                                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                                    $movimentacaoFinanceira['valor'] = $juros;
+
+                                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+
                                 }
                             }
-
-                            $valor = $q->saldo;
-                            $taxa = $q->emprestimo->banco->juros / 100;
-                            $juros = $valor * $taxa;
-
-                            $movimentacaoFinanceira = [];
-                            $movimentacaoFinanceira['banco_id'] = $q->emprestimo->banco_id;
-                            $movimentacaoFinanceira['company_id'] = $q->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Baixa automática do emprestimo Nº ' . $q->emprestimo_id;
-                            $movimentacaoFinanceira['tipomov'] = 'E';
-                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $q->saldo - $juros;
-
-                            Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                            # ADICIONANDO O VALOR NO SALDO DO BANCO
-
-                            $q->emprestimo->banco->saldo = $q->emprestimo->banco->saldo + $q->saldo - $juros;
-                            $q->emprestimo->banco->save();
-
-                            $movimentacaoFinanceira = [];
-                            $movimentacaoFinanceira['banco_id'] = $q->emprestimo->banco_id;
-                            $movimentacaoFinanceira['company_id'] = $q->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Juros de ' . $q->emprestimo->banco->juros . '% referente a baixa automática do emprestimo Nº ' . $q->emprestimo_id;
-                            $movimentacaoFinanceira['tipomov'] = 'S';
-                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $juros;
-
-                            Movimentacaofinanceira::create($movimentacaoFinanceira);
 
                         }
                     }
