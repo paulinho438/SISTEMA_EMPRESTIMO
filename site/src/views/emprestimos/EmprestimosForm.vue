@@ -297,7 +297,7 @@ export default {
 						</div>
 					</div>
 				</div>
-				<EmprestimoAdd :address="this.client" :oldCicom="this.oldClient" :loading="loading" 
+				<EmprestimoAdd :address="this.client" :oldCicom="this.oldClient" :loading="loading"
 					@updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading"
 					@saveParcela="saveNewParcela" @saveInfoEmprestimo="saveInfoDoEmprestimo" v-if="true" />
 				<AddressClient :address="this.parcelas" :oldCicom="this.oldClient" :loading="loading"

@@ -139,6 +139,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/emprestimo/{id}/delete', [EmprestimoController::class, 'delete']);
     Route::put('/emprestimo/{id}', [EmprestimoController::class, 'update']);
     Route::post('/emprestimo', [EmprestimoController::class, 'insert']);
+    Route::post('/emprestimorefinanciamento', [EmprestimoController::class, 'insertRefinanciamento']);
     Route::post('/parcela/{id}/baixamanual', [EmprestimoController::class, 'baixaManual']);
     Route::post('/parcela/{id}/baixamanualcobrador', [EmprestimoController::class, 'baixaManualCobrador']);
     Route::post('/parcela/{id}/infoemprestimo', [EmprestimoController::class, 'infoEmprestimo']);
@@ -148,6 +149,7 @@ Route::middleware('auth:api')->group(function(){
 
 
     Route::post('/emprestimo/baixadesconto/{id}', [EmprestimoController::class, 'baixaDesconto']);
+    Route::post('/emprestimo/refinanciamento/{id}', [EmprestimoController::class, 'refinanciamento']);
     Route::post('/emprestimo/search/fornecedor', [EmprestimoController::class, 'searchFornecedor']);
     Route::post('/emprestimo/search/cliente', [EmprestimoController::class, 'searchCliente']);
     Route::post('/emprestimo/search/banco', [EmprestimoController::class, 'searchBanco']);

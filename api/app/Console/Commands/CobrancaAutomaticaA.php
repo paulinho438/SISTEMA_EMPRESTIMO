@@ -84,40 +84,40 @@ class CobrancaAutomaticaA extends Command
 
 Relatório de Parcelas Pendentes:
 
-Segue link para acessar todo o histórico de parcelas:
+Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
-Segue abaixo as parcelas pendentes:
-                            ";
+ ";
 
 
 
 
                             // Montagem das parcelas pendentes
-                            $parcelasString = $parcela->emprestimo->parcelas
-                                ->filter(function ($item) {
-                                    return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                                })
-                                ->map(function ($item) {
-                                    return "
-Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-Parcela: {$item->parcela}
-Atrasos: {$item->atrasadas}
-Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-Status: Pendente
-RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                                })
-                                ->implode("\n\n");
+//                             $parcelasString = $parcela->emprestimo->parcelas
+//                                 ->filter(function ($item) {
+//                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
+//                                 })
+//                                 ->map(function ($item) {
+//                                     return "
+// Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+// Parcela: {$item->parcela}
+// Atrasos: {$item->atrasadas}
+// Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+// Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+// Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+// Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+// PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+// Status: Pendente
+// RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+//                                 })
+//                                 ->implode("\n\n");
 
 
 
                             // Obtenha a saudação baseada na hora atual
 
-                            $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
+                            // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
+                            $frase = $saudacaoTexto . $fraseInicial;
 
                             $data = [
                                 "numero" => "55" . $telefone,
