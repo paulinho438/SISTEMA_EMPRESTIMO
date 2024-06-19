@@ -123,7 +123,7 @@ export default {
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
                                 <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Clique aqui para pagar a parcela do dia"
-                                    class="p-button-raised p-button-danger mr-2 mb-2" style="height: 60px;" />
+                                    class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
                             </div>
                         </div>
                     </div>
@@ -146,12 +146,12 @@ export default {
                         </DataTable>
                     </div>
 
-                    <div v-if="this.encontrarPrimeiraParcelaPendente()" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
+                    <div v-if="this.products?.data?.emprestimo?.quitacao" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 lg:mt-0 p-2">
                         <div
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" :label="`Parcela Pendente n° ${this.encontrarPrimeiraParcelaPendente().parcela} no Valor ${this.encontrarPrimeiraParcelaPendente().valor}`"
-                                    class="p-button-raised p-button-danger mr-2 mb-2" style="height: 60px;" />
+                                <Button @click="goToPixLink(this.products?.data?.emprestimo?.quitacao.chave_pix)" :label="`Clique aqui para quitar seu Empréstimo no Valor ${this.products?.data?.emprestimo?.quitacao.valor}`"
+                                    class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
                             </div>
                         </div>
                     </div>
