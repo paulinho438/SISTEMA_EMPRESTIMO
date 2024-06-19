@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Quitacao extends Model
 {
-    public $table = 'parcelas';
+    public $table = 'quitacao';
 
     public $timestamps = false;
 
