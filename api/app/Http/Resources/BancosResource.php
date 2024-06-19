@@ -45,7 +45,7 @@ class BancosResource extends JsonResource
 
         try {
 
-            if($this->efibank){
+            if ($this->efibank) {
                 $api = new EfiPay([
                     'client_id' => $this->clienteid,
                     'client_secret' => $this->clientesecret,
@@ -54,9 +54,14 @@ class BancosResource extends JsonResource
                     'timeout' => 300,
                 ]);
 
-                $response = $api->getAccountBalance([ "bloqueios" => false ]);
+                $response = $api->getAccountBalance(["bloqueios" => false]);
 
-                return $response['saldo'];
+                if (isset($response['saldo'])) {
+                    return $response['saldo'];
+                }else{
+                    return null;
+                }
+
             } else {
                 return null;
             }
