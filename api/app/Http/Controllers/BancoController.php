@@ -16,31 +16,36 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+
 class BancoController extends Controller
 {
 
     protected $custom_log;
 
-    public function __construct(Customlog $custom_log){
+    public function __construct(Customlog $custom_log)
+    {
         $this->custom_log = $custom_log;
     }
 
-    public function id(Request $r, $id){
+    public function id(Request $r, $id)
+    {
         return new BancosResource(Banco::find($id));
     }
 
-    public function all(Request $request){
+    public function all(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Bancos',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Bancos',
             'operation' => 'index'
         ]);
 
         return BancosResource::collection(Banco::where('company_id', $request->header('company-id'))->get());
     }
 
-    public function insert(Request $request){
+    public function insert(Request $request)
+    {
         $array = ['error' => ''];
 
         $validator = Validator::make($request->all(), [
@@ -52,11 +57,11 @@ class BancoController extends Controller
         ]);
 
         $dados = $request->all();
-        if(!$validator->fails()){
+        if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
 
-            if(isset($_FILES['certificado'])){
+            if (isset($_FILES['certificado'])) {
 
                 $certificado = $request->file('certificado');
 
@@ -66,7 +71,7 @@ class BancoController extends Controller
                 // Salvar o arquivo na pasta 'public/fotos'
                 $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
 
-                $dados['certificado'] = 'storage/documentos/'.$nomeArquivo;
+                $dados['certificado'] = 'storage/documentos/' . $nomeArquivo;
 
 
             }
@@ -83,7 +88,8 @@ class BancoController extends Controller
         return $array;
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
 
 
         DB::beginTransaction();
@@ -102,21 +108,21 @@ class BancoController extends Controller
             ]);
 
             $dados = $request->all();
-            if(!$validator->fails()){
+            if (!$validator->fails()) {
 
                 $EditBanco = Banco::find($id);
 
-                $EditBanco->name    = $dados['name'];
+                $EditBanco->name = $dados['name'];
                 $EditBanco->agencia = $dados['agencia'];
-                $EditBanco->conta   = $dados['conta'];
-                $EditBanco->saldo   = $dados['saldo'];
+                $EditBanco->conta = $dados['conta'];
+                $EditBanco->saldo = $dados['saldo'];
                 $EditBanco->efibank = $dados['efibank'];
-                if($dados['efibank'] == 1) {
+                if ($dados['efibank'] == 1) {
                     $EditBanco->clienteid = $dados['clienteid'];
                     $EditBanco->clientesecret = $dados['clientesecret'];
                     $EditBanco->chavepix = $dados['chavepix'];
                     $EditBanco->juros = $dados['juros'];
-                }else{
+                } else {
                     $EditBanco->clienteid = null;
                     $EditBanco->clientesecret = null;
                     $EditBanco->chavepix = null;
@@ -124,7 +130,7 @@ class BancoController extends Controller
                 }
 
 
-                if(isset($_FILES['certificado'])){
+                if (isset($_FILES['certificado'])) {
 
                     $certificado = $request->file('certificado');
 
@@ -163,7 +169,43 @@ class BancoController extends Controller
         }
     }
 
+    public function fechamentocaixa(Request $request, $id)
+    {
 
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+
+            $dados = $request->all();
+
+            $EditBanco = Banco::find($id);
+
+            $EditBanco->saldo = $dados['saldobanco'];
+
+            $EditBanco->save();
+
+            $EditBanco->company->caixa = $dados['saldocaixa'];
+
+            $EditBanco->company->save();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao fechar o Caixa.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
 
     public function delete(Request $r, $id)
     {
@@ -178,7 +220,7 @@ class BancoController extends Controller
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' deletou o Banco: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' deletou o Banco: ' . $id,
                 'operation' => 'destroy'
             ]);
 
@@ -189,7 +231,7 @@ class BancoController extends Controller
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' tentou deletar o Banco: '.$id.' ERROR: '.$e->getMessage(),
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' tentou deletar o Banco: ' . $id . ' ERROR: ' . $e->getMessage(),
                 'operation' => 'error'
             ]);
 

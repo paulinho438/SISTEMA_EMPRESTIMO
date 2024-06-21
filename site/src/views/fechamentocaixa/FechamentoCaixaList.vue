@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import MovimentacaofinanceiraService from '@/service/MovimentacaofinanceiraService';
+import BancoService from '@/service/BancoService';
 import PermissionsService from '@/service/PermissionsService';
 import EmprestimoService from '@/service/EmprestimoService';
 import { useToast } from 'primevue/usetoast';
@@ -12,6 +13,7 @@ export default {
 	setup() {
 		return {
 			movimentacaofinanceiraService: new MovimentacaofinanceiraService(),
+			bancoService: new BancoService(),
 			permissionsService: new PermissionsService(),
 			emprestimoService: new EmprestimoService(),
 			router: useRouter(),
@@ -30,6 +32,11 @@ export default {
 			form: ref({}),
 			valorRecebido: ref(0),
 			valorPago: ref(0),
+			displayFechamento: ref({
+				enabled: false,
+				saldobanco: 0,
+				saldocaixa: 0
+			}),
 		};
 	},
 	methods: {
@@ -40,6 +47,33 @@ export default {
 			} catch (e) {
 				console.log(e);
 			}
+		},
+		async close() {
+
+			try {
+				await this.bancoService.fechamentoCaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa);
+
+				this.toast.add({
+					severity: ToastSeverity.SUCCESS,
+					detail: 'Fechamento de Caixa Concluido!',
+					life: 3000
+				});
+
+				setTimeout(() => {
+					this.banco.saldo = this.displayFechamento.saldobanco;
+					this.banco.caixa_empresa = this.displayFechamento.saldocaixa;
+					this.displayFechamento.enabled = false;
+				}, 1200)
+
+			} catch (e) {
+				console.log(e);
+			}
+
+			this.display = false;
+			this.valorDesconto = 0;
+		},
+		modalFechamento() {
+			this.displayFechamento.enabled = !this.displayFechamento.enabled;
 		},
 		dadosSensiveis(dado) {
 			return (this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********')
@@ -174,6 +208,22 @@ export default {
 </script>
 
 <template>
+	<Dialog header="Efetuando a Baixa da Parcela" v-model:visible="displayFechamento.enabled"
+		:breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
+		<div class="field col-12 md:col-12">
+			<label for="zip">Saldo no Banco</label>
+			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldobanco" v-model="displayFechamento.saldobanco" :mode="'currency'"
+				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+		</div>
+		<div class="field col-12 md:col-16 -mt-4">
+			<label for="zip">Saldo no Caixa</label>
+			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixa" v-model="displayFechamento.saldocaixa" :mode="'currency'"
+				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+		</div>
+		<template #footer>
+			<Button label="Fechar Caixa" @click="close" icon="pi pi-check" class="p-button-outlined" />
+		</template>
+	</Dialog>
 	<Toast />
 	<div class="grid">
 		<div class="col-12">
@@ -198,17 +248,17 @@ export default {
 							<div class="flex flex-column gap-2 m-2 mt-1">
 								<label for="username">Selecione o Banco</label>
 								<AutoComplete :modelValue="banco" v-model="banco" :dropdown="true" :suggestions="bancos"
-								placeholder="Informe o nome do banco" class="w-full" inputClass="w-full p-inputtext-sm"
-								@complete="searchBanco($event)" optionLabel="name_agencia_conta" />
+									placeholder="Informe o nome do banco" class="w-full" inputClass="w-full p-inputtext-sm"
+									@complete="searchBanco($event)" optionLabel="name_agencia_conta" />
 							</div>
 						</div>
-						
-						<!-- <div v-if="banco" class="col-12 md:col-2">
+
+						<div v-if="banco" class="col-12 md:col-2">
 							<div class="flex flex-column gap-2 m-2 mt-1">
-								<Button label="Encerrar Caixa" @click.prevent="busca()"
+								<Button label="Encerrar Caixa" @click.prevent="modalFechamento()"
 									class="p-button-primary mr-2 mb-2 mt-4" />
 							</div>
-						</div> -->
+						</div>
 					</div>
 
 
@@ -218,9 +268,10 @@ export default {
 								<div class="flex justify-content-between mb-3">
 									<div>
 										<span class="block text-500 font-medium mb-3">Saldo Banco Efi</span>
-										<div class="text-900 font-medium text-xl">{{ parseFloat(banco?.saldo_banco).toLocaleString('pt-BR', {
-											style: 'currency', currency: 'BRL'
-										}) ?? 'R$ 0,00' }}</div>
+										<div class="text-900 font-medium text-xl">{{
+											parseFloat(banco?.saldo_banco).toLocaleString('pt-BR', {
+												style: 'currency', currency: 'BRL'
+											}) ?? 'R$ 0,00' }}</div>
 									</div>
 									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
 										style="width:2.5rem;height:2.5rem">
@@ -256,9 +307,10 @@ export default {
 								<div class="flex justify-content-between mb-3">
 									<div>
 										<span class="block text-500 font-medium mb-3">Diferença Entre Bancos</span>
-										<div class="text-900 font-medium text-xl">{{ (parseFloat(banco?.saldo_banco) - banco?.saldo ).toLocaleString('pt-BR', {
-											style: 'currency', currency: 'BRL'
-										}) ?? 'R$ 0,00' }}</div>
+										<div class="text-900 font-medium text-xl">{{ (parseFloat(banco?.saldo_banco) -
+											banco?.saldo).toLocaleString('pt-BR', {
+												style: 'currency', currency: 'BRL'
+											}) ?? 'R$ 0,00' }}</div>
 									</div>
 									<div class="flex align-items-center justify-content-center bg-red-100 border-round"
 										style="width:2.5rem;height:2.5rem">
@@ -275,9 +327,10 @@ export default {
 								<div class="flex justify-content-between mb-3">
 									<div>
 										<span class="block text-500 font-medium mb-3">Saldo Caixa</span>
-										<div class="text-900 font-medium text-xl">{{ banco?.caixa_empresa?.toLocaleString('pt-BR', {
-											style: 'currency', currency: 'BRL'
-										}) ?? 'R$ 0,00' }}</div>
+										<div class="text-900 font-medium text-xl">{{
+											banco?.caixa_empresa?.toLocaleString('pt-BR', {
+												style: 'currency', currency: 'BRL'
+											}) ?? 'R$ 0,00' }}</div>
 									</div>
 									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
 										style="width:2.5rem;height:2.5rem">
