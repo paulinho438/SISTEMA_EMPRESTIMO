@@ -82,6 +82,7 @@ class CobrancaAutomaticaC extends Command
 Última chamada Ainda não identificamos seu pagamento será aplicado multas e entrará na rota de cobrança!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
+
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
  ";
