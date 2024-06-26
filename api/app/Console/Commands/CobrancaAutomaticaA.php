@@ -25,7 +25,7 @@ class CobrancaAutomaticaA extends Command
      *
      * @var string
      */
-    protected $signature = 'cobranca:Automatica';
+    protected $signature = 'cobranca:AutomaticaA';
 
     /**
      * The console command description.
