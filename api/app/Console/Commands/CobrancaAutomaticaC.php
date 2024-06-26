@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 
 use App\Models\Juros;
 use App\Models\Parcela;
+use App\Models\Feriado;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
