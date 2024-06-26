@@ -74,9 +74,6 @@ class CobrancaAutomaticaC extends Command
 
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                             $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-                            $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
-                            $ultima_parcela = $parcela->saldo - $valor_acrecimo;
-
                             $saudacao = self::obterSaudacao();
 
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
