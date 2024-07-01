@@ -97,81 +97,81 @@ class EmprestimoController extends Controller
 
 
         $r = [];
-        foreach ($parcelas as $parcela) {
-            if (isset($parcela->emprestimo->company->whatsapp)) {
+//         foreach ($parcelas as $parcela) {
+//             if (isset($parcela->emprestimo->company->whatsapp)) {
 
-                try {
+//                 try {
 
-                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+//                     $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                    if ($response->successful()) {
-                        $r = $response->json();
-                        if ($r['loggedIn']) {
-
-
-                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-                            $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
-                            $ultima_parcela = $parcela->saldo - $valor_acrecimo;
-
-                            $saudacao = self::obterSaudacao();
-
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                            $fraseInicial = "
-
-Relatório de Parcelas Pendentes:
-
-Segue link para acessar todo o histórico de parcelas:
-https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
-
-";
+//                     if ($response->successful()) {
+//                         $r = $response->json();
+//                         if ($r['loggedIn']) {
 
 
+//                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+//                             $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+//                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
+//                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
+//                             $saudacao = self::obterSaudacao();
 
-                            // Montagem das parcelas pendentes
-//                             $parcelasString = $parcela->emprestimo->parcelas
-//                                 ->filter(function ($item) {
-//                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
-//                                 })
-//                                 ->map(function ($item) {
-//                                     return "
-// Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-// Parcela: {$item->parcela}
-// Atrasos: {$item->atrasadas}
-// Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-// Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-// Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-// Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-// PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-// Status: Pendente
-// RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-//                                 })
-//                                 ->implode("\n\n");
+//                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+//                             $fraseInicial = "
+
+// Relatório de Parcelas Pendentes:
+
+// Segue link para acessar todo o histórico de parcelas:
+// https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+
+// ";
 
 
 
-                            // Obtenha a saudação baseada na hora atual
 
-                            // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
-                            $frase = $saudacaoTexto . $fraseInicial;
+//                             // Montagem das parcelas pendentes
+// //                             $parcelasString = $parcela->emprestimo->parcelas
+// //                                 ->filter(function ($item) {
+// //                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
+// //                                 })
+// //                                 ->map(function ($item) {
+// //                                     return "
+// // Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+// // Parcela: {$item->parcela}
+// // Atrasos: {$item->atrasadas}
+// // Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+// // Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+// // Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+// // Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+// // PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+// // Status: Pendente
+// // RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+// //                                 })
+// //                                 ->implode("\n\n");
 
-                            $data = [
-                                "numero" => "55" . $telefone,
-                                "mensagem" => $frase
-                            ];
 
-                            $response = Http::asJson()->post($baseUrl, $data);
-                            sleep(8);
-                        }
-                    }
-                } catch (\Throwable $th) {
-                    dd($th);
 
-                }
+//                             // Obtenha a saudação baseada na hora atual
 
-            }
-        }
+//                             // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
+//                             $frase = $saudacaoTexto . $fraseInicial;
+
+//                             $data = [
+//                                 "numero" => "55" . $telefone,
+//                                 "mensagem" => $frase
+//                             ];
+
+//                             $response = Http::asJson()->post($baseUrl, $data);
+//                             sleep(8);
+//                         }
+//                     }
+//                 } catch (\Throwable $th) {
+//                     dd($th);
+
+//                 }
+
+//             }
+//         }
 
         return $parcelas;
     }
@@ -199,48 +199,48 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now())->where('dt_baixa', null)->get();
 
-        // Faça algo com as parcelas vencidas, por exemplo, exiba-as
-        foreach ($parcelasVencidas as $parcela) {
+        // // Faça algo com as parcelas vencidas, por exemplo, exiba-as
+        // foreach ($parcelasVencidas as $parcela) {
 
-            if ($parcela->emprestimo) {
+        //     if ($parcela->emprestimo) {
 
-                $valorJuros = $parcela->emprestimo->valor * ($parcela->emprestimo->company->juros / 100);
+        //         $valorJuros = $parcela->emprestimo->valor * ($parcela->emprestimo->company->juros / 100);
 
-                $novoValor = $valorJuros + $parcela->saldo;
+        //         $novoValor = $valorJuros + $parcela->saldo;
 
-                $parcela->saldo = $novoValor;
-                $parcela->venc_real = date('Y-m-d');
-                $parcela->atrasadas = $parcela->atrasadas + 1;
+        //         $parcela->saldo = $novoValor;
+        //         $parcela->venc_real = date('Y-m-d');
+        //         $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                if ($parcela->chave_pix) {
-                    $gerarPix = self::gerarPix(
-                        [
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $novoValor,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+        //         if ($parcela->chave_pix) {
+        //             $gerarPix = self::gerarPix(
+        //                 [
+        //                     'parcela' => [
+        //                         'parcela' => $parcela->parcela,
+        //                         'valor' => $novoValor,
+        //                         'venc_real' => date('Y-m-d'),
+        //                     ],
+        //                     'cliente' => [
+        //                         'nome_completo' => $parcela->emprestimo->client->nome_completo,
+        //                         'cpf' => $parcela->emprestimo->client->cpf
+        //                     ]
+        //                 ]
+        //             );
 
-                    $parcela->identificador = $gerarPix['identificador'];
-                    $parcela->chave_pix = $gerarPix['chave_pix'];
+        //             $parcela->identificador = $gerarPix['identificador'];
+        //             $parcela->chave_pix = $gerarPix['chave_pix'];
 
-                }
+        //         }
 
-                if ($parcela->contasreceber) {
-                    $parcela->contasreceber->venc = $parcela->venc_real;
-                    $parcela->contasreceber->valor = $parcela->saldo;
-                    $parcela->contasreceber->save();
-                }
-                $parcela->save();
+        //         if ($parcela->contasreceber) {
+        //             $parcela->contasreceber->venc = $parcela->venc_real;
+        //             $parcela->contasreceber->valor = $parcela->saldo;
+        //             $parcela->contasreceber->save();
+        //         }
+        //         $parcela->save();
 
-            }
-        }
+        //     }
+        // }
 
         return $parcelasVencidas;
 
