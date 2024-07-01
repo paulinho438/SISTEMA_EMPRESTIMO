@@ -46,7 +46,7 @@ class RecalcularParcelas extends Command
 
         $juros = Juros::value('juros');
 
-        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now())->where('dt_baixa', null)->get();
+        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
 
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
