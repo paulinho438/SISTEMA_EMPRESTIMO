@@ -106,11 +106,12 @@ class RecalcularParcelas extends Command
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => $dados['banco']['client_id'],
-            'client_secret' => $dados['banco']['client_secret'],
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
