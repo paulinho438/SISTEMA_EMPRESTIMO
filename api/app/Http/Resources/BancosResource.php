@@ -47,11 +47,12 @@ class BancosResource extends JsonResource
 
             if ($this->efibank) {
                 $api = new EfiPay([
-                    'client_id' => $this->clienteid,
-                    'client_secret' => $this->clientesecret,
+                    'clientId' => $this->clienteid,
+                    'clientSecret' => $this->clientesecret,
                     'certificate' => storage_path('app/public/documentos/' . $this->certificado),
                     'sandbox' => false,
-                    'timeout' => 300,
+                    "debug" => false,
+                    'timeout' => 60,
                 ]);
 
                 $response = $api->getAccountBalance(["bloqueios" => false]);
