@@ -89,12 +89,14 @@ class EnvioManual extends Command
                 $caminhoAbsoluto = storage_path('app/public/documentos/' .$banco['certificado']);
                 $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
                 $options = [
-                    'client_id' => $banco['clienteid'],
-                    'client_secret' => $banco['clientesecret'],
+                    'clientId' => $banco['clienteid'],
+                    'clientSecret' => $banco['clientesecret'],
                     'certificate' => $caminhoAbsoluto,
                     'sandbox' => false,
-                    'timeout' => 30,
+                    "debug" => false,
+                    'timeout' => 60,
                 ];
+
 
                 $params = [
                     "inicio" => $primeiroRegistro->venc_real."T00:00:00Z",

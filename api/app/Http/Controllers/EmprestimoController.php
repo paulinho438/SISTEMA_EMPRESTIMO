@@ -257,11 +257,12 @@ class EmprestimoController extends Controller
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -320,11 +321,12 @@ class EmprestimoController extends Controller
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -473,11 +475,12 @@ class EmprestimoController extends Controller
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -529,12 +532,14 @@ class EmprestimoController extends Controller
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
+
 
         $params = [
             "txid" => Str::random(32)
@@ -678,12 +683,13 @@ class EmprestimoController extends Controller
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-                'client_id' => $dados['banco']['clienteid'],
-                'client_secret' => $dados['banco']['clientesecret'],
-                'certificate' => $caminhoAbsoluto,
-                'sandbox' => false,
-                'timeout' => 300,
-            ];
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
 
             $params = [
                 "txid" => Str::random(32)
@@ -806,11 +812,12 @@ class EmprestimoController extends Controller
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => $dados['banco']['clienteid'],
-            'client_secret' => $dados['banco']['clientesecret'],
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 300,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -977,12 +984,13 @@ class EmprestimoController extends Controller
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-                'client_id' => $dados['banco']['clienteid'],
-                'client_secret' => $dados['banco']['clientesecret'],
-                'certificate' => $caminhoAbsoluto,
-                'sandbox' => false,
-                'timeout' => 300,
-            ];
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
 
             $params = [
                 "txid" => Str::random(32)
