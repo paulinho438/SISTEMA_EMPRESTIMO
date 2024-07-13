@@ -162,7 +162,7 @@ class RecalcularParcelas extends Command
                         } catch (EfiException $e) {
 
                             CustomLog::create([
-                                'user_id' => null,
+                                'user_id' => 0,
                                 'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                                 'operation' => 'error'
                             ]);
@@ -172,27 +172,27 @@ class RecalcularParcelas extends Command
                             print_r($e->errorDescription) . "<br>";
                         } catch (Exception $e) {
                             CustomLog::create([
-                                'user_id' => null,
+                                'user_id' => 0,
                                 'content' => $e->getMessage(),
                                 'operation' => 'error'
                             ]);
                         }
                     } else {
                         CustomLog::create([
-                            'user_id' => null,
+                            'user_id' => 0,
                             'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
                             'operation' => 'error'
                         ]);
                     }
                 } catch (EfiException $e) {
                     CustomLog::create([
-                        'user_id' => null,
+                        'user_id' => 0,
                         'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                         'operation' => 'error'
                     ]);
                 } catch (Exception $e) {
                     CustomLog::create([
-                        'user_id' => null,
+                        'user_id' => 0,
                         'content' => $e->getMessage(),
                         'operation' => 'error'
                     ]);
