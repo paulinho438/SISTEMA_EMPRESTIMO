@@ -262,10 +262,6 @@ class RecalcularParcelas extends Command
                 [
                     "nome" => "Emprestimo",
                     "valor" => "R$ " . $dados['parcela']['valor'],
-                ],
-                [
-                    "nome" => "Parcela",
-                    "valor" => $dados['parcela']['parcela']
                 ]
             ]
         ];
