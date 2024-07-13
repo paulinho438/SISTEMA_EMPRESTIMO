@@ -10,6 +10,7 @@ use App\Models\Banco;
 use App\Models\Parcela;
 use App\Models\User;
 use App\Models\Movimentacaofinanceira;
+use App\Models\CustomLog;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -20,6 +21,8 @@ use Carbon\Carbon;
 
 class EnvioManual extends Command
 {
+
+
     /**
      * The name and signature of the console command.
      *
@@ -237,7 +240,7 @@ class EnvioManual extends Command
                                         $editParcela->emprestimo->quitacao->save();
                                     } catch (EfiException $e) {
 
-                                        $this->custom_log->create([
+                                        CustomLog::create([
                                             'user_id' => auth()->user()->id,
                                             'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                                             'operation' => 'error'
@@ -247,27 +250,27 @@ class EnvioManual extends Command
                                         print_r($e->error . "<br>");
                                         print_r($e->errorDescription) . "<br>";
                                     } catch (Exception $e) {
-                                        $this->custom_log->create([
+                                        CustomLog::create([
                                             'user_id' => auth()->user()->id,
                                             'content' => $e->getMessage(),
                                             'operation' => 'error'
                                         ]);
                                     }
                                 } else {
-                                    $this->custom_log->create([
+                                    CustomLog::create([
                                         'user_id' => auth()->user()->id,
                                         'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
                                         'operation' => 'error'
                                     ]);
                                 }
                             } catch (EfiException $e) {
-                                $this->custom_log->create([
+                                CustomLog::create([
                                     'user_id' => auth()->user()->id,
                                     'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                                     'operation' => 'error'
                                 ]);
                             } catch (Exception $e) {
-                                $this->custom_log->create([
+                                CustomLog::create([
                                     'user_id' => auth()->user()->id,
                                     'content' => $e->getMessage(),
                                     'operation' => 'error'
