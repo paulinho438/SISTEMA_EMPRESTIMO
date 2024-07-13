@@ -163,7 +163,7 @@ class RecalcularParcelas extends Command
 
                             CustomLog::create([
                                 'user_id' => 0,
-                                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                                'content' => 'Error ao gerar a quitacao ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription . ' REQUEST '. json_encode($body, JSON_PRETTY_PRINT),
                                 'operation' => 'error'
                             ]);
 
@@ -187,7 +187,7 @@ class RecalcularParcelas extends Command
                 } catch (EfiException $e) {
                     CustomLog::create([
                         'user_id' => 0,
-                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription . ' REQUEST '. json_encode($body, JSON_PRETTY_PRINT),
+                        'content' => 'Error ao gerar a quitacao ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription . ' REQUEST '. json_encode($body, JSON_PRETTY_PRINT),
                         'operation' => 'error'
                     ]);
                 } catch (Exception $e) {
