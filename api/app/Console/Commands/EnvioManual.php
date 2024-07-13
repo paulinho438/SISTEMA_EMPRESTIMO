@@ -59,14 +59,14 @@ class EnvioManual extends Command
         $parcela = new Parcela;
 
 
-        foreach($bancos as $banco){
+        foreach ($bancos as $banco) {
             // $parcelas = $parcela->where('dt_baixa', null)->whereDate('venc_real', '<=', Carbon::now()->toDateString())->whereHas('emprestimo', function ($query) use ($banco) {
             //     $query->whereHas('banco', function ($query) use ($banco) {
             //         $query->where('id', $banco->id);
             //     });
             // })->get();
 
-            if($banco['efibank'] == 1){
+            if ($banco['efibank'] == 1) {
 
                 $parcelas = $parcela->where('dt_baixa', null)->whereHas('emprestimo', function ($query) use ($banco) {
                     $query->whereHas('banco', function ($query) use ($banco) {
@@ -86,7 +86,7 @@ class EnvioManual extends Command
                     });
                 })->orderBy('venc_real', 'desc')->first();
 
-                $caminhoAbsoluto = storage_path('app/public/documentos/' .$banco['certificado']);
+                $caminhoAbsoluto = storage_path('app/public/documentos/' . $banco['certificado']);
                 $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
                 $options = [
                     'clientId' => $banco['clienteid'],
@@ -99,8 +99,8 @@ class EnvioManual extends Command
 
 
                 $params = [
-                    "inicio" => $primeiroRegistro->venc_real."T00:00:00Z",
-                    "fim" => $ultimoRegistro->venc_real."T23:59:59Z",
+                    "inicio" => $primeiroRegistro->venc_real . "T00:00:00Z",
+                    "fim" => $ultimoRegistro->venc_real . "T23:59:59Z",
                     "status" => "CONCLUIDA", // "ATIVA","CONCLUIDA", "REMOVIDA_PELO_USUARIO_RECEBEDOR", "REMOVIDA_PELO_PSP"
                 ];
 
@@ -120,7 +120,7 @@ class EnvioManual extends Command
                         }
                     }
 
-                    foreach($parcelas as $item){
+                    foreach ($parcelas as $item) {
                         if (in_array($item->identificador, $arrayIdsLoc)) {
                             $editParcela = Parcela::find($item->id);
                             $editParcela->dt_baixa = date('Y-m-d');
@@ -132,9 +132,11 @@ class EnvioManual extends Command
 
                                 # MOVIMENTAÇÃO FINANCEIRA DE SAIDA REFERENTE A TAXA DE JUROS
 
-                                $valor  =   $editParcela->saldo;
-                                $taxa   =   $editParcela->emprestimo->banco->juros / 100;
-                                $juros  =   $valor * $taxa;
+                                $valorPago = $editParcela->saldo;
+
+                                $valor = $editParcela->saldo;
+                                $taxa = $editParcela->emprestimo->banco->juros / 100;
+                                $juros = $valor * $taxa;
 
 
                                 # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
@@ -142,7 +144,7 @@ class EnvioManual extends Command
                                 $movimentacaoFinanceira = [];
                                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                                $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                                $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
                                 $movimentacaoFinanceira['tipomov'] = 'E';
                                 $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -159,7 +161,7 @@ class EnvioManual extends Command
                                 $movimentacaoFinanceira = [];
                                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                                $movimentacaoFinanceira['descricao'] = 'Juros de '.$editParcela->emprestimo->banco->juros.'% referente a baixa automática via pix da parcela Nº '.$editParcela->parcela.' do emprestimo n° '.$editParcela->emprestimo_id;
+                                $movimentacaoFinanceira['descricao'] = 'Juros de ' . $editParcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
                                 $movimentacaoFinanceira['tipomov'] = 'S';
                                 $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -169,6 +171,109 @@ class EnvioManual extends Command
 
                             }
                             $editParcela->save();
+
+
+                            // recalculando o valor total a quitar emprestimo
+
+                            $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $valorPago;
+                            $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $valorPago;
+                            $editParcela->emprestimo->quitacao->save();
+
+                            $caminhoAbsoluto = storage_path('app/public/documentos/' . $editParcela->emprestimo->banco->certificado);
+
+                            $options = [
+                                'clientId' => $editParcela->emprestimo->banco->clienteid,
+                                'clientSecret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificate' => $caminhoAbsoluto,
+                                'sandbox' => false,
+                                "debug" => false,
+                                'timeout' => 60,
+                            ];
+
+                            $params = [
+                                "txid" => Str::random(32)
+                            ];
+
+                            $body = [
+                                "calendario" => [
+                                    "dataDeVencimento" => date('Y-m-d'),
+                                    "validadeAposVencimento" => 0
+                                ],
+                                "devedor" => [
+                                    'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                    'cpf' => $editParcela->emprestimo->client->cpf
+                                ],
+                                "valor" => [
+                                    "original" => number_format(str_replace(',', '', $editParcela->emprestimo->quitacao->saldo), 2, '.', ''),
+
+                                ],
+                                "chave" => $editParcela->emprestimo->banco->chavepix, // Pix key registered in the authenticated Efí account
+                                "solicitacaoPagador" => "Quitação do Emprestimo ",
+                                "infoAdicionais" => [
+                                    [
+                                        "nome" => "Emprestimo",
+                                        "valor" => "R$ " . $editParcela->emprestimo->quitacao->saldo,
+                                    ]
+                                ]
+                            ];
+
+                            try {
+                                $api = new EfiPay($options);
+                                $pix = $api->pixCreateDueCharge($params, $body);
+
+                                if ($pix["txid"]) {
+                                    $params = [
+                                        "id" => $pix["loc"]["id"]
+                                    ];
+
+                                    $editParcela->emprestimo->quitacao->identificador = $pix["loc"]["id"];
+
+
+                                    try {
+                                        $qrcode = $api->pixGenerateQRCode($params);
+
+                                        $editParcela->emprestimo->quitacao->chave_pix = $qrcode['linkVisualizacao'];
+
+                                        $editParcela->emprestimo->quitacao->save();
+                                    } catch (EfiException $e) {
+
+                                        $this->custom_log->create([
+                                            'user_id' => auth()->user()->id,
+                                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                                            'operation' => 'error'
+                                        ]);
+
+                                        print_r($e->code . "<br>");
+                                        print_r($e->error . "<br>");
+                                        print_r($e->errorDescription) . "<br>";
+                                    } catch (Exception $e) {
+                                        $this->custom_log->create([
+                                            'user_id' => auth()->user()->id,
+                                            'content' => $e->getMessage(),
+                                            'operation' => 'error'
+                                        ]);
+                                    }
+                                } else {
+                                    $this->custom_log->create([
+                                        'user_id' => auth()->user()->id,
+                                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                                        'operation' => 'error'
+                                    ]);
+                                }
+                            } catch (EfiException $e) {
+                                $this->custom_log->create([
+                                    'user_id' => auth()->user()->id,
+                                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                                    'operation' => 'error'
+                                ]);
+                            } catch (Exception $e) {
+                                $this->custom_log->create([
+                                    'user_id' => auth()->user()->id,
+                                    'content' => $e->getMessage(),
+                                    'operation' => 'error'
+                                ]);
+                            }
+
                         }
                     }
 

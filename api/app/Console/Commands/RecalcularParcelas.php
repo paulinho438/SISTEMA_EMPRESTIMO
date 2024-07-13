@@ -55,14 +55,16 @@ class RecalcularParcelas extends Command
 
                 $valorJuros = $parcela->emprestimo->valor * ($juros / 100);
 
+
                 $novoValor = $valorJuros + $parcela->saldo;
 
                 $parcela->saldo = $novoValor;
                 $parcela->venc_real = date('Y-m-d');
                 $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                if($parcela->chave_pix){
-                    $gerarPix = self::gerarPix([
+                if ($parcela->chave_pix) {
+                    $gerarPix = self::gerarPix(
+                        [
                             'banco' => [
                                 'client_id' => $parcela->emprestimo->banco->clienteid,
                                 'client_secret' => $parcela->emprestimo->banco->clientesecret,
@@ -86,12 +88,113 @@ class RecalcularParcelas extends Command
 
                 }
 
-                if($parcela->contasreceber){
+                if ($parcela->contasreceber) {
                     $parcela->contasreceber->venc = $parcela->venc_real;
                     $parcela->contasreceber->valor = $parcela->saldo;
                     $parcela->contasreceber->save();
                 }
                 $parcela->save();
+
+                // recalculando o valor total a quitar emprestimo
+
+                $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->quitacao->valor + $valorJuros;
+                $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->quitacao->saldo + $valorJuros;
+                $parcela->emprestimo->quitacao->save();
+
+                $caminhoAbsoluto = storage_path('app/public/documentos/' . $parcela->emprestimo->banco->certificado);
+
+                $options = [
+                    'clientId' => $parcela->emprestimo->banco->clienteid,
+                    'clientSecret' => $parcela->emprestimo->banco->clientesecret,
+                    'certificate' => $caminhoAbsoluto,
+                    'sandbox' => false,
+                    "debug" => false,
+                    'timeout' => 60,
+                ];
+
+                $params = [
+                    "txid" => Str::random(32)
+                ];
+
+                $body = [
+                    "calendario" => [
+                        "dataDeVencimento" => date('Y-m-d'),
+                        "validadeAposVencimento" => 0
+                    ],
+                    "devedor" => [
+                        'nome_completo' => $parcela->emprestimo->client->nome_completo,
+                        'cpf' => $parcela->emprestimo->client->cpf
+                    ],
+                    "valor" => [
+                        "original" => number_format(str_replace(',', '', $parcela->emprestimo->quitacao->saldo), 2, '.', ''),
+
+                    ],
+                    "chave" => $parcela->emprestimo->banco->chavepix, // Pix key registered in the authenticated Efí account
+                    "solicitacaoPagador" => "Quitação do Emprestimo ",
+                    "infoAdicionais" => [
+                        [
+                            "nome" => "Emprestimo",
+                            "valor" => "R$ " . $parcela->emprestimo->quitacao->saldo,
+                        ]
+                    ]
+                ];
+
+                try {
+                    $api = new EfiPay($options);
+                    $pix = $api->pixCreateDueCharge($params, $body);
+
+                    if ($pix["txid"]) {
+                        $params = [
+                            "id" => $pix["loc"]["id"]
+                        ];
+
+                        $parcela->emprestimo->quitacao->identificador = $pix["loc"]["id"];
+
+
+                        try {
+                            $qrcode = $api->pixGenerateQRCode($params);
+
+                            $parcela->emprestimo->quitacao->chave_pix = $qrcode['linkVisualizacao'];
+
+                            $parcela->emprestimo->quitacao->save();
+                        } catch (EfiException $e) {
+
+                            $this->custom_log->create([
+                                'user_id' => auth()->user()->id,
+                                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                                'operation' => 'error'
+                            ]);
+
+                            print_r($e->code . "<br>");
+                            print_r($e->error . "<br>");
+                            print_r($e->errorDescription) . "<br>";
+                        } catch (Exception $e) {
+                            $this->custom_log->create([
+                                'user_id' => auth()->user()->id,
+                                'content' => $e->getMessage(),
+                                'operation' => 'error'
+                            ]);
+                        }
+                    } else {
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                            'operation' => 'error'
+                        ]);
+                    }
+                } catch (EfiException $e) {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                        'operation' => 'error'
+                    ]);
+                } catch (Exception $e) {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => $e->getMessage(),
+                        'operation' => 'error'
+                    ]);
+                }
 
             }
         }
@@ -99,15 +202,16 @@ class RecalcularParcelas extends Command
         exit;
     }
 
-    public function gerarPix($dados) {
+    public function gerarPix($dados)
+    {
 
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'clientId' => $dados['banco']['clienteid'],
-            'clientSecret' => $dados['banco']['clientesecret'],
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
             "debug" => false,
@@ -132,11 +236,11 @@ class RecalcularParcelas extends Command
 
             ],
             "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Parcela ". $dados['parcela']['parcela'],
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
             "infoAdicionais" => [
                 [
                     "nome" => "Emprestimo",
-                    "valor" => "R$ ".$dados['parcela']['valor'],
+                    "valor" => "R$ " . $dados['parcela']['valor'],
                 ],
                 [
                     "nome" => "Parcela",
