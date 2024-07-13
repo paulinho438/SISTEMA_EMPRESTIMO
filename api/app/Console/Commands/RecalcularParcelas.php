@@ -12,6 +12,8 @@ use App\Models\Parcela;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
+use App\Models\CustomLog;
+
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Str;
@@ -159,7 +161,7 @@ class RecalcularParcelas extends Command
                             $parcela->emprestimo->quitacao->save();
                         } catch (EfiException $e) {
 
-                            $this->custom_log->create([
+                            CustomLog::create([
                                 'user_id' => auth()->user()->id,
                                 'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                                 'operation' => 'error'
@@ -169,27 +171,27 @@ class RecalcularParcelas extends Command
                             print_r($e->error . "<br>");
                             print_r($e->errorDescription) . "<br>";
                         } catch (Exception $e) {
-                            $this->custom_log->create([
+                            CustomLog::create([
                                 'user_id' => auth()->user()->id,
                                 'content' => $e->getMessage(),
                                 'operation' => 'error'
                             ]);
                         }
                     } else {
-                        $this->custom_log->create([
+                        CustomLog::create([
                             'user_id' => auth()->user()->id,
                             'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
                             'operation' => 'error'
                         ]);
                     }
                 } catch (EfiException $e) {
-                    $this->custom_log->create([
+                    CustomLog::create([
                         'user_id' => auth()->user()->id,
                         'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
                         'operation' => 'error'
                     ]);
                 } catch (Exception $e) {
-                    $this->custom_log->create([
+                    CustomLog::create([
                         'user_id' => auth()->user()->id,
                         'content' => $e->getMessage(),
                         'operation' => 'error'
