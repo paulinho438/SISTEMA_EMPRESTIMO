@@ -125,7 +125,7 @@ class RecalcularParcelas extends Command
                     ],
                     "devedor" => [
                         "nome_completo" => $parcela->emprestimo->client->nome_completo,
-                        "cpf" => "cpf" => str_replace(['-', '.'], '', $parcela->emprestimo->client->cpf),
+                        "cpf" => str_replace(['-', '.'], '', $parcela->emprestimo->client->cpf),
                     ],
                     "valor" => [
                         "original" => number_format(str_replace(',', '', $parcela->emprestimo->quitacao->saldo), 2, '.', ''),
