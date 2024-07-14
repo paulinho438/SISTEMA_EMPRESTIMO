@@ -119,7 +119,7 @@ class ClientController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'nome_completo' => 'required',
-                'cpf' => 'required',
+                'cpf' => 'required|unique:clients,cpf',
                 'rg' => 'required',
                 'data_nascimento' => 'required',
                 'sexo' => 'required',
