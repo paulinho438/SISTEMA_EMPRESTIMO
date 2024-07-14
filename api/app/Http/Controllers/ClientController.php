@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Parcela;
 use App\Models\CustomLog;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 use DateTime;
 use App\Http\Resources\ClientResource;
