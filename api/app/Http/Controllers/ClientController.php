@@ -124,7 +124,7 @@ class ClientController extends Controller
                 'nome_completo' => 'required',
                 'cpf' => [
                     'required',
-                    Rule::unique('clients', 'cpf')->ignore($client->id),
+                    Rule::unique('clients', 'cpf')->ignore($id),
                 ],
                 'rg' => 'required',
                 'data_nascimento' => 'required',
