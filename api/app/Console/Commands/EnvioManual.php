@@ -85,6 +85,8 @@ class EnvioManual extends Command
                     });
                 })->orderBy('venc')->first();
 
+                print_r("<pre>" . json_encode($primeiroRegistro, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>");
+
                 $ultimoRegistro = $parcela->where('dt_baixa', null)->whereHas('emprestimo', function ($query) use ($banco) {
                     $query->whereHas('banco', function ($query) use ($banco) {
                         $query->where('id', $banco->id);
