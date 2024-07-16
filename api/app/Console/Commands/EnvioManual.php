@@ -106,7 +106,7 @@ class EnvioManual extends Command
 
 
                 $params = [
-                    "inicio" => $primeiroRegistro->venc_real . "T00:00:00Z",
+                    "inicio" => $primeiroRegistro->venc . "T00:00:00Z",
                     "fim" => $ultimoRegistro->venc_real . "T23:59:59Z",
                     "status" => "CONCLUIDA", // "ATIVA","CONCLUIDA", "REMOVIDA_PELO_USUARIO_RECEBEDOR", "REMOVIDA_PELO_PSP"
                 ];
