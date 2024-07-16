@@ -83,13 +83,13 @@ class EnvioManual extends Command
                     $query->whereHas('banco', function ($query) use ($banco) {
                         $query->where('id', $banco->id);
                     });
-                })->orderBy('venc_real')->first();
+                })->orderBy('venc')->first();
 
                 $ultimoRegistro = $parcela->where('dt_baixa', null)->whereHas('emprestimo', function ($query) use ($banco) {
                     $query->whereHas('banco', function ($query) use ($banco) {
                         $query->where('id', $banco->id);
                     });
-                })->orderBy('venc_real', 'desc')->first();
+                })->orderBy('venc', 'desc')->first();
 
                 $caminhoAbsoluto = storage_path('app/public/documentos/' . $banco['certificado']);
                 $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
