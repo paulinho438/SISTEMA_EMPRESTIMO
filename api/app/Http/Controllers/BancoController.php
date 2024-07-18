@@ -9,6 +9,7 @@ use App\Models\CustomLog;
 use App\Models\User;
 
 use App\Http\Resources\BancosResource;
+use App\Http\Resources\BancosComSaldoResource;
 
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,7 +30,7 @@ class BancoController extends Controller
 
     public function id(Request $r, $id)
     {
-        return new BancosResource(Banco::find($id));
+        return new BancosComSaldoResource(Banco::find($id));
     }
 
     public function all(Request $request)
@@ -41,7 +42,7 @@ class BancoController extends Controller
             'operation' => 'index'
         ]);
 
-        return BancosResource::collection(Banco::where('company_id', $request->header('company-id'))->get());
+        return BancosComSaldoResource::collection(Banco::where('company_id', $request->header('company-id'))->get());
     }
 
     public function insert(Request $request)
