@@ -524,93 +524,6 @@ class EmprestimoController extends Controller
 
     }
 
-    public function gerarPix($dados)
-    {
-
-        $return = [];
-
-        $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-        $options = [
-            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
-
-
-        $params = [
-            "txid" => Str::random(32)
-        ];
-
-        $body = [
-            "calendario" => [
-                "dataDeVencimento" => $dados['parcela']['venc_real'],
-                "validadeAposVencimento" => 0
-            ],
-            "devedor" => [
-                "nome" => $dados['cliente']['nome_completo'],
-                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-            ],
-            "valor" => [
-                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
-
-            ],
-            "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
-            "infoAdicionais" => [
-                [
-                    "nome" => "Emprestimo",
-                    "valor" => "R$ " . $dados['parcela']['valor'],
-                ],
-                [
-                    "nome" => "Parcela",
-                    "valor" => $dados['parcela']['parcela']
-                ]
-            ]
-        ];
-
-        try {
-            $api = new EfiPay($options);
-            $pix = $api->pixCreateDueCharge($params, $body);
-
-
-            if ($pix["txid"]) {
-                $params = [
-                    "id" => $pix["loc"]["id"]
-                ];
-
-                $return['identificador'] = $pix["loc"]["id"];
-
-
-                try {
-                    $qrcode = $api->pixGenerateQRCode($params);
-
-                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
-
-                    return $return;
-
-                } catch (EfiException $e) {
-                    print_r($e->code . "<br>");
-                    print_r($e->error . "<br>");
-                    print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
-                    print_r($e->getMessage());
-                }
-            } else {
-                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
-            }
-        } catch (EfiException $e) {
-            print_r($e->code . "<br>");
-            print_r($e->error . "<br>");
-            print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
-            print_r($e->getMessage());
-        }
-    }
-
     public function insert(Request $request)
     {
 
@@ -1368,6 +1281,39 @@ class EmprestimoController extends Controller
 
                 $editParcela->save();
 
+                if ($editParcela->emprestimo->quitacao->chave_pix) {
+
+                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->save();
+
+                    $gerarPixQuitacao = self::gerarPixQuitacao(
+                        [
+                            'banco' => [
+                                'client_id' => $editParcela->emprestimo->banco->clienteid,
+                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificado' => $editParcela->emprestimo->banco->certificado,
+                                'chave' => $editParcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $editParcela->parcela,
+                                'valor' => $editParcela->emprestimo->quitacao->saldo,
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                'cpf' => $editParcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+                    $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+                    $editParcela->emprestimo->quitacao->save();
+
+                }
+
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
@@ -1400,6 +1346,66 @@ class EmprestimoController extends Controller
                 $editParcela->emprestimo->company->save();
 
                 $editParcela->save();
+
+                if ($editParcela->chave_pix) {
+                    $gerarPix = self::gerarPix(
+                        [
+                            'banco' => [
+                                'client_id' => $editParcela->emprestimo->banco->clienteid,
+                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificado' => $editParcela->emprestimo->banco->certificado,
+                                'chave' => $editParcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $editParcela->parcela,
+                                'valor' => $editParcela->saldo,
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                'cpf' => $editParcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $editParcela->identificador = $gerarPix['identificador'];
+                    $editParcela->chave_pix = $gerarPix['chave_pix'];
+                    $editParcela->save();
+
+                }
+
+                if ($editParcela->emprestimo->quitacao->chave_pix) {
+
+                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->save();
+
+                    $gerarPixQuitacao = self::gerarPixQuitacao(
+                        [
+                            'banco' => [
+                                'client_id' => $editParcela->emprestimo->banco->clienteid,
+                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificado' => $editParcela->emprestimo->banco->certificado,
+                                'chave' => $editParcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $editParcela->parcela,
+                                'valor' => $editParcela->emprestimo->quitacao->saldo,
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                'cpf' => $editParcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+                    $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+                    $editParcela->emprestimo->quitacao->save();
+
+                }
 
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
@@ -1702,4 +1708,173 @@ class EmprestimoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
     }
+    public function gerarPixQuitacao($dados)
+    {
+
+        $return = [];
+
+        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        $options = [
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+        $params = [
+            "txid" => Str::random(32)
+        ];
+
+        $body = [
+            "calendario" => [
+                "dataDeVencimento" => $dados['parcela']['venc_real'],
+                "validadeAposVencimento" => 0
+            ],
+            "devedor" => [
+                "nome" => $dados['cliente']['nome_completo'],
+                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+            ],
+            "valor" => [
+                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
+
+            ],
+            "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
+            "infoAdicionais" => [
+                [
+                    "nome" => "Emprestimo",
+                    "valor" => "R$ " . $dados['parcela']['valor'],
+                ]
+            ]
+        ];
+
+        try {
+            $api = new EfiPay($options);
+            $pix = $api->pixCreateDueCharge($params, $body);
+
+
+            if ($pix["txid"]) {
+                $params = [
+                    "id" => $pix["loc"]["id"]
+                ];
+
+                $return['identificador'] = $pix["loc"]["id"];
+
+
+                try {
+                    $qrcode = $api->pixGenerateQRCode($params);
+
+                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                    return $return;
+
+                } catch (EfiException $e) {
+                    print_r($e->code . "<br>");
+                    print_r($e->error . "<br>");
+                    print_r($e->errorDescription) . "<br>";
+                } catch (Exception $e) {
+                    print_r($e->getMessage());
+                }
+            } else {
+                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+            }
+        } catch (EfiException $e) {
+            print_r($e->code . "<br>");
+            print_r($e->error . "<br>");
+            print_r($e->errorDescription) . "<br>";
+        } catch (Exception $e) {
+            print_r($e->getMessage());
+        }
+    }
+
+    public function gerarPix($dados)
+    {
+
+        $return = [];
+
+        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        $options = [
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+        $params = [
+            "txid" => Str::random(32)
+        ];
+
+        $body = [
+            "calendario" => [
+                "dataDeVencimento" => $dados['parcela']['venc_real'],
+                "validadeAposVencimento" => 0
+            ],
+            "devedor" => [
+                "nome" => $dados['cliente']['nome_completo'],
+                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+            ],
+            "valor" => [
+                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
+
+            ],
+            "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
+            "infoAdicionais" => [
+                [
+                    "nome" => "Emprestimo",
+                    "valor" => "R$ " . $dados['parcela']['valor'],
+                ],
+                [
+                    "nome" => "Parcela",
+                    "valor" => $dados['parcela']['parcela']
+                ]
+            ]
+        ];
+
+        try {
+            $api = new EfiPay($options);
+            $pix = $api->pixCreateDueCharge($params, $body);
+
+
+            if ($pix["txid"]) {
+                $params = [
+                    "id" => $pix["loc"]["id"]
+                ];
+
+                $return['identificador'] = $pix["loc"]["id"];
+
+
+                try {
+                    $qrcode = $api->pixGenerateQRCode($params);
+
+                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                    return $return;
+
+                } catch (EfiException $e) {
+                    print_r($e->code . "<br>");
+                    print_r($e->error . "<br>");
+                    print_r($e->errorDescription) . "<br>";
+                } catch (Exception $e) {
+                    print_r($e->getMessage());
+                }
+            } else {
+                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+            }
+        } catch (EfiException $e) {
+            print_r($e->code . "<br>");
+            print_r($e->error . "<br>");
+            print_r($e->errorDescription) . "<br>";
+        } catch (Exception $e) {
+            print_r($e->getMessage());
+        }
+    }
+
+
 }
