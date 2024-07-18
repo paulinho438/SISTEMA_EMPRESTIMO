@@ -11,7 +11,7 @@ use App\Models\CustomLog;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
-class BancosResource extends JsonResource
+class BancosComSaldoResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -27,6 +27,7 @@ class BancosResource extends JsonResource
             "agencia" => $this->agencia,
             "conta" => $this->conta,
             "saldo" => $this->saldo,
+            "saldo_banco" => $this->getSaldoBanco(),
             "caixa_empresa" => $this->company->caixa,
             "efibank" => ($this->efibank) ? true : false,
             "clienteid" => $this->clienteid,
@@ -39,4 +40,39 @@ class BancosResource extends JsonResource
         ];
     }
 
+    private function getSaldoBanco()
+    {
+
+        try {
+
+            if ($this->efibank) {
+                $api = new EfiPay([
+                    'clientId' => $this->clienteid,
+                    'clientSecret' => $this->clientesecret,
+                    'certificate' => storage_path('app/public/documentos/' . $this->certificado),
+                    'sandbox' => false,
+                    "debug" => false,
+                    'timeout' => 60,
+                ]);
+
+                $response = $api->getAccountBalance(["bloqueios" => false]);
+
+                if (isset($response['saldo'])) {
+                    return $response['saldo'];
+                }else{
+                    return null;
+                }
+
+            } else {
+                return null;
+            }
+
+
+        } catch (EfiException $e) {
+            return null;
+        } catch (Exception $e) {
+            return null;
+        }
+
+    }
 }
