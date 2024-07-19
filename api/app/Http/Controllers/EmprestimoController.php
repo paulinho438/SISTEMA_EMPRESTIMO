@@ -35,6 +35,7 @@ use Carbon\Carbon;
 use App\Http\Resources\EmprestimoResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\BancosResource;
+use App\Http\Resources\BancosComSaldoResource;
 use App\Http\Resources\CostcenterResource;
 use App\Http\Resources\FeriadoEmprestimoResource;
 use App\Http\Resources\FornecedorResource;
@@ -443,7 +444,7 @@ class EmprestimoController extends Controller
     public function searchBanco(Request $request)
     {
 
-        return BancosResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
+        return BancosComSaldoResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
     public function searchCostcenter(Request $request)
