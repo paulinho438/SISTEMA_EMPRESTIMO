@@ -1376,8 +1376,8 @@ class EmprestimoController extends Controller
 
                 if ($editParcela->emprestimo->quitacao->chave_pix) {
 
-                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $editParcela->saldo;
-                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $request->valor;
+                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $request->valor;
                     $editParcela->emprestimo->quitacao->save();
 
                     $gerarPixQuitacao = self::gerarPixQuitacao(
