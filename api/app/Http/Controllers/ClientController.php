@@ -43,8 +43,7 @@ class ClientController extends Controller
 
         $companyId = $request->header('company-id');
 
-        return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
-            ->where('dt_baixa', null)
+        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function($query) {
                 $today = Carbon::now()->toDateString();
