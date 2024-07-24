@@ -34,7 +34,7 @@ use Carbon\Carbon;
 
 use App\Http\Resources\EmprestimoResource;
 use App\Http\Resources\ClientResource;
-use App\Http\Resources\BancosResource;
+use App\Http\Resources\ParcelaResource;
 use App\Http\Resources\BancosComSaldoResource;
 use App\Http\Resources\CostcenterResource;
 use App\Http\Resources\FeriadoEmprestimoResource;
@@ -1609,7 +1609,7 @@ class EmprestimoController extends Controller
 
         $parcela = Parcela::find($id);
         if ($parcela) {
-            return $parcela->emprestimo->parcelas;
+            return ParcelaResource::collection($parcela->emprestimo->parcelas);
         }
 
 
