@@ -57,5 +57,20 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->companies()->pluck('company')->implode(', ');
     }
+
+    public function hasPermission($permission)
+    {
+        return $this->groups()->whereHas('items', function ($query) use ($permission) {
+            $query->where('slug', $permission);
+        })->exists();
+    }
+
+    // Método para obter o nome do grupo pelo ID da empresa
+    public function getGroupNameByEmpresaId($empresaId)
+    {
+        $group = $this->groups()->where('company_id', $empresaId)->first();
+
+        return $group ? $group->name : null;
+    }
 }
 
