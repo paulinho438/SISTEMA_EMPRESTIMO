@@ -1586,6 +1586,9 @@ class EmprestimoController extends Controller
 
             $editParcela->save();
 
+            $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
+            $editParcela->emprestimo->company->save();
+
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' recebeu a baixa parcial da parcela: ' . $id,
