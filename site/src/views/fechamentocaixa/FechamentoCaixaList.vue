@@ -42,7 +42,7 @@ export default {
 	methods: {
 		async searchBanco(event) {
 			try {
-				let response = await this.emprestimoService.searchbanco(event.query);
+				let response = await this.emprestimoService.searchbancofechamento(event.query);
 				this.bancos = response.data.data;
 			} catch (e) {
 				console.log(e);
@@ -343,11 +343,11 @@ export default {
 
 				</div>
 				<div class="mt-3">
-					<DataTable dataKey="id" :value="Movimentacaofinanceira" :paginator="true" :rows="10" :loading="loading"
+					<DataTable dataKey="id" :value="banco?.parcelas_baixa_manual" :paginator="true" :rows="10" :loading="loading"
 						:filters="filters"
 						paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
 						:rowsPerPageOptions="[5, 10, 25]"
-						currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} movimentações(s)"
+						currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} parcela(s)"
 						responsiveLayout="scroll">
 						<Column field="id" header="ID" :sortable="true" class="w-1">
 							<template #body="slotProps">
@@ -355,52 +355,28 @@ export default {
 								{{ slotProps.data.id }}
 							</template>
 						</Column>
-						<Column field="dt_movimentacao" header="Data lançamento" :sortable="true" class="w-2">
+						<Column field="dt_movimentacao" header="Emprestimo ID" :sortable="true" class="w-2">
 							<template #body="slotProps">
-								<span class="p-column-title">Data lançamento</span>
-								{{ slotProps.data.dt_movimentacao }}
+								<span class="p-column-title">Emprestimo ID</span>
+								{{ slotProps.data.emprestimo_id }}
 							</template>
 						</Column>
-						<Column field="banco" header="Conta bancária" :sortable="true" class="w-2">
+						<Column field="banco" header="Parcela" :sortable="true" class="w-2">
 							<template #body="slotProps">
-								<span class="p-column-title">Conta bancária</span>
-								{{ slotProps.data.banco.name }}
+								<span class="p-column-title">Parcela</span>
+								{{ slotProps.data.parcela }}
 							</template>
 						</Column>
-						<Column field="descricao" header="Transação realizada" :sortable="true" class="w-4">
+						<Column field="descricao" header="Valor Parcela" :sortable="true" class="w-4">
 							<template #body="slotProps">
 								<span class="p-column-title">Transação realizada</span>
-								{{ slotProps.data.descricao }}
+								{{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
 							</template>
 						</Column>
-						<Column field="valor" header="Valor R$" :sortable="true" class="w-1">
+						<Column field="descricao" header="Valor Recebido" :sortable="true" class="w-4">
 							<template #body="slotProps">
-								<span class="p-column-title">Valor R$</span>
-								<a v-if="slotProps.data.tipomov == 'S'" class="text-red-500"> - {{
-									slotProps.data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-								}}</a>
-								<a v-if="slotProps.data.tipomov == 'E'" class="text-green-500"> + {{
-									slotProps.data.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-								}}</a>
-							</template>
-						</Column>
-
-						<Column v-if="permissionsService.hasPermissions('view_Movimentacaofinanceira_edit')" field="edit"
-							header="Editar" :sortable="false" class="w-1">
-							<template #body="slotProps">
-								<Button v-if="!slotProps.data.standard"
-									class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0"
-									type="button" :icon="icons.FILE_EDIT" v-tooltip.top="'Editar'"
-									@click.prevent="editCategory(slotProps.data.id)" />
-							</template>
-						</Column>
-						<Column v-if="permissionsService.hasPermissions('view_Movimentacaofinanceira_delete')" field="edit"
-							header="Excluir" :sortable="false" class="w-1">
-							<template #body="slotProps">
-								<Button v-if="!slotProps.data.standard"
-									class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0"
-									type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL"
-									v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />
+								<span class="p-column-title">Transação realizada</span>
+								{{ slotProps.data.valor_recebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
 							</template>
 						</Column>
 					</DataTable>

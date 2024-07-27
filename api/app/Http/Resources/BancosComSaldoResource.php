@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
+use App\Models\Parcela;
 
 use App\Models\CustomLog;
 
@@ -28,6 +29,7 @@ class BancosComSaldoResource extends JsonResource
             "conta" => $this->conta,
             "saldo" => $this->saldo,
             "saldo_banco" => $this->getSaldoBanco(),
+            "parcelas_baixa_manual" => $this->getParcelasBaixaManual(),
             "caixa_empresa" => $this->company->caixa,
             "efibank" => ($this->efibank) ? true : false,
             "clienteid" => $this->clienteid,
@@ -73,6 +75,21 @@ class BancosComSaldoResource extends JsonResource
         } catch (Exception $e) {
             return null;
         }
+
+    }
+
+    private function getParcelasBaixaManual()
+    {
+
+        $id = $this->id;
+
+        $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
+            $query->where('banco_id', $id)
+                  ->whereNull('dt_baixa')
+                  ->where('valor_recebido', '>', 0);
+        })->get();
+
+        return $parcelas;
 
     }
 }
