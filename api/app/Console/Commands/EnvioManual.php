@@ -315,6 +315,7 @@ class EnvioManual extends Command
                 }
             } else {
                 echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+                echo "<pre>" . json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
             }
         } catch (EfiException $e) {
             print_r($e->code . "<br>");
