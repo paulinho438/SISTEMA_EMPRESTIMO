@@ -50,6 +50,10 @@ export default class EmprestimoService {
 	searchbanco = async (value) => {
 		return await axios.post(`${apiPath}/emprestimo/search/banco`, { name: value });
 	};
+
+	searchbancofechamento= async (value) => {
+		return await axios.post(`${apiPath}/emprestimo/search/bancofechamento`, { name: value });
+	};
 	
 	searchCostcenter = async (value) => {
 		return await axios.post(`${apiPath}/emprestimo/search/costcenter`, { name: value });

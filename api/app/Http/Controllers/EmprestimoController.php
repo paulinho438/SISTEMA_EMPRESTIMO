@@ -467,6 +467,12 @@ class EmprestimoController extends Controller
             ->get();
     }
 
+    public function searchBancoFechamento(Request $request)
+    {
+
+        return BancosComSaldoResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
+    }
+
     public function enviarPix($dados)
     {
 

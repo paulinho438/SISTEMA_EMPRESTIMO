@@ -154,6 +154,7 @@ Route::middleware('auth:api')->group(function(){
     Route::post('/emprestimo/search/fornecedor', [EmprestimoController::class, 'searchFornecedor']);
     Route::post('/emprestimo/search/cliente', [EmprestimoController::class, 'searchCliente']);
     Route::post('/emprestimo/search/banco', [EmprestimoController::class, 'searchBanco']);
+    Route::post('/emprestimo/search/bancofechamento', [EmprestimoController::class, 'searchBancoFechamento']);
     Route::post('/emprestimo/search/costcenter', [EmprestimoController::class, 'searchCostcenter']);
     Route::post('/emprestimo/search/consultor', [EmprestimoController::class, 'searchConsultor']);
     Route::get('/feriados', [EmprestimoController::class, 'feriados']);
