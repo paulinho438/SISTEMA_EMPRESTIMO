@@ -35,6 +35,8 @@ class ClientController extends Controller
 
     public function parcelasAtrasadas(Request $request){
 
+        // return auth()->user()->hasPermission('criar_usuarios');
+
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Clientes Pendentes no APLICATIVO',
@@ -43,12 +45,19 @@ class ClientController extends Controller
 
         $companyId = $request->header('company-id');
 
+        $groupName = auth()->user()->getGroupNameByEmpresaId($request->header('company-id'));
+
         return ParcelaResource::collection(Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function($query) {
                 $today = Carbon::now()->toDateString();
                 $query->whereNull('dt_ult_cobranca')
                       ->orWhereDate('dt_ult_cobranca', '!=', $today);
+            })
+            ->where(function ($query) use ($groupName) {
+                if ($groupName == 'Cobrador') {
+                    $query->where('atrasadas', '>', 0);
+                }
             })
             ->whereHas('emprestimo', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
