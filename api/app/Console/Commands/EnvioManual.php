@@ -286,6 +286,8 @@ class EnvioManual extends Command
             ]
         ];
 
+        echo "<pre>" . json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+
         try {
             $api = new EfiPay($options);
             $pix = $api->pixCreateDueCharge($params, $body);
