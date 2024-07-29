@@ -43,10 +43,6 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        $companyId = $request->header('company-id');
-
-        $groupName = auth()->user()->getGroupNameByEmpresaId($request->header('company-id'));
-
         return ParcelaResource::collection(Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function($query) {
@@ -54,13 +50,13 @@ class ClientController extends Controller
                 $query->whereNull('dt_ult_cobranca')
                       ->orWhereDate('dt_ult_cobranca', '!=', $today);
             })
-            ->where(function ($query) use ($groupName) {
-                if ($groupName == 'Cobrador') {
+            ->where(function ($query) use ($request) {
+                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Cobrador') {
                     $query->where('atrasadas', '>', 0);
                 }
             })
-            ->whereHas('emprestimo', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
+            ->whereHas('emprestimo', function ($query) use ($request) {
+                $query->where('company_id', $request->header('company-id'));
             })
             ->get()->unique('emprestimo_id'));
 
