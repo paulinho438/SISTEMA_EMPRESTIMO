@@ -83,7 +83,7 @@ class EnvioManualQuitacao extends Command
                     $query->whereHas('banco', function ($query) use ($banco) {
                         $query->where('id', $banco->id);
                     });
-                })->orderBy('venc')->first();
+                })->orderBy('dt_lancamento')->first();
 
                 $ultimoRegistro = $parcela->where('dt_baixa', null)->whereHas('emprestimo', function ($query) use ($banco) {
                     $query->whereHas('banco', function ($query) use ($banco) {
@@ -105,7 +105,7 @@ class EnvioManualQuitacao extends Command
 
 
                 $params = [
-                    "inicio" => $primeiroRegistro->venc_real . "T00:00:00Z",
+                    "inicio" => $primeiroRegistro->dt_lancamento . "T00:00:00Z",
                     "fim" => $ultimoRegistro->venc_real . "T23:59:59Z",
                     "status" => "CONCLUIDA", // "ATIVA","CONCLUIDA", "REMOVIDA_PELO_USUARIO_RECEBEDOR", "REMOVIDA_PELO_PSP"
                 ];
