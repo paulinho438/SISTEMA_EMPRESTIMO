@@ -210,10 +210,17 @@ class ClientController extends Controller
 
     public function delete(Request $r, $id)
     {
-        DB::beginTransaction();
+
 
         try {
-            $permGroup = Client::findOrFail($id);
+
+            $permGroup = Client::withCount('emprestimos')->findOrFail($id);
+
+            if ($permGroup->emprestimos_count > 0) {
+                return response()->json([
+                    "message" => "Cliente ainda tem empréstimos associados."
+                ], Response::HTTP_FORBIDDEN);
+            }
 
             $permGroup->delete();
 
@@ -225,7 +232,7 @@ class ClientController extends Controller
                 'operation' => 'destroy'
             ]);
 
-            return response()->json(['message' => 'Cliente excluída com sucesso.']);
+            return response()->json(['message' => 'Cliente excluído com sucesso.']);
 
         } catch (\Exception $e) {
             DB::rollBack();
