@@ -45,4 +45,8 @@ class Client extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function emprestimos() {
+        return $this->belongsTo(Emprestimo::class, 'id', 'client_id');
+    }
+
 }
