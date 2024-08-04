@@ -55,6 +55,8 @@ class RecalcularParcelas extends Command
 
             if ($parcela->emprestimo) {
 
+                echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
+
                 $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
 
                 $novoValor = $valorJuros + $parcela->saldo;
