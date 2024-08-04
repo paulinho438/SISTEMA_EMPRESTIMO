@@ -242,8 +242,8 @@ class BancoController extends Controller
 
                 if ($parcela->emprestimo->quitacao->chave_pix) {
 
-                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->quitacao->valor - $request->valor;
-                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->quitacao->saldo - $request->valor;
+                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                     $parcela->emprestimo->quitacao->save();
 
                     $gerarPixQuitacao = self::gerarPixQuitacao(
@@ -256,7 +256,7 @@ class BancoController extends Controller
                             ],
                             'parcela' => [
                                 'parcela' => $parcela->parcela,
-                                'valor' => $parcela->emprestimo->quitacao->saldo,
+                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
                                 'venc_real' => date('Y-m-d'),
                             ],
                             'cliente' => [
