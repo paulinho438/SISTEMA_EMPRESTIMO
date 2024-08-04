@@ -91,8 +91,8 @@ class RecalcularParcelas extends Command
 
                 if ($parcela->emprestimo->quitacao->chave_pix) {
 
-                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->quitacao->valor + $valorJuros;
-                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->quitacao->saldo + $valorJuros;
+                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente;
+                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente;
                     $parcela->emprestimo->quitacao->save();
 
                     $gerarPixQuitacao = self::gerarPixQuitacao(
