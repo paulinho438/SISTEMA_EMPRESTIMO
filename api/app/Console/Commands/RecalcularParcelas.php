@@ -91,11 +91,10 @@ class RecalcularParcelas extends Command
 
                 if ($parcela->emprestimo->quitacao->chave_pix) {
 
-                    $parcela->emprestimo->quitacao->valor = (float) number_format($parcela->emprestimo->parcelas[0]->totalPendente(), 2, '.', '');
-                    $parcela->emprestimo->quitacao->saldo = (float) number_format($parcela->emprestimo->parcelas[0]->totalPendente(), 2, '.', '');
+                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    echo "<pre>" . json_encode($parcela->emprestimo->parcelas[0]->totalPendente(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
                     $parcela->emprestimo->quitacao->save();
-
-                    echo "<pre>" . json_encode((float) number_format($parcela->emprestimo->parcelas[0]->totalPendente(), 2, '.', ''), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
 
                     $gerarPixQuitacao = self::gerarPixQuitacao(
                         [
@@ -107,7 +106,7 @@ class RecalcularParcelas extends Command
                             ],
                             'parcela' => [
                                 'parcela' => $parcela->parcela,
-                                'valor' => (float) number_format($parcela->emprestimo->parcelas[0]->totalPendente(), 2, '.', ''),
+                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
                                 'venc_real' => date('Y-m-d'),
                             ],
                             'cliente' => [

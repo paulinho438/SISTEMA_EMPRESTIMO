@@ -60,9 +60,12 @@ class Parcela extends Model
 
     public function totalPendente()
     {
-        return Parcela::where('emprestimo_id', $this->emprestimo_id)
-            ->where('dt_baixa', null)
-            ->sum('saldo');
+        $totalPendente = Parcela::where('emprestimo_id', $this->emprestimo_id)
+        ->where('dt_baixa', null)
+        ->sum('saldo');
+
+        // Arredonda o valor para 2 casas decimais e retorna como float
+        return round((float) $totalPendente, 2);
     }
 
 }
