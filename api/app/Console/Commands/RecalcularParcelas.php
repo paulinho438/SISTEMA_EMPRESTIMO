@@ -95,6 +95,8 @@ class RecalcularParcelas extends Command
                     $parcela->emprestimo->quitacao->saldo = (float) number_format($parcela->emprestimo->parcelas[0]->totalPendente(), 2, '.', '');
                     $parcela->emprestimo->quitacao->save();
 
+                    echo "<pre>" . json_encode((float) number_format($parcela->emprestimo->parcelas[0]->totalPendente(), 2, '.', ''), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+
                     $gerarPixQuitacao = self::gerarPixQuitacao(
                         [
                             'banco' => [
