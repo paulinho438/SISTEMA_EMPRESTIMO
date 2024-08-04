@@ -55,8 +55,7 @@ class RecalcularParcelas extends Command
 
             if ($parcela->emprestimo) {
 
-                $valorJuros = $parcela->emprestimo->valor * ($juros / 100);
-
+                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
 
                 $novoValor = $valorJuros + $parcela->saldo;
 

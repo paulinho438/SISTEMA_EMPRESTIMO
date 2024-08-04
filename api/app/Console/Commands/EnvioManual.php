@@ -109,6 +109,7 @@ class EnvioManual extends Command
                     "fim" => $ultimoRegistro->venc_real . "T23:59:59Z",
                     "status" => "CONCLUIDA", // "ATIVA","CONCLUIDA", "REMOVIDA_PELO_USUARIO_RECEBEDOR", "REMOVIDA_PELO_PSP"
                 ];
+                DB::beginTransaction();
 
                 try {
                     $api = new EfiPay($options);
@@ -214,13 +215,16 @@ class EnvioManual extends Command
                         }
                     }
 
+                    DB::commit();
 
                     print_r("<pre>" . json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>");
                 } catch (EfiException $e) {
+                    DB::rollBack();
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
                 } catch (Exception $e) {
+                    DB::rollBack();
                     print_r($e->getMessage());
                 }
 
