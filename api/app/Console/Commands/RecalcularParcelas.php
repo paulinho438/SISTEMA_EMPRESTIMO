@@ -65,6 +65,7 @@ class RecalcularParcelas extends Command
                 $parcela->venc_real = date('Y-m-d');
                 $parcela->atrasadas = $parcela->atrasadas + 1;
 
+
                 if ($parcela->chave_pix) {
                     $gerarPix = self::gerarPix(
                         [
@@ -90,6 +91,8 @@ class RecalcularParcelas extends Command
                     $parcela->chave_pix = $gerarPix['chave_pix'];
 
                 }
+
+                $parcela->save();
 
                 if ($parcela->emprestimo->quitacao->chave_pix) {
 
@@ -130,7 +133,7 @@ class RecalcularParcelas extends Command
                     $parcela->contasreceber->valor = $parcela->saldo;
                     $parcela->contasreceber->save();
                 }
-                $parcela->save();
+
 
 
             }
