@@ -131,6 +131,7 @@ class EnvioManual extends Command
                         if (in_array($item->identificador, $arrayIdsLoc)) {
                             $editParcela = Parcela::find($item->id);
                             $editParcela->dt_baixa = date('Y-m-d');
+                            $editParcela->save();
                             if ($editParcela->contasreceber) {
                                 $editParcela->contasreceber->status = 'Pago';
                                 $editParcela->contasreceber->dt_baixa = date('Y-m-d');
@@ -178,8 +179,8 @@ class EnvioManual extends Command
 
                                 if ($editParcela->emprestimo->quitacao->chave_pix) {
 
-                                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $valorPago;
-                                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $valorPago;
+                                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->parcelas[0]->totalPendente();
+                                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->parcelas[0]->totalPendente();
                                     $editParcela->emprestimo->quitacao->save();
 
                                     $gerarPixQuitacao = self::gerarPixQuitacao(
@@ -192,7 +193,7 @@ class EnvioManual extends Command
                                             ],
                                             'parcela' => [
                                                 'parcela' => $editParcela->parcela,
-                                                'valor' => $editParcela->emprestimo->quitacao->saldo,
+                                                'valor' => $editParcela->emprestimo->parcelas[0]->totalPendente(),
                                                 'venc_real' => date('Y-m-d'),
                                             ],
                                             'cliente' => [
@@ -210,7 +211,7 @@ class EnvioManual extends Command
                                 }
 
                             }
-                            $editParcela->save();
+
 
                         }
                     }
