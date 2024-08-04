@@ -127,6 +127,8 @@ class EnvioManual extends Command
                         }
                     }
 
+                    print_r("<pre>" . json_encode($arrayIdsLoc) . "</pre>");
+
                     foreach ($parcelas as $item) {
                         if (in_array($item->identificador, $arrayIdsLoc)) {
                             $editParcela = Parcela::find($item->id);
