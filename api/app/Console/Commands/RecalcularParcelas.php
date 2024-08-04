@@ -105,7 +105,7 @@ class RecalcularParcelas extends Command
                             ],
                             'parcela' => [
                                 'parcela' => $parcela->parcela,
-                                'valor' => $parcela->emprestimo->quitacao->saldo,
+                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
                                 'venc_real' => date('Y-m-d'),
                             ],
                             'cliente' => [
