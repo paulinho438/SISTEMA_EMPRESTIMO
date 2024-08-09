@@ -251,7 +251,7 @@ class RecalcularParcelas extends Command
         $body = [
             "calendario" => [
                 "dataDeVencimento" => $dados['parcela']['venc_real'],
-                "validadeAposVencimento" => 0
+                "validadeAposVencimento" => 10
             ],
             "devedor" => [
                 "nome" => $dados['cliente']['nome_completo'],
