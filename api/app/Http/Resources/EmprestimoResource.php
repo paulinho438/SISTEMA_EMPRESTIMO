@@ -98,6 +98,6 @@ class EmprestimoResource extends JsonResource
     }
 
     private function isMaiorQuatro($x, $y){
-        return $x > 4;
+        return $x > 5;
     }
 }
