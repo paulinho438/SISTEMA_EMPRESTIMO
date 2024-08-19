@@ -17,8 +17,8 @@ class UserSeeder extends Seeder
     {
         DB::table("users")->insert(
             [
-                "nome_completo"             => "PAULO PEIXOTO",
-                "cpf"                       => "00000000000",
+                "nome_completo"             => "RAY",
+                "cpf"                       => "rj",
                 "rg"                        => "2834868",
                 "data_nascimento"           => Carbon::now()->format("Y-m-d"),
                 "sexo"                      => "M",

@@ -109,7 +109,7 @@ const model = ref([
                         label: 'Fechamento de Caixa', 
                         icon: 'pi pi-fw pi-globe', 
                         to: '/fechamentocaixa', 
-                        permission: 'view_movimentacaofinanceira' 
+                        permission: 'view_fechamentocaixa' 
                     },
                    
                 ]

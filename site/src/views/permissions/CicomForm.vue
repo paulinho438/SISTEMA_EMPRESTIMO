@@ -83,9 +83,11 @@ export default {
 						this.cicom = response.data.data;
 						this.multiselectValueUsers = response.data.data.users
 
+						console.log('cicom', response.data)
+
 
 					})
-					.catch((error) => {
+					.catch((e) => {
 						this.toast.add({
 							severity: ToastSeverity.ERROR,
 							detail: UtilService.message(e),

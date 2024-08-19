@@ -92,7 +92,9 @@ class PermgroupController extends Controller
 
                 $EditGroup->save();
 
-
+                // Sincroniza os usuários com o grupo de permissões
+                $usersData = collect($dados['users'])->pluck('id')->toArray();
+                $EditGroup->users()->sync($usersData);
 
                 foreach ($dados['permissions'] as $slug) {
                     // Verifica se o relacionamento já existe para evitar duplicatas
@@ -123,7 +125,7 @@ class PermgroupController extends Controller
     }
 
     public function id(Request $r, $id){
-        $res = Permgroup::find($id);
+        $res = new GroupResource(Permgroup::find($id));
         return $res;
     }
 
