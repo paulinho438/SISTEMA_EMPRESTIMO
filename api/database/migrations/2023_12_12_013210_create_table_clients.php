@@ -24,7 +24,7 @@ return new class extends Migration
             $table->enum('sexo', ['M', 'F'])->comment('Valores válidos ["M","F"]');
             $table->string('telefone_celular_1', 20);
             $table->string('telefone_celular_2', 20);
-            $table->string('email')->unique();
+            $table->string('email');
             $table->enum('status', ['A', 'I'])->default('A')->comment('Valores válidos ["A","I"]');
             $table->string('status_motivo')->nullable()->comment('Indicar o motivo pelo qual o usuário foi inativo');
             $table->string('observation')->nullable();
