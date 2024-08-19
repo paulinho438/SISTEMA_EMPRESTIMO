@@ -45,5 +45,10 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('clients');
+        Schema::table('clients', function (Blueprint $table) {
+            if (Schema::hasColumn('clients', 'email')) {
+                $table->dropUnique('clients_email_unique');
+            }
+        });
     }
 };
