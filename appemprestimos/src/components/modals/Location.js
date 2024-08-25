@@ -130,8 +130,8 @@ export default function Location(props) {
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
         Valor: R$ ${item.valor.toFixed(2)}
-        Juros: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
-        Multa: R$ ${(item.multa || 0).toFixed(2)}
+        Multa: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
+        Juros: R$ ${(item.multa || 0).toFixed(2)}
         Pago: R$ ${(item.pago || 0).toFixed(2)}
         PIX: ${item.chave_pix || 'Não Contém'}
         Status: Pendente

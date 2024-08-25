@@ -18,13 +18,13 @@ return new class extends Migration
         Schema::create('clients', function(Blueprint $table) {
             $table->id();
             $table->string('nome_completo', 150);
-            $table->string('cpf', 20)->unique();
-            $table->string('rg', 20)->unique();
+            $table->string('cpf', 20);
+            $table->string('rg', 20);
             $table->date('data_nascimento');
             $table->enum('sexo', ['M', 'F'])->comment('Valores válidos ["M","F"]');
             $table->string('telefone_celular_1', 20);
             $table->string('telefone_celular_2', 20);
-            $table->string('email')->unique();
+            $table->string('email');
             $table->enum('status', ['A', 'I'])->default('A')->comment('Valores válidos ["A","I"]');
             $table->string('status_motivo')->nullable()->comment('Indicar o motivo pelo qual o usuário foi inativo');
             $table->string('observation')->nullable();
@@ -45,5 +45,10 @@ return new class extends Migration
     public function down()
     {
         Schema::dropIfExists('clients');
+        Schema::table('clients', function (Blueprint $table) {
+            if (Schema::hasColumn('clients', 'email')) {
+                $table->dropUnique('clients_email_unique');
+            }
+        });
     }
 };

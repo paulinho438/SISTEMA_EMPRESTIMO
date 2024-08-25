@@ -33,7 +33,7 @@ class PermgroupController extends Controller
             'operation' => 'index'
         ]);
 
-        return GroupResource::collection(Permgroup::withCount('users')->where('company_id', $request->header('company-id'))->get());
+        return GroupResource::collection(Permgroup::withCount('users')->where('company_id', $request->header('Company_id'))->get());
     }
 
     public function insert(Request $request){
@@ -46,7 +46,7 @@ class PermgroupController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $dados['company_id'] = $request->header('company-id');
+            $dados['company_id'] = $request->header('Company_id');
 
             $newGroup = Permgroup::create($dados);
 
@@ -86,7 +86,7 @@ class PermgroupController extends Controller
 
                 $EditGroup = Permgroup::find($id);
 
-                $EditGroup->company_id = $request->header('company-id');
+                $EditGroup->company_id = $request->header('Company_id');
                 $EditGroup->name = $dados['name'];
                 $EditGroup->items()->detach();
 
@@ -95,8 +95,6 @@ class PermgroupController extends Controller
                 // Sincroniza os usuários com o grupo de permissões
                 $usersData = collect($dados['users'])->pluck('id')->toArray();
                 $EditGroup->users()->sync($usersData);
-
-
 
                 foreach ($dados['permissions'] as $slug) {
                     // Verifica se o relacionamento já existe para evitar duplicatas

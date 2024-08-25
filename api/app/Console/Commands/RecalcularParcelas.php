@@ -12,6 +12,8 @@ use App\Models\Parcela;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
+use App\Models\CustomLog;
+
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Str;
@@ -46,14 +48,16 @@ class RecalcularParcelas extends Command
 
         $juros = Juros::value('juros');
 
-        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now())->where('dt_baixa', null)->get();
+        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
 
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
 
             if ($parcela->emprestimo) {
 
-                $valorJuros = $parcela->emprestimo->valor * ($juros / 100);
+                echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
+
+                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
 
                 $novoValor = $valorJuros + $parcela->saldo;
 
@@ -61,8 +65,10 @@ class RecalcularParcelas extends Command
                 $parcela->venc_real = date('Y-m-d');
                 $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                if($parcela->chave_pix){
-                    $gerarPix = self::gerarPix([
+
+                if ($parcela->chave_pix) {
+                    $gerarPix = self::gerarPix(
+                        [
                             'banco' => [
                                 'client_id' => $parcela->emprestimo->banco->clienteid,
                                 'client_secret' => $parcela->emprestimo->banco->clientesecret,
@@ -86,12 +92,49 @@ class RecalcularParcelas extends Command
 
                 }
 
-                if($parcela->contasreceber){
+                $parcela->save();
+
+                if ($parcela->emprestimo->quitacao->chave_pix) {
+
+                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    echo "<pre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
+                    $parcela->emprestimo->quitacao->save();
+
+                    $gerarPixQuitacao = self::gerarPixQuitacao(
+                        [
+                            'banco' => [
+                                'client_id' => $parcela->emprestimo->banco->clienteid,
+                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
+                                'certificado' => $parcela->emprestimo->banco->certificado,
+                                'chave' => $parcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $parcela->parcela,
+                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
+                                'cpf' => $parcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $parcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+                    $parcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+                    $parcela->emprestimo->quitacao->save();
+
+                }
+
+                if ($parcela->contasreceber) {
                     $parcela->contasreceber->venc = $parcela->venc_real;
                     $parcela->contasreceber->valor = $parcela->saldo;
                     $parcela->contasreceber->save();
                 }
-                $parcela->save();
+
+
 
             }
         }
@@ -99,18 +142,20 @@ class RecalcularParcelas extends Command
         exit;
     }
 
-    public function gerarPix($dados) {
+    public function gerarPix($dados)
+    {
 
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => $dados['banco']['client_id'],
-            'client_secret' => $dados['banco']['client_secret'],
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -131,15 +176,97 @@ class RecalcularParcelas extends Command
 
             ],
             "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Parcela ". $dados['parcela']['parcela'],
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
             "infoAdicionais" => [
                 [
                     "nome" => "Emprestimo",
-                    "valor" => "R$ ".$dados['parcela']['valor'],
+                    "valor" => "R$ " . $dados['parcela']['valor'],
                 ],
                 [
                     "nome" => "Parcela",
                     "valor" => $dados['parcela']['parcela']
+                ]
+            ]
+        ];
+
+        try {
+            $api = new EfiPay($options);
+            $pix = $api->pixCreateDueCharge($params, $body);
+
+
+            if ($pix["txid"]) {
+                $params = [
+                    "id" => $pix["loc"]["id"]
+                ];
+
+                $return['identificador'] = $pix["loc"]["id"];
+
+
+                try {
+                    $qrcode = $api->pixGenerateQRCode($params);
+
+                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                    return $return;
+
+                } catch (EfiException $e) {
+                    print_r($e->code . "<br>");
+                    print_r($e->error . "<br>");
+                    print_r($e->errorDescription) . "<br>";
+                } catch (Exception $e) {
+                    print_r($e->getMessage());
+                }
+            } else {
+                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+            }
+        } catch (EfiException $e) {
+            print_r($e->code . "<br>");
+            print_r($e->error . "<br>");
+            print_r($e->errorDescription) . "<br>";
+        } catch (Exception $e) {
+            print_r($e->getMessage());
+        }
+    }
+
+    public function gerarPixQuitacao($dados)
+    {
+
+        $return = [];
+
+        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        $options = [
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+        $params = [
+            "txid" => Str::random(32)
+        ];
+
+        $body = [
+            "calendario" => [
+                "dataDeVencimento" => $dados['parcela']['venc_real'],
+                "validadeAposVencimento" => 10
+            ],
+            "devedor" => [
+                "nome" => $dados['cliente']['nome_completo'],
+                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+            ],
+            "valor" => [
+                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
+
+            ],
+            "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
+            "infoAdicionais" => [
+                [
+                    "nome" => "Emprestimo",
+                    "valor" => "R$ " . $dados['parcela']['valor'],
                 ]
             ]
         ];

@@ -83,9 +83,11 @@ export default {
 						this.cicom = response.data.data;
 						this.multiselectValueUsers = response.data.data.users
 
+						console.log('cicom', response.data)
+
 
 					})
-					.catch((error) => {
+					.catch((e) => {
 						this.toast.add({
 							severity: ToastSeverity.ERROR,
 							detail: UtilService.message(e),
@@ -402,6 +404,15 @@ export default {
 			<h5>Alteração das Informações da Empresa</h5>
 			<div class="grid">
 				<div class="col-12 md:col-4" v-for="option of multiselectValues?.alteracaoempresa" :key="option.id">
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
+					</div>
+				</div>
+			</div>
+			<h5>Fechamento de Caixa</h5>
+			<div class="grid">
+				<div class="col-12 md:col-4" v-for="option of multiselectValues?.fechamentocaixa" :key="option.id">
 					<div class="field-checkbox mb-0">
 						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
 						<label for="checkOption1">{{ option.name }}</label>

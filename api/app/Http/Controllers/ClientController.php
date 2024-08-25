@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Parcela;
 use App\Models\CustomLog;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 use DateTime;
 use App\Http\Resources\ClientResource;
@@ -34,24 +35,28 @@ class ClientController extends Controller
 
     public function parcelasAtrasadas(Request $request){
 
+        // return auth()->user()->hasPermission('criar_usuarios');
+
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Clientes Pendentes no APLICATIVO',
             'operation' => 'index'
         ]);
 
-        $companyId = $request->header('company-id');
-
-        return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
-            ->where('dt_baixa', null)
+        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function($query) {
                 $today = Carbon::now()->toDateString();
                 $query->whereNull('dt_ult_cobranca')
                       ->orWhereDate('dt_ult_cobranca', '!=', $today);
             })
-            ->whereHas('emprestimo', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
+            ->where(function ($query) use ($request) {
+                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Cobrador') {
+                    $query->where('atrasadas', '>', 0);
+                }
+            })
+            ->whereHas('emprestimo', function ($query) use ($request) {
+                $query->where('company_id', $request->header('company-id'));
             })
             ->get()->unique('emprestimo_id'));
 
@@ -100,8 +105,10 @@ class ClientController extends Controller
             return $array;
 
         } else {
-            $array['error'] = $validator->errors()->first();
-            return $array;
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => $validator->errors()->first()
+            ], Response::HTTP_FORBIDDEN);
         }
 
         return $array;
@@ -179,8 +186,10 @@ class ClientController extends Controller
                 }
 
             } else {
-                $array['error'] = $validator->errors()->first();
-                return $array;
+                return response()->json([
+                    "message" => $validator->errors()->first(),
+                    "error" => $validator->errors()->first()
+                ], Response::HTTP_FORBIDDEN);
             }
 
             DB::commit();
@@ -201,10 +210,17 @@ class ClientController extends Controller
 
     public function delete(Request $r, $id)
     {
-        DB::beginTransaction();
+
 
         try {
-            $permGroup = Client::findOrFail($id);
+
+            $permGroup = Client::withCount('emprestimos')->findOrFail($id);
+
+            if ($permGroup->emprestimos_count > 0) {
+                return response()->json([
+                    "message" => "Cliente ainda tem empréstimos associados."
+                ], Response::HTTP_FORBIDDEN);
+            }
 
             $permGroup->delete();
 
@@ -216,7 +232,7 @@ class ClientController extends Controller
                 'operation' => 'destroy'
             ]);
 
-            return response()->json(['message' => 'Cliente excluída com sucesso.']);
+            return response()->json(['message' => 'Cliente excluído com sucesso.']);
 
         } catch (\Exception $e) {
             DB::rollBack();

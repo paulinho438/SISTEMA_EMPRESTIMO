@@ -6,6 +6,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 
+use App\Models\CustomLog;
+
+use Efi\Exception\EfiException;
+use Efi\EfiPay;
+
 class BancosResource extends JsonResource
 {
     /**
@@ -17,19 +22,21 @@ class BancosResource extends JsonResource
     public function toArray($request)
     {
         return [
-            "id"                    => $this->id,
-            "name"                  => $this->name,
-            "agencia"               => $this->agencia,
-            "conta"                 => $this->conta,
-            "saldo"                 => $this->saldo,
-            "efibank"               => ($this->efibank) ? true : false,
-            "clienteid"             => $this->clienteid,
-            "clientesecret"         => $this->clientesecret,
-            "juros"                 => $this->juros,
-            "certificado"           => $this->certificado,
-            "chavepix"              => $this->chavepix,
-            "created_at"            => $this->created_at->format('d/m/Y H:i:s'),
-            "name_agencia_conta"    => "{$this->name} - Agência {$this->agencia} Cc {$this->conta}",
+            "id" => $this->id,
+            "name" => $this->name,
+            "agencia" => $this->agencia,
+            "conta" => $this->conta,
+            "saldo" => $this->saldo,
+            "caixa_empresa" => $this->company->caixa,
+            "efibank" => ($this->efibank) ? true : false,
+            "clienteid" => $this->clienteid,
+            "clientesecret" => $this->clientesecret,
+            "juros" => $this->juros,
+            "certificado" => $this->certificado,
+            "chavepix" => $this->chavepix,
+            "created_at" => $this->created_at->format('d/m/Y H:i:s'),
+            "name_agencia_conta" => "{$this->name} - Agência {$this->agencia} Cc {$this->conta}",
         ];
     }
+
 }
