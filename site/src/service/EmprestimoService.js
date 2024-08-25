@@ -27,6 +27,14 @@ export default class EmprestimoService {
 
 	};
 
+	saveRefinanciamento = async (permissions) => {
+        return await axios.post(`${apiPath}/emprestimorefinanciamento`, permissions);
+	};
+
+	refinanciamento = async (id, saldo) => {
+		return await axios.post(`${apiPath}/emprestimo/refinanciamento/${id}`, { saldo: saldo });
+	};
+
 	baixaDesconto = async (id, valor, saldo) => {
 		return await axios.post(`${apiPath}/emprestimo/baixadesconto/${id}`, { valor: valor, saldo: saldo });
 	};
@@ -41,6 +49,10 @@ export default class EmprestimoService {
 
 	searchbanco = async (value) => {
 		return await axios.post(`${apiPath}/emprestimo/search/banco`, { name: value });
+	};
+
+	searchbancofechamento= async (value) => {
+		return await axios.post(`${apiPath}/emprestimo/search/bancofechamento`, { name: value });
 	};
 	
 	searchCostcenter = async (value) => {

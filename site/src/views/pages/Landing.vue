@@ -27,6 +27,25 @@ export default {
         }
     },
 
+    methods: {
+        goToPixLink(pixLink) {
+            if (pixLink) {
+                window.location.href = pixLink;
+            } else {
+                console.error('Pix link is not available');
+            }
+        },
+        encontrarPrimeiraParcelaPendente() {
+            for (let i = 0; i < this.products?.data?.emprestimo?.parcelas.length; i++) {
+                if (this.products?.data?.emprestimo?.parcelas[i].dt_baixa === "") {
+                    return this.products?.data?.emprestimo?.parcelas[i];
+                }
+            }
+
+            return {};
+        }
+    },
+
     beforeMount: function () {
         //Requisição para buscar informações do pedido
 
@@ -99,19 +118,42 @@ export default {
                         </div>
                     </div>
 
+                    <div v-if="this.encontrarPrimeiraParcelaPendente()" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
+                        <div
+                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
+                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
+                                <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Clique aqui para pagar a parcela do dia"
+                                    class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <DataTable :value="this.products?.data?.emprestimo?.parcelas">
                             <Column field="venc_real" header="Venc."></Column>
                             <Column field="valor" header="Parcela"></Column>
                             <Column field="saldo" header="Saldo c/ Juros"></Column>
-                            <Column field="total_pago" header="Pago"></Column>
+                            <Column field="total_pago_parcela" header="Pago"></Column>
                             <Column field="status" header="Status">
                                 <template #body="slotProps">
-                                    <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
-                                    <Button v-else label="Pendente" class="p-button-raised p-button-danger mr-2 mb-2" />
+                                    <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
+                                        class="p-button-raised p-button-success mr-2 mb-2" />
+                                    <Button v-else label="Pendente Pagar com Pix"
+                                        @click="goToPixLink(slotProps.data?.chave_pix)"
+                                        class="p-button-raised p-button-danger mr-2 mb-2" />
                                 </template>
                             </Column>
                         </DataTable>
+                    </div>
+
+                    <div v-if="this.products?.data?.emprestimo?.quitacao" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 lg:mt-0 p-2">
+                        <div
+                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
+                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
+                                <Button @click="goToPixLink(this.products?.data?.emprestimo?.quitacao.chave_pix)" :label="`Clique aqui para quitar seu Empréstimo no Valor ${this.products?.data?.emprestimo?.quitacao.valor}`"
+                                    class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
+                            </div>
+                        </div>
                     </div>
 
 

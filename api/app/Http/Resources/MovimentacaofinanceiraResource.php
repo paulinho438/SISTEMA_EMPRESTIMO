@@ -24,7 +24,7 @@ class MovimentacaofinanceiraResource extends JsonResource
             "tipomov"               => $this->tipomov,
             "dt_movimentacao"       => (new DateTime($this->dt_movimentacao))->format('d/m/Y'),
             "valor"                 => $this->valor,
-            "banco"                 => new BancosResource($this->banco),
+            "banco"                 => $this->banco,
 
         ];
     }

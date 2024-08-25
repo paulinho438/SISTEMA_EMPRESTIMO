@@ -48,6 +48,7 @@ class EmprestimoResource extends JsonResource
             "cliente"           => new ClientResource($this->client),
             "consultor"         => $this->user,
             "parcelas"          => ParcelaResource::collection($this->parcelas),
+            "quitacao"          => new QuitacaoResource($this->quitacao),
             "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
             "status"            => $this->getStatus(),
 
@@ -97,6 +98,6 @@ class EmprestimoResource extends JsonResource
     }
 
     private function isMaiorQuatro($x, $y){
-        return $x > 4;
+        return $x > 5;
     }
 }

@@ -223,13 +223,17 @@ export default {
 		<template #content>
 			<div class="col-12">
                 <div class="p-fluid formgrid grid">
-                    <div class="field col-12 md:col-6">
+                    <div class="field col-12 md:col-4">
                         <label for="firstname2">Nome da Empresa</label>
 						<Chip :label="`${empresa?.company}`" class="w-full p-inputtext-sm"></Chip>
                     </div>
-					<div class="field col-12 md:col-6">
+					<div class="field col-12 md:col-4">
                         <label for="firstname2">Juros</label>
                         <InputText id="firstname2" :modelValue="empresa?.juros" v-model="empresa.juros" type="text" />
+                    </div>
+					<div class="field col-12 md:col-4">
+                        <label for="firstname2">Caixa</label>
+						<InputNumber id="inputnumber" :modelValue="empresa?.caixa" v-model="empresa.caixa" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
                     </div>
                 </div>
 				<div v-if="empresa?.whatsapp != null" class="card">

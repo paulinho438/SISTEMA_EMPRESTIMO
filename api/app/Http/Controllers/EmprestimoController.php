@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Emprestimo;
 use App\Models\Parcela;
+use App\Models\Quitacao;
 use App\Models\Client;
 use App\Models\Fornecedor;
 use App\Models\Banco;
@@ -33,7 +34,8 @@ use Carbon\Carbon;
 
 use App\Http\Resources\EmprestimoResource;
 use App\Http\Resources\ClientResource;
-use App\Http\Resources\BancosResource;
+use App\Http\Resources\ParcelaResource;
+use App\Http\Resources\BancosComSaldoResource;
 use App\Http\Resources\CostcenterResource;
 use App\Http\Resources\FeriadoEmprestimoResource;
 use App\Http\Resources\FornecedorResource;
@@ -79,83 +81,98 @@ class EmprestimoController extends Controller
 
     public function cobrancaAutomatica()
     {
-        $parcelas = Parcela::where('dt_baixa', null)->where('atrasadas', '>', 0)->get()->unique('emprestimo_id');
-        $r = [];
-        foreach ($parcelas as $parcela) {
-            if (isset($parcela->emprestimo->company->whatsapp)) {
 
-                try {
+        // Obtendo a data de hoje no formato YYYY-MM-DD
+        $today = Carbon::today()->toDateString();
 
-                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+        // Verificando se hoje é um feriado
+        $isHoliday = Feriado::where('data_feriado', $today)->exists();
 
-                    if ($response->successful()) {
-                        $r = $response->json();
-                        if ($r['loggedIn']) {
+        $parcelas = collect(); // Coleção vazia se hoje for um feriado
 
-
-                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-                            $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
-                            $ultima_parcela = $parcela->saldo - $valor_acrecimo;
-
-                            $saudacao = self::obterSaudacao();
-
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                            $fraseInicial = "
-
-Relatório de Parcelas Pendentes:
-
-Segue link para acessar todo o histórico de parcelas:
-https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
-
-Segue abaixo as parcelas pendentes:
-                            ";
-
-
-
-
-                            // Montagem das parcelas pendentes
-                            $parcelasString = $parcela->emprestimo->parcelas
-                                ->filter(function ($item) {
-                                    return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                                })
-                                ->map(function ($item) {
-                                    return "
-Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-Parcela: {$item->parcela}
-Atrasos: {$item->atrasadas}
-Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-Juros: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-Multa: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-Status: Pendente
-RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                                })
-                                ->implode("\n\n");
-
-
-
-                            // Obtenha a saudação baseada na hora atual
-
-                            $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
-
-                            $data = [
-                                "numero" => "55" . $telefone,
-                                "mensagem" => $frase
-                            ];
-
-                            $response = Http::asJson()->post($baseUrl, $data);
-                            sleep(8);
-                        }
-                    }
-                } catch (\Throwable $th) {
-                    dd($th);
-
-                }
-
-            }
+        if (!$isHoliday) {
+            $parcelas = Parcela::where('dt_baixa', null)
+                ->get()
+                ->unique('emprestimo_id');
         }
+
+
+        $r = [];
+//         foreach ($parcelas as $parcela) {
+//             if (isset($parcela->emprestimo->company->whatsapp)) {
+
+//                 try {
+
+//                     $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+
+//                     if ($response->successful()) {
+//                         $r = $response->json();
+//                         if ($r['loggedIn']) {
+
+
+//                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+//                             $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+//                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
+//                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
+
+//                             $saudacao = self::obterSaudacao();
+
+//                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+//                             $fraseInicial = "
+
+// Relatório de Parcelas Pendentes:
+
+// Segue link para acessar todo o histórico de parcelas:
+// https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+
+// ";
+
+
+
+
+//                             // Montagem das parcelas pendentes
+// //                             $parcelasString = $parcela->emprestimo->parcelas
+// //                                 ->filter(function ($item) {
+// //                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
+// //                                 })
+// //                                 ->map(function ($item) {
+// //                                     return "
+// // Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+// // Parcela: {$item->parcela}
+// // Atrasos: {$item->atrasadas}
+// // Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+// // Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+// // Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+// // Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+// // PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+// // Status: Pendente
+// // RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+// //                                 })
+// //                                 ->implode("\n\n");
+
+
+
+//                             // Obtenha a saudação baseada na hora atual
+
+//                             // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
+//                             $frase = $saudacaoTexto . $fraseInicial;
+
+//                             $data = [
+//                                 "numero" => "55" . $telefone,
+//                                 "mensagem" => $frase
+//                             ];
+
+//                             $response = Http::asJson()->post($baseUrl, $data);
+//                             sleep(8);
+//                         }
+//                     }
+//                 } catch (\Throwable $th) {
+//                     dd($th);
+
+//                 }
+
+//             }
+//         }
 
         return $parcelas;
     }
@@ -181,50 +198,50 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
         $juros = Juros::value('juros');
 
-        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now())->where('dt_baixa', null)->get();
+        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
 
-        // Faça algo com as parcelas vencidas, por exemplo, exiba-as
-        foreach ($parcelasVencidas as $parcela) {
+        // // Faça algo com as parcelas vencidas, por exemplo, exiba-as
+        // foreach ($parcelasVencidas as $parcela) {
 
-            if ($parcela->emprestimo) {
+        //     if ($parcela->emprestimo) {
 
-                $valorJuros = $parcela->emprestimo->valor * ($parcela->emprestimo->company->juros / 100);
+        //         $valorJuros = $parcela->emprestimo->valor * ($parcela->emprestimo->company->juros / 100);
 
-                $novoValor = $valorJuros + $parcela->saldo;
+        //         $novoValor = $valorJuros + $parcela->saldo;
 
-                $parcela->saldo = $novoValor;
-                $parcela->venc_real = date('Y-m-d');
-                $parcela->atrasadas = $parcela->atrasadas + 1;
+        //         $parcela->saldo = $novoValor;
+        //         $parcela->venc_real = date('Y-m-d');
+        //         $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                if ($parcela->chave_pix) {
-                    $gerarPix = self::gerarPix(
-                        [
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $novoValor,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+        //         if ($parcela->chave_pix) {
+        //             $gerarPix = self::gerarPix(
+        //                 [
+        //                     'parcela' => [
+        //                         'parcela' => $parcela->parcela,
+        //                         'valor' => $novoValor,
+        //                         'venc_real' => date('Y-m-d'),
+        //                     ],
+        //                     'cliente' => [
+        //                         'nome_completo' => $parcela->emprestimo->client->nome_completo,
+        //                         'cpf' => $parcela->emprestimo->client->cpf
+        //                     ]
+        //                 ]
+        //             );
 
-                    $parcela->identificador = $gerarPix['identificador'];
-                    $parcela->chave_pix = $gerarPix['chave_pix'];
+        //             $parcela->identificador = $gerarPix['identificador'];
+        //             $parcela->chave_pix = $gerarPix['chave_pix'];
 
-                }
+        //         }
 
-                if ($parcela->contasreceber) {
-                    $parcela->contasreceber->venc = $parcela->venc_real;
-                    $parcela->contasreceber->valor = $parcela->saldo;
-                    $parcela->contasreceber->save();
-                }
-                $parcela->save();
+        //         if ($parcela->contasreceber) {
+        //             $parcela->contasreceber->venc = $parcela->venc_real;
+        //             $parcela->contasreceber->valor = $parcela->saldo;
+        //             $parcela->contasreceber->save();
+        //         }
+        //         $parcela->save();
 
-            }
-        }
+        //     }
+        // }
 
         return $parcelasVencidas;
 
@@ -241,11 +258,12 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -304,11 +322,12 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -425,7 +444,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
     public function searchBanco(Request $request)
     {
 
-        return BancosResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
+        return BancosComSaldoResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
 
     public function searchCostcenter(Request $request)
@@ -448,6 +467,12 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             ->get();
     }
 
+    public function searchBancoFechamento(Request $request)
+    {
+
+        return BancosComSaldoResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
+    }
+
     public function enviarPix($dados)
     {
 
@@ -457,11 +482,12 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
         $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
+            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
+            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
             'certificate' => $caminhoAbsoluto,
             'sandbox' => false,
-            'timeout' => 30,
+            "debug" => false,
+            'timeout' => 60,
         ];
 
         $params = [
@@ -503,91 +529,6 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             print_r($e->getMessage());
         }
 
-    }
-
-    public function gerarPix($dados)
-    {
-
-        $return = [];
-
-        $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-        $options = [
-            'client_id' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'client_secret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            'timeout' => 30,
-        ];
-
-        $params = [
-            "txid" => Str::random(32)
-        ];
-
-        $body = [
-            "calendario" => [
-                "dataDeVencimento" => $dados['parcela']['venc_real'],
-                "validadeAposVencimento" => 0
-            ],
-            "devedor" => [
-                "nome" => $dados['cliente']['nome_completo'],
-                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-            ],
-            "valor" => [
-                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
-
-            ],
-            "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
-            "infoAdicionais" => [
-                [
-                    "nome" => "Emprestimo",
-                    "valor" => "R$ " . $dados['parcela']['valor'],
-                ],
-                [
-                    "nome" => "Parcela",
-                    "valor" => $dados['parcela']['parcela']
-                ]
-            ]
-        ];
-
-        try {
-            $api = new EfiPay($options);
-            $pix = $api->pixCreateDueCharge($params, $body);
-
-
-            if ($pix["txid"]) {
-                $params = [
-                    "id" => $pix["loc"]["id"]
-                ];
-
-                $return['identificador'] = $pix["loc"]["id"];
-
-
-                try {
-                    $qrcode = $api->pixGenerateQRCode($params);
-
-                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
-
-                    return $return;
-
-                } catch (EfiException $e) {
-                    print_r($e->code . "<br>");
-                    print_r($e->error . "<br>");
-                    print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
-                    print_r($e->getMessage());
-                }
-            } else {
-                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
-            }
-        } catch (EfiException $e) {
-            print_r($e->code . "<br>");
-            print_r($e->error . "<br>");
-            print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
-            print_r($e->getMessage());
-        }
     }
 
     public function insert(Request $request)
@@ -639,6 +580,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
+            $emprestimoAdd->banco->saldo = $emprestimoAdd->banco->saldo - $dados['valor'];
+            $emprestimoAdd->banco->save();
+
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -659,12 +603,13 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-                'client_id' => $dados['banco']['clienteid'],
-                'client_secret' => $dados['banco']['clientesecret'],
-                'certificate' => $caminhoAbsoluto,
-                'sandbox' => false,
-                'timeout' => 30,
-            ];
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
 
             $params = [
                 "txid" => Str::random(32)
@@ -715,21 +660,343 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                         $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     } catch (EfiException $e) {
+
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                            'operation' => 'error'
+                        ]);
+
                         print_r($e->code . "<br>");
                         print_r($e->error . "<br>");
                         print_r($e->errorDescription) . "<br>";
                     } catch (Exception $e) {
-                        print_r($e->getMessage());
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => $e->getMessage(),
+                            'operation' => 'error'
+                        ]);
                     }
                 } else {
-                    echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                        'operation' => 'error'
+                    ]);
                 }
             } catch (EfiException $e) {
-                print_r($e->code . "<br>");
-                print_r($e->error . "<br>");
-                print_r($e->errorDescription) . "<br>";
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                    'operation' => 'error'
+                ]);
             } catch (Exception $e) {
-                print_r($e->getMessage());
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => $e->getMessage(),
+                    'operation' => 'error'
+                ]);
+            }
+
+
+            $parcela = Parcela::create($addParcela);
+
+            if ($parcela) {
+                $contasreceber = [];
+                $contasreceber['company_id'] = $request->header('company-id');
+                $contasreceber['parcela_id'] = $parcela->id;
+                $contasreceber['client_id'] = $dados['cliente']['id'];
+                $contasreceber['banco_id'] = $dados['banco']['id'];
+                $contasreceber['descricao'] = 'Parcela N° ' . $parcela->parcela . ' do Emprestimo N° ' . $emprestimoAdd->id;
+                $contasreceber['status'] = 'Aguardando Pagamento';
+                $contasreceber['tipodoc'] = 'Empréstimo';
+                $contasreceber['lanc'] = $parcela->dt_lancamento;
+                $contasreceber['venc'] = $parcela->venc_real;
+                $contasreceber['valor'] = $parcela->valor;
+
+                Contasreceber::create($contasreceber);
+
+            }
+        }
+
+        $quitacao = [];
+        $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+        $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
+        $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
+
+
+
+
+
+
+        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        $options = [
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+        $params = [
+            "txid" => Str::random(32)
+        ];
+
+        $body = [
+            "calendario" => [
+                "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
+                "validadeAposVencimento" => 10
+            ],
+            "devedor" => [
+                "nome" => $dados['cliente']['nome_completo'],
+                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+            ],
+            "valor" => [
+                "original" => number_format(str_replace(',', '', $emprestimoAdd->parcelas[0]->totalPendente()), 2, '.', ''),
+
+            ],
+            "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
+            "solicitacaoPagador" => "Quitação do Emprestimo ",
+            "infoAdicionais" => [
+                [
+                    "nome" => "Emprestimo",
+                    "valor" => "R$ " . $emprestimoAdd->valor,
+                ]
+            ]
+        ];
+
+        try {
+            $api = new EfiPay($options);
+            $pix = $api->pixCreateDueCharge($params, $body);
+
+            if ($pix["txid"]) {
+                $params = [
+                    "id" => $pix["loc"]["id"]
+                ];
+
+                $quitacao['identificador'] = $pix["loc"]["id"];
+
+
+                try {
+                    $qrcode = $api->pixGenerateQRCode($params);
+
+                    $quitacao['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                } catch (EfiException $e) {
+
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                        'operation' => 'error'
+                    ]);
+
+                    print_r($e->code . "<br>");
+                    print_r($e->error . "<br>");
+                    print_r($e->errorDescription) . "<br>";
+                } catch (Exception $e) {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => $e->getMessage(),
+                        'operation' => 'error'
+                    ]);
+                }
+            } else {
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                    'operation' => 'error'
+                ]);
+            }
+        } catch (EfiException $e) {
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                'operation' => 'error'
+            ]);
+        } catch (Exception $e) {
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => $e->getMessage(),
+                'operation' => 'error'
+            ]);
+        }
+
+
+
+        Quitacao::create($quitacao);
+
+        return $emprestimoAdd;
+
+
+
+        return $array;
+    }
+
+    public function insertRefinanciamento(Request $request)
+    {
+
+        $array = ['error' => ''];
+
+        $dados = $request->all();
+
+        $emprestimoAdd = [];
+
+        $emprestimoAdd['dt_lancamento'] = Carbon::createFromFormat('d/m/Y', $dados['dt_lancamento'])->format('Y-m-d');
+        $emprestimoAdd['valor'] = $dados['valor'];
+        $emprestimoAdd['lucro'] = $dados['lucro'];
+        $emprestimoAdd['juros'] = $dados['juros'];
+        $emprestimoAdd['costcenter_id'] = $dados['costcenter']['id'];
+        $emprestimoAdd['banco_id'] = $dados['banco']['id'];
+        $emprestimoAdd['client_id'] = $dados['cliente']['id'];
+        $emprestimoAdd['user_id'] = $dados['consultor']['id'];
+        $emprestimoAdd['company_id'] = $request->header('company-id');
+
+        gerarPixParcelas::dispatch();
+
+
+        $emprestimoAdd = Emprestimo::create($emprestimoAdd);
+
+        if ($emprestimoAdd) {
+
+            $contaspagar = [];
+            $contaspagar['banco_id'] = $dados['banco']['id'];
+            $contaspagar['emprestimo_id'] = $emprestimoAdd->id;
+            $contaspagar['costcenter_id'] = $dados['costcenter']['id'];
+            $contaspagar['status'] = 'Aguardando Pagamento';
+            $contaspagar['tipodoc'] = 'Empréstimo';
+            $contaspagar['lanc'] = date('Y-m-d');
+            $contaspagar['venc'] = date('Y-m-d');
+            $contaspagar['valor'] = $dados['valor'];
+            $contaspagar['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
+            $contaspagar['company_id'] = $request->header('company-id');
+            Contaspagar::create($contaspagar);
+
+            $movimentacaoFinanceira = [];
+            $movimentacaoFinanceira['banco_id'] = $dados['banco']['id'];
+            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
+            $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
+            $movimentacaoFinanceira['tipomov'] = 'S';
+            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            $movimentacaoFinanceira['valor'] = $dados['valor'];
+
+            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+
+        }
+
+        $pegarUltimaParcela = $dados['parcelas'];
+        end($pegarUltimaParcela);
+        $ultimaParcela = current($pegarUltimaParcela);
+
+        foreach ($dados['parcelas'] as $parcela) {
+
+            $addParcela = [];
+            $addParcela['emprestimo_id'] = $emprestimoAdd->id;
+            $addParcela['dt_lancamento'] = date('Y-m-d');
+            $addParcela['parcela'] = $parcela['parcela'];
+            $addParcela['valor'] = $parcela['valor'];
+            $addParcela['saldo'] = $parcela['saldo'];
+            $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
+            $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+
+            $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+            $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+            $options = [
+            'clientId' => $dados['banco']['clienteid'],
+            'clientSecret' => $dados['banco']['clientesecret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+            $params = [
+                "txid" => Str::random(32)
+            ];
+
+            $body = [
+                "calendario" => [
+                    "dataDeVencimento" => $addParcela['venc_real'],
+                    "validadeAposVencimento" => 0
+                ],
+                "devedor" => [
+                    "nome" => $dados['cliente']['nome_completo'],
+                    "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+                ],
+                "valor" => [
+                    "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
+
+                ],
+                "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
+                "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
+                "infoAdicionais" => [
+                    [
+                        "nome" => "Emprestimo",
+                        "valor" => "R$ " . $emprestimoAdd->valor,
+                    ],
+                    [
+                        "nome" => "Parcela",
+                        "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
+                    ]
+                ]
+            ];
+
+            try {
+                $api = new EfiPay($options);
+                $pix = $api->pixCreateDueCharge($params, $body);
+
+                if ($pix["txid"]) {
+                    $params = [
+                        "id" => $pix["loc"]["id"]
+                    ];
+
+                    $addParcela['identificador'] = $pix["loc"]["id"];
+
+
+                    try {
+                        $qrcode = $api->pixGenerateQRCode($params);
+
+                        $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                    } catch (EfiException $e) {
+
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                            'operation' => 'error'
+                        ]);
+
+                        print_r($e->code . "<br>");
+                        print_r($e->error . "<br>");
+                        print_r($e->errorDescription) . "<br>";
+                    } catch (Exception $e) {
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => $e->getMessage(),
+                            'operation' => 'error'
+                        ]);
+                    }
+                } else {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                        'operation' => 'error'
+                    ]);
+                }
+            } catch (EfiException $e) {
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                    'operation' => 'error'
+                ]);
+            } catch (Exception $e) {
+                $this->custom_log->create([
+                    'user_id' => auth()->user()->id,
+                    'content' => $e->getMessage(),
+                    'operation' => 'error'
+                ]);
             }
 
 
@@ -958,6 +1225,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $editParcela->contasreceber->save();
             }
 
+            $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa - $editParcela->saldo;
+            $editParcela->emprestimo->company->save();
+
             $editParcela->save();
 
             $movimentacaoFinanceira = [];
@@ -1004,6 +1274,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $editParcela = Parcela::find($id);
 
             if ($request->valor == $editParcela->saldo) {
+
                 $editParcela->dt_baixa = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->status = 'Pago';
@@ -1011,7 +1282,44 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                     $editParcela->contasreceber->forma_recebto = 'PIX';
                     $editParcela->contasreceber->save();
                 }
+
+                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $editParcela->saldo;
+                $editParcela->emprestimo->company->save();
+
                 $editParcela->save();
+
+                if ($editParcela->emprestimo->quitacao->chave_pix) {
+
+                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $editParcela->saldo;
+                    $editParcela->emprestimo->quitacao->save();
+
+                    $gerarPixQuitacao = self::gerarPixQuitacao(
+                        [
+                            'banco' => [
+                                'client_id' => $editParcela->emprestimo->banco->clienteid,
+                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificado' => $editParcela->emprestimo->banco->certificado,
+                                'chave' => $editParcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $editParcela->parcela,
+                                'valor' => $editParcela->emprestimo->quitacao->saldo,
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                'cpf' => $editParcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+                    $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+                    $editParcela->emprestimo->quitacao->save();
+
+                }
 
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
@@ -1023,6 +1331,10 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                 $movimentacaoFinanceira['valor'] = $editParcela->saldo;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+
+                $editParcela->saldo = 0;
+                $editParcela->save();
 
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
@@ -1036,13 +1348,78 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
                     $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
                     $editParcela->contasreceber->save();
                 }
+
+                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
+                $editParcela->emprestimo->company->save();
+
                 $editParcela->save();
+
+                if ($editParcela->chave_pix) {
+                    $gerarPix = self::gerarPix(
+                        [
+                            'banco' => [
+                                'client_id' => $editParcela->emprestimo->banco->clienteid,
+                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificado' => $editParcela->emprestimo->banco->certificado,
+                                'chave' => $editParcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $editParcela->parcela,
+                                'valor' => $editParcela->saldo,
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                'cpf' => $editParcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $editParcela->identificador = $gerarPix['identificador'];
+                    $editParcela->chave_pix = $gerarPix['chave_pix'];
+                    $editParcela->save();
+
+                }
+
+                if ($editParcela->emprestimo->quitacao->chave_pix) {
+
+                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $request->valor;
+                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $request->valor;
+                    $editParcela->emprestimo->quitacao->save();
+
+                    $gerarPixQuitacao = self::gerarPixQuitacao(
+                        [
+                            'banco' => [
+                                'client_id' => $editParcela->emprestimo->banco->clienteid,
+                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                                'certificado' => $editParcela->emprestimo->banco->certificado,
+                                'chave' => $editParcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $editParcela->parcela,
+                                'valor' => $editParcela->emprestimo->quitacao->saldo,
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                                'cpf' => $editParcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+                    $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+                    $editParcela->emprestimo->quitacao->save();
+
+                }
 
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
                 $movimentacaoFinanceira['descricao'] = 'Baixa parcial da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
                 $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $request->valor;
 
@@ -1113,11 +1490,74 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
 
+                $emprestimo->company->caixa = $emprestimo->company->caixa + $request->valor;
+                $emprestimo->company->save();
+
             }
 
             DB::commit();
 
             return response()->json(['message' => 'Baixa realizada com sucesso.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao editar o Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function refinanciamento(Request $request, $id)
+    {
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $emprestimo = Emprestimo::find($id);
+
+            if ($emprestimo) {
+                $dataHoje = date('Y-m-d');
+
+                foreach ($emprestimo->parcelas as $parcela) {
+                    if (!$parcela->dt_baixa) {
+                        $parcela->dt_baixa = $dataHoje;
+                        $parcela->saldo = 0;
+                        $parcela->save();
+
+                        if ($parcela->contasreceber) {
+                            $parcela->contasreceber->status = 'Pago';
+                            $parcela->contasreceber->dt_baixa = $dataHoje;
+                            $parcela->contasreceber->forma_recebto = 'REFINANCIAMENTO';
+                            $parcela->contasreceber->save();
+                        }
+                    }
+
+
+
+                }
+
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
+                $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+                $movimentacaoFinanceira['descricao'] = 'Refinanciamento do Empréstimo Nº ' . $emprestimo->id;
+                $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = $request->saldo;
+
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Refinanciamento realizado com sucesso.']);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1145,6 +1585,9 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             $editParcela->dt_ult_cobranca = $request->dt_baixa;
 
             $editParcela->save();
+
+            $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
+            $editParcela->emprestimo->company->save();
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
@@ -1175,7 +1618,7 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
 
         $parcela = Parcela::find($id);
         if ($parcela) {
-            return $parcela->emprestimo->parcelas;
+            return ParcelaResource::collection($parcela->emprestimo->parcelas);
         }
 
 
@@ -1248,6 +1691,19 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
         try {
             $permGroup = Emprestimo::findOrFail($id);
 
+            $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
+            $permGroup->banco->save();
+
+            $movimentacaoFinanceira = [];
+            $movimentacaoFinanceira['banco_id'] = $permGroup->banco->id;
+            $movimentacaoFinanceira['company_id'] = $permGroup->company_id;
+            $movimentacaoFinanceira['descricao'] = 'Exclusão Empréstimo Nº ' . $permGroup->id;
+            $movimentacaoFinanceira['tipomov'] = 'E';
+            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            $movimentacaoFinanceira['valor'] = $permGroup->valor;
+
+            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
             $permGroup->delete();
 
             DB::commit();
@@ -1275,4 +1731,173 @@ RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
             ], Response::HTTP_FORBIDDEN);
         }
     }
+    public function gerarPixQuitacao($dados)
+    {
+
+        $return = [];
+
+        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        $options = [
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+        $params = [
+            "txid" => Str::random(32)
+        ];
+
+        $body = [
+            "calendario" => [
+                "dataDeVencimento" => $dados['parcela']['venc_real'],
+                "validadeAposVencimento" => 0
+            ],
+            "devedor" => [
+                "nome" => $dados['cliente']['nome_completo'],
+                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+            ],
+            "valor" => [
+                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
+
+            ],
+            "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
+            "infoAdicionais" => [
+                [
+                    "nome" => "Emprestimo",
+                    "valor" => "R$ " . $dados['parcela']['valor'],
+                ]
+            ]
+        ];
+
+        try {
+            $api = new EfiPay($options);
+            $pix = $api->pixCreateDueCharge($params, $body);
+
+
+            if ($pix["txid"]) {
+                $params = [
+                    "id" => $pix["loc"]["id"]
+                ];
+
+                $return['identificador'] = $pix["loc"]["id"];
+
+
+                try {
+                    $qrcode = $api->pixGenerateQRCode($params);
+
+                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                    return $return;
+
+                } catch (EfiException $e) {
+                    print_r($e->code . "<br>");
+                    print_r($e->error . "<br>");
+                    print_r($e->errorDescription) . "<br>";
+                } catch (Exception $e) {
+                    print_r($e->getMessage());
+                }
+            } else {
+                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+            }
+        } catch (EfiException $e) {
+            print_r($e->code . "<br>");
+            print_r($e->error . "<br>");
+            print_r($e->errorDescription) . "<br>";
+        } catch (Exception $e) {
+            print_r($e->getMessage());
+        }
+    }
+
+    public function gerarPix($dados)
+    {
+
+        $return = [];
+
+        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+        $options = [
+            'clientId' => $dados['banco']['client_id'],
+            'clientSecret' => $dados['banco']['client_secret'],
+            'certificate' => $caminhoAbsoluto,
+            'sandbox' => false,
+            "debug" => false,
+            'timeout' => 60,
+        ];
+
+        $params = [
+            "txid" => Str::random(32)
+        ];
+
+        $body = [
+            "calendario" => [
+                "dataDeVencimento" => $dados['parcela']['venc_real'],
+                "validadeAposVencimento" => 0
+            ],
+            "devedor" => [
+                "nome" => $dados['cliente']['nome_completo'],
+                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+            ],
+            "valor" => [
+                "original" => number_format(str_replace(',', '', $dados['parcela']['valor']), 2, '.', ''),
+
+            ],
+            "chave" => $dados['banco']['chave'], // Pix key registered in the authenticated Efí account
+            "solicitacaoPagador" => "Parcela " . $dados['parcela']['parcela'],
+            "infoAdicionais" => [
+                [
+                    "nome" => "Emprestimo",
+                    "valor" => "R$ " . $dados['parcela']['valor'],
+                ],
+                [
+                    "nome" => "Parcela",
+                    "valor" => $dados['parcela']['parcela']
+                ]
+            ]
+        ];
+
+        try {
+            $api = new EfiPay($options);
+            $pix = $api->pixCreateDueCharge($params, $body);
+
+
+            if ($pix["txid"]) {
+                $params = [
+                    "id" => $pix["loc"]["id"]
+                ];
+
+                $return['identificador'] = $pix["loc"]["id"];
+
+
+                try {
+                    $qrcode = $api->pixGenerateQRCode($params);
+
+                    $return['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                    return $return;
+
+                } catch (EfiException $e) {
+                    print_r($e->code . "<br>");
+                    print_r($e->error . "<br>");
+                    print_r($e->errorDescription) . "<br>";
+                } catch (Exception $e) {
+                    print_r($e->getMessage());
+                }
+            } else {
+                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+            }
+        } catch (EfiException $e) {
+            print_r($e->code . "<br>");
+            print_r($e->error . "<br>");
+            print_r($e->errorDescription) . "<br>";
+        } catch (Exception $e) {
+            print_r($e->getMessage());
+        }
+    }
+
+
 }
