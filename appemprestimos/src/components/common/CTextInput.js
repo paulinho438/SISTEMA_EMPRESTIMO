@@ -10,6 +10,7 @@ import {moderateScale} from '../../common/constant';
 import {colors} from '../../themes/colors';
 import {styles} from '../../themes';
 import Images from '../../assets/images';
+import { TextInputMask } from 'react-native-masked-text';
 
 export default function CTextInput({
   text,
@@ -25,6 +26,7 @@ export default function CTextInput({
   align,
   onFocus,
   onBlur,
+  maskType, // Adiciona uma nova prop para o tipo de máscara
 }) {
   const [isSecurePass, setIsSecurePass] = useState(isSecure);
 
@@ -32,9 +34,29 @@ export default function CTextInput({
     setIsSecurePass(!isSecurePass);
   };
 
-  return (
-    <View style={[localStyles.main, mainTxtInp]}>
-      {!!LeftIcon && <LeftIcon />}
+  const renderTextInput = () => {
+    if (maskType === 'datetime') {
+      return (
+        <TextInputMask
+          type={'datetime'}
+          options={{
+            format: 'DD/MM/YYYY',
+          }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          style={[localStyles.local, textInputStyle]}
+          placeholder={text}
+          placeholderTextColor={colors.silver}
+          value={value}
+          textAlign={align}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+        />
+      );
+    }
+    
+    // Caso não haja uma máscara definida, utilize o TextInput padrão
+    return (
       <TextInput
         onFocus={onFocus}
         onBlur={onBlur}
@@ -48,6 +70,13 @@ export default function CTextInput({
         onPress={onPress}
         keyboardType={keyboardType}
       />
+    );
+  };
+
+  return (
+    <View style={[localStyles.main, mainTxtInp]}>
+      {!!LeftIcon && <LeftIcon />}
+      {renderTextInput()}
       {!!RightIcon && <RightIcon />}
       {!!isSecure && (
         <TouchableOpacity onPress={onPressSecureIcon}>

@@ -45,6 +45,7 @@ import MoreOptions from '../components/homeTab/MoreOptions';
 import ChatScreen from '../containers/moreOpctions/ChatAssistant/ChatScreen';
 import ATMDetails from '../containers/moreOpctions/ATMFinder/ATMDetails';
 import CobrancaMap from '../containers/moreOpctions/ATMFinder/CobrancaMap';
+import ClientMap from '../containers/moreOpctions/ATMFinder/ClientMap';
 import SelectProvider from '../containers/moreOpctions/MobileTopUp/SelectProvider';
 import TopUpModal from '../components/modals/TopUpModal';
 import PhoneBook from '../containers/moreOpctions/MobileTopUp/PhoneBook';
@@ -81,6 +82,7 @@ export const StackRoute = {
   ChatScreen,
   ATMDetails,
   CobrancaMap,
+  ClientMap,
   SelectProvider,
   TopUpModal,
   PhoneBook,

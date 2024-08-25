@@ -115,21 +115,35 @@ export default {
         let json = await request('post', `/parcela/${id}/baixamanualcobrador`, { dt_baixa:  dt, valor: valor}, token);
         return json;
     },
-    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg) => {
+    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao) => {
         let token = await getAuthToken();
-        let json = await request('post', `/cliente`, {
+        console.log('cadasro', {
             nome_completo       : name,
             cpf                 : cpf,
             rg                  : rg,
-            data_nascimento     : '01/01/2024',
-            sexo                : 'M',
+            data_nascimento     : nascimento,
+            sexo                : sexo,
             telefone_celular_1  : cellphone,
             telefone_celular_2  : cellphone2,
             email               : email,
             observation         : '',
             limit               : 1000,
             password            : 1234,
-            address             : []
+            address             : [localizacao]
+        })
+        let json = await request('post', `/cliente`, {
+            nome_completo       : name,
+            cpf                 : cpf,
+            rg                  : rg,
+            data_nascimento     : nascimento,
+            sexo                : sexo,
+            telefone_celular_1  : cellphone,
+            telefone_celular_2  : cellphone2,
+            email               : email,
+            observation         : '',
+            limit               : 1000,
+            password            : 1234,
+            address             : [localizacao]
         }, token);
         return json;
     },
@@ -163,6 +177,16 @@ export default {
         let json = await request('post', '/emprestimo/search/banco', { name: '' }, token);
         return json;
 	},
+    getLocationGeocode: async (latitude, longitude) => {
+        let req = await fetch(`https://maps.google.com/maps/api/geocode/json?key=AIzaSyDvNypCJVAfgPJ1nmrqZvz25wSbW3JOjUc&address=${latitude},${longitude}&sensor=false`);
+        let json = await req.json();
+        return json;
+    },
+    getEnderecoLatLong: async (cep) => {
+        let req = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        let json = await req.json();
+        return json;
+    },
 	searchCostcenter: async () => {
         let token = await getAuthToken();
         let json = await request('post', '/emprestimo/search/costcenter', { name: `` }, token);

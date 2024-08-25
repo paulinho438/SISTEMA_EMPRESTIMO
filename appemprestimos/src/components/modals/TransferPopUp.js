@@ -85,6 +85,7 @@ export default function TransferPopUp(props) {
 
     const client = {};
 
+    client.dt_lancamento = valores?.dt_lancamento;
     client.valor = parseFloat(valores?.valor.replace(/[^\d,-]/g, '').replace(',', '.'));
 		client.lucro = parseFloat(valores?.lucro.replace(/[^\d,-]/g, '').replace(',', '.'));
 		client.juros = parseFloat(valores?.juros.replace(/[^\d,-]/g, '').replace(',', '.'));
