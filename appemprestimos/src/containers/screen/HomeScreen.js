@@ -372,7 +372,7 @@ export default function HomeScreen({navigation}) {
               {item.nome_cliente}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-            Emprestimo {item.emprestimo_id} Parcela {item.parcela} 
+            Emprestimo Número {item.emprestimo_id}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
             {item.distance.toFixed(2)} Km de distancia
@@ -382,7 +382,7 @@ export default function HomeScreen({navigation}) {
 
         <View>
           <CText type={'B16'} color={colors.red}>
-            {item.saldo}
+            {item.total_pendente}
           </CText>
         </View>
       </TouchableOpacity>

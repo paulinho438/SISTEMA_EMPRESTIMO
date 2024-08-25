@@ -201,12 +201,6 @@ export default function Location(props) {
             RightIcon={whatsapp}
           />
           <CButton
-            onPress={onPressClose}
-            text={'Receber Valor'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={check}
-          />
-          <CButton
             onPress={cobrarAmanha}
             text={'Cobrar Amanha'}
             containerStyle={localStyles.buttonContainer}
