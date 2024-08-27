@@ -26,7 +26,7 @@ class ParcelaResource extends JsonResource
             "parcela" => $this->parcela,
             "valor" => $this->formatarMoeda($this->valor),
             "saldo" => $this->formatarMoeda($this->saldo),
-            "venc" => Carbon::parse($this->venc)->format('d/m/Y'),
+            "venc" => Carbon::parse($this->venc, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y'),
             "venc_real" => Carbon::parse($this->venc_real)->format('d/m/Y'),
             "dt_lancamento" => Carbon::parse($this->dt_lancamento)->format('d/m/Y'),
             "dt_baixa" => ($this->dt_baixa != null) ? Carbon::parse($this->dt_baixa)->format('d/m/Y') : '',
