@@ -57,6 +57,7 @@ class CobrancaAutomaticaB extends Command
                 ->get()
                 ->unique('emprestimo_id');
                 echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+                echo "<pre>" . json_encode($today, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
         }
 
 
