@@ -56,6 +56,7 @@ class CobrancaAutomaticaB extends Command
                 ->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
+                echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
         }
 
 
