@@ -98,39 +98,39 @@ class EmprestimoController extends Controller
 
 
         $r = [];
-//         foreach ($parcelas as $parcela) {
+        //         foreach ($parcelas as $parcela) {
 //             if (isset($parcela->emprestimo->company->whatsapp)) {
 
-//                 try {
+        //                 try {
 
-//                     $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+        //                     $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-//                     if ($response->successful()) {
+        //                     if ($response->successful()) {
 //                         $r = $response->json();
 //                         if ($r['loggedIn']) {
 
 
-//                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+        //                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
 //                             $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
 //                             $valor_acrecimo = ($parcela->saldo - $parcela->valor) / $parcela->atrasadas;
 //                             $ultima_parcela = $parcela->saldo - $valor_acrecimo;
 
-//                             $saudacao = self::obterSaudacao();
+        //                             $saudacao = self::obterSaudacao();
 
-//                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+        //                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
 //                             $fraseInicial = "
 
-// Relatório de Parcelas Pendentes:
+        // Relatório de Parcelas Pendentes:
 
-// Segue link para acessar todo o histórico de parcelas:
+        // Segue link para acessar todo o histórico de parcelas:
 // https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
-// ";
+        // ";
 
 
 
 
-//                             // Montagem das parcelas pendentes
+        //                             // Montagem das parcelas pendentes
 // //                             $parcelasString = $parcela->emprestimo->parcelas
 // //                                 ->filter(function ($item) {
 // //                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
@@ -152,26 +152,26 @@ class EmprestimoController extends Controller
 
 
 
-//                             // Obtenha a saudação baseada na hora atual
+        //                             // Obtenha a saudação baseada na hora atual
 
-//                             // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
+        //                             // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
 //                             $frase = $saudacaoTexto . $fraseInicial;
 
-//                             $data = [
+        //                             $data = [
 //                                 "numero" => "55" . $telefone,
 //                                 "mensagem" => $frase
 //                             ];
 
-//                             $response = Http::asJson()->post($baseUrl, $data);
+        //                             $response = Http::asJson()->post($baseUrl, $data);
 //                             sleep(8);
 //                         }
 //                     }
 //                 } catch (\Throwable $th) {
 //                     dd($th);
 
-//                 }
+        //                 }
 
-//             }
+        //             }
 //         }
 
         return $parcelas;
@@ -600,16 +600,149 @@ class EmprestimoController extends Controller
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
+            if ($dados['banco']['efibank'] == 1) {
+
+                $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+                $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
+                $options = [
+                    'clientId' => $dados['banco']['clienteid'],
+                    'clientSecret' => $dados['banco']['clientesecret'],
+                    'certificate' => $caminhoAbsoluto,
+                    'sandbox' => false,
+                    "debug" => false,
+                    'timeout' => 60,
+                ];
+
+                $params = [
+                    "txid" => Str::random(32)
+                ];
+
+                $body = [
+                    "calendario" => [
+                        "dataDeVencimento" => $addParcela['venc_real'],
+                        "validadeAposVencimento" => 0
+                    ],
+                    "devedor" => [
+                        "nome" => $dados['cliente']['nome_completo'],
+                        "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+                    ],
+                    "valor" => [
+                        "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
+
+                    ],
+                    "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
+                    "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
+                    "infoAdicionais" => [
+                        [
+                            "nome" => "Emprestimo",
+                            "valor" => "R$ " . $emprestimoAdd->valor,
+                        ],
+                        [
+                            "nome" => "Parcela",
+                            "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
+                        ]
+                    ]
+                ];
+
+                try {
+                    $api = new EfiPay($options);
+                    $pix = $api->pixCreateDueCharge($params, $body);
+
+                    if ($pix["txid"]) {
+                        $params = [
+                            "id" => $pix["loc"]["id"]
+                        ];
+
+                        $addParcela['identificador'] = $pix["loc"]["id"];
+
+
+                        try {
+                            $qrcode = $api->pixGenerateQRCode($params);
+
+                            $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
+
+                        } catch (EfiException $e) {
+
+                            $this->custom_log->create([
+                                'user_id' => auth()->user()->id,
+                                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                                'operation' => 'error'
+                            ]);
+
+                            print_r($e->code . "<br>");
+                            print_r($e->error . "<br>");
+                            print_r($e->errorDescription) . "<br>";
+                        } catch (Exception $e) {
+                            $this->custom_log->create([
+                                'user_id' => auth()->user()->id,
+                                'content' => $e->getMessage(),
+                                'operation' => 'error'
+                            ]);
+                        }
+                    } else {
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                            'operation' => 'error'
+                        ]);
+                    }
+                } catch (EfiException $e) {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                        'operation' => 'error'
+                    ]);
+                } catch (Exception $e) {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => $e->getMessage(),
+                        'operation' => 'error'
+                    ]);
+                }
+
+            }
+
+            $parcela = Parcela::create($addParcela);
+
+            if ($parcela) {
+                $contasreceber = [];
+                $contasreceber['company_id'] = $request->header('company-id');
+                $contasreceber['parcela_id'] = $parcela->id;
+                $contasreceber['client_id'] = $dados['cliente']['id'];
+                $contasreceber['banco_id'] = $dados['banco']['id'];
+                $contasreceber['descricao'] = 'Parcela N° ' . $parcela->parcela . ' do Emprestimo N° ' . $emprestimoAdd->id;
+                $contasreceber['status'] = 'Aguardando Pagamento';
+                $contasreceber['tipodoc'] = 'Empréstimo';
+                $contasreceber['lanc'] = $parcela->dt_lancamento;
+                $contasreceber['venc'] = $parcela->venc_real;
+                $contasreceber['valor'] = $parcela->valor;
+
+                Contasreceber::create($contasreceber);
+
+            }
+        }
+
+
+
+
+
+        if ($dados['banco']['efibank'] == 1) {
+
+            $quitacao = [];
+            $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+            $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
+            $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
+
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-            'clientId' => $dados['banco']['clienteid'],
-            'clientSecret' => $dados['banco']['clientesecret'],
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
+                'clientId' => $dados['banco']['clienteid'],
+                'clientSecret' => $dados['banco']['clientesecret'],
+                'certificate' => $caminhoAbsoluto,
+                'sandbox' => false,
+                "debug" => false,
+                'timeout' => 60,
+            ];
 
             $params = [
                 "txid" => Str::random(32)
@@ -617,27 +750,23 @@ class EmprestimoController extends Controller
 
             $body = [
                 "calendario" => [
-                    "dataDeVencimento" => $addParcela['venc_real'],
-                    "validadeAposVencimento" => 0
+                    "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
+                    "validadeAposVencimento" => 10
                 ],
                 "devedor" => [
                     "nome" => $dados['cliente']['nome_completo'],
                     "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
                 ],
                 "valor" => [
-                    "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
+                    "original" => number_format(str_replace(',', '', $emprestimoAdd->parcelas[0]->totalPendente()), 2, '.', ''),
 
                 ],
                 "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-                "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
+                "solicitacaoPagador" => "Quitação do Emprestimo ",
                 "infoAdicionais" => [
                     [
                         "nome" => "Emprestimo",
                         "valor" => "R$ " . $emprestimoAdd->valor,
-                    ],
-                    [
-                        "nome" => "Parcela",
-                        "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
                     ]
                 ]
             ];
@@ -651,13 +780,13 @@ class EmprestimoController extends Controller
                         "id" => $pix["loc"]["id"]
                     ];
 
-                    $addParcela['identificador'] = $pix["loc"]["id"];
+                    $quitacao['identificador'] = $pix["loc"]["id"];
 
 
                     try {
                         $qrcode = $api->pixGenerateQRCode($params);
 
-                        $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
+                        $quitacao['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     } catch (EfiException $e) {
 
@@ -698,134 +827,9 @@ class EmprestimoController extends Controller
                 ]);
             }
 
+            Quitacao::create($quitacao);
 
-            $parcela = Parcela::create($addParcela);
-
-            if ($parcela) {
-                $contasreceber = [];
-                $contasreceber['company_id'] = $request->header('company-id');
-                $contasreceber['parcela_id'] = $parcela->id;
-                $contasreceber['client_id'] = $dados['cliente']['id'];
-                $contasreceber['banco_id'] = $dados['banco']['id'];
-                $contasreceber['descricao'] = 'Parcela N° ' . $parcela->parcela . ' do Emprestimo N° ' . $emprestimoAdd->id;
-                $contasreceber['status'] = 'Aguardando Pagamento';
-                $contasreceber['tipodoc'] = 'Empréstimo';
-                $contasreceber['lanc'] = $parcela->dt_lancamento;
-                $contasreceber['venc'] = $parcela->venc_real;
-                $contasreceber['valor'] = $parcela->valor;
-
-                Contasreceber::create($contasreceber);
-
-            }
         }
-
-        $quitacao = [];
-        $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
-        $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
-        $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
-
-
-
-
-
-
-        $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-        $options = [
-            'clientId' => $dados['banco']['clienteid'],
-            'clientSecret' => $dados['banco']['clientesecret'],
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
-
-        $params = [
-            "txid" => Str::random(32)
-        ];
-
-        $body = [
-            "calendario" => [
-                "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
-                "validadeAposVencimento" => 10
-            ],
-            "devedor" => [
-                "nome" => $dados['cliente']['nome_completo'],
-                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-            ],
-            "valor" => [
-                "original" => number_format(str_replace(',', '', $emprestimoAdd->parcelas[0]->totalPendente()), 2, '.', ''),
-
-            ],
-            "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Quitação do Emprestimo ",
-            "infoAdicionais" => [
-                [
-                    "nome" => "Emprestimo",
-                    "valor" => "R$ " . $emprestimoAdd->valor,
-                ]
-            ]
-        ];
-
-        try {
-            $api = new EfiPay($options);
-            $pix = $api->pixCreateDueCharge($params, $body);
-
-            if ($pix["txid"]) {
-                $params = [
-                    "id" => $pix["loc"]["id"]
-                ];
-
-                $quitacao['identificador'] = $pix["loc"]["id"];
-
-
-                try {
-                    $qrcode = $api->pixGenerateQRCode($params);
-
-                    $quitacao['chave_pix'] = $qrcode['linkVisualizacao'];
-
-                } catch (EfiException $e) {
-
-                    $this->custom_log->create([
-                        'user_id' => auth()->user()->id,
-                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                        'operation' => 'error'
-                    ]);
-
-                    print_r($e->code . "<br>");
-                    print_r($e->error . "<br>");
-                    print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
-                    $this->custom_log->create([
-                        'user_id' => auth()->user()->id,
-                        'content' => $e->getMessage(),
-                        'operation' => 'error'
-                    ]);
-                }
-            } else {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
-                    'operation' => 'error'
-                ]);
-            }
-        } catch (EfiException $e) {
-            $this->custom_log->create([
-                'user_id' => auth()->user()->id,
-                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                'operation' => 'error'
-            ]);
-        } catch (Exception $e) {
-            $this->custom_log->create([
-                'user_id' => auth()->user()->id,
-                'content' => $e->getMessage(),
-                'operation' => 'error'
-            ]);
-        }
-
-
-
-        Quitacao::create($quitacao);
 
         return $emprestimoAdd;
 
@@ -904,13 +908,13 @@ class EmprestimoController extends Controller
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-            'clientId' => $dados['banco']['clienteid'],
-            'clientSecret' => $dados['banco']['clientesecret'],
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
+                'clientId' => $dados['banco']['clienteid'],
+                'clientSecret' => $dados['banco']['clientesecret'],
+                'certificate' => $caminhoAbsoluto,
+                'sandbox' => false,
+                "debug" => false,
+                'timeout' => 60,
+            ];
 
             $params = [
                 "txid" => Str::random(32)
