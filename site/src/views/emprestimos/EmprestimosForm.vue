@@ -210,7 +210,6 @@ export default {
 			this.changeLoading();
 		},
 		clearCicom() {
-			this.getemprestimo();
 		},
 	},
 	computed: {
