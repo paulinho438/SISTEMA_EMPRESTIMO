@@ -80,7 +80,7 @@ class CobrancaAutomaticaC extends Command
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-Última chamada Ainda não identificamos seu pagamento será aplicado multas e entrará na rota de cobrança!
+Última chamada, Ainda não identificamos seu pagamento, será aplicado multas e entrará na rota de cobrança!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
