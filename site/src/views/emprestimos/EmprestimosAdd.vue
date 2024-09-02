@@ -86,9 +86,9 @@ export default {
 		gerarParcelas() {
 			let parcela = {};
 			// Defina a data inicial
-			const dataLanc = this.address.dt_lancamento;
+			const dataLanc = new Date(this.address.dt_lancamento);
 
-			const dataInicial = this.address.dt_lancamento;
+			const dataInicial = new Date(this.address.dt_lancamento);
 
 			// Array para armazenar as parcelas
 			const parcelas = [];
