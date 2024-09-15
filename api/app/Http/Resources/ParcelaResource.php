@@ -6,6 +6,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 
+use Carbon\Carbon;
+
 use DateTime;
 
 class ParcelaResource extends JsonResource
@@ -19,28 +21,28 @@ class ParcelaResource extends JsonResource
     public function toArray($request)
     {
         return [
-            "id"                    => $this->id,
-            "emprestimo_id"         => $this->emprestimo_id,
-            "parcela"               => $this->parcela,
-            "valor"                 => $this->formatarMoeda($this->valor),
-            "saldo"                 => $this->formatarMoeda($this->saldo),
-            "venc"                  => (new DateTime($this->venc))->format('d/m/Y'),
-            "venc_real"             => (new DateTime($this->venc_real))->format('d/m/Y'),
-            "dt_lancamento"         => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
-            "dt_baixa"              => ($this->dt_baixa != null) ? (new DateTime($this->dt_baixa))->format('d/m/Y') : '',
-            "dt_ult_cobranca"       => $this->dt_ult_cobranca,
-            "identificador"         => $this->identificador,
-            "chave_pix"             => ($this->chave_pix != null) ? $this->chave_pix : '',
-            "nome_cliente"          => $this->emprestimo->client->nome_completo ?? null,
-            "telefone_celular_1"    => $this->emprestimo->client->telefone_celular_1 ?? null,
-            "telefone_celular_2"    => $this->emprestimo->client->telefone_celular_2 ?? null,
-            "atrasadas"             => $this->atrasadas,
-            "latitude"              => $this->getLatitudeFromAddress(),
-            "longitude"             => $this->getLongitudeFromAddress(),
-            "endereco"              => $this->getEnderecoFromAddress(),
+            "id" => $this->id,
+            "emprestimo_id" => $this->emprestimo_id,
+            "parcela" => $this->parcela,
+            "valor" => $this->formatarMoeda($this->valor),
+            "saldo" => $this->formatarMoeda($this->saldo),
+            "venc" => (new DateTime($this->venc))->format('d/m/Y'),
+            "venc_real" => (new DateTime($this->venc_real))->format('d/m/Y'),
+            "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
+            "dt_baixa" => ($this->dt_baixa != null) ? Carbon::parse($this->dt_baixa, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y') : '',
+            "dt_ult_cobranca" => $this->dt_ult_cobranca,
+            "identificador" => $this->identificador,
+            "chave_pix" => ($this->chave_pix != null) ? $this->chave_pix : '',
+            "nome_cliente" => $this->emprestimo->client->nome_completo ?? null,
+            "telefone_celular_1" => $this->emprestimo->client->telefone_celular_1 ?? null,
+            "telefone_celular_2" => $this->emprestimo->client->telefone_celular_2 ?? null,
+            "atrasadas" => $this->atrasadas,
+            "latitude" => $this->getLatitudeFromAddress(),
+            "longitude" => $this->getLongitudeFromAddress(),
+            "endereco" => $this->getEnderecoFromAddress(),
             "total_pago_emprestimo" => $this->formatarMoeda($this->totalPagoEmprestimo()),
-            "total_pago_parcela"    => $this->formatarMoeda($this->totalPagoParcela()),
-            "total_pendente"        => $this->formatarMoeda($this->totalPendente()),
+            "total_pago_parcela" => $this->formatarMoeda($this->totalPagoParcela()),
+            "total_pendente" => $this->formatarMoeda($this->totalPendente()),
         ];
     }
 
@@ -78,7 +80,7 @@ class ParcelaResource extends JsonResource
     protected function getEnderecoFromAddress()
     {
         if (isset($this->emprestimo->client->address[0]->address)) {
-            return $this->emprestimo->client->address[0]->neighborhood. ' ' .$this->emprestimo->client->address[0]->address. ' ' .$this->emprestimo->client->address[0]->number ;
+            return $this->emprestimo->client->address[0]->neighborhood . ' ' . $this->emprestimo->client->address[0]->address . ' ' . $this->emprestimo->client->address[0]->number;
         }
         return null;
     }

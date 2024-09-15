@@ -58,8 +58,6 @@ class CobrancaAutomaticaA extends Command
                 ->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
-
-
         }
 
 
@@ -74,7 +72,6 @@ class CobrancaAutomaticaA extends Command
                     if ($response->successful()) {
                         $r = $response->json();
                         if ($r['loggedIn']) {
-
 
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                             $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';

@@ -155,7 +155,9 @@ export default {
 			this.client.costcenter = this.costcenter;
 			this.client.consultor = this.consultor;
 			this.client.parcelas = this.parcelas;
+			console.log('TIME 1', this.client.dt_lancamento)
 			this.client.dt_lancamento = this.formatarDataParaString(this.client.dt_lancamento);
+			console.log('TIME 2', this.client.dt_lancamento)
 
 			this.toast.add({
 				severity: ToastSeverity.SUCCESS,
@@ -208,7 +210,6 @@ export default {
 			this.changeLoading();
 		},
 		clearCicom() {
-			this.getemprestimo();
 		},
 	},
 	computed: {

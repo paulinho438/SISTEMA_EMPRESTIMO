@@ -56,6 +56,7 @@ class CobrancaAutomaticaC extends Command
                 ->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
+                echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
         }
 
 
@@ -79,7 +80,7 @@ class CobrancaAutomaticaC extends Command
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-Última chamada Ainda não identificamos seu pagamento será aplicado multas e entrará na rota de cobrança!
+Última chamada, Ainda não identificamos seu pagamento, será aplicado multas e entrará na rota de cobrança!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 

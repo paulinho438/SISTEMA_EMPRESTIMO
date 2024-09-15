@@ -56,6 +56,8 @@ class CobrancaAutomaticaB extends Command
                 ->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
+                echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+                echo "<pre>" . json_encode($today, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
         }
 
 
@@ -81,7 +83,7 @@ class CobrancaAutomaticaB extends Command
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-Não identificamos seu pagamento evite multas !
+Não identificamos seu pagamento, evite multas!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
