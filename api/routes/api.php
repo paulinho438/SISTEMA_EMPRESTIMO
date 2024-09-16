@@ -17,7 +17,9 @@ use App\Http\Controllers\{
     ContasreceberController,
     MovimentacaofinanceiraController,
     UsuarioController,
-    FeriadoController
+    FeriadoController,
+    AddressController,
+    DashboardController
 
 };
 
@@ -46,6 +48,10 @@ Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, '
 
 
 Route::middleware('auth:api')->group(function(){
+
+
+    Route::get('/dashboard/info-conta', [DashboardController::class, 'infoConta']);
+
     Route::post('/auth/validate', [AuthController::class, 'validateToken']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
