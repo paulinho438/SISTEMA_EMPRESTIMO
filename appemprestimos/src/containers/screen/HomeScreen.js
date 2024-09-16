@@ -109,19 +109,19 @@ export default function HomeScreen({navigation}) {
 
     }else if(tipoCliente.value == 2){
 
-    const filteredData = clientesOrig.filter(item => item.atrasadas > 6);
+    const filteredData = clientesOrig.filter(item => item.atrasadas > 5);
 
     setClientes(filteredData)
 
 
     }else if(tipoCliente.value == 3){
 
-      const filteredData = clientesOrig.filter(item => (item.atrasadas > 4 && item.atrasadas <=6));
+      const filteredData = clientesOrig.filter(item => (item.atrasadas > 1 && item.atrasadas <=5));
 
       setClientes(filteredData)
 
     }else{
-      const filteredData = clientesOrig.filter(item => item.atrasadas <= 4);
+      const filteredData = clientesOrig.filter(item => item.atrasadas == 1);
 
       setClientes(filteredData)
     }
@@ -336,11 +336,13 @@ export default function HomeScreen({navigation}) {
 
   const corSelect = (at) => {
 
-      if(at <= 4){
+      if(at == 0){
+        return '#32a83c'
+      }else if(at == 1){
         return '#17a2b8'
-      }else if(at > 4 && at <= 6){
-        return '#ffc107'
-      }else if(at > 6){
+      }else if(at > 1 && at <= 5){
+        return '#dae32d'
+      }else if(at > 5){
         return '#dc3545'
       }
       
