@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Text
 } from 'react-native';
 import React, {useState} from 'react';
 
@@ -20,6 +21,7 @@ import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
 import {AuthNav, StackNav} from '../../navigation/navigationKeys';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
+import CDropdownInput from '../../components/common/CDropdownInput';
 
 import api from '../../services/api';
 
@@ -58,8 +60,17 @@ export default function CadastroCliente({navigation}) {
   const [rg, setRg] = useState('');
   const [cellphone, setCellphone] = useState('');
   const [cellphone2, setCellphone2] = useState('');
+  const [nascimento, setNascimento] = useState('');
+  const [sexo, setSexo] = useState('M');
 
+  const data = [
+    { label: 'Masculino', value: 'M' },
+    { label: 'Feminino', value: 'F' },
+  ];
 
+  const handleChange = (item) => {
+    setSexo(item.value);
+  };
 
   const handleCpfChange = (text) => {
     // Remove qualquer caractere que não seja número
@@ -149,19 +160,15 @@ export default function CadastroCliente({navigation}) {
 
 
   const onPressCadastroCliente = async () => {
-    alert('ok')
-    if(!name || !email || !cellphone || !cellphone2 || !cpf || !rg){
+    
+    if(!name || !email || !cellphone || !cellphone2 || !cpf || !rg || !nascimento){
       Alert.alert(`Preencha todos os campos!`);
       return
     }
 
-    let req = await api.cadastroCliente(name, email, cellphone, cellphone2, cpf, rg);
-
-    console.log(req)
-
-    Alert.alert('Cliente Cadastrado com Sucesso!');
-
-    navigation.navigate(StackNav.Clientes);
+    navigation.navigate(StackNav.ClientMap, {
+      clientes : {parcelas: [], name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo}
+    });
   };
 
   const nameValidation = itm => {
@@ -295,6 +302,24 @@ export default function CadastroCliente({navigation}) {
               />    
 
               <CTextInput
+                text="Data de Nascimento"
+                maskType="datetime"
+                textInputStyle={{}}
+                mainTxtInp={[localStyles.border, focus4]}
+                isSecure={false}
+                RightIcon={null}
+                LeftIcon={null}
+                onChangeText={(text) => setNascimento(text)}
+                value={nascimento}
+                keyboardType="default"
+                align="left"
+              />
+
+              
+
+              
+
+              <CTextInput
                 value={cpf}
                 onChangeText={handleCpfChange}
                 mainTxtInp={[localStyles.border, focus5]}
@@ -311,6 +336,16 @@ export default function CadastroCliente({navigation}) {
                 onBlur={onBlur6}
                 text={'RG'}
               /> 
+
+              <View style={localStyles.container}>
+                <Text style={localStyles.title}>Selecione o Sexo</Text>
+                <CDropdownInput
+                  data={data}
+                  placeholder="Sexo"
+                  value={sexo}
+                  onChange={handleChange}
+                />
+              </View>
 
              
 
@@ -395,4 +430,21 @@ const localStyles = StyleSheet.create({
     ...styles.flex,
     ...styles.justifyBetween,
   },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: moderateScale(20),
+    backgroundColor: colors.GreyScale,
+    padding: moderateScale(10)
+  },
+  title: {
+    fontSize: moderateScale(14),
+    marginBottom: moderateScale(10),
+    color: colors.black,
+  },
+  selectedText: {
+    fontSize: moderateScale(16),
+    marginTop: moderateScale(10),
+    color: colors.numbersColor,
+  }
 });

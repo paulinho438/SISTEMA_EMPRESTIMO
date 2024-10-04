@@ -155,7 +155,7 @@ export default function SignIn({navigation}) {
                 onFocus={onFocus2}
                 onBlur={onBlur2}
                 mainTxtInp={[localStyles.PassTxt, focus2]}
-                text={'CPF'}
+                text={'Usuario'}
               />
 
               <CTextInput

@@ -40,6 +40,6 @@ const localStyles = StyleSheet.create({
     ...styles.mh5,
   },
   miniContainer: {
-    color: colors.Green,
+    color: colors.black,
   },
 });

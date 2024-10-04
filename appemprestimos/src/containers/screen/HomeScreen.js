@@ -109,19 +109,19 @@ export default function HomeScreen({navigation}) {
 
     }else if(tipoCliente.value == 2){
 
-    const filteredData = clientesOrig.filter(item => item.atrasadas > 6);
+    const filteredData = clientesOrig.filter(item => item.atrasadas > 5);
 
     setClientes(filteredData)
 
 
     }else if(tipoCliente.value == 3){
 
-      const filteredData = clientesOrig.filter(item => (item.atrasadas > 4 && item.atrasadas <=6));
+      const filteredData = clientesOrig.filter(item => (item.atrasadas > 1 && item.atrasadas <=5));
 
       setClientes(filteredData)
 
     }else{
-      const filteredData = clientesOrig.filter(item => item.atrasadas <= 4);
+      const filteredData = clientesOrig.filter(item => item.atrasadas == 1);
 
       setClientes(filteredData)
     }
@@ -336,11 +336,13 @@ export default function HomeScreen({navigation}) {
 
   const corSelect = (at) => {
 
-      if(at <= 4){
+      if(at == 0){
+        return '#32a83c'
+      }else if(at == 1){
         return '#17a2b8'
-      }else if(at > 4 && at <= 6){
-        return '#ffc107'
-      }else if(at > 6){
+      }else if(at > 1 && at <= 5){
+        return '#dae32d'
+      }else if(at > 5){
         return '#dc3545'
       }
       
@@ -368,11 +370,12 @@ export default function HomeScreen({navigation}) {
             style={[localStyles.GymImg, {backgroundColor: corSelect(item.atrasadas)}]}
           />
           <View style={localStyles.mainCText}>
-            <CText color={colors.black} type={'B16'} style={localStyles.name}>
+
+            <CText color={colors.black} type={'B16'} style={[localStyles.name, { maxWidth: 160 }]} numberOfLines={1} ellipsizeMode="tail">
               {item.nome_cliente}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-            Emprestimo {item.emprestimo_id} Parcela {item.parcela} 
+            Emprestimo Número {item.emprestimo_id}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
             {item.distance.toFixed(2)} Km de distancia
@@ -382,7 +385,7 @@ export default function HomeScreen({navigation}) {
 
         <View>
           <CText type={'B16'} color={colors.red}>
-            {item.saldo}
+            {item.total_pendente}
           </CText>
         </View>
       </TouchableOpacity>

@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Android",
+            "program": "${workspaceFolder}/appemprestimos/index.js",
+            "request": "launch",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/appemprestimos",
+            "platform": "android",
+            "sourceMaps": true,
+        },
+        {
+            "name": "Debug iOS",
+            "program": "${workspaceFolder}/appemprestimos/index.js",
+            "request": "launch",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/appemprestimos",
+            "platform": "ios",
+            "sourceMaps": true,
+            "outDir": "${workspaceFolder}/.vscode/.react"
+        },
+        {
+            "name": "Attach to packager",
+            "request": "attach",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/appemprestimos",
+            "sourceMaps": true,
+            "outDir": "${workspaceFolder}/.vscode/.react"
+        }
+    ]
+}
