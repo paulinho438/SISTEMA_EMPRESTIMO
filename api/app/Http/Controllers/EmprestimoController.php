@@ -127,9 +127,6 @@ class EmprestimoController extends Controller
     }
 
 
-
-
-
     public function feriados(Request $request)
     {
         return FeriadoEmprestimoResource::collection(Feriado::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
@@ -764,21 +761,21 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
-            if ($emprestimo) {
-                $envio = self::enviarPix([
-                    'valor' => $emprestimo->valor,
-                    'informacao' => 'Emprestimo de R$ ' . $emprestimo->valor . ' para o ' . $emprestimo->client->nome_completo,
-                    'pix_cliente' => $emprestimo->client->cpf
-                ]);
+            // if ($emprestimo) {
+            //     $envio = self::enviarPix([
+            //         'valor' => $emprestimo->valor,
+            //         'informacao' => 'Emprestimo de R$ ' . $emprestimo->valor . ' para o ' . $emprestimo->client->nome_completo,
+            //         'pix_cliente' => $emprestimo->client->cpf
+            //     ]);
 
-                if ($envio['error_code'] != null) {
-                    return response()->json([
-                        "message" => $envio['error_description'],
-                        "error" => ''
-                    ], Response::HTTP_FORBIDDEN);
-                }
+            //     if ($envio['error_code'] != null) {
+            //         return response()->json([
+            //             "message" => $envio['error_description'],
+            //             "error" => ''
+            //         ], Response::HTTP_FORBIDDEN);
+            //     }
 
-            }
+            // }
 
             $emprestimo->contaspagar->status = 'Pagamento Efetuado';
             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');

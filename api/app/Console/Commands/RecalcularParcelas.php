@@ -53,7 +53,7 @@ class RecalcularParcelas extends Command
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
 
-            if ($parcela->emprestimo) {
+            if ($parcela->emprestimo && $parcela->emprestimo->status == "Pagamento Efetuado") {
 
                 echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
 
