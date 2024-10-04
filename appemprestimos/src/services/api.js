@@ -16,22 +16,34 @@ const request = async (method, endpoint, params, token = null) => {
         case 'get':
             let queryString = new URLSearchParams(params).toString();
             fullUrl += `?${queryString}`;
-        break;
+            break;
         case 'post':
         case 'put':
         case 'delete':
             body = JSON.stringify(params);
-        break;
+            break;
     }
 
     let headers = {'Content-Type': 'application/json'};
     if(token) {
-
         headers.Authorization = `Bearer ${token}`;
         let authCompany = await getAuthCompany();
         headers['company-id'] = authCompany?.id;
     }
 
+    // Gerar o comando curl
+    let curlCommand = `curl -X ${method.toUpperCase()} "${fullUrl}" \\\n`;
+    for (let [key, value] of Object.entries(headers)) {
+        curlCommand += `-H "${key}: ${value}" \\\n`;
+    }
+    if (body) {
+        curlCommand += `-d '${body}'`;
+    }
+
+    // Imprimir o comando curl no console
+    console.log(curlCommand);
+
+    // Fazer a requisição
     let req = await fetch(fullUrl, { method, headers, body });
     let json = await req.json();
     return json;
