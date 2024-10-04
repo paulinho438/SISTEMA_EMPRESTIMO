@@ -112,6 +112,10 @@ export default {
 							detail: 'Pagamento Efetuado',
 							life: 3000
 						});
+
+						setTimeout(() => {
+							this.router.push(`/aprovacao`);
+						}, 1200)
 					}
 						
 				})
