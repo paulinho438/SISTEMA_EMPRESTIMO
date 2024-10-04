@@ -85,18 +85,19 @@ export default function TransferPopUp(props) {
 
     const client = {};
 
+    client.dt_lancamento = valores?.dt_lancamento;
     client.valor = parseFloat(valores?.valor.replace(/[^\d,-]/g, '').replace(',', '.'));
 		client.lucro = parseFloat(valores?.lucro.replace(/[^\d,-]/g, '').replace(',', '.'));
 		client.juros = parseFloat(valores?.juros.replace(/[^\d,-]/g, '').replace(',', '.'));
     client.cliente = {id: valores?.cliente.id, nome_completo: valores?.cliente.nome_completo, cpf: valores?.cliente.cpf}
-    client.banco = {id: valores?.banco.id, certificado: valores?.banco.certificado, clienteid: valores?.banco.clienteid, clientesecret: valores?.banco.clientesecret, chavepix: valores?.banco.chavepix}
+    client.banco = {id: valores?.banco.id, certificado: valores?.banco.certificado, clienteid: valores?.banco.clienteid, clientesecret: valores?.banco.clientesecret, chavepix: valores?.banco.chavepix, efibank: valores?.banco.efibank}
     client.costcenter = {id: valores?.costcenter.id}
     client.consultor = {id: valores?.consultor.id}
     client.parcelas = newParcelas;
 
     onPressClose();
-
     const res = await api.saveEmprestimo(client);
+
 
 
 

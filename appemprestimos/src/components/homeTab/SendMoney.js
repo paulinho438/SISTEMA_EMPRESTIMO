@@ -31,6 +31,7 @@ export default function SendMoney({navigation, route}) {
       async function fetchData() {
         setValores({
           ...valores, 
+          dt_lancamento: formatDate(new Date()),
           cliente: cliente,
           consultor: await getUser() 
         });
@@ -103,6 +104,13 @@ export default function SendMoney({navigation, route}) {
     }
 
     setVisible(!visible);
+  };
+
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Meses começam do zero
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   const getBancos = async () =>  {
@@ -313,6 +321,21 @@ export default function SendMoney({navigation, route}) {
 
   }
 
+  const formatDateString = (text) => {
+    // Remove todos os caracteres não numéricos
+    const cleaned = ('' + text).replace(/\D/g, '');
+
+    // Formatação no formato dd/mm/yyyy
+    const match = cleaned.match(/(\d{0,2})(\d{0,2})(\d{0,4})/);
+    if (match) {
+      const part1 = match[1];
+      const part2 = match[2] ? '/' + match[2] : '';
+      const part3 = match[3] ? '/' + match[3] : '';
+      return part1 + part2 + part3;
+    }
+    return text;
+  };
+
   return (
     <SafeAreaView style={localStyles.main}>
       <KeyBoardAvoidWrapper containerStyle={localStyles.keyBoardSty}>
@@ -330,6 +353,24 @@ export default function SendMoney({navigation, route}) {
           </CText>
 
           <View style={localStyles.mainBorder}>
+            <View style={localStyles.parentAmt}>
+              <CText type={'M12'} color={colors.tabColor}>
+                Data Lançamento:
+              </CText>
+            </View>
+
+            <View style={localStyles.parentTxtInp}>
+              <CTextInput
+                mainTxtInp={localStyles.CTxtInp}
+                textInputStyle={localStyles.ChildTxtInp}
+                keyboardType={'numeric'}
+                value={valores?.dt_lancamento}
+                onChangeText={(text) => {setValores({
+                  ...valores, // Mantém outras propriedades de 'valores' intactas
+                  dt_lancamento: formatDateString(text) // Atualiza apenas 'valor'
+                })}}
+              />
+            </View>
             <View style={localStyles.parentAmt}>
               <CText type={'M12'} color={colors.tabColor}>
                 Digite o valor:

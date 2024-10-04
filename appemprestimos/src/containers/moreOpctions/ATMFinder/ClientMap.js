@@ -4,13 +4,19 @@ import {
   TouchableOpacity,
   View,
   Image,
-  Linking
+  Linking,
+  Platform,
+  PermissionsAndroid,
+  Alert
 } from 'react-native';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Material from 'react-native-vector-icons/MaterialIcons';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+
+import Geolocation from 'react-native-geolocation-service';
 
 // Local imports
 import {colors} from '../../../themes/colors';
@@ -24,26 +30,128 @@ import CButton from '../../../components/common/CButton';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import Location from '../../../components/modals/Location';
 import InfoParcelas from '../../../components/modals/InfoParcelas';
+import FinCadCliente from '../../../components/modals/FinCadCliente';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../../services/api';
 
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
+import margin from '../../../themes/margin';
 
 export default function ATMDetails({navigation, route}) {
   const { clientes } = route.params;
-  
+
   const [empty, nonEmpty] = useState('');
+  const [location, setLocation] = useState(null);
+  const [endereco, setEndereco] = useState({
+    "create" : true,
+    "cep" : "",
+    "address" : "",
+    "neighborhood" : "",
+    "city" : "",
+    "number" : "",
+    "complement" : "",
+    "latitude" : "",
+    "longitude" : "",
+    "description" : ""
+  });
+  
   const [parcelas, setParcelas] = useState([]);
+  const [search, setSearch] = useState('Clique no mapa para selecionar.');
   useFocusEffect(
     React.useCallback(() => {
       getInfo();
     }, [])
   );
 
+  useEffect(()=>{
+    getSearch();
+  },[location]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+
+      const requestLocationPermission = async () => {
+        if (Platform.OS === 'ios') {
+          Geolocation.requestAuthorization('whenInUse');
+          getLocation();
+        } else {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: "Location Access Permission",
+              message: "We need access to your location",
+              buttonNeutral: "Ask Me Later",
+              buttonNegative: "Cancel",
+              buttonPositive: "OK"
+            }
+          );
+  
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+
+            getLocation();
+          } else {
+            console.log("Location permission denied");
+          }
+
+        }
+      };
+  
+      const getLocation = async () => {
+
+        Geolocation.getCurrentPosition(
+          (position) => {
+            setLocation(position);
+
+          },
+          (error) => {
+            console.log(error.code, error.message);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+
+      };
+  
+      requestLocationPermission();
+
+
+      
+      return () => {
+      };
+    }, [])
+  );
+
+  const getSearch = async () => {
+    let r = await api.getLocationGeocode(location.coords.latitude, location.coords.longitude);
+    if(r?.results[0]?.formatted_address){
+        const addressComponents = r.results[0].address_components;
+        const cep = addressComponents.find(component =>
+          component.types.includes('postal_code')
+        );
+
+        if(cep?.long_name){
+          let r = await api.getEnderecoLatLong(cep?.long_name);
+          setEndereco({
+            "create" : true,
+            "cep" : cep.long_name,
+            "address" : r.logradouro,
+            "neighborhood" : r.bairro,
+            "city" : r.localidade,
+            "number" : "999",
+            "complement" : "",
+            "latitude" : lat,
+            "longitude" : long,
+            "description" : "Loc"
+          });
+        }
+      setSearch(r.results[0].formatted_address)
+
+    }
+  }
+
   const getInfo =  async (position) => {
 
     let reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
-    setParcelas(reqClientes.data)
+    setParcelas(reqClientes)
 
   }
 
@@ -51,6 +159,10 @@ export default function ATMDetails({navigation, route}) {
   const Info = useRef(null);
 
   const moveToInfoModel = () => {
+    if(search == 'Clique no mapa para selecionar.'){
+      Alert.alert('Clique no mapa para selecionar o endereço');
+      return false;
+    }
     Info.current.show();
   };
 
@@ -76,7 +188,6 @@ export default function ATMDetails({navigation, route}) {
 
   const openWhatsApp = () => {
 
-    console.log(montarStringParcelas(parcelas))
     let url = `whatsapp://send?phone=${clientes.telefone_celular_1}`;
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
 
@@ -89,6 +200,45 @@ export default function ATMDetails({navigation, route}) {
         Alert.alert('Error ao abrir WhatsApp');
       });
   };
+
+  const handleAlterSearchMapsClick = async (lat, long) => {
+    let r = await api.getLocationGeocode(lat, long);
+    if(r.status == "OK"){
+        
+        const addressComponents = r.results[0].address_components;
+        const cep = addressComponents.find(component =>
+          component.types.includes('postal_code')
+        );
+
+        if(cep?.long_name){
+          let r = await api.getEnderecoLatLong(cep?.long_name);
+          setEndereco({
+            "create" : true,
+            "cep" : cep?.long_name,
+            "address" : r.logradouro,
+            "neighborhood" : r.bairro,
+            "city" : r.localidade,
+            "number" : "999",
+            "complement" : "",
+            "latitude" : lat,
+            "longitude" : long,
+            "description" : "Loc"
+          });
+        }
+
+
+        setSearch(r.results[0].formatted_address)
+    }
+
+    setLocation({
+      ...location,
+      coords : {
+          latitude: lat, 
+          longitude: long,
+      },
+    })
+
+}
 
   const openGoogleMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${clientes.latitude},${clientes.longitude}`;
@@ -155,59 +305,48 @@ export default function ATMDetails({navigation, route}) {
               />
             </TouchableOpacity>
             <CText type={'B18'} color={colors.white}>
-              Cobrança
+              Localizaçāo
             </CText>
           </View>
         </View>
 
         <View>
-          <Image source={images.Map} style={localStyles.imgSty} />
-
-          <View style={localStyles.outerComponent}>
-            <View style={localStyles.outerContainer}>
-              <Image style={localStyles.iconSty} source={images.Boy} />
-
-              <View style={{gap: moderateScale(4)}}>
-                <CText color={colors.black} type={'B16'}>
-                  {clientes.nome_cliente}
-                </CText>
-                <CText color={colors.black} type={'M12'}>
-                  {clientes.endereco}
-                </CText>
-              </View>
-            </View>
-
-            <CButton
-              onPress={openGoogleMaps}
-              text={'Abrir no waze'}
-              containerStyle={localStyles.buttonContainer}
-              RightIcon={() => (
-                <Community
-                  size={24}
-                  name={'waze'}
-                  color={colors.white}
-                />
-              )}
+          {location?.coords?.latitude && 
+          <MapView
+            provider={PROVIDER_GOOGLE}
+            style={localStyles.imgSty}
+            onPress={(e) => {
+              handleAlterSearchMapsClick(e.nativeEvent.coordinate.latitude, e.nativeEvent.coordinate.longitude);
+          }}
+            region={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              latitudeDelta: 0.015,
+              longitudeDelta: 0.0121,
+            }}
+          >
+            <Marker
+              pinColor={'red'} 
+              coordinate={{latitude: location.coords.latitude, longitude: location.coords.longitude}}
             />
+          </MapView>
+        }
+         
 
-            <CButton
-              onPress={openWhatsApp}
-              text={'Ir para o Whatsapp'}
-              containerStyle={localStyles.buttonContainer}
-              RightIcon={() => (
-                <Community
-                  size={24}
-                  name={'whatsapp'}
-                  color={colors.white}
-                />
-              )}
-            />
+        </View>
 
-            <CButton
-              onPress={cobrarAmanha}
-              text={'Cobrar Amanha'}
-              containerStyle={localStyles.buttonContainer}
-              RightIcon={() => (
+        <View style={localStyles.mainContainer}>
+          <CTextInput
+            value={search}
+            onChangeText={nonEmpty}
+            text={'Enter the name of ATM'}
+            mainTxtInp={localStyles.TxtInpSty}
+          />
+          <CButton
+            onPress={moveToInfoModel}
+            text={'Avancar'}
+            containerStyle={localStyles.buttonContainer}
+            RightIcon={() => (
                 <Community
                   size={24}
                   name={'arrow-u-right-top'}
@@ -215,45 +354,8 @@ export default function ATMDetails({navigation, route}) {
                 />
               )}
             />
-
-            <CButton
-            onPress={moveToInfoModel}
-            text={'Informações das Parcelas'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={() => (
-                <Community
-                  size={24}
-                  name={'account-cash-outline'}
-                  color={colors.white}
-                />
-              )}
-            />
-          </View>
         </View>
-
-        {/* <View style={localStyles.mainContainer}>
-          <CTextInput
-            value={empty}
-            onChangeText={nonEmpty}
-            LeftIcon={() => (
-              <Ionicons
-                color={colors.black}
-                name={'search-outline'}
-                size={24}
-              />
-            )}
-            RightIcon={() => (
-              <TouchableOpacity onPress={onPress}>
-                <AntDesign name={'close'} size={24} color={colors.SignUpTxt} />
-              </TouchableOpacity>
-            )}
-            text={'Enter the name of ATM'}
-            mainTxtInp={localStyles.TxtInpSty}
-          />
-        </View> */}
-
-        <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
-        <InfoParcelas sheetRef={Info} parcelas={parcelas} clientes={clientes} />
+        <FinCadCliente sheetRef={Info} parcelas={[]} clientes={clientes} localizacao={endereco} />
       </SafeAreaView>
     </KeyBoardAvoidWrapper> 
   );
@@ -282,7 +384,7 @@ const localStyles = StyleSheet.create({
   imgSty: {
     backgroundColor: colors.white,
     width: moderateScale(375),
-    height: moderateScale(600),
+    height: moderateScale(440),
   },
   TxtInpSty: {
     ...styles.ph15,
@@ -322,6 +424,7 @@ const localStyles = StyleSheet.create({
     ...styles.justifyBetween,
     ...styles.ph20,
     ...styles.mt0,
-    width: moderateScale(295),
+    marginTop: moderateScale(10),
+    width: moderateScale(325),
   },
 });
