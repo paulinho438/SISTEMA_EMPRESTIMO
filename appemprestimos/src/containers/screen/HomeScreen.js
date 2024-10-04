@@ -370,7 +370,8 @@ export default function HomeScreen({navigation}) {
             style={[localStyles.GymImg, {backgroundColor: corSelect(item.atrasadas)}]}
           />
           <View style={localStyles.mainCText}>
-            <CText color={colors.black} type={'B16'} style={localStyles.name}>
+
+            <CText color={colors.black} type={'B16'} style={[localStyles.name, { maxWidth: 160 }]} numberOfLines={1} ellipsizeMode="tail">
               {item.nome_cliente}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>

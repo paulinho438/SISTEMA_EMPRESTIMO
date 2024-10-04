@@ -1,15 +1,32 @@
 {
-    // Use o IntelliSense para saber mais sobre os atributos possíveis.
-    // Focalizar para exibir as descrições dos atributos existentes.
-    // Para obter mais informações, acesse: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "chrome",
+            "name": "Debug Android",
+            "program": "${workspaceFolder}/appemprestimos/index.js",
             "request": "launch",
-            "name": "Iniciar o Chrome em relação a localhost",
-            "url": "http://localhost:8000",
-            "webRoot": "${workspaceFolder}"
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/appemprestimos",
+            "platform": "android",
+            "sourceMaps": true,
+        },
+        {
+            "name": "Debug iOS",
+            "program": "${workspaceFolder}/appemprestimos/index.js",
+            "request": "launch",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/appemprestimos",
+            "platform": "ios",
+            "sourceMaps": true,
+            "outDir": "${workspaceFolder}/.vscode/.react"
+        },
+        {
+            "name": "Attach to packager",
+            "request": "attach",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/appemprestimos",
+            "sourceMaps": true,
+            "outDir": "${workspaceFolder}/.vscode/.react"
         }
     ]
 }
