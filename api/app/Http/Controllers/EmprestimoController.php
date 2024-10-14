@@ -127,182 +127,6 @@ class EmprestimoController extends Controller
 
     }
 
-    public function testeBank()
-    {
-        $parcelas = Parcela::where('dt_baixa', null)->get();
-
-        $primeiroRegistro = Parcela::where('dt_baixa', null)->orderBy('venc_real')->first();
-
-        $ultimoRegistro = Parcela::where('dt_baixa', null)->orderBy('venc_real', 'desc')->first();
-
-        $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-        $options = [
-            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
-
-        $params = [
-            "inicio" => $primeiroRegistro->venc_real . "T00:00:00Z",
-            "fim" => $ultimoRegistro->venc_real . "T23:59:59Z",
-            "status" => "CONCLUIDA", // "ATIVA","CONCLUIDA", "REMOVIDA_PELO_USUARIO_RECEBEDOR", "REMOVIDA_PELO_PSP"
-        ];
-
-        try {
-            $api = new EfiPay($options);
-            $response = $api->pixListDueCharges($params);
-
-            // Array para armazenar os valores de "id" de "loc"
-            $arrayIdsLoc = [];
-
-            // Loop através do array original
-            foreach ($response['cobs'] as $item) {
-                // Verifica se a chave "loc" existe e se a chave "id" está presente dentro de "loc"
-                if (isset($item['loc']['id'])) {
-                    // Adiciona o valor de "id" ao novo array
-                    $arrayIdsLoc[] = $item['loc']['id'];
-                }
-            }
-
-            foreach ($parcelas as $item) {
-                if (in_array($item->identificador, $arrayIdsLoc)) {
-                    $editParcela = Parcela::find($item->id);
-                    $editParcela->dt_baixa = date('Y-m-d');
-                    if ($editParcela->contasreceber) {
-                        $editParcela->contasreceber->status = 'Pago';
-                        $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
-                        $editParcela->contasreceber->forma_recebto = 'PIX';
-                        $editParcela->contasreceber->save();
-                    }
-                    $editParcela->save();
-                }
-            }
-
-
-            print_r("<pre>" . json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>");
-        } catch (EfiException $e) {
-            print_r($e->code . "<br>");
-            print_r($e->error . "<br>");
-            print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
-            print_r($e->getMessage());
-        }
-
-
-    }
-
-    public function efibank()
-    {
-
-
-        $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-        $options = [
-            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
-
-        $params = [
-            "txid" => Str::random(32)
-        ];
-
-        $body = [
-            "calendario" => [
-                "dataDeVencimento" => "2023-12-23",
-                "validadeAposVencimento" => 0
-            ],
-            "devedor" => [
-                "nome" => "Paulo Peixoto",
-                "cpf" => "05546356154",
-            ],
-            "valor" => [
-                "original" => "0.12",
-                // "multa" => [
-                //     "modalidade" => 2,
-                //     "valorPerc" => "2.00"
-                // ],
-                // "juros" => [
-                //     "modalidade" => 2,
-                //     "valorPerc" => "0.30"
-                // ],
-                // "desconto" => [
-                //     "modalidade" => 1,
-                //     "descontoDataFixa" => [
-                //         [
-                //             "data" => "2024-10-15",
-                //             "valorPerc" => "30.00"
-                //         ],
-                //         [
-                //             "data" => "2024-11-15",
-                //             "valorPerc" => "15.00"
-                //         ],
-                //         [
-                //             "data" => "2024-12-15",
-                //             "valorPerc" => "5.00"
-                //         ]
-                //     ]
-                // ]
-            ],
-            "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Parcela 004 / 015",
-            "infoAdicionais" => [
-                [
-                    "nome" => "Emprestimo",
-                    "valor" => "R$ 1.000,00"
-                ],
-                [
-                    "nome" => "Parcela",
-                    "valor" => "002 / 030"
-                ]
-            ]
-        ];
-
-        try {
-            $api = new EfiPay($options);
-            $pix = $api->pixCreateDueCharge($params, $body);
-
-            if ($pix["txid"]) {
-                $params = [
-                    "id" => $pix["loc"]["id"]
-                ];
-
-                try {
-                    $qrcode = $api->pixGenerateQRCode($params);
-
-                    echo "<b>Detalhes da cobrança:</b>";
-                    echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
-
-                    echo "<b>QR Code:</b>";
-                    echo "<pre>" . json_encode($qrcode, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
-
-                    echo "<b>Imagem:</b><br/>";
-                    echo "<img src='" . $qrcode["imagemQrcode"] . "' />";
-                } catch (EfiException $e) {
-                    print_r($e->code . "<br>");
-                    print_r($e->error . "<br>");
-                    print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
-                    print_r($e->getMessage());
-                }
-            } else {
-                echo "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
-            }
-        } catch (EfiException $e) {
-            print_r($e->code . "<br>");
-            print_r($e->error . "<br>");
-            print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
-            print_r($e->getMessage());
-        }
-    }
 
     public function feriados(Request $request)
     {
@@ -479,6 +303,7 @@ class EmprestimoController extends Controller
             $addParcela['saldo'] = $parcela['saldo'];
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+
 
             if ($dados['banco']['efibank'] == 1) {
 
@@ -1042,21 +867,21 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
-            if ($emprestimo) {
-                $envio = self::enviarPix([
-                    'valor' => $emprestimo->valor,
-                    'informacao' => 'Emprestimo de R$ ' . $emprestimo->valor . ' para o ' . $emprestimo->client->nome_completo,
-                    'pix_cliente' => $emprestimo->client->cpf
-                ]);
+            // if ($emprestimo) {
+            //     $envio = self::enviarPix([
+            //         'valor' => $emprestimo->valor,
+            //         'informacao' => 'Emprestimo de R$ ' . $emprestimo->valor . ' para o ' . $emprestimo->client->nome_completo,
+            //         'pix_cliente' => $emprestimo->client->cpf
+            //     ]);
 
-                if ($envio['error_code'] != null) {
-                    return response()->json([
-                        "message" => $envio['error_description'],
-                        "error" => ''
-                    ], Response::HTTP_FORBIDDEN);
-                }
+            //     if ($envio['error_code'] != null) {
+            //         return response()->json([
+            //             "message" => $envio['error_description'],
+            //             "error" => ''
+            //         ], Response::HTTP_FORBIDDEN);
+            //     }
 
-            }
+            // }
 
             $emprestimo->contaspagar->status = 'Pagamento Efetuado';
             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
