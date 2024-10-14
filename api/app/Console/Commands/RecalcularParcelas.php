@@ -128,14 +128,38 @@ class RecalcularParcelas extends Command
 
                 }
 
-                if ($parcela->contasreceber) {
-                    $parcela->contasreceber->venc = $parcela->venc_real;
-                    $parcela->contasreceber->valor = $parcela->saldo;
-                    $parcela->contasreceber->save();
+                if ($parcela->emprestimo->pagamentominimo->chave_pix) {
+
+                    $parcela->emprestimo->pagamentominimo->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    echo "<pre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
+                    $parcela->emprestimo->pagamentominimo->save();
+
+                    $gerarPixQuitacao = self::gerarPixQuitacao(
+                        [
+                            'banco' => [
+                                'client_id' => $parcela->emprestimo->banco->clienteid,
+                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
+                                'certificado' => $parcela->emprestimo->banco->certificado,
+                                'chave' => $parcela->emprestimo->banco->chavepix,
+                            ],
+                            'parcela' => [
+                                'parcela' => $parcela->parcela,
+                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
+                                'venc_real' => date('Y-m-d'),
+                            ],
+                            'cliente' => [
+                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
+                                'cpf' => $parcela->emprestimo->client->cpf
+                            ]
+                        ]
+                    );
+
+                    $parcela->emprestimo->pagamentominimo->identificador = $gerarPixQuitacao['identificador'];
+                    $parcela->emprestimo->pagamentominimo->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+                    $parcela->emprestimo->pagamentominimo->save();
+
                 }
-
-
-
             }
         }
 
