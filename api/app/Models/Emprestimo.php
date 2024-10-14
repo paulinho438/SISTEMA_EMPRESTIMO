@@ -61,4 +61,9 @@ class Emprestimo extends Model
         return $this->belongsTo(Quitacao::class, 'id', 'emprestimo_id');
     }
 
+    public function pagamentominimo()
+    {
+        return $this->belongsTo(PagamentoMinimo::class, 'id', 'emprestimo_id');
+    }
+
 }
