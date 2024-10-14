@@ -130,7 +130,7 @@ class RecalcularParcelas extends Command
 
                 if ($parcela->emprestimo->pagamentominimo->chave_pix) {
 
-                    $parcela->emprestimo->pagamentominimo->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                    $parcela->emprestimo->pagamentominimo->valor = ($parcela->emprestimo->parcelas[0]->totalPendente() - $parcela->emprestimo->valor);
                     echo "<pre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
                     $parcela->emprestimo->pagamentominimo->save();
 
@@ -144,7 +144,7 @@ class RecalcularParcelas extends Command
                             ],
                             'parcela' => [
                                 'parcela' => $parcela->parcela,
-                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
+                                'valor' => ($parcela->emprestimo->parcelas[0]->totalPendente() - $parcela->emprestimo->valor),
                                 'venc_real' => date('Y-m-d'),
                             ],
                             'cliente' => [

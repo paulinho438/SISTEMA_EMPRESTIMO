@@ -540,7 +540,7 @@ class EmprestimoController extends Controller
 
             $pagamentoMinimo = [];
             $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
-            $pagamentoMinimo['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
+            $pagamentoMinimo['valor'] = ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor']);
 
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
@@ -567,7 +567,7 @@ class EmprestimoController extends Controller
                 "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
             ],
             "valor" => [
-                "original" => number_format(str_replace(',', '', $emprestimoAdd->parcelas[0]->totalPendente()), 2, '.', ''),
+                "original" => number_format(str_replace(',', '', ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])), 2, '.', ''),
 
             ],
             "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
