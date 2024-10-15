@@ -49,6 +49,7 @@ class EmprestimoResource extends JsonResource
             "consultor"         => $this->user,
             "parcelas"          => ParcelaResource::collection($this->parcelas),
             "quitacao"          => new QuitacaoResource($this->quitacao),
+            "pagamentominimo"   => new PagamentoMinimoResource($this->pagamentominimo),
             "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
             "status"            => $this->getStatus(),
 
