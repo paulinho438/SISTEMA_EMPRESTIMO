@@ -1294,7 +1294,6 @@ class EmprestimoController extends Controller
 
                         } else {
                             $parcela->saldo = $parcela->saldo - $valor_recebido;
-                            $parcela->dt_baixa = $request->dt_baixa;
                             $parcela->save();
 
                             $valor_recebido = 0;
