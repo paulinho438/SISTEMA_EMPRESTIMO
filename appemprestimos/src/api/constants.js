@@ -625,9 +625,9 @@ export const CurrencyList = [
 
 export const ListClient = [
   {label: 'Todos os Status', value: '1'},
-  {label: 'Vermelho', value: '2'},
-  {label: 'Amarelo', value: '3'},
-  {label: 'Azul', value: '4'},
+  {label: 'Vermelho (mais de 5 dias)', value: '2'},
+  {label: 'Amarelo (entre 1 e 5 dias)', value: '3'},
+  {label: 'Azul (1 dia)', value: '4'},
 ];
 
 export const MeSectionData = [
