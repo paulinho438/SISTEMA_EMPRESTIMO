@@ -1266,11 +1266,11 @@ class EmprestimoController extends Controller
 
                 foreach ($parcelas as $parcela) {
 
-                    var_dump($valor_recebido);
-
                     if ($valor_recebido > 0) {
 
                         if ($valor_recebido >= $parcela->saldo) {
+                            $valor_recebido -= $parcela->saldo;
+
                             $parcela->saldo = 0;
                             $parcela->dt_baixa = $request->dt_baixa;
                             $parcela->save();
@@ -1291,14 +1291,13 @@ class EmprestimoController extends Controller
 
                             ParcelaExtorno::create($addParcelaExtorno);
 
-                            $valor_recebido -= $parcela->saldo;
-
-                            var_dump($valor_recebido);
 
                         } else {
                             $parcela->saldo = $parcela->saldo - $valor_recebido;
                             $parcela->dt_baixa = $request->dt_baixa;
                             $parcela->save();
+
+                            $valor_recebido = 0;
 
                             $addParcelaExtorno = [];
                             $addParcelaExtorno['parcela_id'] = $parcela->id;
@@ -1316,8 +1315,6 @@ class EmprestimoController extends Controller
 
                             ParcelaExtorno::create($addParcelaExtorno);
 
-                            $valor_recebido = 0;
-                            var_dump($valor_recebido);
                         }
 
                     }
