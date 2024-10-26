@@ -1033,7 +1033,6 @@ class EmprestimoController extends Controller
                 $editParcela->dt_baixa = $ext->dt_baixa;
                 $editParcela->identificador = $ext->identificador;
                 $editParcela->chave_pix = $ext->chave_pix;
-                $editParcela->tentativas = $ext->tentativas;
                 $editParcela->dt_ult_cobranca = $ext->dt_ult_cobranca;
                 $editParcela->save();
             }
