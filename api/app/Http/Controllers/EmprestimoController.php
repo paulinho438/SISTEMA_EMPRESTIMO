@@ -1265,29 +1265,54 @@ class EmprestimoController extends Controller
                 foreach ($parcelas as $parcela) {
 
                     if ($valor_recebido > 0) {
-                        $valor_recebido -= $parcela->saldo;
-                        $parcela->saldo = 0;
-                        $parcela->dt_baixa = $request->dt_baixa;
-                        $parcela->save();
 
-                        $addParcelaExtorno = [];
-                        $addParcelaExtorno['parcela_id'] = $parcela->id;
-                        $addParcelaExtorno['hash_extorno'] = $hash_extorno;
-                        $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
-                        $addParcelaExtorno['parcela'] = $parcela->parcela;
-                        $addParcelaExtorno['valor'] = $parcela->valor;
-                        $addParcelaExtorno['saldo'] = $parcela->saldo;
-                        $addParcelaExtorno['venc'] = $parcela->venc;
-                        $addParcelaExtorno['venc_real'] = $parcela->venc_real;
-                        $addParcelaExtorno['dt_baixa'] = $parcela->dt_baixa;
-                        $addParcelaExtorno['identificador'] = $parcela->identificador;
-                        $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
-                        $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
+                        if ($valor_recebido >= $parcela->saldo) {
+                            $parcela->saldo = 0;
+                            $parcela->dt_baixa = $request->dt_baixa;
+                            $parcela->save();
 
-                        ParcelaExtorno::create($addParcelaExtorno);
+                            $addParcelaExtorno = [];
+                            $addParcelaExtorno['parcela_id'] = $parcela->id;
+                            $addParcelaExtorno['hash_extorno'] = $hash_extorno;
+                            $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
+                            $addParcelaExtorno['parcela'] = $parcela->parcela;
+                            $addParcelaExtorno['valor'] = $parcela->valor;
+                            $addParcelaExtorno['saldo'] = $parcela->saldo;
+                            $addParcelaExtorno['venc'] = $parcela->venc;
+                            $addParcelaExtorno['venc_real'] = $parcela->venc_real;
+                            $addParcelaExtorno['dt_baixa'] = $parcela->dt_baixa;
+                            $addParcelaExtorno['identificador'] = $parcela->identificador;
+                            $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
+                            $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
+
+                            ParcelaExtorno::create($addParcelaExtorno);
+
+                            $valor_recebido -= $parcela->saldo;
+                        } else {
+                            $parcela->saldo = $parcela->saldo - $valor_recebido;
+                            $parcela->dt_baixa = $request->dt_baixa;
+                            $parcela->save();
+
+                            $addParcelaExtorno = [];
+                            $addParcelaExtorno['parcela_id'] = $parcela->id;
+                            $addParcelaExtorno['hash_extorno'] = $hash_extorno;
+                            $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
+                            $addParcelaExtorno['parcela'] = $parcela->parcela;
+                            $addParcelaExtorno['valor'] = $parcela->valor;
+                            $addParcelaExtorno['saldo'] = $parcela->saldo;
+                            $addParcelaExtorno['venc'] = $parcela->venc;
+                            $addParcelaExtorno['venc_real'] = $parcela->venc_real;
+                            $addParcelaExtorno['dt_baixa'] = $parcela->dt_baixa;
+                            $addParcelaExtorno['identificador'] = $parcela->identificador;
+                            $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
+                            $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
+
+                            ParcelaExtorno::create($addParcelaExtorno);
+                            $valor_recebido = 0;
+                        }
+
                     }
                 }
-
             }
 
             DB::commit();
