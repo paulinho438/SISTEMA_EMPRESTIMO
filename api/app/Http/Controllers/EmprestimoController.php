@@ -1106,7 +1106,7 @@ class EmprestimoController extends Controller
             $extorno = ParcelaExtorno::where('parcela_id', $id)->first();
 
             if($extorno){
-                $extornos = ParcelaExtorno::where('hash_extorno', $extorno->hash_extorno)->get();
+                $extornos = ParcelaExtorno::where('emprestimo_id', $extorno->emprestimo_id)->get();
 
                 foreach ($extornos as $ext) {
                     $ext->delete();
