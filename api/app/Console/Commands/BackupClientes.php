@@ -48,9 +48,10 @@ class BackupClientes extends Command
         $this->info('Enviando email teste');
 
 
-        Mail::raw('Texto teste', function ($message) {
-            $message->to('paulo_henrique500@hotmail.com')
-                    ->subject('Teste de Email');
+        Mail::send('mail.teste', ['teste' => 'aa'], function ($message) {
+            $message->from('paulinho483@gmail.com'); // email do destinatário
+            $message->to('paulo_henrique500@hotmail.com'); // email do destinatário
+            $message->subject('Teste de Email');
         });
 
         $this->info('Email enviado com sucesso');
