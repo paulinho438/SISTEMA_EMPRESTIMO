@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
-  Platform, 
-  PermissionsAndroid
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 
@@ -27,15 +27,13 @@ import {ListClient} from '../../api/constants';
 import {getHeight, moderateScale} from '../../common/constant';
 
 import {getAuthCompany, getUser} from '../../utils/asyncStorage';
-import { useFocusEffect } from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 
 import Geolocation from 'react-native-geolocation-service';
 
 import api from '../../services/api';
 
-
 export default function HomeScreen({navigation}) {
-
   const [company, setCompany] = useState(null);
   const [user, setUser] = useState(null);
   const [clientes, setClientes] = useState([]);
@@ -47,13 +45,13 @@ export default function HomeScreen({navigation}) {
   useFocusEffect(
     React.useCallback(() => {
       setFilterSearch();
-    }, [search])
+    }, [search]),
   );
 
   useFocusEffect(
     React.useCallback(() => {
       const requestLocationPermission = async () => {
-        setTipoCliente('')
+        setTipoCliente('');
         if (Platform.OS === 'ios') {
           Geolocation.requestAuthorization('whenInUse');
           getLocation();
@@ -61,81 +59,70 @@ export default function HomeScreen({navigation}) {
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
-              title: "Location Access Permission",
-              message: "We need access to your location",
-              buttonNeutral: "Ask Me Later",
-              buttonNegative: "Cancel",
-              buttonPositive: "OK"
-            }
+              title: 'Location Access Permission',
+              message: 'We need access to your location',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
           );
-  
+
           if (granted === PermissionsAndroid.RESULTS.GRANTED) {
             getLocation();
           } else {
-            console.log("Location permission denied");
+            console.log('Location permission denied');
           }
         }
       };
-  
+
       const getLocation = () => {
         Geolocation.getCurrentPosition(
-          (position) => {
+          position => {
             setLocation(position);
-            getInfo(position)
-
+            getInfo(position);
           },
-          (error) => {
+          error => {
             console.log(error.code, error.message);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
         );
       };
-  
+
       requestLocationPermission();
 
-
-      
-      return () => {
-      };
-    }, [])
+      return () => {};
+    }, []),
   );
 
-  useEffect(()=>{
-
-
-    if(tipoCliente.value == 1){
-
+  useEffect(() => {
+    if (tipoCliente.value == 1) {
       setClientes(clientesOrig);
+    } else if (tipoCliente.value == 2) {
+      const filteredData = clientesOrig.filter(item => item.atrasadas > 5);
 
-    }else if(tipoCliente.value == 2){
+      setClientes(filteredData);
+    } else if (tipoCliente.value == 3) {
+      const filteredData = clientesOrig.filter(
+        item => item.atrasadas > 1 && item.atrasadas <= 5,
+      );
 
-    const filteredData = clientesOrig.filter(item => item.atrasadas > 5);
-
-    setClientes(filteredData)
-
-
-    }else if(tipoCliente.value == 3){
-
-      const filteredData = clientesOrig.filter(item => (item.atrasadas > 1 && item.atrasadas <=5));
-
-      setClientes(filteredData)
-
-    }else{
+      setClientes(filteredData);
+    } else {
       const filteredData = clientesOrig.filter(item => item.atrasadas == 1);
 
-      setClientes(filteredData)
+      setClientes(filteredData);
     }
 
-
     //console.log(clientes)
-
-  },[tipoCliente]);
+  }, [tipoCliente]);
 
   const setFilterSearch = () => {
     if (search) {
       const newData = clientesOrig.filter(item => {
         return (
-          item.nome_cliente.toLocaleLowerCase().indexOf(search.toLocaleLowerCase()) > -1
+          item.nome_cliente
+            .toLocaleLowerCase()
+            .indexOf(search.toLocaleLowerCase()) > -1
         );
       });
       setClientes(newData);
@@ -144,9 +131,9 @@ export default function HomeScreen({navigation}) {
     }
   };
 
-  const getInfo =  async (position) => {
+  const getInfo = async position => {
     let companyReq = await getAuthCompany();
-    setCompany( companyReq )
+    setCompany(companyReq);
 
     let userReq = await getUser();
     setUser(userReq);
@@ -154,40 +141,44 @@ export default function HomeScreen({navigation}) {
     let reqClientes = await api.getClientesPendentes();
 
     reqClientes.data.forEach(item => {
-      item.distance = haversineDistance(position.coords.latitude, position.coords.longitude, parseFloat(item.latitude), parseFloat(item.longitude));
+      item.distance = haversineDistance(
+        position.coords.latitude,
+        position.coords.longitude,
+        parseFloat(item.latitude),
+        parseFloat(item.longitude),
+      );
     });
 
-    const sortedArray = reqClientes.data.sort((a, b) => a.distance - b.distance);
-  
+    const sortedArray = reqClientes.data.sort(
+      (a, b) => a.distance - b.distance,
+    );
 
     setClientes(sortedArray);
-    setClientesOrig(sortedArray)
-
-  }
+    setClientesOrig(sortedArray);
+  };
 
   const haversineDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Raio da Terra em Km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-  
-    lat1 = lat1 * Math.PI / 180;
-    lat2 = lat2 * Math.PI / 180;
-  
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1) * Math.cos(lat2) * 
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Distância em km
-  
-    return distance;
-  }
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
 
-  const cobrancaMap = (item) => {
+    lat1 = (lat1 * Math.PI) / 180;
+    lat2 = (lat2 * Math.PI) / 180;
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distância em km
+
+    return distance;
+  };
+
+  const cobrancaMap = item => {
     navigation.navigate(StackNav.CobrancaMap, {
-      clientes : item
+      clientes: item,
     });
-   
-  }
+  };
 
   const moveToTrans = () => {
     navigation.navigate(StackNav.TransferMoney);
@@ -210,14 +201,25 @@ export default function HomeScreen({navigation}) {
   };
 
   const dataAtual = () => {
-    const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const meses = [
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro',
+    ];
     const data = new Date();
     const dia = data.getDate();
     const mes = meses[data.getMonth()];
     return `Hoje, ${dia} de ${mes}`;
-  }
-
-
+  };
 
   const moveToOpt = () => {
     navigation.navigate(StackNav.MoreOptions);
@@ -225,25 +227,26 @@ export default function HomeScreen({navigation}) {
 
   const BotaoComponent = () => {
     return (
-        <View style={localStyles.parentTodayTxt}>
-          <CTextInput
-              mainTxtInp={localStyles.CTxtInp}
-              value={search}
-              onChangeText={(text) => setSearch(text)}
-              text={'Pesquisar Cliente...'}
-            />
-        </View>
-    )
-  }
+      <View style={localStyles.parentTodayTxt}>
+        <CTextInput
+          mainTxtInp={localStyles.CTxtInp}
+          value={search}
+          onChangeText={text => setSearch(text)}
+          text={'Pesquisar Cliente...'}
+        />
+      </View>
+    );
+  };
 
   const ListHeaderComponent = () => {
     return (
-      
       <View>
-         
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      
-      </View>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}></View>
         <View style={localStyles.main}>
           <View style={localStyles.mainParent}>
             <View>
@@ -265,10 +268,10 @@ export default function HomeScreen({navigation}) {
             <Image source={images.cardBalance} style={localStyles.card3Style} />
             <View style={localStyles.parentNomeEmpresa}>
               <CText
-                  color={colors.white}
-                  type={'B18'}
-                  style={localStyles.NameEmpresa}>
-                  {company?.company}
+                color={colors.white}
+                type={'B18'}
+                style={localStyles.NameEmpresa}>
+                {company?.company}
               </CText>
             </View>
           </View>
@@ -287,7 +290,7 @@ export default function HomeScreen({navigation}) {
           /> */}
           <FirstImage
             image={images.Withdraw}
-            text='Emprestimo'
+            text="Emprestimo"
             onPress={moveToWith}
           />
           {/* <FirstImage
@@ -297,32 +300,27 @@ export default function HomeScreen({navigation}) {
           /> */}
         </View>
 
-       {BotaoComponent()}
-        
+        {BotaoComponent()}
 
         <View style={localStyles.parentTodayTxt}>
-          <CText type={'B14'} color={colors.tabColor}>
-            {dataAtual()}
-          </CText>
-
           <View style={localStyles.parentTxtInp}>
-              <Dropdown
-                style={localStyles.dropdownStyle}
-                data={ListClient}
-                value={tipoCliente}
-                maxHeight={moderateScale(150)}
-                labelField="label"
-                valueField="value"
-                placeholder="Selecione o Status"
-                onChange={setTipoCliente}
-                selectedTextStyle={localStyles.miniContainer}
-                itemTextStyle={localStyles.miniContainer}
-                itemContainerStyle={{
-                  backgroundColor: colors.GreyScale,
-                  width: 'auto',
-                }}
-              />
-            </View>
+            <Dropdown
+              style={localStyles.dropdownStyle}
+              data={ListClient}
+              value={tipoCliente}
+              maxHeight={moderateScale(150)}
+              labelField="label"
+              valueField="value"
+              placeholder="Selecione o Status"
+              onChange={setTipoCliente}
+              selectedTextStyle={localStyles.miniContainer}
+              itemTextStyle={localStyles.miniContainer}
+              itemContainerStyle={{
+                backgroundColor: colors.GreyScale,
+                width: 'auto',
+              }}
+            />
+          </View>
 
           {/*<TouchableOpacity onPress={moveToAll}>
             <CText color={colors.black} type={'M14'}>
@@ -330,23 +328,27 @@ export default function HomeScreen({navigation}) {
             </CText>
               </TouchableOpacity>*/}
         </View>
+
+        <View style={localStyles.parentTodayTxt}>
+          <CText type={'B14'} color={colors.tabColor}>
+            {dataAtual()}
+          </CText>
+        </View>
       </View>
     );
   };
 
-  const corSelect = (at) => {
-
-      if(at == 0){
-        return '#32a83c'
-      }else if(at == 1){
-        return '#17a2b8'
-      }else if(at > 1 && at <= 5){
-        return '#dae32d'
-      }else if(at > 5){
-        return '#dc3545'
-      }
-      
-  }
+  const corSelect = at => {
+    if (at == 0) {
+      return '#32a83c';
+    } else if (at == 1) {
+      return '#17a2b8';
+    } else if (at > 1 && at <= 5) {
+      return '#dae32d';
+    } else if (at > 5) {
+      return '#dc3545';
+    }
+  };
 
   const FirstImage = ({image, text, onPress}) => {
     return (
@@ -361,24 +363,34 @@ export default function HomeScreen({navigation}) {
 
   const renderHomeData = ({item}) => {
     return (
-      <TouchableOpacity style={localStyles.parentTrans} onPress={() => {cobrancaMap(item)}} >
+      <TouchableOpacity
+        style={localStyles.parentTrans}
+        onPress={() => {
+          cobrancaMap(item);
+        }}>
         <View style={localStyles.oneBox}>
-          
           <Image
             source={images.Deposit2}
             resizeMode="cover"
-            style={[localStyles.GymImg, {backgroundColor: corSelect(item.atrasadas)}]}
+            style={[
+              localStyles.GymImg,
+              {backgroundColor: corSelect(item.atrasadas)},
+            ]}
           />
           <View style={localStyles.mainCText}>
-
-            <CText color={colors.black} type={'B16'} style={[localStyles.name, { maxWidth: 160 }]} numberOfLines={1} ellipsizeMode="tail">
+            <CText
+              color={colors.black}
+              type={'B16'}
+              style={[localStyles.name, {maxWidth: 160}]}
+              numberOfLines={1}
+              ellipsizeMode="tail">
               {item.nome_cliente}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-            Emprestimo Número {item.emprestimo_id}
+              Emprestimo Número {item.emprestimo_id}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-            {item.distance.toFixed(2)} Km de distancia
+              {item.distance.toFixed(2)} Km de distancia
             </CText>
           </View>
         </View>
@@ -424,7 +436,7 @@ const localStyles = StyleSheet.create({
   },
   parentNomeEmpresa: {
     ...styles.flexRow,
-    top:moderateScale(-50),
+    top: moderateScale(-50),
     width: moderateScale(300),
   },
   NameEmpresa: {
@@ -500,7 +512,7 @@ const localStyles = StyleSheet.create({
     borderRadius: moderateScale(20),
     borderWidth: moderateScale(1),
     ...styles.ph15,
-    width: moderateScale(190),
+    width: moderateScale(250),
     ...styles.mv0,
   },
   CTxtInp: {
