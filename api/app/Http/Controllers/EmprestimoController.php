@@ -135,9 +135,9 @@ class EmprestimoController extends Controller
 
         $parcelas = Parcela::where('dt_baixa', null)
             ->where('venc_real', $today)
-            ->whereHas('emprestimo', function ($query) use ($request) {
-                $query->where('id', $request->header('company-id'));
-            })
+            // ->whereHas('emprestimo', function ($query) use ($request) {
+            //     $query->where('id', $request->header('company-id'));
+            // })
             ->get()
             ->unique('emprestimo_id');
 
