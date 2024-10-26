@@ -1009,30 +1009,49 @@ class EmprestimoController extends Controller
 
             $user = auth()->user();
 
-            $editParcela = Parcela::find($id);
-            $editParcela->saldo = $editParcela->valor;
-            $editParcela->dt_baixa = null;
-            if ($editParcela->contasreceber) {
-                $editParcela->contasreceber->status = 'Aguardando Pagamento';
-                $editParcela->contasreceber->dt_baixa = null;
-                $editParcela->contasreceber->forma_recebto = null;
-                $editParcela->contasreceber->save();
+            $extorno = ParcelaExtorno::where('parcela_id', $id)->get();
+
+            foreach ($extorno as $ext) {
+                $editParcela = Parcela::find($ext->parcela_id);
+                $editParcela->valor = $ext->valor;
+                $editParcela->saldo = $ext->saldo;
+                $editParcela->venc = $ext->venc;
+                $editParcela->venc_real = $ext->venc_real;
+                $editParcela->dt_lancamento = $ext->dt_lancamento;
+                $editParcela->dt_baixa = $ext->dt_baixa;
+                $editParcela->identificador = $ext->identificador;
+                $editParcela->chave_pix = $ext->chave_pix;
+                $editParcela->tentativas = $ext->tentativas;
+                $editParcela->dt_ult_cobranca = $ext->dt_ult_cobranca;
+                $editParcela->save();
+
             }
 
-            $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa - $editParcela->saldo;
-            $editParcela->emprestimo->company->save();
 
-            $editParcela->save();
+            // $editParcela = Parcela::find($id);
+            // $editParcela->saldo = $editParcela->valor;
+            // $editParcela->dt_baixa = null;
+            // if ($editParcela->contasreceber) {
+            //     $editParcela->contasreceber->status = 'Aguardando Pagamento';
+            //     $editParcela->contasreceber->dt_baixa = null;
+            //     $editParcela->contasreceber->forma_recebto = null;
+            //     $editParcela->contasreceber->save();
+            // }
 
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
-            $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-            $movimentacaoFinanceira['descricao'] = 'Cancelamento da Baixa da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
-            $movimentacaoFinanceira['tipomov'] = 'S';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $editParcela->saldo;
+            // $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa - $editParcela->saldo;
+            // $editParcela->emprestimo->company->save();
 
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
+            // $editParcela->save();
+
+            // $movimentacaoFinanceira = [];
+            // $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
+            // $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
+            // $movimentacaoFinanceira['descricao'] = 'Cancelamento da Baixa da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
+            // $movimentacaoFinanceira['tipomov'] = 'S';
+            // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            // $movimentacaoFinanceira['valor'] = $editParcela->saldo;
+
+            // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
 
 
