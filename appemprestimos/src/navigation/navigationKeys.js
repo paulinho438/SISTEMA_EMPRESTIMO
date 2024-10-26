@@ -27,6 +27,7 @@ export const StackNav = {
   ChatScreen: 'CHatScreen',
   ATMDetails: 'ATMDetails',
   CobrancaMap: 'CobrancaMap',
+  BaixaMap: 'BaixaMap',
   ClientMap: 'ClientMap',
   SelectProvider: 'SelectProvider',
   TopUpModal: 'TopUpModal',
