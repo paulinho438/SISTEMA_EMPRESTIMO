@@ -1009,7 +1009,9 @@ class EmprestimoController extends Controller
 
             $user = auth()->user();
 
-            $extorno = ParcelaExtorno::where('parcela_id', $id)->get();
+            $extornoParcela = ParcelaExtorno::where('parcela_id', $id)->get();
+
+            $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
 
             foreach ($extorno as $ext) {
                 $editParcela = Parcela::find($ext->parcela_id);
@@ -1092,19 +1094,6 @@ class EmprestimoController extends Controller
 
             if ($request->valor == $editParcela->saldo) {
 
-                $editParcela->dt_baixa = $request->dt_baixa;
-                if ($editParcela->contasreceber) {
-                    $editParcela->contasreceber->status = 'Pago';
-                    $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
-                    $editParcela->contasreceber->forma_recebto = 'PIX';
-                    $editParcela->contasreceber->save();
-                }
-
-                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $editParcela->saldo;
-                $editParcela->emprestimo->company->save();
-
-                $editParcela->save();
-
                 $addParcelaExtorno = [];
                 $addParcelaExtorno['parcela_id'] = $editParcela->id;
                 $addParcelaExtorno['hash_extorno'] = $hash_extorno;
@@ -1120,6 +1109,21 @@ class EmprestimoController extends Controller
                 $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
 
                 ParcelaExtorno::create($addParcelaExtorno);
+
+                $editParcela->dt_baixa = $request->dt_baixa;
+                if ($editParcela->contasreceber) {
+                    $editParcela->contasreceber->status = 'Pago';
+                    $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
+                    $editParcela->contasreceber->forma_recebto = 'PIX';
+                    $editParcela->contasreceber->save();
+                }
+
+                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $editParcela->saldo;
+                $editParcela->emprestimo->company->save();
+
+                $editParcela->save();
+
+
 
 
 
@@ -1176,18 +1180,6 @@ class EmprestimoController extends Controller
                     'operation' => 'index'
                 ]);
             } else if ($request->valor < $editParcela->saldo) {
-                $editParcela->saldo = $editParcela->saldo - $request->valor;
-                $editParcela->dt_ult_cobranca = $request->dt_baixa;
-                if ($editParcela->contasreceber) {
-                    $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
-                    $editParcela->contasreceber->save();
-                }
-
-                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
-                $editParcela->emprestimo->company->save();
-
-                $editParcela->save();
-
                 $addParcelaExtorno = [];
                 $addParcelaExtorno['parcela_id'] = $editParcela->id;
                 $addParcelaExtorno['hash_extorno'] = $hash_extorno;
@@ -1204,6 +1196,21 @@ class EmprestimoController extends Controller
                 $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
 
                 ParcelaExtorno::create($addParcelaExtorno);
+
+
+                $editParcela->saldo = $editParcela->saldo - $request->valor;
+                $editParcela->dt_ult_cobranca = $request->dt_baixa;
+                if ($editParcela->contasreceber) {
+                    $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
+                    $editParcela->contasreceber->save();
+                }
+
+                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
+                $editParcela->emprestimo->company->save();
+
+                $editParcela->save();
+
+
 
                 if ($editParcela->chave_pix) {
                     $gerarPix = self::gerarPix(
@@ -1288,12 +1295,34 @@ class EmprestimoController extends Controller
                     if ($valor_recebido > 0) {
 
                         if ($valor_recebido >= $parcela->saldo) {
+
+                            $addParcelaExtorno = [];
+                            $addParcelaExtorno['parcela_id'] = $parcela->id;
+                            $addParcelaExtorno['hash_extorno'] = $hash_extorno;
+                            $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
+                            $addParcelaExtorno['parcela'] = $parcela->parcela;
+                            $addParcelaExtorno['valor'] = $parcela->valor;
+                            $addParcelaExtorno['saldo'] = $parcela->saldo;
+                            $addParcelaExtorno['venc'] = $parcela->venc;
+                            $addParcelaExtorno['venc_real'] = $parcela->venc_real;
+                            $addParcelaExtorno['dt_baixa'] = $parcela->dt_baixa;
+                            $addParcelaExtorno['identificador'] = $parcela->identificador;
+                            $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
+                            $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
+
+                            ParcelaExtorno::create($addParcelaExtorno);
+
                             $valor_recebido -= $parcela->saldo;
 
                             $parcela->saldo = 0;
                             $parcela->dt_baixa = $request->dt_baixa;
                             $parcela->save();
 
+
+
+
+                        } else {
+
                             $addParcelaExtorno = [];
                             $addParcelaExtorno['parcela_id'] = $parcela->id;
                             $addParcelaExtorno['hash_extorno'] = $hash_extorno;
@@ -1311,27 +1340,12 @@ class EmprestimoController extends Controller
                             ParcelaExtorno::create($addParcelaExtorno);
 
 
-                        } else {
                             $parcela->saldo = $parcela->saldo - $valor_recebido;
                             $parcela->save();
 
                             $valor_recebido = 0;
 
-                            $addParcelaExtorno = [];
-                            $addParcelaExtorno['parcela_id'] = $parcela->id;
-                            $addParcelaExtorno['hash_extorno'] = $hash_extorno;
-                            $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
-                            $addParcelaExtorno['parcela'] = $parcela->parcela;
-                            $addParcelaExtorno['valor'] = $parcela->valor;
-                            $addParcelaExtorno['saldo'] = $parcela->saldo;
-                            $addParcelaExtorno['venc'] = $parcela->venc;
-                            $addParcelaExtorno['venc_real'] = $parcela->venc_real;
-                            $addParcelaExtorno['dt_baixa'] = $parcela->dt_baixa;
-                            $addParcelaExtorno['identificador'] = $parcela->identificador;
-                            $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
-                            $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
 
-                            ParcelaExtorno::create($addParcelaExtorno);
 
                         }
 
