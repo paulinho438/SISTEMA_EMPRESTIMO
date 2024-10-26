@@ -1117,7 +1117,6 @@ class EmprestimoController extends Controller
                 $addParcelaExtorno['dt_baixa'] = $editParcela->dt_baixa;
                 $addParcelaExtorno['identificador'] = $editParcela->identificador;
                 $addParcelaExtorno['chave_pix'] = $editParcela->chave_pix;
-                $addParcelaExtorno['tentativas'] = $editParcela->tentativas;
                 $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
 
                 ParcelaExtorno::create($addParcelaExtorno);
@@ -1311,7 +1310,6 @@ class EmprestimoController extends Controller
                         $addParcelaExtorno['dt_baixa'] = $parcelaAtual->dt_baixa;
                         $addParcelaExtorno['identificador'] = $parcelaAtual->identificador;
                         $addParcelaExtorno['chave_pix'] = $parcelaAtual->chave_pix;
-                        $addParcelaExtorno['tentativas'] = $parcelaAtual->tentativas;
                         $addParcelaExtorno['dt_ult_cobranca'] = $parcelaAtual->dt_ult_cobranca;
 
                         ParcelaExtorno::create($addParcelaExtorno);
@@ -1339,7 +1337,6 @@ class EmprestimoController extends Controller
                         $addParcelaExtorno['dt_baixa'] = $parcelaAtual->dt_baixa;
                         $addParcelaExtorno['identificador'] = $parcelaAtual->identificador;
                         $addParcelaExtorno['chave_pix'] = $parcelaAtual->chave_pix;
-                        $addParcelaExtorno['tentativas'] = $parcelaAtual->tentativas;
                         $addParcelaExtorno['dt_ult_cobranca'] = $parcelaAtual->dt_ult_cobranca;
 
                         ParcelaExtorno::create($addParcelaExtorno);
