@@ -1118,6 +1118,7 @@ class EmprestimoController extends Controller
 
                 $addParcelaExtorno = [];
                 $addParcelaExtorno['parcela_id'] = $editParcela->id;
+                $addParcelaExtorno['emprestimo_id'] = $editParcela->emprestimo_id;
                 $addParcelaExtorno['hash_extorno'] = $hash_extorno;
                 $addParcelaExtorno['dt_lancamento'] = $editParcela->dt_lancamento;
                 $addParcelaExtorno['parcela'] = $editParcela->parcela;
