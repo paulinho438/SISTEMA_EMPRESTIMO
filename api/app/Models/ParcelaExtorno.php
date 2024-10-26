@@ -14,6 +14,7 @@ class ParcelaExtorno extends Model
     protected $fillable = [
         'parcela_id',
         'hash_extorno',
+        'emprestimo_id',
         'parcela',
         'valor',
         'saldo',
