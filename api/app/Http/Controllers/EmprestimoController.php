@@ -1009,8 +1009,18 @@ class EmprestimoController extends Controller
 
             $user = auth()->user();
 
-            $extornoParcela = ParcelaExtorno::where('parcela_id', $id)->get();
+            // Obter a primeira parcela de extorno correspondente ao ID fornecido
+            $extornoParcela = ParcelaExtorno::where('parcela_id', $id)->first();
 
+            // Verificar se a parcela de extorno foi encontrada
+            if (!$extornoParcela) {
+                return response()->json([
+                    "message" => "Erro ao editar o Emprestimo.",
+                    "error" => 'Parcela de extorno não encontrada.'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Obter todas as parcelas de extorno com o mesmo hash_extorno
             $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
 
             var_dump($extorno);
@@ -1032,7 +1042,6 @@ class EmprestimoController extends Controller
                 $editParcela->tentativas = $ext->tentativas;
                 $editParcela->dt_ult_cobranca = $ext->dt_ult_cobranca;
                 $editParcela->save();
-
             }
 
 
@@ -1323,10 +1332,6 @@ class EmprestimoController extends Controller
                             $parcela->saldo = 0;
                             $parcela->dt_baixa = $request->dt_baixa;
                             $parcela->save();
-
-
-
-
                         } else {
 
                             $addParcelaExtorno = [];
@@ -1350,11 +1355,7 @@ class EmprestimoController extends Controller
                             $parcela->save();
 
                             $valor_recebido = 0;
-
-
-
                         }
-
                     }
                 }
             }
