@@ -1194,6 +1194,7 @@ class EmprestimoController extends Controller
             } else if ($request->valor < $editParcela->saldo) {
                 $addParcelaExtorno = [];
                 $addParcelaExtorno['parcela_id'] = $editParcela->id;
+                $addParcelaExtorno['emprestimo_id'] = $editParcela->emprestimo_id;
                 $addParcelaExtorno['hash_extorno'] = $hash_extorno;
                 $addParcelaExtorno['dt_lancamento'] = $editParcela->dt_lancamento;
                 $addParcelaExtorno['parcela'] = $editParcela->parcela;
@@ -1310,6 +1311,7 @@ class EmprestimoController extends Controller
 
                             $addParcelaExtorno = [];
                             $addParcelaExtorno['parcela_id'] = $parcela->id;
+                            $addParcelaExtorno['emprestimo_id'] = $parcela->emprestimo_id;
                             $addParcelaExtorno['hash_extorno'] = $hash_extorno;
                             $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
                             $addParcelaExtorno['parcela'] = $parcela->parcela;
@@ -1333,6 +1335,7 @@ class EmprestimoController extends Controller
 
                             $addParcelaExtorno = [];
                             $addParcelaExtorno['parcela_id'] = $parcela->id;
+                            $addParcelaExtorno['emprestimo_id'] = $parcela->emprestimo_id;
                             $addParcelaExtorno['hash_extorno'] = $hash_extorno;
                             $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
                             $addParcelaExtorno['parcela'] = $parcela->parcela;
