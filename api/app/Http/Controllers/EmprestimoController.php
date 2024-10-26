@@ -1011,11 +1011,11 @@ class EmprestimoController extends Controller
 
             $extornoParcela = ParcelaExtorno::where('parcela_id', $id)->get();
 
-            var_dump($extornoParcela);
+            $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
+
+            var_dump($extorno);
 
             die();
-
-            $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
 
 
 
