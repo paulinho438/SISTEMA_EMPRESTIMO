@@ -180,6 +180,12 @@ export default function HomeScreen({navigation}) {
     });
   };
 
+  const baixaMap = item => {
+    navigation.navigate(StackNav.BaixaMap, {
+      clientes: clientes[0],
+    });
+  };
+
   const moveToTrans = () => {
     navigation.navigate(StackNav.TransferMoney);
   };
@@ -283,15 +289,15 @@ export default function HomeScreen({navigation}) {
             text='Clientes'
             onPress={moveToDeposit}
           /> */}
-          {/* <FirstImage
-            image={images.Transfer}
-            text='Pendentes'
-            onPress={moveToTrans}
-          /> */}
           <FirstImage
             image={images.Withdraw}
             text="Emprestimo"
             onPress={moveToWith}
+          />
+          <FirstImage
+            image={images.Transfer}
+            text='Baixas'
+            onPress={baixaMap}
           />
           {/* <FirstImage
             image={images.More}

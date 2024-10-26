@@ -127,6 +127,20 @@ class EmprestimoController extends Controller
         return $parcelasVencidas;
     }
 
+    public function parcelasPendentesParaHoje()
+    {
+        $parcelas = collect();
+
+        $today = Carbon::today()->toDateString();
+
+        $parcelas = Parcela::where('dt_baixa', null)
+            ->where('venc_real', $today)
+            ->get()
+            ->unique('emprestimo_id');
+
+        return $parcelas;
+    }
+
 
     public function feriados(Request $request)
     {
@@ -1105,7 +1119,7 @@ class EmprestimoController extends Controller
 
             $extorno = ParcelaExtorno::where('parcela_id', $id)->first();
 
-            if($extorno){
+            if ($extorno) {
                 $extornos = ParcelaExtorno::where('emprestimo_id', $extorno->emprestimo_id)->get();
 
                 foreach ($extornos as $ext) {

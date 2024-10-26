@@ -150,6 +150,11 @@ const StackNavigation = () => {
         component={StackRoute.CobrancaMap}
         options={{headerShown: false}}
       />
+       <Stack.Screen
+        name={StackNav.BaixaMap}
+        component={StackRoute.BaixaMap}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name={StackNav.ClientMap}
         component={StackRoute.ClientMap}
