@@ -23,7 +23,6 @@ class ParcelaExtorno extends Model
         'dt_baixa',
         'identificador',
         'chave_pix',
-        'tentativas',
         'dt_ult_cobranca'
     ];
 
