@@ -1037,6 +1037,10 @@ class EmprestimoController extends Controller
                 $editParcela->save();
             }
 
+            foreach ($extorno as $ext) {
+                $ext->delete();
+            }
+
 
             // $editParcela = Parcela::find($id);
             // $editParcela->saldo = $editParcela->valor;
