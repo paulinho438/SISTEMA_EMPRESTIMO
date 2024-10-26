@@ -1068,6 +1068,9 @@ class EmprestimoController extends Controller
 
             $editParcela = Parcela::find($id);
 
+            $valor_recebido = $request->valor;
+
+
             if ($request->valor == $editParcela->saldo) {
 
                 $editParcela->dt_baixa = $request->dt_baixa;
@@ -1258,7 +1261,6 @@ class EmprestimoController extends Controller
                     'operation' => 'index'
                 ]);
             } else {
-                $valor_recebido = $request->valor;
 
                 $parcelas = Parcela::where('emprestimo_id', $editParcela->emprestimo_id)->where('dt_baixa', null)->get();
 
@@ -1308,6 +1310,7 @@ class EmprestimoController extends Controller
                             $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
 
                             ParcelaExtorno::create($addParcelaExtorno);
+
                             $valor_recebido = 0;
                         }
 
