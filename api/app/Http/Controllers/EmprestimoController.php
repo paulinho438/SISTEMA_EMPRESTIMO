@@ -1103,6 +1103,18 @@ class EmprestimoController extends Controller
 
             $valor_recebido = $request->valor;
 
+            $extorno = ParcelaExtorno::where('parcela_id', $id)->first();
+
+            $extornos = ParcelaExtorno::where('hash_extorno', $extorno->hash_extorno)->get();
+
+            foreach ($extornos as $ext) {
+                $ext->delete();
+            }
+
+
+
+
+
 
             if ($request->valor == $editParcela->saldo) {
 
