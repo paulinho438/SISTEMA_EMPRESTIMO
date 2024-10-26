@@ -125,7 +125,6 @@ class EmprestimoController extends Controller
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
 
         return $parcelasVencidas;
-
     }
 
 
@@ -223,7 +222,6 @@ class EmprestimoController extends Controller
                 'error_description' => null,
                 'responde' => $response
             ];
-
         } catch (EfiException $e) {
             return [
                 'error_code' => $e->code,
@@ -233,7 +231,6 @@ class EmprestimoController extends Controller
         } catch (Exception $e) {
             print_r($e->getMessage());
         }
-
     }
 
     public function insert(Request $request)
@@ -287,7 +284,6 @@ class EmprestimoController extends Controller
 
             $emprestimoAdd->banco->saldo = $emprestimoAdd->banco->saldo - $dados['valor'];
             $emprestimoAdd->banco->save();
-
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -366,7 +362,6 @@ class EmprestimoController extends Controller
                             $qrcode = $api->pixGenerateQRCode($params);
 
                             $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
-
                         } catch (EfiException $e) {
 
                             $this->custom_log->create([
@@ -405,7 +400,6 @@ class EmprestimoController extends Controller
                         'operation' => 'error'
                     ]);
                 }
-
             }
 
             $parcela = Parcela::create($addParcela);
@@ -424,7 +418,6 @@ class EmprestimoController extends Controller
                 $contasreceber['valor'] = $parcela->valor;
 
                 Contasreceber::create($contasreceber);
-
             }
         }
 
@@ -493,7 +486,6 @@ class EmprestimoController extends Controller
                         $qrcode = $api->pixGenerateQRCode($params);
 
                         $quitacao['chave_pix'] = $qrcode['linkVisualizacao'];
-
                     } catch (EfiException $e) {
 
                         $this->custom_log->create([
@@ -534,7 +526,6 @@ class EmprestimoController extends Controller
             }
 
             Quitacao::create($quitacao);
-
         }
 
         if ($dados['banco']['efibank'] == 1 && count($dados['parcelas']) == 1) {
@@ -546,76 +537,75 @@ class EmprestimoController extends Controller
             $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
             $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
             $options = [
-            'clientId' => $dados['banco']['clienteid'],
-            'clientSecret' => $dados['banco']['clientesecret'],
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
+                'clientId' => $dados['banco']['clienteid'],
+                'clientSecret' => $dados['banco']['clientesecret'],
+                'certificate' => $caminhoAbsoluto,
+                'sandbox' => false,
+                "debug" => false,
+                'timeout' => 60,
             ];
 
             $params = [
-            "txid" => Str::random(32)
+                "txid" => Str::random(32)
             ];
 
             $body = [
-            "calendario" => [
-                "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
-                "validadeAposVencimento" => 10
-            ],
-            "devedor" => [
-                "nome" => $dados['cliente']['nome_completo'],
-                "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-            ],
-            "valor" => [
-                "original" => number_format(str_replace(',', '', ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])), 2, '.', ''),
+                "calendario" => [
+                    "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
+                    "validadeAposVencimento" => 10
+                ],
+                "devedor" => [
+                    "nome" => $dados['cliente']['nome_completo'],
+                    "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+                ],
+                "valor" => [
+                    "original" => number_format(str_replace(',', '', ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])), 2, '.', ''),
 
-            ],
-            "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-            "solicitacaoPagador" => "Quitação do Emprestimo ",
-            "infoAdicionais" => [
-                [
-                "nome" => "Emprestimo",
-                "valor" => "R$ " . $emprestimoAdd->valor,
+                ],
+                "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
+                "solicitacaoPagador" => "Quitação do Emprestimo ",
+                "infoAdicionais" => [
+                    [
+                        "nome" => "Emprestimo",
+                        "valor" => "R$ " . $emprestimoAdd->valor,
+                    ]
                 ]
-            ]
             ];
 
             try {
-            $api = new EfiPay($options);
-            $pix = $api->pixCreateDueCharge($params, $body);
+                $api = new EfiPay($options);
+                $pix = $api->pixCreateDueCharge($params, $body);
 
-            if ($pix["txid"]) {
-                $params = [
-                "id" => $pix["loc"]["id"]
-                ];
+                if ($pix["txid"]) {
+                    $params = [
+                        "id" => $pix["loc"]["id"]
+                    ];
 
-                $pagamentoMinimo['identificador'] = $pix["loc"]["id"];
+                    $pagamentoMinimo['identificador'] = $pix["loc"]["id"];
 
 
-                try {
-                $qrcode = $api->pixGenerateQRCode($params);
+                    try {
+                        $qrcode = $api->pixGenerateQRCode($params);
 
-                $pagamentoMinimo['chave_pix'] = $qrcode['linkVisualizacao'];
+                        $pagamentoMinimo['chave_pix'] = $qrcode['linkVisualizacao'];
+                    } catch (EfiException $e) {
 
-                } catch (EfiException $e) {
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                            'operation' => 'error'
+                        ]);
 
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                    'operation' => 'error'
-                ]);
-
-                print_r($e->code . "<br>");
-                print_r($e->error . "<br>");
-                print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => $e->getMessage(),
-                    'operation' => 'error'
-                ]);
-                }
+                        print_r($e->code . "<br>");
+                        print_r($e->error . "<br>");
+                        print_r($e->errorDescription) . "<br>";
+                    } catch (Exception $e) {
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => $e->getMessage(),
+                            'operation' => 'error'
+                        ]);
+                    }
                 } else {
                     $this->custom_log->create([
                         'user_id' => auth()->user()->id,
@@ -638,7 +628,6 @@ class EmprestimoController extends Controller
             }
 
             PagamentoMinimo::create($pagamentoMinimo);
-
         }
 
 
@@ -697,8 +686,6 @@ class EmprestimoController extends Controller
             $movimentacaoFinanceira['valor'] = $dados['valor'];
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -774,7 +761,6 @@ class EmprestimoController extends Controller
                         $qrcode = $api->pixGenerateQRCode($params);
 
                         $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
-
                     } catch (EfiException $e) {
 
                         $this->custom_log->create([
@@ -831,7 +817,6 @@ class EmprestimoController extends Controller
                 $contasreceber['valor'] = $parcela->valor;
 
                 Contasreceber::create($contasreceber);
-
             }
         }
 
@@ -856,7 +841,6 @@ class EmprestimoController extends Controller
                 "message" => "Sem permissão para efetuar o pagamento.",
                 "error" => ""
             ], Response::HTTP_FORBIDDEN);
-
         }
 
         DB::beginTransaction();
@@ -897,7 +881,6 @@ class EmprestimoController extends Controller
             DB::commit();
 
             return $array;
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -922,7 +905,6 @@ class EmprestimoController extends Controller
                 "message" => "Sem permissão para reprovar o pagamento.",
                 "error" => ""
             ], Response::HTTP_FORBIDDEN);
-
         }
 
         DB::beginTransaction();
@@ -950,7 +932,6 @@ class EmprestimoController extends Controller
             DB::commit();
 
             return $array;
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -999,7 +980,6 @@ class EmprestimoController extends Controller
                 $EditEmprestimo->user_id = $dados['user_id'];
 
                 $EditEmprestimo->save();
-
             } else {
                 $array['error'] = $validator->errors()->first();
                 return $array;
@@ -1008,7 +988,6 @@ class EmprestimoController extends Controller
             DB::commit();
 
             return $array;
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1066,7 +1045,6 @@ class EmprestimoController extends Controller
             ]);
 
             return response()->json(['message' => 'Baixa cancelada com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1153,7 +1131,6 @@ class EmprestimoController extends Controller
                     $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
 
                     $editParcela->emprestimo->quitacao->save();
-
                 }
 
                 $movimentacaoFinanceira = [];
@@ -1176,7 +1153,7 @@ class EmprestimoController extends Controller
                     'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa manual da parcela: ' . $id,
                     'operation' => 'index'
                 ]);
-            } else if($request->valor < $editParcela->saldo){
+            } else if ($request->valor < $editParcela->saldo) {
                 $editParcela->saldo = $editParcela->saldo - $request->valor;
                 $editParcela->dt_ult_cobranca = $request->dt_baixa;
                 if ($editParcela->contasreceber) {
@@ -1230,7 +1207,6 @@ class EmprestimoController extends Controller
                     $editParcela->identificador = $gerarPix['identificador'];
                     $editParcela->chave_pix = $gerarPix['chave_pix'];
                     $editParcela->save();
-
                 }
 
                 if ($editParcela->emprestimo->quitacao->chave_pix) {
@@ -1263,7 +1239,6 @@ class EmprestimoController extends Controller
                     $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
 
                     $editParcela->emprestimo->quitacao->save();
-
                 }
 
                 $movimentacaoFinanceira = [];
@@ -1282,186 +1257,42 @@ class EmprestimoController extends Controller
                     'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa parcial da parcela: ' . $id,
                     'operation' => 'index'
                 ]);
-
-            }else{
+            } else {
                 $valor_recebido = $request->valor;
 
                 $parcelas = Parcela::where('emprestimo_id', $editParcela->emprestimo_id)->where('dt_baixa', null)->get();
 
-                while ($valor_recebido > 0 && $parcelas->isNotEmpty()) {
-                    $parcelaAtual = $parcelas->shift();
-                    $saldoParcela = $parcelaAtual->saldo;
+                foreach ($parcelas as $parcela) {
 
-                    if ($valor_recebido >= $saldoParcela) {
-                        $valor_recebido -= $saldoParcela;
-                        $parcelaAtual->saldo = 0;
-                        $parcelaAtual->dt_baixa = $request->dt_baixa;
-                        $parcelaAtual->save();
+                    if ($valor_recebido > 0) {
+                        $valor_recebido -= $parcela->saldo;
+                        $parcela->saldo = 0;
+                        $parcela->dt_baixa = $request->dt_baixa;
+                        $parcela->save();
 
                         $addParcelaExtorno = [];
-                        $addParcelaExtorno['parcela_id'] = $parcelaAtual->id;
+                        $addParcelaExtorno['parcela_id'] = $parcela->id;
                         $addParcelaExtorno['hash_extorno'] = $hash_extorno;
-                        $addParcelaExtorno['dt_lancamento'] = $parcelaAtual->dt_lancamento;
-                        $addParcelaExtorno['parcela'] = $parcelaAtual->parcela;
-                        $addParcelaExtorno['valor'] = $parcelaAtual->valor;
-                        $addParcelaExtorno['saldo'] = $parcelaAtual->saldo;
-                        $addParcelaExtorno['venc'] = $parcelaAtual->venc;
-                        $addParcelaExtorno['venc_real'] = $parcelaAtual->venc_real;
-                        $addParcelaExtorno['dt_baixa'] = $parcelaAtual->dt_baixa;
-                        $addParcelaExtorno['identificador'] = $parcelaAtual->identificador;
-                        $addParcelaExtorno['chave_pix'] = $parcelaAtual->chave_pix;
-                        $addParcelaExtorno['dt_ult_cobranca'] = $parcelaAtual->dt_ult_cobranca;
+                        $addParcelaExtorno['dt_lancamento'] = $parcela->dt_lancamento;
+                        $addParcelaExtorno['parcela'] = $parcela->parcela;
+                        $addParcelaExtorno['valor'] = $parcela->valor;
+                        $addParcelaExtorno['saldo'] = $parcela->saldo;
+                        $addParcelaExtorno['venc'] = $parcela->venc;
+                        $addParcelaExtorno['venc_real'] = $parcela->venc_real;
+                        $addParcelaExtorno['dt_baixa'] = $parcela->dt_baixa;
+                        $addParcelaExtorno['identificador'] = $parcela->identificador;
+                        $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
+                        $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
 
                         ParcelaExtorno::create($addParcelaExtorno);
-
-                        if ($parcelaAtual->contasreceber) {
-                            $parcelaAtual->contasreceber->status = 'Pago';
-                            $parcelaAtual->contasreceber->dt_baixa = $request->dt_baixa;
-                            $parcelaAtual->contasreceber->forma_recebto = 'PIX';
-                            $parcelaAtual->contasreceber->save();
-                        }
-                    } else {
-                        $parcelaAtual->saldo -= $valor_recebido;
-                        $parcelaAtual->dt_ult_cobranca = $request->dt_baixa;
-                        $parcelaAtual->save();
-
-                        $addParcelaExtorno = [];
-                        $addParcelaExtorno['parcela_id'] = $parcelaAtual->id;
-                        $addParcelaExtorno['hash_extorno'] = $hash_extorno;
-                        $addParcelaExtorno['dt_lancamento'] = $parcelaAtual->dt_lancamento;
-                        $addParcelaExtorno['parcela'] = $parcelaAtual->parcela;
-                        $addParcelaExtorno['valor'] = $parcelaAtual->valor;
-                        $addParcelaExtorno['saldo'] = $parcelaAtual->saldo;
-                        $addParcelaExtorno['venc'] = $parcelaAtual->venc;
-                        $addParcelaExtorno['venc_real'] = $parcelaAtual->venc_real;
-                        $addParcelaExtorno['dt_baixa'] = $parcelaAtual->dt_baixa;
-                        $addParcelaExtorno['identificador'] = $parcelaAtual->identificador;
-                        $addParcelaExtorno['chave_pix'] = $parcelaAtual->chave_pix;
-                        $addParcelaExtorno['dt_ult_cobranca'] = $parcelaAtual->dt_ult_cobranca;
-
-                        ParcelaExtorno::create($addParcelaExtorno);
-
-                        if ($parcelaAtual->contasreceber) {
-                            $parcelaAtual->contasreceber->valor -= $valor_recebido;
-                            $parcelaAtual->contasreceber->save();
-                        }
-
-                        $valor_recebido = 0;
                     }
                 }
 
-
-                $editParcela->saldo = $editParcela->saldo - $request->valor;
-                $editParcela->dt_ult_cobranca = $request->dt_baixa;
-                if ($editParcela->contasreceber) {
-                    $editParcela->contasreceber->valor = $editParcela->contasreceber->valor - $request->valor;
-                    $editParcela->contasreceber->save();
-                }
-
-                $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
-                $editParcela->emprestimo->company->save();
-
-                $editParcela->save();
-
-                $addParcelaExtorno = [];
-                $addParcelaExtorno['parcela_id'] = $editParcela->id;
-                $addParcelaExtorno['hash_extorno'] = $hash_extorno;
-                $addParcelaExtorno['dt_lancamento'] = $editParcela->dt_lancamento;
-                $addParcelaExtorno['parcela'] = $editParcela->parcela;
-                $addParcelaExtorno['valor'] = $editParcela->valor;
-                $addParcelaExtorno['saldo'] = $editParcela->saldo;
-                $addParcelaExtorno['venc'] = $editParcela->venc;
-                $addParcelaExtorno['venc_real'] = $editParcela->venc_real;
-                $addParcelaExtorno['dt_baixa'] = $editParcela->dt_baixa;
-                $addParcelaExtorno['identificador'] = $editParcela->identificador;
-                $addParcelaExtorno['chave_pix'] = $editParcela->chave_pix;
-                $addParcelaExtorno['tentativas'] = $editParcela->tentativas;
-                $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
-
-                ParcelaExtorno::create($addParcelaExtorno);
-
-                if ($editParcela->chave_pix) {
-                    $gerarPix = self::gerarPix(
-                        [
-                            'banco' => [
-                                'client_id' => $editParcela->emprestimo->banco->clienteid,
-                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
-                                'certificado' => $editParcela->emprestimo->banco->certificado,
-                                'chave' => $editParcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $editParcela->parcela,
-                                'valor' => $editParcela->saldo,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
-                                'cpf' => $editParcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
-
-                    $editParcela->identificador = $gerarPix['identificador'];
-                    $editParcela->chave_pix = $gerarPix['chave_pix'];
-                    $editParcela->save();
-
-                }
-
-                if ($editParcela->emprestimo->quitacao->chave_pix) {
-
-                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $request->valor;
-                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $request->valor;
-                    $editParcela->emprestimo->quitacao->save();
-
-                    $gerarPixQuitacao = self::gerarPixQuitacao(
-                        [
-                            'banco' => [
-                                'client_id' => $editParcela->emprestimo->banco->clienteid,
-                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
-                                'certificado' => $editParcela->emprestimo->banco->certificado,
-                                'chave' => $editParcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $editParcela->parcela,
-                                'valor' => $editParcela->emprestimo->quitacao->saldo,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
-                                'cpf' => $editParcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
-
-                    $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
-                    $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
-
-                    $editParcela->emprestimo->quitacao->save();
-
-                }
-
-                $movimentacaoFinanceira = [];
-                $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
-                $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Baixa parcial da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
-                $movimentacaoFinanceira['tipomov'] = 'E';
-                $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
-                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                $movimentacaoFinanceira['valor'] = $request->valor;
-
-                Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa parcial da parcela: ' . $id,
-                    'operation' => 'index'
-                ]);
             }
 
             DB::commit();
 
             return response()->json(['message' => 'Baixa realizada com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1500,9 +1331,6 @@ class EmprestimoController extends Controller
                             $parcela->contasreceber->save();
                         }
                     }
-
-
-
                 }
 
                 $movimentacaoFinanceira = [];
@@ -1517,13 +1345,11 @@ class EmprestimoController extends Controller
 
                 $emprestimo->company->caixa = $emprestimo->company->caixa + $request->valor;
                 $emprestimo->company->save();
-
             }
 
             DB::commit();
 
             return response()->json(['message' => 'Baixa realizada com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1562,9 +1388,6 @@ class EmprestimoController extends Controller
                             $parcela->contasreceber->save();
                         }
                     }
-
-
-
                 }
 
                 $movimentacaoFinanceira = [];
@@ -1576,14 +1399,11 @@ class EmprestimoController extends Controller
                 $movimentacaoFinanceira['valor'] = $request->saldo;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-
             }
 
             DB::commit();
 
             return response()->json(['message' => 'Refinanciamento realizado com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1625,7 +1445,6 @@ class EmprestimoController extends Controller
             DB::commit();
 
             return response()->json(['message' => 'Baixa realizada com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1651,8 +1470,6 @@ class EmprestimoController extends Controller
 
 
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
-
-
     }
 
 
@@ -1674,8 +1491,6 @@ class EmprestimoController extends Controller
 
 
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
-
-
     }
 
     public function cobrarAmanha(Request $request, $id)
@@ -1701,7 +1516,6 @@ class EmprestimoController extends Controller
             ]);
 
             return response()->json(['message' => 'Cobrança atualizada com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1743,7 +1557,6 @@ class EmprestimoController extends Controller
             ]);
 
             return response()->json(['message' => 'Emprestimo excluída com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -1821,7 +1634,6 @@ class EmprestimoController extends Controller
                     $return['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     return $return;
-
                 } catch (EfiException $e) {
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
@@ -1907,7 +1719,6 @@ class EmprestimoController extends Controller
                     $return['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     return $return;
-
                 } catch (EfiException $e) {
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
@@ -1926,6 +1737,4 @@ class EmprestimoController extends Controller
             print_r($e->getMessage());
         }
     }
-
-
 }
