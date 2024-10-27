@@ -182,13 +182,13 @@ export default function ParcelasPendentesHoje(props) {
               <>
                 <View style={styles2.container}>
                   <Text style={styles2.title}>
-                    Empréstimo N°{item.emprestimo_id}
+                    Empréstimo N°{item.id}
                   </Text>
                   <Text style={styles2.subTitle}>
-                    {item.nome_cliente} - CPF: {item.cpf}
+                    {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.saldo}
+                    Valor da Parcela R$ {item.parcelas_vencidas[0].saldo}
                   </Text>
                   {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
@@ -202,10 +202,13 @@ export default function ParcelasPendentesHoje(props) {
                     </TouchableOpacity> */}
 
                     <TouchableOpacity
-                      onPress={() => onPressClose(item)}
+                      onPress={() => onPressClose(item.parcelas_vencidas[0])}
                       style={styles2.actionButton}>
                       <Text style={styles2.buttonText}>Efetuar Baixa</Text>
                     </TouchableOpacity>
+                    <Text style={styles2.valorHoje}>
+                      Valor Hoje R$ {item.saldoatrasado}
+                    </Text>
                   </View>
                 </View>
               </>
@@ -289,6 +292,11 @@ const styles2 = StyleSheet.create({
   buttonText: {
     fontSize: 14,
   },
+  valorHoje: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 15,
+  }
 });
 
 const localStyles = StyleSheet.create({
