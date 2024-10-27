@@ -24,6 +24,7 @@ import CButton from '../../../components/common/CButton';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import Location from '../../../components/modals/Location';
 import ParcelasPendentesHoje from '../../../components/modals/ParcelasPendentesHoje';
+import ParcelasExtorno from '../../../components/modals/ParcelasExtorno';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../../services/api';
 
@@ -36,12 +37,14 @@ export default function ATMDetails({navigation, route}) {
   const [parcelas, setParcelas] = useState([]);
 
   const [parcelasPendentes, setParcelasPendentes] = useState([]);
+  const [parcelasExtorno, setParcelasParaExtorno] = useState([]);
 
 
   useFocusEffect(
     React.useCallback(() => {
       getInfo();
       getPendentesParaHoje();
+      getParcelasParaExtorno();
     }, [])
   );
 
@@ -54,9 +57,14 @@ export default function ATMDetails({navigation, route}) {
 
   const Search = useRef(null);
   const Info = useRef(null);
+  const Extorno = useRef(null);
 
   const moveToInfoModel = () => {
     Info.current.show();
+  };
+
+  const moveToExtornoModel = () => {
+    Extorno.current.show();
   };
 
   const onPress = () => {
@@ -76,6 +84,14 @@ export default function ATMDetails({navigation, route}) {
     setParcelasPendentes(req.data);
 
   }
+
+  const getParcelasParaExtorno = async () => {
+    let req = await api.parcelasParaExtorno();
+    setParcelasParaExtorno(req);
+
+  }
+
+  
 
   const cobrarAmanha = async () => {
     let req = await api.cobrarAmanha(clientes.id, obterDataAtual());
@@ -215,7 +231,7 @@ export default function ATMDetails({navigation, route}) {
             /> */}
 
             <CButton
-              onPress={cobrarAmanha}
+              onPress={moveToExtornoModel}
               text={'Baixas Efetuadas'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
@@ -263,8 +279,12 @@ export default function ATMDetails({navigation, route}) {
           />
         </View> */}
 
-        <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
+        {/* <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} /> */}
         <ParcelasPendentesHoje sheetRef={Info} parcelas={parcelas} clientes={clientes} parcelasPendentes={parcelasPendentes}  onAtualizarClientes={getPendentesParaHoje} />
+
+        <ParcelasExtorno sheetRef={Extorno} parcelas={parcelas} clientes={clientes} parcelasExtorno={parcelasExtorno}  onAtualizarClientes={getPendentesParaHoje} />
+
+        
       </SafeAreaView>
     </KeyBoardAvoidWrapper> 
   );
