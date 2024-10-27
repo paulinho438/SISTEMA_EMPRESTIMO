@@ -34,6 +34,7 @@ class ParcelaResource extends JsonResource
             "identificador" => $this->identificador,
             "chave_pix" => ($this->chave_pix != null) ? $this->chave_pix : '',
             "nome_cliente" => $this->emprestimo->client->nome_completo ?? null,
+            "cpf" => $this->emprestimo->client->cpf ?? null,
             "telefone_celular_1" => $this->emprestimo->client->telefone_celular_1 ?? null,
             "telefone_celular_2" => $this->emprestimo->client->telefone_celular_2 ?? null,
             "atrasadas" => $this->atrasadas,

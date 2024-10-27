@@ -179,6 +179,7 @@ export default function ParcelasPendentesHoje(props) {
                 <Text style={styles2.title}>Empréstimo N°{item.emprestimo_id}</Text>
                   <Text style={styles2.subTitle}>
                     Juliana sobrera da silva - CPF: 123.456.789-00
+                    {item.nome_cliente}
                   </Text>
 
                  
