@@ -1204,37 +1204,37 @@ class EmprestimoController extends Controller
 
 
 
-                if ($editParcela->emprestimo->quitacao->chave_pix) {
+                // if ($editParcela->emprestimo->quitacao->chave_pix) {
 
-                    $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $editParcela->saldo;
-                    $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $editParcela->saldo;
-                    $editParcela->emprestimo->quitacao->save();
+                //     $editParcela->emprestimo->quitacao->valor = $editParcela->emprestimo->quitacao->valor - $editParcela->saldo;
+                //     $editParcela->emprestimo->quitacao->saldo = $editParcela->emprestimo->quitacao->saldo - $editParcela->saldo;
+                //     $editParcela->emprestimo->quitacao->save();
 
-                    $gerarPixQuitacao = self::gerarPixQuitacao(
-                        [
-                            'banco' => [
-                                'client_id' => $editParcela->emprestimo->banco->clienteid,
-                                'client_secret' => $editParcela->emprestimo->banco->clientesecret,
-                                'certificado' => $editParcela->emprestimo->banco->certificado,
-                                'chave' => $editParcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $editParcela->parcela,
-                                'valor' => $editParcela->emprestimo->quitacao->saldo,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $editParcela->emprestimo->client->nome_completo,
-                                'cpf' => $editParcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+                //     $gerarPixQuitacao = self::gerarPixQuitacao(
+                //         [
+                //             'banco' => [
+                //                 'client_id' => $editParcela->emprestimo->banco->clienteid,
+                //                 'client_secret' => $editParcela->emprestimo->banco->clientesecret,
+                //                 'certificado' => $editParcela->emprestimo->banco->certificado,
+                //                 'chave' => $editParcela->emprestimo->banco->chavepix,
+                //             ],
+                //             'parcela' => [
+                //                 'parcela' => $editParcela->parcela,
+                //                 'valor' => $editParcela->emprestimo->quitacao->saldo,
+                //                 'venc_real' => date('Y-m-d'),
+                //             ],
+                //             'cliente' => [
+                //                 'nome_completo' => $editParcela->emprestimo->client->nome_completo,
+                //                 'cpf' => $editParcela->emprestimo->client->cpf
+                //             ]
+                //         ]
+                //     );
 
-                    $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
-                    $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+                //     $editParcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+                //     $editParcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
 
-                    $editParcela->emprestimo->quitacao->save();
-                }
+                //     $editParcela->emprestimo->quitacao->save();
+                // }
 
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
