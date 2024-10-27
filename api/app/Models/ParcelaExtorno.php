@@ -25,8 +25,10 @@ class ParcelaExtorno extends Model
         'identificador',
         'chave_pix',
         'dt_ult_cobranca',
+        'valor_recebido',
         'created_at',
         'updated_at'
+
     ];
 
     public function parcela_associada()
