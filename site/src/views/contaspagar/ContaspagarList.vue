@@ -190,7 +190,7 @@ export default {
 						<Column field="banco" header="Conta util" :sortable="true" class="w-1">
 							<template #body="slotProps">
 								<span class="p-column-title">Conta util</span>
-								{{ slotProps.data.banco.name }}
+								{{ slotProps.data.banco?.name }}
 							</template>
 						</Column>
 
@@ -205,12 +205,12 @@ export default {
 							<template #body="slotProps">
 								<Button v-if="!slotProps.data.standard" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :icon="icons.FILE_EDIT" v-tooltip.top="'Editar'" @click.prevent="editCategory(slotProps.data.id)" />
 							</template>
-						</Column>
+						</Column> -->
 						<Column v-if="permissionsService.hasPermissions('view_contaspagar_delete')" field="edit" header="Excluir" :sortable="false" class="w-1">
 							<template #body="slotProps">
-								<Button v-if="!slotProps.data.standard" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL" v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />
+								<Button v-if="!slotProps.data.standard && slotProps.data.tipodoc != 'Empréstimo'" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL" v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />
 							</template>
-						</Column> -->
+						</Column>
 					</DataTable>
 				</div>
 			</div>
