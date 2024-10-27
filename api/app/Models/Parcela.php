@@ -9,7 +9,7 @@ class Parcela extends Model
 {
     public $table = 'parcelas';
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'emprestimo_id',
