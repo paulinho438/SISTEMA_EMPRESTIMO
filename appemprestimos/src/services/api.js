@@ -260,6 +260,12 @@ export default {
         let json = await request('get', '/ocorrencia/getminhasultimasocorrencias', {}, token);
         return json;
     },
+    postExtornarParcela: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('get', `/parcela/${id}/cancelarbaixamanual`, {}, token);
+        return json;
+    },
+    
     getOcorrenciasApi: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/ocorrencias', {}, token);
