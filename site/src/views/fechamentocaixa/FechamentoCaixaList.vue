@@ -301,25 +301,7 @@ export default {
 						</div>
 					</div>
 
-					<div class="col-12 md:col-3">
-						<div class="flex flex-column gap-2 m-2 mt-1">
-							<div class="surface-card shadow-2 p-3 border-round">
-								<div class="flex justify-content-between mb-3">
-									<div>
-										<span class="block text-500 font-medium mb-3">Diferença Entre Bancos</span>
-										<div class="text-900 font-medium text-xl">{{ (parseFloat(banco?.saldo_banco) -
-											banco?.saldo).toLocaleString('pt-BR', {
-												style: 'currency', currency: 'BRL'
-											}) ?? 'R$ 0,00' }}</div>
-									</div>
-									<div class="flex align-items-center justify-content-center bg-red-100 border-round"
-										style="width:2.5rem;height:2.5rem">
-										<i class="pi pi-money-bill text-red-500 text-xl"></i>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+					
 
 					<div class="col-12 md:col-3">
 						<div class="flex flex-column gap-2 m-2 mt-1">
@@ -335,6 +317,46 @@ export default {
 									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
 										style="width:2.5rem;height:2.5rem">
 										<i class="pi pi-money-bill text-green-500 text-xl"></i>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-12 md:col-3">
+						<div class="flex flex-column gap-2 m-2 mt-1">
+							<div class="surface-card shadow-2 p-3 border-round">
+								<div class="flex justify-content-between mb-3">
+									<div>
+										<span class="block text-500 font-medium mb-3">Saldo Caixa Pix</span>
+										<div class="text-900 font-medium text-xl">{{
+											banco?.caixa_empresa?.toLocaleString('pt-BR', {
+												style: 'currency', currency: 'BRL'
+											}) ?? 'R$ 0,00' }}</div>
+									</div>
+									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
+										style="width:2.5rem;height:2.5rem">
+										<i class="pi pi-money-bill text-green-500 text-xl"></i>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-12 md:col-3">
+						<div class="flex flex-column gap-2 m-2 mt-1">
+							<div class="surface-card shadow-2 p-3 border-round">
+								<div class="flex justify-content-between mb-3">
+									<div>
+										<span class="block text-500 font-medium mb-3">Diferença Entre Bancos</span>
+										<div class="text-900 font-medium text-xl">{{ (parseFloat(banco?.saldo_banco) -
+											banco?.saldo).toLocaleString('pt-BR', {
+												style: 'currency', currency: 'BRL'
+											}) ?? 'R$ 0,00' }}</div>
+									</div>
+									<div class="flex align-items-center justify-content-center bg-red-100 border-round"
+										style="width:2.5rem;height:2.5rem">
+										<i class="pi pi-money-bill text-red-500 text-xl"></i>
 									</div>
 								</div>
 							</div>
