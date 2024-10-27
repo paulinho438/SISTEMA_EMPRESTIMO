@@ -55,6 +55,8 @@ class EmprestimoResource extends JsonResource
             "banco"             => new BancosResource($this->banco),
             "cliente"           => new ClientResource($this->client),
             "consultor"         => $this->user,
+            "parcelas_vencidas" => ParcelaResource::collection($this->parcelas->where('dt_baixa', null)
+            ->where('venc_real', now()->toDateString())),
             "parcelas"          => ParcelaResource::collection($this->parcelas),
             "quitacao"          => new QuitacaoResource($this->quitacao),
             "pagamentominimo"   => new PagamentoMinimoResource($this->pagamentominimo),
