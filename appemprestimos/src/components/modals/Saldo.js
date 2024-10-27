@@ -26,7 +26,7 @@ import CTextInput from '../common/CTextInput';
 import api from '../../services/api';
 
 export default function Saldo(props) {
-  let {visible, onPressClose, cliente, feriados} = props;
+  let {visible, onPressClose, cliente, feriados, tela} = props;
 
 
   const navigation = useNavigation();
@@ -34,7 +34,7 @@ export default function Saldo(props) {
   const [valores, setValores] = useState(cliente.saldo);
 
   useEffect(() => {
-    console.log()
+    console.log(tela)
     if(typeof cliente.saldo !== 'string'){
       handleSaldoNovo(cliente.saldo);
     }
@@ -72,12 +72,17 @@ export default function Saldo(props) {
 
     if(typeof cliente.saldo !== 'string'){
 
-      if(converterParaNumero(valores) > cliente.saldo){
-        Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
-        return
+      // if(converterParaNumero(valores) > cliente.saldo){
+      //   Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
+      //   return
+      // }
+
+      if(tela == 'baixa_pendentes_hoje'){
+        let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
+      }else{
+        
       }
   
-      let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
   
       Alert.alert('Baixa realizada com sucesso!');
   
