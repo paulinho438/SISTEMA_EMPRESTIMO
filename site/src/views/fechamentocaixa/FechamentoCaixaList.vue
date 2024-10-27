@@ -35,7 +35,8 @@ export default {
 			displayFechamento: ref({
 				enabled: false,
 				saldobanco: 0,
-				saldocaixa: 0
+				saldocaixa: 0,
+				saldocaixapix: 0
 			}),
 		};
 	},
@@ -62,6 +63,7 @@ export default {
 				setTimeout(() => {
 					this.banco.saldo = this.displayFechamento.saldobanco;
 					this.banco.caixa_empresa = this.displayFechamento.saldocaixa;
+					this.banco.caixa_pix = this.displayFechamento.saldocaixapix;
 					this.displayFechamento.enabled = false;
 				}, 1200)
 
