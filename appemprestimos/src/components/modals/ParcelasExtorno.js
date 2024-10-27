@@ -241,7 +241,7 @@ export default function parcelasExtorno(props) {
                     {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.valor}
+                    Valor da Parcela R$ {item.saldo_correto}
                   </Text>
                   {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
