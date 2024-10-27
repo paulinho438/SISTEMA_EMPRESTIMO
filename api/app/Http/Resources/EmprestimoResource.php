@@ -37,7 +37,15 @@ class EmprestimoResource extends JsonResource
             "saldoareceber" => $this->parcelas->where('dt_baixa', null)->sum(function ($parcela) {
                 return $parcela->saldo;
             }),
-            "porcentagem"       => $this->porcent($this->parcelas->sum(function ($parcela) {return $parcela->saldo;}), $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
+            "saldoatrasado" => $this->parcelas
+                ->where('dt_baixa', null)
+                ->where('venc_real', now()->toDateString())
+                ->sum(function ($parcela) {
+                    return $parcela->saldo;
+                }),
+            "porcentagem"       => $this->porcent($this->parcelas->sum(function ($parcela) {
+                return $parcela->saldo;
+            }), $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
                 return $parcela->saldo;
             })),
             "saldo_total_parcelas_pagas" => $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
@@ -71,14 +79,14 @@ class EmprestimoResource extends JsonResource
             }
         }
 
-        if($qtAtrasadas > 0){
-            if($this->isMaiorQuatro($qtAtrasadas, $qtParcelas)){
+        if ($qtAtrasadas > 0) {
+            if ($this->isMaiorQuatro($qtAtrasadas, $qtParcelas)) {
                 $status = 'Muito Atrasado';
-            }else{
+            } else {
                 $status = 'Atrasado';
             }
 
-            if($qtAtrasadas == $qtParcelas){
+            if ($qtAtrasadas == $qtParcelas) {
                 $status = 'Vencido';
             }
         }
@@ -89,7 +97,7 @@ class EmprestimoResource extends JsonResource
             }
         }
 
-        if($qtParcelas == $qtPagas){
+        if ($qtParcelas == $qtPagas) {
             $status = 'Pago';
         }
 
@@ -98,7 +106,8 @@ class EmprestimoResource extends JsonResource
         return $status;
     }
 
-    private function isMaiorQuatro($x, $y){
+    private function isMaiorQuatro($x, $y)
+    {
         return $x > 5;
     }
 }
