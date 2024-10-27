@@ -14,7 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('parcela_extorno', function (Blueprint $table) {
-            $table->float('valor_recebido', 8, 2)->default(0);
+            $table->float('valor_alterado', 8, 2)->default(0);
         });
     }
 
@@ -26,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('parcela_extorno', function (Blueprint $table) {
-            $table->dropColumn('valor_recebido'); // Revertendo a alteração, removendo a coluna status
+            $table->dropColumn('valor_alterado'); // Revertendo a alteração, removendo a coluna status
         });
     }
 };

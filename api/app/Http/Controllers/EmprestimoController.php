@@ -1066,7 +1066,7 @@ class EmprestimoController extends Controller
             // Obter todas as parcelas de extorno com o mesmo hash_extorno
             $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
 
-            $extorno[0]->parcela_associada->emprestimo->company->caixa_pix = $extorno->parcela_associada->emprestimo->company->caixa_pix - $extorno[0]->valor_recebido;
+            $extorno[0]->parcela_associada->emprestimo->company->caixa_pix = $extorno->parcela_associada->emprestimo->company->caixa_pix - $extorno[0]->valor_alterado;
 
             foreach ($extorno as $ext) {
                 $editParcela = Parcela::find($ext->parcela_id);
@@ -1178,7 +1178,7 @@ class EmprestimoController extends Controller
                 $addParcelaExtorno['identificador'] = $editParcela->identificador;
                 $addParcelaExtorno['chave_pix'] = $editParcela->chave_pix;
                 $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
-                $addParcelaExtorno['valor_recebido'] = $valor_recebido;
+                $addParcelaExtorno['valor_alterado'] = $valor_recebido;
 
                 ParcelaExtorno::create($addParcelaExtorno);
 
@@ -1267,7 +1267,7 @@ class EmprestimoController extends Controller
                 $addParcelaExtorno['chave_pix'] = $editParcela->chave_pix;
                 $addParcelaExtorno['tentativas'] = $editParcela->tentativas;
                 $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
-                $addParcelaExtorno['valor_recebido'] = $valor_recebido;
+                $addParcelaExtorno['valor_alterado'] = $valor_recebido;
 
                 ParcelaExtorno::create($addParcelaExtorno);
 
@@ -1384,7 +1384,7 @@ class EmprestimoController extends Controller
                             $addParcelaExtorno['identificador'] = $parcela->identificador;
                             $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
                             $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
-                            $addParcelaExtorno['valor_recebido'] = $valor_recebido;
+                            $addParcelaExtorno['valor_alterado'] = $valor_recebido;
 
                             ParcelaExtorno::create($addParcelaExtorno);
 
@@ -1409,7 +1409,7 @@ class EmprestimoController extends Controller
                             $addParcelaExtorno['identificador'] = $parcela->identificador;
                             $addParcelaExtorno['chave_pix'] = $parcela->chave_pix;
                             $addParcelaExtorno['dt_ult_cobranca'] = $parcela->dt_ult_cobranca;
-                            $addParcelaExtorno['valor_recebido'] = $valor_recebido;
+                            $addParcelaExtorno['valor_alterado'] = $valor_recebido;
 
                             ParcelaExtorno::create($addParcelaExtorno);
 
