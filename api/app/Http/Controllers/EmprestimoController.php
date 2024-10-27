@@ -134,9 +134,9 @@ class EmprestimoController extends Controller
         $today = Carbon::today()->toDateString();
 
 
-
         return ParcelaResource::collection(Parcela::where('dt_baixa', null)
         ->where('venc_real', $today)
+        ->whereDate('updated_at', '<>', $today)
         ->whereHas('emprestimo', function ($query) use ($request) {
             $query->where('company_id', $request->header('company-id'));
         })
@@ -1052,6 +1052,8 @@ class EmprestimoController extends Controller
                 $editParcela->identificador = $ext->identificador;
                 $editParcela->chave_pix = $ext->chave_pix;
                 $editParcela->dt_ult_cobranca = $ext->dt_ult_cobranca;
+                $editParcela->created_at = $ext->created_at;
+                $editParcela->update_at = $ext->update_at;
                 $editParcela->save();
             }
 

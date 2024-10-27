@@ -80,13 +80,12 @@ export default function Saldo(props) {
       if(tela == 'baixa_pendentes_hoje'){
         let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
       }else{
-        
+        let req = await api.baixaManualCobrador(cliente.id, obterDataAtual(), converterParaNumero(valores));
       }
   
-  
       Alert.alert('Baixa realizada com sucesso!');
-  
-      navigation.navigate(StackNav.TabNavigation);
+
+      onPressClose();
 
     }else{
 
@@ -103,77 +102,6 @@ export default function Saldo(props) {
     }
   };
 
-  
-
-  const gerarParcelas = async () => {
-
-    let newParcelas = [];
-    // Defina a data inicial
-    const dataLanc = new Date();
-
-    const dataInicial = new Date();
-
-    // Array para armazenar as parcelas
-    const parcelas = [];
-
-    // Loop para gerar 25 parcelas
-    for (let i = 0; i < valores?.parcela; i++) {
-      parcela = {};
-      parcela.parcela = 1 + i;
-      parcela.parcela = parcela.parcela.toString().padStart(3, '0')
-      parcela.valor = parseFloat(valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'));
-      parcela.saldo = parseFloat(valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'));
-      parcela.dt_lancamento = formatarDataParaString(new Date(dataLanc));
-
-
-      dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
-
-      // Verifica se o dia da semana é sábado (6) ou domingo (0)
-      // Se for, adiciona mais um dia até encontrar um dia útil (segunda a sexta)
-      if(valores?.cobranca == '1'){
-        while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
-          dataInicial.setDate(dataInicial.getDate() + 1);
-        }
-      }else if(valores?.cobranca == '2'  ){
-        while (dataInicial.getDay() === 0) {
-          dataInicial.setDate(dataInicial.getDate() + 1);
-        }
-      }
-
-      parcela.venc = formatarDataParaString(new Date(dataInicial));
-
-
-      if(isFeriado(dataInicial)){
-        dataInicial.setDate(dataInicial.getDate() + 1);
-      }
-
-      parcela.venc_real = formatarDataParaString(new Date(dataInicial));
-
-      parcelas.push(formatarDataParaString(new Date(dataInicial)));
-
-      newParcelas.push(parcela);
-
-    }
-
-    const client = {};
-
-    client.valor = parseFloat(valores?.valor.replace(/[^\d,-]/g, '').replace(',', '.'));
-		client.lucro = parseFloat(valores?.lucro.replace(/[^\d,-]/g, '').replace(',', '.'));
-		client.juros = parseFloat(valores?.juros.replace(/[^\d,-]/g, '').replace(',', '.'));
-    client.cliente = {id: valores?.cliente.id, nome_completo: valores?.cliente.nome_completo, cpf: valores?.cliente.cpf}
-    client.banco = {id: valores?.banco.id, certificado: valores?.banco.certificado, clienteid: valores?.banco.clienteid, clientesecret: valores?.banco.clientesecret, chavepix: valores?.banco.chavepix}
-    client.costcenter = {id: valores?.costcenter.id}
-    client.consultor = {id: valores?.consultor.id}
-    client.parcelas = newParcelas;
-
-    onPressClose();
-
-    const res = await api.saveEmprestimo(client);
-
-
-
-
-  }
 
   const save = async () =>  {
     this.changeLoading();

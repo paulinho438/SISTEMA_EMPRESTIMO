@@ -24,7 +24,9 @@ class ParcelaExtorno extends Model
         'dt_baixa',
         'identificador',
         'chave_pix',
-        'dt_ult_cobranca'
+        'dt_ult_cobranca',
+        'created_at',
+        'updated_at'
     ];
 
     public function parcela()
