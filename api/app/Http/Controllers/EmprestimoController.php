@@ -744,103 +744,105 @@ class EmprestimoController extends Controller
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
-            $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-            $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-            $options = [
-                'clientId' => $dados['banco']['clienteid'],
-                'clientSecret' => $dados['banco']['clientesecret'],
-                'certificate' => $caminhoAbsoluto,
-                'sandbox' => false,
-                "debug" => false,
-                'timeout' => 60,
-            ];
 
-            $params = [
-                "txid" => Str::random(32)
-            ];
+            if ($dados['banco']['efibank'] == 1) {
 
-            $body = [
-                "calendario" => [
-                    "dataDeVencimento" => $addParcela['venc_real'],
-                    "validadeAposVencimento" => 0
-                ],
-                "devedor" => [
-                    "nome" => $dados['cliente']['nome_completo'],
-                    "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-                ],
-                "valor" => [
-                    "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
+                $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
+                $options = [
+                    'clientId' => $dados['banco']['clienteid'],
+                    'clientSecret' => $dados['banco']['clientesecret'],
+                    'certificate' => $caminhoAbsoluto,
+                    'sandbox' => false,
+                    "debug" => false,
+                    'timeout' => 60,
+                ];
 
-                ],
-                "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-                "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
-                "infoAdicionais" => [
-                    [
-                        "nome" => "Emprestimo",
-                        "valor" => "R$ " . $emprestimoAdd->valor,
+                $params = [
+                    "txid" => Str::random(32)
+                ];
+
+                $body = [
+                    "calendario" => [
+                        "dataDeVencimento" => $addParcela['venc_real'],
+                        "validadeAposVencimento" => 0
                     ],
-                    [
-                        "nome" => "Parcela",
-                        "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
+                    "devedor" => [
+                        "nome" => $dados['cliente']['nome_completo'],
+                        "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
+                    ],
+                    "valor" => [
+                        "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
+
+                    ],
+                    "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
+                    "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
+                    "infoAdicionais" => [
+                        [
+                            "nome" => "Emprestimo",
+                            "valor" => "R$ " . $emprestimoAdd->valor,
+                        ],
+                        [
+                            "nome" => "Parcela",
+                            "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
+                        ]
                     ]
-                ]
-            ];
+                ];
 
-            try {
-                $api = new EfiPay($options);
-                $pix = $api->pixCreateDueCharge($params, $body);
+                try {
+                    $api = new EfiPay($options);
+                    $pix = $api->pixCreateDueCharge($params, $body);
 
-                if ($pix["txid"]) {
-                    $params = [
-                        "id" => $pix["loc"]["id"]
-                    ];
+                    if ($pix["txid"]) {
+                        $params = [
+                            "id" => $pix["loc"]["id"]
+                        ];
 
-                    $addParcela['identificador'] = $pix["loc"]["id"];
+                        $addParcela['identificador'] = $pix["loc"]["id"];
 
 
-                    try {
-                        $qrcode = $api->pixGenerateQRCode($params);
+                        try {
+                            $qrcode = $api->pixGenerateQRCode($params);
 
-                        $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
-                    } catch (EfiException $e) {
+                            $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
+                        } catch (EfiException $e) {
 
+                            $this->custom_log->create([
+                                'user_id' => auth()->user()->id,
+                                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                                'operation' => 'error'
+                            ]);
+
+                            print_r($e->code . "<br>");
+                            print_r($e->error . "<br>");
+                            print_r($e->errorDescription) . "<br>";
+                        } catch (Exception $e) {
+                            $this->custom_log->create([
+                                'user_id' => auth()->user()->id,
+                                'content' => $e->getMessage(),
+                                'operation' => 'error'
+                            ]);
+                        }
+                    } else {
                         $this->custom_log->create([
                             'user_id' => auth()->user()->id,
-                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                            'operation' => 'error'
-                        ]);
-
-                        print_r($e->code . "<br>");
-                        print_r($e->error . "<br>");
-                        print_r($e->errorDescription) . "<br>";
-                    } catch (Exception $e) {
-                        $this->custom_log->create([
-                            'user_id' => auth()->user()->id,
-                            'content' => $e->getMessage(),
+                            'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
                             'operation' => 'error'
                         ]);
                     }
-                } else {
+                } catch (EfiException $e) {
                     $this->custom_log->create([
                         'user_id' => auth()->user()->id,
-                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
+                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
+                        'operation' => 'error'
+                    ]);
+                } catch (Exception $e) {
+                    $this->custom_log->create([
+                        'user_id' => auth()->user()->id,
+                        'content' => $e->getMessage(),
                         'operation' => 'error'
                     ]);
                 }
-            } catch (EfiException $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                    'operation' => 'error'
-                ]);
-            } catch (Exception $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => $e->getMessage(),
-                    'operation' => 'error'
-                ]);
             }
-
 
             $parcela = Parcela::create($addParcela);
 
@@ -1083,7 +1085,6 @@ class EmprestimoController extends Controller
                 $editParcela->created_at = $ext->created_at;
                 $editParcela->updated_at = $ext->updated_at;
                 $editParcela->save();
-
             }
 
             foreach ($extorno as $ext) {
