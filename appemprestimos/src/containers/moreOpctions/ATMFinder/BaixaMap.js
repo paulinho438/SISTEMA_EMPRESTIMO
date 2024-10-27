@@ -264,7 +264,7 @@ export default function ATMDetails({navigation, route}) {
         </View> */}
 
         <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
-        <ParcelasPendentesHoje sheetRef={Info} parcelas={parcelas} clientes={clientes} parcelasPendentes={parcelasPendentes} />
+        <ParcelasPendentesHoje sheetRef={Info} parcelas={parcelas} clientes={clientes} parcelasPendentes={parcelasPendentes}  onAtualizarClientes={getPendentesParaHoje} />
       </SafeAreaView>
     </KeyBoardAvoidWrapper> 
   );

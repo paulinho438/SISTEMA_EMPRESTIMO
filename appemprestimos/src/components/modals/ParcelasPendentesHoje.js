@@ -28,7 +28,7 @@ import Saldo from '../modals/Saldo';
 import margin from '../../themes/margin';
 
 export default function ParcelasPendentesHoje(props) {
-  let {sheetRef, parcelas, clientes, parcelasPendentes} = props;
+  let {sheetRef, parcelas, clientes, parcelasPendentes, onAtualizarClientes} = props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
@@ -139,8 +139,13 @@ export default function ParcelasPendentesHoje(props) {
   const onPressClose = item => {
     if (item?.id) {
       setCliente(item);
+    }else{
+      onAtualizarClientes();
     }
     setVisible(!visible);
+
+
+
   };
 
   const formatDate = dateStr => {
@@ -176,39 +181,41 @@ export default function ParcelasPendentesHoje(props) {
             {parcelasPendentes.map(item => (
               <>
                 <View style={styles2.container}>
-                <Text style={styles2.title}>Empréstimo N°{item.emprestimo_id}</Text>
+                  <Text style={styles2.title}>
+                    Empréstimo N°{item.emprestimo_id}
+                  </Text>
                   <Text style={styles2.subTitle}>
                     {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
-
-                 
                   <Text style={styles2.totalDueText}>
-                  Valor da Parcela R$ {item.saldo}
+                    Valor da Parcela R$ {item.saldo}
                   </Text>
-                  <Text style={styles2.subTitleValor}>
-                    Valor recebido em dinheiro R$ 100
-                  </Text>
+                  {item.valor_recebido > 0 && (
+                    <Text style={styles2.subTitleValor}>
+                      Valor recebido em dinheiro R$ {item.valor_recebido}
+                    </Text>
+                  )}
 
                   <View style={styles2.buttonContainer}>
                     {/* <TouchableOpacity style={styles2.actionButton}>
                       <Text style={styles2.buttonText}>Histórico</Text>
                     </TouchableOpacity> */}
-                    
-                    <TouchableOpacity onPress={() => onPressClose(item)} style={styles2.actionButton}>
+
+                    <TouchableOpacity
+                      onPress={() => onPressClose(item)}
+                      style={styles2.actionButton}>
                       <Text style={styles2.buttonText}>Efetuar Baixa</Text>
                     </TouchableOpacity>
                   </View>
-
                 </View>
               </>
             ))}
-            
           </View>
           <Saldo
             visible={visible}
             onPressClose={onPressClose}
             cliente={cliente}
-            tela='baixa_pendentes_hoje'
+            tela="baixa_pendentes_hoje"
             //valores={valores}
             //feriados={feriados}
           />
@@ -223,7 +230,7 @@ const styles2 = StyleSheet.create({
     padding: 20,
     backgroundColor: '#F7F6F6FF',
     flex: 1,
-    marginTop:10,
+    marginTop: 10,
     marginBottom: 10,
     borderRadius: 20,
   },
@@ -237,7 +244,7 @@ const styles2 = StyleSheet.create({
     color: '#888',
     marginBottom: 10,
   },
-  
+
   subTitleValor: {
     fontSize: 14,
     color: '#3CA454FF',
