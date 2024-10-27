@@ -4,7 +4,8 @@ import {
   TouchableOpacity,
   View,
   Image,
-  Linking
+  Linking,
+  Alert
 } from 'react-native';
 import React, {useRef, useState} from 'react';
 import Material from 'react-native-vector-icons/MaterialIcons';
@@ -63,6 +64,9 @@ export default function ATMDetails({navigation, route}) {
   };
 
   const moveToExtornoModel = () => {
+    if(parcelasExtorno.length == 0){
+      return Alert.alert('Não existem parcelas para extorno');
+    }
     Extorno.current.show();
   };
 
