@@ -155,7 +155,7 @@ class EmprestimoController extends Controller
         foreach ($extorno as $ext) {
             $parcelaResource = new ParcelaResource($ext->parcela_associada);
             $parcelaArray = $parcelaResource->resolve(); // Converte para array usando resolve
-            $parcelaArray['saldo_correto'] = $ext->saldo - $ext->parcela_associada; // Adiciona o campo saldo_correto
+            $parcelaArray['saldo_correto'] = $ext->saldo - $ext->parcela_associada->saldo; // Adiciona o campo saldo_correto
             $parcelas[] = $parcelaArray;
         }
 
