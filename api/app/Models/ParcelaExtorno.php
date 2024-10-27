@@ -29,7 +29,7 @@ class ParcelaExtorno extends Model
         'updated_at'
     ];
 
-    public function parcela()
+    public function parcela_associada()
     {
         return $this->belongsTo(Parcela::class, 'parcela_id', 'id');
     }

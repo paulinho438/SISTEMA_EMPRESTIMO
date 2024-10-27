@@ -157,10 +157,7 @@ class EmprestimoController extends Controller
 
 
         foreach ($extorno as $ext) {
-        var_dump($ext);
-        die();
-
-            $parcelas[] = new ParcelaResource($ext->parcela);
+            $parcelas[] = new ParcelaResource($ext->parcela_associada);
         }
 
         return $parcelas;
