@@ -8,6 +8,7 @@ use App\Models\Address;
 use App\Models\Contaspagar;
 use App\Models\CustomLog;
 use App\Models\User;
+use App\Models\Banco;
 
 use DateTime;
 use App\Http\Resources\ContaspagarResource;
@@ -61,6 +62,14 @@ class ContaspagarController extends Controller
         ]);
 
         $dados = $request->all();
+
+        $banco = Banco::find($dados['banco']['id']);
+
+        if($banco){
+           $banco->saldo = $banco->saldo - $dados['valor'];
+           $banco->save();
+        }
+
         if(!$validator->fails()){
 
             $dados['company_id'] = $request->header('company-id');
