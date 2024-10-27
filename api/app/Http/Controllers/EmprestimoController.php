@@ -136,32 +136,32 @@ class EmprestimoController extends Controller
         return EmprestimoResource::collection(
             Emprestimo::whereHas('parcelas', function ($query) use ($today, $request) {
                 $query->where('dt_baixa', null)
-                      ->where('venc_real', $today)
-                      ->whereHas('emprestimo', function ($query) use ($request) {
-                          $query->where('company_id', $request->header('company-id'));
-                      });
+                    ->where('venc_real', $today)
+                    ->whereHas('emprestimo', function ($query) use ($request) {
+                        $query->where('company_id', $request->header('company-id'));
+                    });
             })->get()
         );
-
-
-
-
     }
 
-    public function parcelasParaExtorno(Request $request) {
+    public function parcelasParaExtorno(Request $request)
+    {
         $today = Carbon::today()->toDateString();
-
-        $parcelas = [];
 
         $extorno = ParcelaExtorno::where('venc_real', $today)->get()->unique('hash_extorno');
 
+        $parcelas = [];
 
         foreach ($extorno as $ext) {
             $parcelas[] = new ParcelaResource($ext->parcela_associada);
         }
 
-        return $parcelas;
+        // Ordenar as parcelas pelo campo updated_at do mais atual para o menos atual
+        $parcelas = collect($parcelas)->sortByDesc(function ($parcela) {
+            return $parcela->updated_at;
+        })->values()->all();
 
+        return $parcelas;
     }
 
 

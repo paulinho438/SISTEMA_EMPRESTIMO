@@ -191,6 +191,11 @@ export default {
         let json = await request('get', '/baixa/pendentesparahoje', {}, token);
         return json;
     },
+    parcelasParaExtorno: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/baixa/parcelasparaextorno', {}, token);
+        return json;
+    },
     getFeriados: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/feriados', {}, token);

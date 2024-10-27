@@ -24,11 +24,11 @@ import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {StackNav, TabNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
-import Saldo from '../modals/Saldo';
+import Saldo from './Saldo';
 import margin from '../../themes/margin';
 
-export default function ParcelasPendentesHoje(props) {
-  let {sheetRef, parcelas, clientes, parcelasPendentes, onAtualizarClientes} = props;
+export default function parcelasExtorno(props) {
+  let {sheetRef, parcelas, clientes, parcelasExtorno, onAtualizarClientes} = props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
@@ -170,29 +170,29 @@ export default function ParcelasPendentesHoje(props) {
             <View style={localStyles.outerComponent}>
               <View style={{gap: moderateScale(7)}}>
                 <CText color={colors.black} type={'B24'}>
-                  Parcelas Pendentes para Hoje
+                  Extorno de Parcelas
                 </CText>
                 <CText color={colors.black} type={'M16'}>
-                  Clique na parcela para efetuar a baixa!
+                  Clique na parcela para efetuar o extorno!
                 </CText>
               </View>
             </View>
 
-            {parcelasPendentes.map(item => (
+            {parcelasExtorno.map(item => (
               <>
                 <View style={styles2.container}>
                   <Text style={styles2.title}>
-                    Empréstimo N°{item.id}
+                    Empréstimo N°{item.emprestimo_id}
                   </Text>
                   <Text style={styles2.subTitle}>
-                    {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
+                    {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.parcelas_vencidas[0].saldo}
+                    Valor da Parcela R$ {item.saldo}
                   </Text>
-                  {item.parcelas_vencidas[0].valor_recebido > 0 && (
+                  {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro R$ {item.parcelas_vencidas[0].valor_recebido}
+                      Valor recebido em dinheiro R$ {item.valor_recebido}
                     </Text>
                   )}
 
@@ -202,13 +202,10 @@ export default function ParcelasPendentesHoje(props) {
                     </TouchableOpacity> */}
 
                     <TouchableOpacity
-                      onPress={() => onPressClose(item.parcelas_vencidas[0])}
+                      onPress={() => onPressClose(item)}
                       style={styles2.actionButton}>
-                      <Text style={styles2.buttonText}>Efetuar Baixa</Text>
+                      <Text style={styles2.buttonText}>Extornar Baixa</Text>
                     </TouchableOpacity>
-                    <Text style={styles2.valorHoje}>
-                      Valor Hoje R$ {item.saldoatrasado}
-                    </Text>
                   </View>
                 </View>
               </>
