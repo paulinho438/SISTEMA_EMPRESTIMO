@@ -144,17 +144,22 @@ class EmprestimoController extends Controller
         );
 
 
-        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
-        ->where('venc_real', $today)
-        ->where(function ($query) use ($today) {
-            $query->whereNull('updated_at')
-                  ->orWhereDate('updated_at', '<>', $today);
-        })
-        ->whereHas('emprestimo', function ($query) use ($request) {
-            $query->where('company_id', $request->header('company-id'));
-        })
-        ->get()
-        ->unique('emprestimo_id'));
+
+
+    }
+
+    public function parcelasParaExtorno(Request $request) {
+        $today = Carbon::today()->toDateString();
+
+        $parcelas = [];
+
+        $extorno = ParcelaExtorno::where('venc_real', $today)->get()->unique('hash_extorno');
+
+        foreach ($extorno as $ext) {
+            $parcelas[] = new ParcelaResource($ext->parcela);
+        }
+
+        return $parcelas;
 
     }
 
