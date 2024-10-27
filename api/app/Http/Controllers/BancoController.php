@@ -191,6 +191,7 @@ class BancoController extends Controller
             $EditBanco->save();
 
             $EditBanco->company->caixa = $dados['saldocaixa'];
+            $EditBanco->company->caixa_pix = $dados['saldocaixapix'];
 
             $EditBanco->company->save();
 
