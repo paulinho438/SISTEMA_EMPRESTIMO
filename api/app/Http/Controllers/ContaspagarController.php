@@ -99,6 +99,8 @@ class ContaspagarController extends Controller
         try {
             $permGroup = Contaspagar::findOrFail($id);
 
+            $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
+            $permGroup->banco->save();
             $permGroup->delete();
 
             DB::commit();
@@ -109,7 +111,7 @@ class ContaspagarController extends Controller
                 'operation' => 'destroy'
             ]);
 
-            return response()->json(['message' => 'Contaspagare excluída com sucesso.']);
+            return response()->json(['message' => 'Contaspagar excluída com sucesso.']);
 
         } catch (\Exception $e) {
             DB::rollBack();
