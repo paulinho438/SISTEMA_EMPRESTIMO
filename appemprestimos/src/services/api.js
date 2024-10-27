@@ -179,6 +179,11 @@ export default {
         let json = await request('get', '/cobranca/atrasadas', {}, token);
         return json;
     },
+    pendentesParaHoje: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/baixa/pendentesparahoje', {}, token);
+        return json;
+    },
     getFeriados: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/feriados', {}, token);
