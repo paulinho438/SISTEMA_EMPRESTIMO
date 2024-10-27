@@ -44,6 +44,7 @@ class ParcelaResource extends JsonResource
             "total_pago_emprestimo" => $this->formatarMoeda($this->totalPagoEmprestimo()),
             "total_pago_parcela" => $this->formatarMoeda($this->totalPagoParcela()),
             "total_pendente" => $this->formatarMoeda($this->totalPendente()),
+            "valor_recebido" => $this->valor_recebido,
         ];
     }
 

@@ -185,6 +185,9 @@ export default function ParcelasPendentesHoje(props) {
                   <Text style={styles2.totalDueText}>
                   Valor da Parcela R$ {item.saldo}
                   </Text>
+                  <Text style={styles2.subTitleValor}>
+                    Valor recebido em dinheiro R$ 100
+                  </Text>
 
                   <View style={styles2.buttonContainer}>
                     {/* <TouchableOpacity style={styles2.actionButton}>
@@ -205,6 +208,7 @@ export default function ParcelasPendentesHoje(props) {
             visible={visible}
             onPressClose={onPressClose}
             cliente={cliente}
+            tela='baixa_pendentes_hoje'
             //valores={valores}
             //feriados={feriados}
           />
@@ -232,6 +236,13 @@ const styles2 = StyleSheet.create({
     fontSize: 14,
     color: '#888',
     marginBottom: 10,
+  },
+  
+  subTitleValor: {
+    fontSize: 14,
+    color: '#3CA454FF',
+    marginTop: -15,
+    marginBottom: 20,
   },
   addressLabel: {
     fontSize: 16,
