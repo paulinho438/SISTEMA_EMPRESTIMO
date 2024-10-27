@@ -23,7 +23,7 @@ import strings from '../../../i18n/strings';
 import CButton from '../../../components/common/CButton';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import Location from '../../../components/modals/Location';
-import InfoParcelas from '../../../components/modals/InfoParcelas';
+import ParcelasPendentesHoje from '../../../components/modals/ParcelasPendentesHoje';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../../services/api';
 
@@ -34,9 +34,14 @@ export default function ATMDetails({navigation, route}) {
   
   const [empty, nonEmpty] = useState('');
   const [parcelas, setParcelas] = useState([]);
+
+  const [parcelasPendentes, setParcelasPendentes] = useState([]);
+
+
   useFocusEffect(
     React.useCallback(() => {
       getInfo();
+      getPendentesParaHoje();
     }, [])
   );
 
@@ -65,6 +70,12 @@ export default function ATMDetails({navigation, route}) {
   const backToMore = () => {
     navigation.navigate(TabNav.HomeScreen);
   };
+
+  const getPendentesParaHoje = async () => {
+    let req = await api.pendentesParaHoje();
+    setParcelasPendentes(req);
+
+  }
 
   const cobrarAmanha = async () => {
     let req = await api.cobrarAmanha(clientes.id, obterDataAtual());
@@ -253,7 +264,7 @@ export default function ATMDetails({navigation, route}) {
         </View> */}
 
         <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
-        <InfoParcelas sheetRef={Info} parcelas={parcelas} clientes={clientes} />
+        <ParcelasPendentesHoje sheetRef={Info} parcelas={parcelas} clientes={clientes} parcelasPendentes={parcelasPendentes} />
       </SafeAreaView>
     </KeyBoardAvoidWrapper> 
   );

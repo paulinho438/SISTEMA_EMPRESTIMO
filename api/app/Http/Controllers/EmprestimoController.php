@@ -133,15 +133,16 @@ class EmprestimoController extends Controller
 
         $today = Carbon::today()->toDateString();
 
-        $parcelas = Parcela::where('dt_baixa', null)
-            ->where('venc_real', $today)
-            ->whereHas('emprestimo', function ($query) use ($request) {
-                $query->where('company_id', $request->header('company-id'));
-            })
-            ->get()
-            ->unique('emprestimo_id');
 
-        return $parcelas;
+
+        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
+        ->where('venc_real', $today)
+        ->whereHas('emprestimo', function ($query) use ($request) {
+            $query->where('company_id', $request->header('company-id'));
+        })
+        ->get()
+        ->unique('emprestimo_id'));
+
     }
 
 
