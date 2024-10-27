@@ -155,7 +155,11 @@ class EmprestimoController extends Controller
 
         $extorno = ParcelaExtorno::where('venc_real', $today)->get()->unique('hash_extorno');
 
+
         foreach ($extorno as $ext) {
+        var_dump($ext->parcela);
+        die();
+
             $parcelas[] = new ParcelaResource($ext->parcela);
         }
 
