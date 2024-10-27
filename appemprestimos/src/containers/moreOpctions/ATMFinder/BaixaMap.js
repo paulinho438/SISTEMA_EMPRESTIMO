@@ -73,7 +73,7 @@ export default function ATMDetails({navigation, route}) {
 
   const getPendentesParaHoje = async () => {
     let req = await api.pendentesParaHoje();
-    setParcelasPendentes(req);
+    setParcelasPendentes(req.data);
 
   }
 
