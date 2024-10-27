@@ -25,7 +25,7 @@ class ParcelaExtorno extends Model
         'identificador',
         'chave_pix',
         'dt_ult_cobranca',
-        'valor_recebido',
+        'valor_alterado',
         'created_at',
         'updated_at'
 
