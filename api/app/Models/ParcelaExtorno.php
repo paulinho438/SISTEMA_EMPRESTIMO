@@ -36,8 +36,9 @@ class ParcelaExtorno extends Model
         return $this->belongsTo(Parcela::class, 'parcela_id', 'id');
     }
 
-
-
-
+    public function emprestimo()
+    {
+        return $this->belongsTo(Emprestimo::class, 'emprestimo_id', 'id');
+    }
 
 }
