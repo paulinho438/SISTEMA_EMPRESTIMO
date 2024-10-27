@@ -136,7 +136,7 @@ class EmprestimoController extends Controller
 
 
         return ParcelaResource::collection(Parcela::where('dt_baixa', null)
-        ->whereDate('venc_real', $today)
+        ->where('venc_real', $today)
         ->whereDate('updated_at', '<>', $today)
         ->whereHas('emprestimo', function ($query) use ($request) {
             $query->where('company_id', $request->header('company-id'));
