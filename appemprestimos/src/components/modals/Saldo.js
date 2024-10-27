@@ -36,11 +36,11 @@ export default function Saldo(props) {
   useEffect(() => {
     console.log(tela)
     if(typeof cliente.saldo !== 'string'){
-      handleSaldoNovo(cliente.saldo);
+      handleSaldoNovo(cliente.total_pendente_hoje);
     }
 
     function handleSaldoNovo() {
-      let number = parseFloat(cliente.saldo); // Divide por 100 para obter o decimal correto
+      let number = parseFloat(cliente.total_pendente_hoje); // Divide por 100 para obter o decimal correto
 
       let currency = number.toLocaleString('pt-BR', {
         style: 'currency',
@@ -387,6 +387,7 @@ const localStyles = StyleSheet.create({
   parentTxtInp: {
     ...styles.flexRow,
     ...styles.justifyCenter,
+    marginBottom: moderateScale(30),
   },
   ChildTxtInp: {
     ...typography.fontSizes.f24,

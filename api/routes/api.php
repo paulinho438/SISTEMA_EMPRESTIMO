@@ -154,6 +154,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/parcela/{id}/cancelarbaixamanual', [EmprestimoController::class, 'cancelarBaixaManual']);
 
     Route::get('/baixa/pendentesparahoje', [EmprestimoController::class, 'parcelasPendentesParaHoje']);
+    Route::get('/baixa/parcelasparaextorno', [EmprestimoController::class, 'parcelasParaExtorno']);
 
 
 
