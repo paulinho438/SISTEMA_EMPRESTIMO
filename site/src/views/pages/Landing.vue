@@ -35,6 +35,25 @@ export default {
                 console.error('Pix link is not available');
             }
         },
+        copyToClipboard(text) {
+      // Cria um elemento de texto temporário
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+
+      // Seleciona o texto
+      textArea.select();
+      textArea.setSelectionRange(0, 99999); // Para dispositivos móveis
+
+      // Copia o texto para a área de transferência
+      document.execCommand('copy');
+
+      // Remove o elemento de texto temporário
+      document.body.removeChild(textArea);
+
+      // Exibe uma mensagem de confirmação (opcional)
+      alert('Chave PIX copiado para a área de transferência!');
+    },
         encontrarPrimeiraParcelaPendente() {
             for (let i = 0; i < this.products?.data?.emprestimo?.parcelas.length; i++) {
                 if (this.products?.data?.emprestimo?.parcelas[i].dt_baixa === "") {
@@ -118,12 +137,22 @@ export default {
                         </div>
                     </div>
 
-                    <div v-if="this.encontrarPrimeiraParcelaPendente()" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
+                    <div v-if="this.encontrarPrimeiraParcelaPendente() && this.encontrarPrimeiraParcelaPendente().chave_pix != ''" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
                         <div
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
                                 <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Clique aqui para pagar a parcela do dia"
                                     class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="this.encontrarPrimeiraParcelaPendente() && this.encontrarPrimeiraParcelaPendente().chave_pix == ''" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
+                        <div
+                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
+                            <div class="p-3 surface-card h-full" style="border-radius: 8px;">
+                                <p>Ray Costa jr</p>
+                                <span @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{this.products?.data?.emprestimo?.banco.chavepix}}</span>
                             </div>
                         </div>
                     </div>
@@ -138,10 +167,14 @@ export default {
                                 <template #body="slotProps">
                                     <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
                                         class="p-button-raised p-button-success mr-2 mb-2" />
-                                    <Button v-else label="Pendente Pagar com Pix"
+                                    <Button v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'" label="Pendente Pagar com Pix"
                                         @click="goToPixLink(slotProps.data?.chave_pix)"
                                         class="p-button-raised p-button-danger mr-2 mb-2" />
+                                    <Button v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago' " label="Copiar Chave Pix"
+                                        @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
+                                        class="p-button-raised p-button-danger mr-2 mb-2" />
                                 </template>
+                                
                             </Column>
                         </DataTable>
                     </div>
