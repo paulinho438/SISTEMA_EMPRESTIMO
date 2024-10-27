@@ -156,12 +156,13 @@ class EmprestimoController extends Controller
             $parcelaResource = new ParcelaResource($ext->parcela_associada);
             $parcelaArray = $parcelaResource->resolve(); // Converte para array usando resolve
             $parcelaArray['saldo_correto'] = $ext->saldo - $ext->parcela_associada->saldo; // Adiciona o campo saldo_correto
+            $parcelaArray['updated_at'] = $ext->parcela_associada->updated_at; // Adiciona o campo updated_at
             $parcelas[] = $parcelaArray;
         }
 
         // Ordenar as parcelas pelo campo updated_at do mais atual para o menos atual
         $parcelas = collect($parcelas)->sortByDesc(function ($parcela) {
-            return $parcela->updated_at;
+            return $parcela['updated_at'];
         })->values()->all();
 
         return $parcelas;
