@@ -6,8 +6,9 @@ import {
   Linking,
   Alert,
   ScrollView,
+  TextInput,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useRef,useState} from 'react';
 import ActionSheet, {FlatList} from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -28,10 +29,13 @@ import Saldo from './Saldo';
 import margin from '../../themes/margin';
 
 export default function parcelasExtorno(props) {
-  let {sheetRef, parcelas, clientes, parcelasExtorno, onAtualizarClientes} = props;
+  let {sheetRef, parcelas, clientes, parcelasExtorno, onAtualizarClientes} =
+    props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
+  const [searchText, setSearchText] = useState('');
+  const textInputRef = useRef(null);
 
   const renderData = ({item}) => {
     return (
@@ -57,6 +61,14 @@ export default function parcelasExtorno(props) {
     dia = dia < 10 ? '0' + dia : dia;
 
     return `${ano}-${mes}-${dia}`;
+  };
+
+  const saldoTotal = () => {
+    let total = 0;
+    parcelasExtorno.map(item => {
+      total += item.saldo;
+    });
+    return total;
   };
 
   const baixaManual = async () => {
@@ -139,7 +151,7 @@ export default function parcelasExtorno(props) {
   const onPressClose = item => {
     if (item?.id) {
       setCliente(item);
-    }else{
+    } else {
       onAtualizarClientes();
     }
     setVisible(!visible);
@@ -159,12 +171,13 @@ export default function parcelasExtorno(props) {
       ],
       {cancelable: false},
     );
-  }
+  };
 
   const extornarParcelaSuccess = async item => {
-      await api.postExtornarParcela(item.id);
-      onAtualizarClientes();
-  }
+    await api.postExtornarParcela(item.id);
+    Alert.alert('Parcela extornada com sucesso!');
+    onAtualizarClientes();
+  };
 
   const formatDate = dateStr => {
     const date = new Date(dateStr);
@@ -175,14 +188,36 @@ export default function parcelasExtorno(props) {
     });
   };
 
+  // Filtrar parcelas com base no texto de pesquisa
+  const filteredParcelasExtorno = parcelasExtorno.filter(item =>
+    item.nome_cliente.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   return (
     <View>
-      <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef}>
-        <TouchableOpacity
-          style={localStyles.parentDepEnd}
-          onPress={cancelModel}>
-          <Community size={40} name={'close'} color={colors.black} />
-        </TouchableOpacity>
+      <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
+          textInputRef.current?.focus();
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+          <TextInput
+            ref={textInputRef}
+            style={localStyles.searchInput}
+            placeholder="Pesquisar pelo nome do cliente"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          <TouchableOpacity
+            style={localStyles.parentDepEnd}
+            onPress={cancelModel}>
+            <Community size={40} name={'close'} color={colors.black} />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={localStyles.mainContainer}>
             <View style={localStyles.outerComponent}>
@@ -196,7 +231,7 @@ export default function parcelasExtorno(props) {
               </View>
             </View>
 
-            {parcelasExtorno.map(item => (
+            {filteredParcelasExtorno.map(item => (
               <>
                 <View style={styles2.container}>
                   <Text style={styles2.title}>
@@ -206,7 +241,7 @@ export default function parcelasExtorno(props) {
                     {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.saldo}
+                    Valor da Parcela R$ {item.valor}
                   </Text>
                   {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
@@ -215,10 +250,6 @@ export default function parcelasExtorno(props) {
                   )}
 
                   <View style={styles2.buttonContainer}>
-                    {/* <TouchableOpacity style={styles2.actionButton}>
-                      <Text style={styles2.buttonText}>Histórico</Text>
-                    </TouchableOpacity> */}
-
                     <TouchableOpacity
                       onPress={() => extornarParcela(item)}
                       style={styles2.actionButton}>
@@ -229,15 +260,12 @@ export default function parcelasExtorno(props) {
               </>
             ))}
           </View>
-          <Saldo
-            visible={visible}
-            onPressClose={onPressClose}
-            cliente={cliente}
-            tela="baixa_pendentes_hoje"
-            //valores={valores}
-            //feriados={feriados}
-          />
         </ScrollView>
+        <View style={localStyles.mainContainer}>
+          <CText color={colors.black}>
+            Saldo total R$ {saldoTotal().toFixed(2)}
+          </CText>
+        </View>
       </ActionSheet>
     </View>
   );
@@ -311,7 +339,7 @@ const styles2 = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 15,
-  }
+  },
 });
 
 const localStyles = StyleSheet.create({
@@ -325,7 +353,8 @@ const localStyles = StyleSheet.create({
     borderTopRightRadius: moderateScale(40),
   },
   mainContainer: {
-    ...styles.m20,
+    ...styles.ml20,
+    ...styles.mr20,
   },
 
   outerComponent: {
@@ -387,5 +416,15 @@ const localStyles = StyleSheet.create({
     ...styles.mr25,
     ...styles.mt30,
     ...styles.mb20,
+  },
+  searchInput: {
+    flex: 1,
+    height: moderateScale(40),
+    borderColor: '#c6c6c6',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginRight: moderateScale(10),
+    marginLeft: moderateScale(20),
   },
 });

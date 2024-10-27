@@ -6,34 +6,36 @@ import {
   Linking,
   Alert,
   ScrollView,
+  TextInput,
 } from 'react-native';
-import React, {useState} from 'react';
-import ActionSheet, {FlatList} from 'react-native-actions-sheet';
+import React, { useRef, useEffect, useState } from 'react';
+import ActionSheet from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Local imports
 import images from '../../assets/images/index';
-import {moderateScale} from '../../common/constant';
-import {styles} from '../../themes/index';
+import { moderateScale } from '../../common/constant';
+import { styles } from '../../themes/index';
 import CText from '../common/CText';
-import {colors} from '../../themes/colors';
-import {LocationData} from '../../api/constants';
+import { colors } from '../../themes/colors';
+import { LocationData } from '../../api/constants';
 import CButton from '../common/CButton';
-import {TouchableOpacity} from 'react-native-gesture-handler';
-import {useNavigation} from '@react-navigation/native';
-import {StackNav, TabNav} from '../../navigation/navigationKeys';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import { useNavigation } from '@react-navigation/native';
+import { StackNav, TabNav } from '../../navigation/navigationKeys';
 import api from '../../services/api';
 import Saldo from '../modals/Saldo';
 import margin from '../../themes/margin';
 
 export default function ParcelasPendentesHoje(props) {
-  let {sheetRef, parcelas, clientes, parcelasPendentes, onAtualizarClientes} = props;
+  let { sheetRef, parcelas, clientes, parcelasPendentes, onAtualizarClientes } = props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
+  const [searchText, setSearchText] = useState('');
 
-  const renderData = ({item}) => {
+  const renderData = ({ item }) => {
     return (
       <TouchableOpacity>
         <View style={localStyles.mainComponent}>
@@ -45,6 +47,10 @@ export default function ParcelasPendentesHoje(props) {
       </TouchableOpacity>
     );
   };
+
+  const textInputRef = useRef(null);
+
+  
 
   const obterDataAtual = () => {
     const data = new Date();
@@ -70,7 +76,7 @@ export default function ParcelasPendentesHoje(props) {
   const cobrarAmanha = async () => {
     let req = await api.cobrarAmanha(parcelas.id, obterDataAtual());
 
-    Alert.alert('Cobranca alterada com sucesso!');
+    Alert.alert('Cobrança alterada com sucesso!');
 
     navigation.navigate(StackNav.TabNavigation);
   };
@@ -78,7 +84,7 @@ export default function ParcelasPendentesHoje(props) {
   const infoParcelas = async () => {
     let req = await api.cobrarAmanha(parcelas.id, obterDataAtual());
 
-    Alert.alert('Cobranca alterada com sucesso!');
+    Alert.alert('Cobrança alterada com sucesso!');
 
     navigation.navigate(StackNav.TabNavigation);
   };
@@ -89,11 +95,11 @@ export default function ParcelasPendentesHoje(props) {
 
     Linking.openURL(url)
       .then(data => {
-        console.log('WhatsApp abierto:', data);
+        console.log('WhatsApp aberto:', data);
       })
       .catch(() => {
-        console.log('Error al abrir WhatsApp');
-        Alert.alert('Error ao abrir WhatsApp');
+        console.log('Erro ao abrir WhatsApp');
+        Alert.alert('Erro ao abrir WhatsApp');
       });
   };
 
@@ -101,10 +107,10 @@ export default function ParcelasPendentesHoje(props) {
     const url = `https://www.google.com/maps/search/?api=1&query=${parcelas.latitude},${parcelas.longitude}`;
     Linking.openURL(url)
       .then(data => {
-        console.log('Google Maps abierto:', data);
+        console.log('Google Maps aberto:', data);
       })
       .catch(() => {
-        console.log('Error al abrir Google Maps');
+        console.log('Erro ao abrir Google Maps');
       });
   };
 
@@ -139,13 +145,10 @@ export default function ParcelasPendentesHoje(props) {
   const onPressClose = item => {
     if (item?.id) {
       setCliente(item);
-    }else{
+    } else {
       onAtualizarClientes();
     }
     setVisible(!visible);
-
-
-
   };
 
   const formatDate = dateStr => {
@@ -157,18 +160,40 @@ export default function ParcelasPendentesHoje(props) {
     });
   };
 
+  // Filtrar parcelas com base no texto de pesquisa
+  const filteredParcelasPendentes = parcelasPendentes.filter(item =>
+    item.cliente.nome_completo.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   return (
     <View>
-      <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef}>
-        <TouchableOpacity
-          style={localStyles.parentDepEnd}
-          onPress={cancelModel}>
-          <Community size={40} name={'close'} color={colors.black} />
-        </TouchableOpacity>
+      <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
+          textInputRef.current?.focus();
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+          <TextInput
+            ref={textInputRef}
+            style={localStyles.searchInput}
+            placeholder="Pesquisar pelo nome do cliente"
+            value={searchText}
+            onChangeText={setSearchText}
+          />
+          <TouchableOpacity
+            style={localStyles.parentDepEnd}
+            onPress={cancelModel}>
+            <Community size={40} name={'close'} color={colors.black} />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={localStyles.mainContainer}>
             <View style={localStyles.outerComponent}>
-              <View style={{gap: moderateScale(7)}}>
+              <View style={{ gap: moderateScale(7) }}>
                 <CText color={colors.black} type={'B24'}>
                   Parcelas Pendentes para Hoje
                 </CText>
@@ -178,40 +203,34 @@ export default function ParcelasPendentesHoje(props) {
               </View>
             </View>
 
-            {parcelasPendentes.map(item => (
-              <>
-                <View style={styles2.container}>
-                  <Text style={styles2.title}>
-                    Empréstimo N°{item.id}
+            {filteredParcelasPendentes.map(item => (
+              <View key={item.id} style={styles2.container}>
+                <Text style={styles2.title}>
+                  Empréstimo N°{item.id}
+                </Text>
+                <Text style={styles2.subTitle}>
+                  {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
+                </Text>
+                <Text style={styles2.totalDueText}>
+                  Valor da Parcela R$ {item.parcelas_vencidas[0].saldo}
+                </Text>
+                {item.parcelas_vencidas[0].valor_recebido > 0 && (
+                  <Text style={styles2.subTitleValor}>
+                    Valor recebido em dinheiro R$ {item.parcelas_vencidas[0].valor_recebido}
                   </Text>
-                  <Text style={styles2.subTitle}>
-                    {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
-                  </Text>
-                  <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.parcelas_vencidas[0].saldo}
-                  </Text>
-                  {item.parcelas_vencidas[0].valor_recebido > 0 && (
-                    <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro R$ {item.parcelas_vencidas[0].valor_recebido}
-                    </Text>
-                  )}
+                )}
 
-                  <View style={styles2.buttonContainer}>
-                    {/* <TouchableOpacity style={styles2.actionButton}>
-                      <Text style={styles2.buttonText}>Histórico</Text>
-                    </TouchableOpacity> */}
-
-                    <TouchableOpacity
-                      onPress={() => onPressClose(item.parcelas_vencidas[0])}
-                      style={styles2.actionButton}>
-                      <Text style={styles2.buttonText}>Efetuar Baixa</Text>
-                    </TouchableOpacity>
-                    <Text style={styles2.valorHoje}>
-                      Valor Hoje R$ {item.saldoatrasado}
-                    </Text>
-                  </View>
+                <View style={styles2.buttonContainer}>
+                  <TouchableOpacity
+                    onPress={() => onPressClose(item.parcelas_vencidas[0])}
+                    style={styles2.actionButton}>
+                    <Text style={styles2.buttonText}>Efetuar Baixa</Text>
+                  </TouchableOpacity>
+                  <Text style={styles2.valorHoje}>
+                    Valor Hoje R$ {item.saldoatrasado}
+                  </Text>
                 </View>
-              </>
+              </View>
             ))}
           </View>
           <Saldo
@@ -247,7 +266,6 @@ const styles2 = StyleSheet.create({
     color: '#888',
     marginBottom: 10,
   },
-
   subTitleValor: {
     fontSize: 14,
     color: '#3CA454FF',
@@ -312,7 +330,6 @@ const localStyles = StyleSheet.create({
   mainContainer: {
     ...styles.m20,
   },
-
   outerComponent: {
     ...styles.flexRow,
     ...styles.alignCenter,
@@ -372,5 +389,15 @@ const localStyles = StyleSheet.create({
     ...styles.mr25,
     ...styles.mt30,
     ...styles.mb20,
+  },
+  searchInput: {
+    flex: 1,
+    height: moderateScale(40),
+    borderColor: '#c6c6c6',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginRight: moderateScale(10),
+    marginLeft: moderateScale(20),
   },
 });
