@@ -187,11 +187,17 @@ export default {
 						this.consultor = response.data?.data.consultor;
 						this.parcelas = response.data?.data.parcelas;
 
+
 						const parcelasNaoBaixadas = response.data?.data.parcelas.filter(parcela => parcela.dt_baixa === "");
 
+						console.log('parcelasNaoBaixadas', parcelasNaoBaixadas)
+
+
 						this.saldoTotal = parcelasNaoBaixadas.reduce((total, parcela) => {
-							return total + this.convertToNumber(parcela.saldo);
+							return total + parcela.saldo;
 						}, 0);
+
+
 					})
 					.catch((error) => {
 						this.toast.add({

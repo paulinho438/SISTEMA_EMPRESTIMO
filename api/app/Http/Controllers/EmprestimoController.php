@@ -1481,7 +1481,7 @@ class EmprestimoController extends Controller
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                $emprestimo->company->caixa = $emprestimo->company->caixa + $request->valor;
+                $emprestimo->company->caixa_pix = $emprestimo->company->caixa + $request->valor;
                 $emprestimo->company->save();
             }
 
