@@ -51,7 +51,7 @@ export default {
 		async close() {
 
 			try {
-				await this.bancoService.fechamentoCaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa);
+				await this.bancoService.fechamentoCaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix );
 
 				this.toast.add({
 					severity: ToastSeverity.SUCCESS,
@@ -220,6 +220,11 @@ export default {
 			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixa" v-model="displayFechamento.saldocaixa" :mode="'currency'"
 				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
 		</div>
+		<div class="field col-12 md:col-16 -mt-4">
+			<label for="zip">Saldo no Caixa Pix</label>
+			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixapix" v-model="displayFechamento.saldocaixapix" :mode="'currency'"
+				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+		</div>
 		<template #footer>
 			<Button label="Fechar Caixa" @click="close" icon="pi pi-check" class="p-button-outlined" />
 		</template>
@@ -262,7 +267,7 @@ export default {
 					</div>
 
 
-					<div class="col-12 md:col-3">
+					<div v-if="banco?.efibank == true" class="col-12 md:col-3">
 						<div class="flex flex-column gap-2 m-2 mt-1">
 							<div class="surface-card shadow-2 p-3 border-round">
 								<div class="flex justify-content-between mb-3">
@@ -330,7 +335,7 @@ export default {
 									<div>
 										<span class="block text-500 font-medium mb-3">Saldo Caixa Pix</span>
 										<div class="text-900 font-medium text-xl">{{
-											banco?.caixa_empresa?.toLocaleString('pt-BR', {
+											banco?.caixa_pix?.toLocaleString('pt-BR', {
 												style: 'currency', currency: 'BRL'
 											}) ?? 'R$ 0,00' }}</div>
 									</div>
@@ -343,7 +348,7 @@ export default {
 						</div>
 					</div>
 
-					<div class="col-12 md:col-3">
+					<div v-if="banco?.efibank == true" class="col-12 md:col-3">
 						<div class="flex flex-column gap-2 m-2 mt-1">
 							<div class="surface-card shadow-2 p-3 border-round">
 								<div class="flex justify-content-between mb-3">
