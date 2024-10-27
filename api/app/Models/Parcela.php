@@ -48,7 +48,7 @@ class Parcela extends Model
 
     public function totalPagoEmprestimo()
     {
-        return Movimentacaofinanceira::whereHas('parcela', function($query) {
+        return Movimentacaofinanceira::whereHas('parcela', function ($query) {
             $query->where('emprestimo_id', $this->emprestimo_id);
         })->sum('valor');
     }
@@ -61,11 +61,23 @@ class Parcela extends Model
     public function totalPendente()
     {
         $totalPendente = Parcela::where('emprestimo_id', $this->emprestimo_id)
-        ->where('dt_baixa', null)
-        ->sum('saldo');
+            ->where('dt_baixa', null)
+            ->sum('saldo');
 
         // Arredonda o valor para 2 casas decimais e retorna como float
         return round((float) $totalPendente, 2);
     }
 
+    public function totalPendenteHoje()
+    {
+        $today = now()->toDateString(); // Obtém a data de hoje no formato YYYY-MM-DD
+
+        $totalPendente = Parcela::where('emprestimo_id', $this->emprestimo_id)
+            ->where('dt_baixa', null)
+            ->where('venc_real', $today)
+            ->sum('saldo');
+
+        // Arredonda o valor para 2 casas decimais e retorna como float
+        return round((float) $totalPendente, 2);
+    }
 }
