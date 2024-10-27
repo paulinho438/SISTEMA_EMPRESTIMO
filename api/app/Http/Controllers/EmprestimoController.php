@@ -1184,6 +1184,7 @@ class EmprestimoController extends Controller
                 ParcelaExtorno::create($addParcelaExtorno);
 
                 $editParcela->dt_baixa = $request->dt_baixa;
+
                 if ($editParcela->contasreceber) {
                     $editParcela->contasreceber->status = 'Pago';
                     $editParcela->contasreceber->dt_baixa = $request->dt_baixa;
@@ -1193,10 +1194,6 @@ class EmprestimoController extends Controller
 
                 $editParcela->emprestimo->company->caixa_pix = $editParcela->emprestimo->company->caixa_pix + $valor_recebido;
                 $editParcela->emprestimo->company->save();
-
-                $editParcela->save();
-
-
 
 
 
@@ -1245,6 +1242,7 @@ class EmprestimoController extends Controller
 
 
                 $editParcela->saldo = 0;
+
                 $editParcela->save();
 
                 $this->custom_log->create([
