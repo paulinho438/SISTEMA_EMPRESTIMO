@@ -66,7 +66,7 @@ export default function parcelasExtorno(props) {
   const saldoTotal = () => {
     let total = 0;
     parcelasExtorno.map(item => {
-      total += item.saldo;
+      total += item.saldo_correto;
     });
     return total;
   };
