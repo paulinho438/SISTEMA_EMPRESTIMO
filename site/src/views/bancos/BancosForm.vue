@@ -183,7 +183,7 @@ export default {
 				</div>
 			</div>
 
-			<div v-if="banco?.efibank" class="formgrid grid">
+			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="name">Chave Pix</label>
 					<InputText :modelValue="banco?.chavepix" v-model="banco.chavepix" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
