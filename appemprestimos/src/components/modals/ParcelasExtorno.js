@@ -143,10 +143,28 @@ export default function parcelasExtorno(props) {
       onAtualizarClientes();
     }
     setVisible(!visible);
-
-
-
   };
+
+  const extornarParcela = item => {
+    Alert.alert(
+      'Extornar Parcela',
+      'Deseja realmente extornar a parcela?',
+      [
+        {
+          text: 'Não',
+          onPress: () => console.log('Cancel Pressed'),
+          style: 'cancel',
+        },
+        {text: 'Sim', onPress: () => extornarParcelaSuccess(item)},
+      ],
+      {cancelable: false},
+    );
+  }
+
+  const extornarParcelaSuccess = async item => {
+      await api.postExtornarParcela(item.id);
+      onAtualizarClientes();
+  }
 
   const formatDate = dateStr => {
     const date = new Date(dateStr);
@@ -202,7 +220,7 @@ export default function parcelasExtorno(props) {
                     </TouchableOpacity> */}
 
                     <TouchableOpacity
-                      onPress={() => onPressClose(item)}
+                      onPress={() => extornarParcela(item)}
                       style={styles2.actionButton}>
                       <Text style={styles2.buttonText}>Extornar Baixa</Text>
                     </TouchableOpacity>

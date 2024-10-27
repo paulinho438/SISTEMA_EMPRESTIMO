@@ -1072,7 +1072,7 @@ class EmprestimoController extends Controller
                 $editParcela->chave_pix = $ext->chave_pix;
                 $editParcela->dt_ult_cobranca = $ext->dt_ult_cobranca;
                 $editParcela->created_at = $ext->created_at;
-                $editParcela->update_at = $ext->update_at;
+                $editParcela->updated_at = $ext->updated_at;
                 $editParcela->save();
             }
 

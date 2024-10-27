@@ -44,7 +44,6 @@ export default function ATMDetails({navigation, route}) {
     React.useCallback(() => {
       getInfo();
       getPendentesParaHoje();
-      getParcelasParaExtorno();
     }, [])
   );
 
@@ -83,15 +82,10 @@ export default function ATMDetails({navigation, route}) {
     let req = await api.pendentesParaHoje();
     setParcelasPendentes(req.data);
 
-  }
-
-  const getParcelasParaExtorno = async () => {
-    let req = await api.parcelasParaExtorno();
-    setParcelasParaExtorno(req);
+    let req2 = await api.parcelasParaExtorno();
+    setParcelasParaExtorno(req2);
 
   }
-
-  
 
   const cobrarAmanha = async () => {
     let req = await api.cobrarAmanha(clientes.id, obterDataAtual());
