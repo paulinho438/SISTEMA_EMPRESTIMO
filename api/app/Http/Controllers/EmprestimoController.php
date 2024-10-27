@@ -1150,6 +1150,8 @@ class EmprestimoController extends Controller
 
             $editParcela = Parcela::find($id);
 
+            $saldoParcela = $editParcela->saldo;
+
             $valor_recebido = $request->valor;
 
             $extorno = ParcelaExtorno::where('parcela_id', $id)->first();
@@ -1195,6 +1197,11 @@ class EmprestimoController extends Controller
                 $editParcela->emprestimo->company->caixa_pix = $editParcela->emprestimo->company->caixa_pix + $valor_recebido;
                 $editParcela->emprestimo->company->save();
 
+                $editParcela->saldo = 0;
+                $editParcela->save();
+
+
+
 
 
                 if ($editParcela->emprestimo->quitacao->chave_pix) {
@@ -1236,14 +1243,9 @@ class EmprestimoController extends Controller
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                $movimentacaoFinanceira['valor'] = $editParcela->saldo;
+                $movimentacaoFinanceira['valor'] = $saldoParcela;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-
-                $editParcela->saldo = 0;
-
-                $editParcela->save();
 
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,
