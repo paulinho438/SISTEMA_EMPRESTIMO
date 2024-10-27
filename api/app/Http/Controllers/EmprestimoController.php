@@ -1066,10 +1066,6 @@ class EmprestimoController extends Controller
             // Obter todas as parcelas de extorno com o mesmo hash_extorno
             $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
 
-            var_dump($extorno[0]->valor_alterado);
-
-            die();
-
             $extorno[0]->parcela_associada->emprestimo->company->caixa_pix = $extorno[0]->parcela_associada->emprestimo->company->caixa_pix - $extorno[0]->valor_alterado;
 
             foreach ($extorno as $ext) {
