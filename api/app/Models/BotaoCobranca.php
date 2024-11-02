@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BotaoCobranca extends Model
 {
-    public $table = 'emprestimos';
+    public $table = 'button_clicks_cobranca';
 
     protected $fillable = [
         'is_active',
