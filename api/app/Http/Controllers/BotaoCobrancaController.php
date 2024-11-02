@@ -51,4 +51,11 @@ class BotaoCobrancaController extends Controller
             return true;
         };
     }
+
+    public function getButtonPressed(Request $request) {
+        $botao = BotaoCobranca::where('company_id', $request->header('Company_id'))->first();
+
+        return response()->json($botao);
+
+    }
 }
