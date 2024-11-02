@@ -26,7 +26,15 @@ class BotaoCobrancaController extends Controller
             'operation' => 'index'
         ]);
 
+
+
         $botao = BotaoCobranca::where('company_id', $request->header('Company_id'))->first();
+
+        if($botao && $botao->is_active) {
+            return response()->json([
+                'message' => 'Botão já foi pressionado'
+            ], 400);
+        }
 
         if ($botao && $botao->updated_at->format('Y-m-d') != now()->format('Y-m-d')) {
             $botao->update([
