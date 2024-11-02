@@ -14,7 +14,11 @@
       "type": "reactnative",
       "cwd": "${workspaceFolder}/appemprestimos",
       "platform": "android",
-      "sourceMaps": true
+      "sourceMaps": true,
+      "runArguments": ["--no-packager"],
+      "env": {
+        "REACT_NATIVE_PACKAGER_HOSTNAME": "localhost"
+      }
     },
     {
       "name": "Debug iOS",
