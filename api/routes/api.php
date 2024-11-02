@@ -99,7 +99,10 @@ Route::middleware('auth:api')->group(function(){
     Route::put('/usuario/{id}', [UsuarioController::class, 'update']);
     Route::post('/usuario', [UsuarioController::class, 'insert']);
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
+
     Route::get('/cobranca/buttonpressed', [BotaoCobrancaController::class, 'pressed']);
+    Route::get('/cobranca/getbuttonpressed', [BotaoCobrancaController::class, 'getButtonPressed']);
+
 
     Route::get('/empresa', [CompanyController::class, 'get']);
     Route::get('/empresas', [CompanyController::class, 'getAll']);
