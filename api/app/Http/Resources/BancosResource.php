@@ -35,6 +35,7 @@ class BancosResource extends JsonResource
             "juros" => $this->juros,
             "certificado" => $this->certificado,
             "chavepix" => $this->chavepix,
+            "info_recebedor_pix" => $this->info_recebedor_pix,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),
             "name_agencia_conta" => "{$this->name} - Agência {$this->agencia} Cc {$this->conta}",
         ];
