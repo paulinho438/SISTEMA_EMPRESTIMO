@@ -94,7 +94,7 @@ class RecalcularParcelas extends Command
 
                 $parcela->save();
 
-                if ($parcela->emprestimo->quitacao->chave_pix) {
+                if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
                     $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
                     $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
