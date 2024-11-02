@@ -185,6 +185,14 @@ export default {
 
 			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">Beneficiário Pix</label>
+					<InputText :modelValue="banco?.info_recebedor_pix" v-model="banco.info_recebedor_pix" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+				</div>
+			</div>
+
+			<div class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="name">Chave Pix</label>
 					<InputText :modelValue="banco?.chavepix" v-model="banco.chavepix" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
 					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>

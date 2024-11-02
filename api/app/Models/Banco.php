@@ -21,6 +21,7 @@ class Banco extends Model
         'certificado',
         'chavepix',
         'company_id',
+        'info_recebedor_pix'
     ];
 
     public function company()

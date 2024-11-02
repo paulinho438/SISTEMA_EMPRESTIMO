@@ -118,6 +118,8 @@ class BancoController extends Controller
                 $EditBanco->conta = $dados['conta'];
                 $EditBanco->saldo = $dados['saldo'];
                 $EditBanco->efibank = $dados['efibank'];
+                $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'];
+
                 if ($dados['efibank'] == 1) {
                     $EditBanco->clienteid = $dados['clienteid'];
                     $EditBanco->clientesecret = $dados['clientesecret'];
