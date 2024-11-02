@@ -19,10 +19,11 @@ use App\Http\Controllers\{
     UsuarioController,
     FeriadoController,
     AddressController,
+    BotaoCobrancaController,
     DashboardController
 
 };
-
+use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
@@ -97,8 +98,8 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/usuario/{id}/delete', [UsuarioController::class, 'delete']);
     Route::put('/usuario/{id}', [UsuarioController::class, 'update']);
     Route::post('/usuario', [UsuarioController::class, 'insert']);
-
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
+    Route::get('/cobranca/buttonpressed', [BotaoCobrancaController::class, 'pressed']);
 
     Route::get('/empresa', [CompanyController::class, 'get']);
     Route::get('/empresas', [CompanyController::class, 'getAll']);

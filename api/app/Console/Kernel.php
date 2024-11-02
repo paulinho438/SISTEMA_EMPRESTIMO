@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         Commands\EnvioManualQuitacao::class,
         Commands\EnvioManualPagamentoMinimo::class,
         Commands\RecalcularParcelas::class,
+        Commands\CobrancaAutomaticaABotao::class,
         Commands\CobrancaAutomaticaA::class,
         Commands\CobrancaAutomaticaB::class,
         Commands\CobrancaAutomaticaC::class,
@@ -35,6 +36,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('baixa:Automatica')->everyMinute();
         $schedule->command('baixa:AutomaticaQuitacao')->everyMinute();
         $schedule->command('baixa:AutomaticaPagamentoMinimo')->everyMinute();
+
+        $schedule->command('cobranca:AutomaticaABotao')->everyMinute();
 
         $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 
