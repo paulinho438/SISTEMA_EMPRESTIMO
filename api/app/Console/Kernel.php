@@ -18,6 +18,8 @@ class Kernel extends ConsoleKernel
         Commands\EnvioManualPagamentoMinimo::class,
         Commands\RecalcularParcelas::class,
         Commands\CobrancaAutomaticaABotao::class,
+        Commands\CobrancaAutomaticaBBotao::class,
+        Commands\CobrancaAutomaticaCBotao::class,
         Commands\CobrancaAutomaticaA::class,
         Commands\CobrancaAutomaticaB::class,
         Commands\CobrancaAutomaticaC::class,
@@ -38,6 +40,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('baixa:AutomaticaPagamentoMinimo')->everyMinute();
 
         $schedule->command('cobranca:AutomaticaABotao')->everyMinute();
+        $schedule->command('cobranca:AutomaticaBBotao')->everyMinute();
+        $schedule->command('cobranca:AutomaticaCBotao')->everyMinute();
+
+
 
         $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 
