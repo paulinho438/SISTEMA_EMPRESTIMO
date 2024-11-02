@@ -126,7 +126,7 @@ class BancoController extends Controller
                 } else {
                     $EditBanco->clienteid = null;
                     $EditBanco->clientesecret = null;
-                    $EditBanco->chavepix = null;
+                    $EditBanco->chavepix = $dados['chavepix'];
                     $EditBanco->juros = null;
                 }
 
