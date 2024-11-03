@@ -16,6 +16,10 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/cliente`);
 	};
 
+	getClientesDisponiveis = async () => {
+		return await axios.get(`${apiPath}/clientesdisponiveis`);
+	};
+
     delete = async (id) => {
 		return await axios.get(`${apiPath}/cliente/${id}/delete`);
 	};
@@ -23,8 +27,14 @@ export default class ClientService {
     save = async (permissions) => {
         if (undefined === permissions.id) return await axios.post(`${apiPath}/cliente`, permissions);
 		else return await axios.put(`${apiPath}/cliente/${permissions.id}`, permissions);
-        
+	};
 
+	mensagemEmMassa = async (dados) => {
+		return await axios.post(`${apiPath}/enviarmensagemmassa`, dados);
+	};
+
+	cobrarClientes = async () => {
+		return await axios.get(`${apiPath}/cobranca/buttonpressed`);
 	};
 
 }

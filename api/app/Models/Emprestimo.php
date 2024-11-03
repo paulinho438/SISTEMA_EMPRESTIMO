@@ -9,6 +9,7 @@ class Emprestimo extends Model
 {
     public $table = 'emprestimos';
 
+    protected $appends = ['count_late_parcels', 'data_quitacao'];
     protected $fillable = [
         'dt_lancamento',
         'valor',
@@ -64,6 +65,17 @@ class Emprestimo extends Model
     public function pagamentominimo()
     {
         return $this->belongsTo(PagamentoMinimo::class, 'id', 'emprestimo_id');
+    }
+
+    public function getCountLateParcelsAttribute()
+    {
+        return $this->parcelas()->where('atrasadas', '>', 0)->count();
+    }
+
+    public function getDataQuitacaoAttribute()
+    {
+        $ultimaParcela = $this->parcelas()->orderBy('dt_baixa', 'desc')->first();
+        return $ultimaParcela ? $ultimaParcela->dt_baixa : null;
     }
 
 }
