@@ -140,6 +140,13 @@ const model = ref([
         { label: 'Usuários', icon: 'pi pi-user pi-building', to: '/usuarios', permission: 'edit_empresa' },
         ],
     },
+    {
+        label: 'Gestão de Empresas',
+        permission: 'edit_empresa',
+        items: [
+        { label: 'Empresas', icon: 'pi pi-fw pi-building', to: '/empresas', permission: 'edit_empresa' },
+        ],
+    },
     // {
     //     label: 'UI Componentss',
     //     permission: 'criar_usuarios',

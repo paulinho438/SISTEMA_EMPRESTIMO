@@ -23,8 +23,12 @@ export default class ClientService {
     save = async (permissions) => {
         if (undefined === permissions.id) return await axios.post(`${apiPath}/usuario`, permissions);
 		else return await axios.put(`${apiPath}/usuario/${permissions.id}`, permissions);
-        
+	};
 
+	// GESTAO DE EMPRESAS
+
+	getAllUsuariosCompany = async (id) => {
+		return await axios.get(`${apiPath}/gestao/usuariosempresa/${id}`);
 	};
 
 }
