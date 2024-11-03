@@ -157,10 +157,11 @@ export default {
 					</div>
 				</template>
 				<Column field="id" header="Id" :sortable="true" class="w-1"></Column>
-				<Column field="nome_completo" header="Descrição" :sortable="true" class="w-2"></Column>
-				<Column field="rg" header="Endereço" :sortable="true" class="w-2"></Column>
-				<Column field="cpf" header="Número" :sortable="true" class="w-1"></Column>
-				<Column field="data_nascimento" header="Complemento" :sortable="true" class="w-3"></Column>
+				<Column field="login" header="Login" :sortable="true" class="w-2"></Column>
+				<Column field="nome_completo" header="Nome Completo" :sortable="true" class="w-2"></Column>
+				<Column field="rg" header="RG" :sortable="true" class="w-2"></Column>
+				<Column field="cpf" header="CPF" :sortable="true" class="w-1"></Column>
+				<Column field="data_nascimento" header="Dt. Nascimento" :sortable="true" class="w-3"></Column>
 				<Column field="status" header="Status" :sortable="true" class="w-3"></Column>
 			</DataTable>
 		</template>

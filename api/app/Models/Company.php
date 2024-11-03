@@ -2,6 +2,7 @@
 
 namespace App\Models;
 use App\Models\User;
+use App\Models\Planos;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,9 @@ class Company extends Model
         'caixa_pix',
         'ativo',
         'email',
-        'motivo_inativo'
+        'motivo_inativo',
+        'plano_id',
+        'login'
 
     ];
 
@@ -25,5 +28,10 @@ class Company extends Model
 
     public function users() {
         return $this->belongsToMany(User::class);
+    }
+
+    public function plano()
+    {
+        return $this->belongsTo(Planos::class);
     }
 }

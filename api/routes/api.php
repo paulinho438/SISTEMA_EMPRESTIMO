@@ -21,13 +21,17 @@ use App\Http\Controllers\{
     AddressController,
     BotaoCobrancaController,
     DashboardController,
-    GestaoController
+    GestaoController,
+    PlanosController
 
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Route;
+
+use App\Mail\ExampleEmail;
+use Illuminate\Support\Facades\Mail;
 
 
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
@@ -36,7 +40,14 @@ Route::get('/users', [UserController::class, 'index']);
 Route::get('/users/{id}', [UserController::class, 'id']);
 
 Route::get('/setup-teste', function (Request $request){
-    var_dump($request->headers);
+    $details = [
+        'title' => 'Relatório de Emprestimos',
+        'body' => 'This is a test email using MailerSend in Laravel.'
+    ];
+
+    Mail::to('paulo_henrique500@hotmail.com')->send(new ExampleEmail($details));
+
+    return 'Email sent successfully!';
 });
 
 
@@ -114,6 +125,11 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/empresas', [CompanyController::class, 'getAll']);
     Route::post('/empresas', [CompanyController::class, 'insert']);
     Route::put('/empresas/{id}', [CompanyController::class, 'update']);
+
+    Route::get('/planos/{id}', [PlanosController::class, 'get']);
+    Route::get('/planos', [PlanosController::class, 'getAll']);
+    Route::post('/planos', [PlanosController::class, 'insert']);
+    Route::put('/planos/{id}', [PlanosController::class, 'update']);
 
 
     Route::get('/contaspagar', [ContaspagarController::class, 'all']);
