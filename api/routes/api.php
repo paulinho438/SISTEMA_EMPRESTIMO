@@ -20,7 +20,8 @@ use App\Http\Controllers\{
     FeriadoController,
     AddressController,
     BotaoCobrancaController,
-    DashboardController
+    DashboardController,
+    GestaoController
 
 };
 use App\Models\BotaoCobranca;
@@ -95,6 +96,8 @@ Route::middleware('auth:api')->group(function(){
     Route::put('/cliente/{id}', [ClientController::class, 'update']);
     Route::post('/cliente', [ClientController::class, 'insert']);
 
+    Route::get('/gestao/usuariosempresa/{id}', [GestaoController::class, 'getAllUsuariosEmpresa']);
+
     Route::get('/usuariocompanies', [UsuarioController::class, 'allCompany']);
     Route::get('/usuario', [UsuarioController::class, 'all']);
     Route::get('/usuario/{id}', [UsuarioController::class, 'id']);
@@ -107,7 +110,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/cobranca/getbuttonpressed', [BotaoCobrancaController::class, 'getButtonPressed']);
 
 
-    Route::get('/empresa', [CompanyController::class, 'get']);
+    Route::get('/empresas/{id}', [CompanyController::class, 'get']);
     Route::get('/empresas', [CompanyController::class, 'getAll']);
 
 
