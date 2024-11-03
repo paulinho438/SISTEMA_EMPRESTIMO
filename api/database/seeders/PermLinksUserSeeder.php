@@ -16,6 +16,28 @@ class PermLinksUserSeeder extends Seeder
      */
     public function run()
     {
+
+        //master
+
+        DB::table("permgroup_user")->insert(
+            [
+                "permgroup_id"     => 1,
+                "user_id"      => 3
+
+            ]
+        );
+
+        DB::table("permgroup_user")->insert(
+            [
+                "permgroup_id"     => 6,
+                "user_id"      => 3
+
+            ]
+        );
+
+        // FIM MASTER
+
+
         DB::table("permgroup_user")->insert(
             [
                 "permgroup_id"     => 1,
