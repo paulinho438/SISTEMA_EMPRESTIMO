@@ -20,35 +20,40 @@ use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+
 class ClientController extends Controller
 {
 
     protected $custom_log;
 
-    public function __construct(Customlog $custom_log){
+    public function __construct(Customlog $custom_log)
+    {
         $this->custom_log = $custom_log;
     }
 
-    public function id(Request $r, $id){
+    public function id(Request $r, $id)
+    {
         return new ClientResource(Client::find($id));
     }
 
-    public function parcelasAtrasadas(Request $request){
+    public function parcelasAtrasadas(Request $request)
+    {
 
         // return auth()->user()->hasPermission('criar_usuarios');
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Clientes Pendentes no APLICATIVO',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes Pendentes no APLICATIVO',
             'operation' => 'index'
         ]);
 
         return ParcelaResource::collection(Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $today = Carbon::now()->toDateString();
                 $query->whereNull('dt_ult_cobranca')
-                      ->orWhereDate('dt_ult_cobranca', '!=', $today);
+                    ->orWhereDate('dt_ult_cobranca', '!=', $today);
             })
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Cobrador') {
@@ -59,21 +64,114 @@ class ClientController extends Controller
                 $query->where('company_id', $request->header('company-id'));
             })
             ->get()->unique('emprestimo_id'));
-
     }
 
-    public function all(Request $request){
+    public function all(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Clientes',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes',
             'operation' => 'index'
         ]);
 
         return ClientResource::collection(Client::where('company_id', $request->header('company-id'))->get());
     }
 
-    public function insert(Request $request){
+    public function enviarMensagemMassa(Request $request)
+    {
+        $dados = $request->all();
+
+        $dtInicio = $request->input('dt_inicio');
+        $dtFinal = $request->input('dt_final');
+
+        // Buscar clientes e seus empréstimos
+        $clients = Client::where('company_id', $request->header('company-id'))
+            ->whereHas('emprestimos', function ($query) {
+                $query->whereHas('parcelas', function ($query) {
+                    $query->whereNotNull('dt_baixa');
+                });
+            })
+            ->with(['emprestimos' => function ($query) {
+                $query->whereHas('parcelas', function ($query) {
+                    $query->whereNotNull('dt_baixa');
+                });
+            }])
+            ->get();
+
+        // Filtrar os resultados em PHP
+        $filteredClients = $clients->filter(function ($client) use ($dtInicio, $dtFinal) {
+            $dataQuitacao = $client->emprestimos->data_quitacao;
+                return $dataQuitacao >= $dtInicio && $dataQuitacao <= $dtFinal;
+        });
+
+
+
+        foreach ($filteredClients as $client) {
+            if ($dados['status'] == 0) {
+                if ($client->emprestimos->count_late_parcels <= 2) {
+                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                }
+
+                if ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
+                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                }
+
+                if ($client->emprestimos->count_late_parcels >= 6) {
+                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                }
+            }
+
+            if ($dados['status'] == 1) {
+                if ($client->emprestimos->count_late_parcels <= 2) {
+                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                }
+            }
+
+            if ($dados['status'] == 2) {
+
+
+                if ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
+                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                }
+            }
+
+            if ($dados['status'] == 3) {
+
+                if ($client->emprestimos->count_late_parcels >= 6) {
+                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Mensagens enviadas com sucesso.']);
+    }
+    public function clientesDisponiveis(Request $request)
+    {
+        $this->custom_log->create([
+            'user_id' => auth()->user()->id,
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes com Último Empréstimo Finalizado',
+            'operation' => 'index'
+        ]);
+
+        $clients = Client::where('company_id', $request->header('company-id'))
+            ->whereDoesntHave('emprestimos', function ($query) {
+                $query->whereHas('parcelas', function ($query) {
+                    $query->where('dt_baixa', null);
+                });
+            })
+            ->with(['emprestimos' => function ($query) {
+                $query->whereDoesntHave('parcelas', function ($query) {
+                    $query->where('dt_baixa', null);
+                });
+            }])
+            ->get();
+
+        return response()->json($clients);
+    }
+
+    public function insert(Request $request)
+    {
         $array = ['error' => ''];
 
         $validator = Validator::make($request->all(), [
@@ -89,7 +187,7 @@ class ClientController extends Controller
         ]);
 
         $dados = $request->all();
-        if(!$validator->fails()){
+        if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
@@ -97,13 +195,12 @@ class ClientController extends Controller
 
             $newGroup = Client::create($dados);
 
-            foreach($dados['address'] as $item){
+            foreach ($dados['address'] as $item) {
                 $item['client_id'] = $newGroup->id;
                 Address::create($item);
             }
 
             return $array;
-
         } else {
             return response()->json([
                 "message" => $validator->errors()->first(),
@@ -114,7 +211,8 @@ class ClientController extends Controller
         return $array;
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
 
 
         DB::beginTransaction();
@@ -137,7 +235,7 @@ class ClientController extends Controller
             ]);
 
             $dados = $request->all();
-            if(!$validator->fails()){
+            if (!$validator->fails()) {
 
                 $EditClient = Client::find($id);
 
@@ -157,17 +255,17 @@ class ClientController extends Controller
 
                 $ids = [];
 
-                foreach($dados['address'] as $item){
-                    if(isset($item['id'])){
+                foreach ($dados['address'] as $item) {
+                    if (isset($item['id'])) {
                         $ids[] = $item['id'];
                     }
                 }
 
                 Address::whereNotIn('id', $ids)->where('client_id', $id)->delete();
 
-                foreach($dados['address'] as $item){
+                foreach ($dados['address'] as $item) {
 
-                    if(isset($item['id'])){
+                    if (isset($item['id'])) {
                         $EditAddress = Address::find($item['id']);
                         $EditAddress->description   = $item['description'];
                         $EditAddress->address       = $item['address'];
@@ -179,12 +277,11 @@ class ClientController extends Controller
                         $EditAddress->latitude      = $item['latitude'];
                         $EditAddress->longitude     = $item['longitude'];
                         $EditAddress->save();
-                    }else{
+                    } else {
                         $item['client_id'] = $id;
                         Address::create($item);
                     }
                 }
-
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
@@ -195,7 +292,6 @@ class ClientController extends Controller
             DB::commit();
 
             return $array;
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -228,18 +324,17 @@ class ClientController extends Controller
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' deletou o Cliente: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' deletou o Cliente: ' . $id,
                 'operation' => 'destroy'
             ]);
 
             return response()->json(['message' => 'Cliente excluído com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' tentou deletar o Cliente: '.$id.' ERROR: '.$e->getMessage(),
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' tentou deletar o Cliente: ' . $id . ' ERROR: ' . $e->getMessage(),
                 'operation' => 'error'
             ]);
 
@@ -248,5 +343,34 @@ class ClientController extends Controller
                 "error" => $e->getMessage()
             ], Response::HTTP_FORBIDDEN);
         }
+    }
+
+    public function enviarMensagem($cliente, $frase)
+    {
+        try {
+
+            $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
+
+            if ($response->successful()) {
+                $r = $response->json();
+                if ($r['loggedIn']) {
+
+                    $telefone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
+                    $baseUrl = $cliente->emprestimos->company->whatsapp . '/enviar-mensagem';
+
+                    $data = [
+                        "numero" => "55" . $telefone,
+                        "mensagem" => $frase
+                    ];
+
+                    $response = Http::asJson()->post($baseUrl, $data);
+                    sleep(8);
+                }
+            }
+        } catch (\Throwable $th) {
+            dd($th);
+        }
+
+        return true;
     }
 }

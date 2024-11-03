@@ -68,6 +68,16 @@ class Parcela extends Model
         return round((float) $totalPendente, 2);
     }
 
+    public function countLateParcels()
+    {
+        // Conta o número de parcelas que tiveram atraso
+        $lateParcelsCount = Parcela::where('emprestimo_id', $this->emprestimo_id)
+            ->where('atrasadas', '>', 0)
+            ->count();
+
+        return $lateParcelsCount;
+    }
+
     public function totalPendenteHoje()
     {
         $today = now()->toDateString(); // Obtém a data de hoje no formato YYYY-MM-DD

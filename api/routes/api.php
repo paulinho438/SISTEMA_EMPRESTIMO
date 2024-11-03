@@ -86,6 +86,9 @@ Route::middleware('auth:api')->group(function(){
     Route::post('/bancos', [BancoController::class, 'insert']);
     Route::post('/fechamentocaixa/{id}', [BancoController::class, 'fechamentoCaixa']);
 
+    Route::get('/clientesdisponiveis', [ClientController::class, 'clientesDisponiveis']);
+    Route::post('/enviarmensagemmassa', [ClientController::class, 'enviarMensagemMassa']);
+
     Route::get('/cliente', [ClientController::class, 'all']);
     Route::get('/cliente/{id}', [ClientController::class, 'id']);
     Route::get('/cliente/{id}/delete', [ClientController::class, 'delete']);

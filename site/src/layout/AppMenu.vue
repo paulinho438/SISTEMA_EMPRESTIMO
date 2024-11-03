@@ -114,6 +114,20 @@ const model = ref([
                    
                 ]
             },
+            {
+                label: 'Gestão e Cobrança',
+                permission: 'view_menu_cadastro',
+                icon: 'pi pi-fw pi-chart-line',
+                items: [
+                    { 
+                        label: 'Finalizados e Renovações', 
+                        icon: 'pi pi-fw pi-verified', 
+                        to: '/emprestimosfinalizados', 
+                        permission: 'view_fechamentocaixa' 
+                    }
+                   
+                ]
+            },
   
         ]
     },
