@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import EmpresasService from '@/service/EmpresasService';
 import UsuarioService from '@/service/UsuarioService';
+import PlanosService from '@/service/PlanosService';
 import UtilService from '@/service/UtilService';
 import Usuarios from './components/Usuarios.vue';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
@@ -19,6 +20,7 @@ export default {
             router: useRouter(),
             empresasService: new EmpresasService(),
             usuarioService: new UsuarioService(),
+            planosService: new PlanosService(),
             icons: PrimeIcons,
             toast: useToast()
         };
@@ -30,6 +32,7 @@ export default {
         return {
             empresas: ref({}),
             usuarios: ref([]),
+            planos: ref([]),
             oldempresas: ref(null),
             errors: ref([]),
             address: ref({
@@ -39,6 +42,7 @@ export default {
             }),
             loading: ref(false),
             selectedAtivo: ref(''),
+            selectedPlano: ref(''),
             ativo: ref([
                 { name: 'Ativada', value: 1 },
                 { name: 'Inativo', value: 0 }
@@ -50,7 +54,7 @@ export default {
             this.loading = !this.loading;
         },
         getempresas() {
-			this.loading = true;
+            this.loading = true;
             if (this.route.params?.id) {
                 this.empresas = ref(null);
                 this.loading = true;
@@ -59,10 +63,14 @@ export default {
                     .then((response) => {
                         this.empresas = response.data;
 
-						if(this.empresas?.ativo == 1){
-							this.selectedAtivo = { name: 'Ativada', value: 1 };
-						}else{
-							this.selectedAtivo = { name: 'Inativo', value: 0 };
+                        if (this.empresas?.ativo == 1) {
+                            this.selectedAtivo = { name: 'Ativada', value: 1 };
+                        } else {
+                            this.selectedAtivo = { name: 'Inativo', value: 0 };
+                        }
+
+						if (this.empresas?.plano_id) {
+							this.selectedPlano = this.planos.find((plano) => plano.id == this.empresas.plano_id);
 						}
                     })
                     .catch((error) => {
@@ -86,7 +94,7 @@ export default {
                 this.usuarioService
                     .getAllUsuariosCompany(this.route.params.id)
                     .then((response) => {
-						console.log(response.data);
+                        console.log(response.data);
                         this.usuarios = response.data.data;
                     })
                     .catch((error) => {
@@ -103,6 +111,25 @@ export default {
                 this.usuarios = ref({});
             }
         },
+        getPlanos() {
+            this.planos = ref(null);
+            this.loading = true;
+            this.planosService
+                .getAll()
+                .then((response) => {
+                    this.planos = response.data;
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: UtilService.message(e),
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
         back() {
             this.router.push(`/empresas`);
         },
@@ -114,6 +141,8 @@ export default {
             this.errors = [];
 
             this.empresas.ativo = this.selectedAtivo.value;
+
+			this.empresas.plano_id = this.selectedPlano.id;
 
             this.empresasService
                 .save(this.empresas)
@@ -168,8 +197,9 @@ export default {
         }
     },
     mounted() {
+		this.getPlanos();
         this.getempresas();
-		this.getUsuariosDaEmpresa();
+        this.getUsuariosDaEmpresa();
     }
 };
 </script>
@@ -198,22 +228,35 @@ export default {
                         <label for="firstname2">E-mail</label>
                         <InputText id="firstname2" :modelValue="empresas?.email" v-model="empresas.email" type="text" />
                     </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="lastname2">Plano</label>
+                        <Dropdown v-model="selectedPlano" :options="planos" optionLabel="nome" placeholder="Selecione" />
+                    </div>
 					<div v-if="this.empresas?.id" class="field col-12 md:col-3">
                         <label for="lastname2">Status da Empresa</label>
                         <Dropdown v-model="selectedAtivo" :options="ativo" optionLabel="name" placeholder="Selecione" />
                     </div>
-					<div v-if="this.empresas?.id" class="field col-12 md:col-3">
+                    <div v-if="this.empresas?.id" class="field col-12 md:col-3">
                         <label for="firstname2">Motivo Inativo</label>
                         <InputText id="firstname2" :modelValue="empresas?.motivo_inativo" v-model="empresas.motivo_inativo" type="text" />
                     </div>
-					<div class="field col-12 md:col-3">
+                    <div class="field col-12 md:col-3">
                         <label for="firstname2">URL Integração WhatsApp</label>
                         <InputText id="firstname2" :modelValue="empresas?.whatsapp" v-model="empresas.whatsapp" type="text" />
                     </div>
                 </div>
             </div>
 
-            <Usuarios v-if="this.empresas?.id" :usuarios="this.usuarios" :address="this.empresas?.address" :oldCicom="this.oldempresas" :loading="loading" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading" />
+            <Usuarios
+                v-if="this.empresas?.id"
+                :usuarios="this.usuarios"
+                :address="this.empresas?.address"
+                :oldCicom="this.oldempresas"
+                :loading="loading"
+                @updateCicom="clearCicom"
+                @addCityBeforeSave="addCityBeforeSave"
+                @changeLoading="changeLoading"
+            />
         </template>
     </Card>
 </template>
