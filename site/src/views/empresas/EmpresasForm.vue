@@ -77,7 +77,6 @@ export default {
                     });
             } else {
                 this.empresas = ref({});
-                this.empresas.address = [];
             }
         },
         getUsuariosDaEmpresa() {
@@ -113,16 +112,6 @@ export default {
         save() {
             this.changeLoading();
             this.errors = [];
-
-            if (this.selectedTipoSexo.value == undefined) {
-                this.toast.add({
-                    severity: ToastSeverity.ERROR,
-                    detail: 'Selecione o Sexo',
-                    life: 3000
-                });
-
-                return false;
-            }
 
             this.empresas.ativo = this.selectedAtivo.value;
 
@@ -209,18 +198,22 @@ export default {
                         <label for="firstname2">E-mail</label>
                         <InputText id="firstname2" :modelValue="empresas?.email" v-model="empresas.email" type="text" />
                     </div>
+					<div v-if="this.empresas?.id" class="field col-12 md:col-3">
+                        <label for="lastname2">Status da Empresa</label>
+                        <Dropdown v-model="selectedAtivo" :options="ativo" optionLabel="name" placeholder="Selecione" />
+                    </div>
+					<div v-if="this.empresas?.id" class="field col-12 md:col-3">
+                        <label for="firstname2">Motivo Inativo</label>
+                        <InputText id="firstname2" :modelValue="empresas?.motivo_inativo" v-model="empresas.motivo_inativo" type="text" />
+                    </div>
 					<div class="field col-12 md:col-3">
                         <label for="firstname2">URL Integração WhatsApp</label>
                         <InputText id="firstname2" :modelValue="empresas?.whatsapp" v-model="empresas.whatsapp" type="text" />
                     </div>
-					<div class="field col-12 md:col-3">
-                        <label for="lastname2">Status da Empresa</label>
-                        <Dropdown v-model="selectedAtivo" :options="ativo" optionLabel="name" placeholder="Selecione" />
-                    </div>
                 </div>
             </div>
 
-            <Usuarios :usuarios="this.usuarios" :address="this.empresas?.address" :oldCicom="this.oldempresas" :loading="loading" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading" v-if="true" />
+            <Usuarios v-if="this.empresas?.id" :usuarios="this.usuarios" :address="this.empresas?.address" :oldCicom="this.oldempresas" :loading="loading" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave" @changeLoading="changeLoading" />
         </template>
     </Card>
 </template>

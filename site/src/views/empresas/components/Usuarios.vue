@@ -133,18 +133,12 @@ export default {
 <template>
 	<div class="grid flex flex-wrap mb-3 mt-3 px-4 pt-2">
 		<div class="col-8 px-0 py-0">
-			<h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.MAP"></i> Usuários</h5>
+			<h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.MAP"></i> Usuários da Empresa </h5>
 		</div>
 	</div>
 	<Card>
 		<template #content>
 			<ConfirmDialog></ConfirmDialog>
-			<div class="grid flex flex-wrap mb-3 px-4 pt-2">
-				<div class="col-12 px-0 py-0 text-right">
-					<Button label="Adicionar Usuário" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="addCity" />
-				</div>
-			</div>
-			
 			<DataTable
 				dataKey="id"
 				:value="usuarios"

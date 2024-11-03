@@ -20,9 +20,9 @@ export default class EmpresasService {
 		return await axios.get(`${apiPath}/empresas/${id}/delete`);
 	};
 
-    save = async (permissions) => {
-        if (undefined === permissions.id) return await axios.post(`${apiPath}/empresas`, permissions);
-		else return await axios.put(`${apiPath}/empresas/${permissions.id}`, permissions);
+    save = async (data) => {
+        if (undefined === data.id) return await axios.post(`${apiPath}/empresas`, data);
+		else return await axios.put(`${apiPath}/empresas/${data.id}`, data);
 	};
 
 	
