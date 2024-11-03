@@ -53,31 +53,14 @@ class UserSeeder extends Seeder
 
         DB::table("users")->insert(
             [
-                "nome_completo"             => "SEM EMPRESA",
-                "cpf"                       => "22222222222",
-                "rg"                        => "1111111",
+                "nome_completo"             => "MASTERGERAL",
+                "cpf"                       => "MASTERGERAL",
+                "login"                     => "MASTERGERAL",
+                "rg"                        => "2834868",
                 "data_nascimento"           => Carbon::now()->format("Y-m-d"),
                 "sexo"                      => "M",
-                "telefone_celular"          => "(61) 9 0000-0000",
-                "email"                     => "admin3@gmail.com",
-                "status"                    => "A",
-                "status_motivo"             => "",
-                "tentativas"                => "0",
-                "password"                  => bcrypt("1234"),
-                "created_at"                => Carbon::now()->format("Y-m-d H:i:s"),
-                "updated_at"                => Carbon::now()->format("Y-m-d H:i:s")
-            ]
-        );
-
-        DB::table("users")->insert(
-            [
-                "nome_completo"             => "USUARIO CONSULTOR",
-                "cpf"                       => "33333333333",
-                "rg"                        => "3333333",
-                "data_nascimento"           => Carbon::now()->format("Y-m-d"),
-                "sexo"                      => "M",
-                "telefone_celular"          => "(61) 9 0000-0000",
-                "email"                     => "consultor@gmail.com",
+                "telefone_celular"          => "(61) 9 9330-5267",
+                "email"                     => "admin@gmail.com",
                 "status"                    => "A",
                 "status_motivo"             => "",
                 "tentativas"                => "0",

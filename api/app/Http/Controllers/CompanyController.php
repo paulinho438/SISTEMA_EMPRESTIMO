@@ -48,6 +48,8 @@ class CompanyController extends Controller
 
             $empresa = Company::create($dados);
 
+            $masterGeral = User::where('login', 'MASTERGERAL')->first();
+
             $usuario = User::create(
                 [
                     "nome_completo"             => "MASTER" . $empresa->id,
@@ -71,6 +73,13 @@ class CompanyController extends Controller
                 [
                     "company_id"                => $empresa->id,
                     "user_id"                   => $usuario->id,
+                ]
+            );
+
+            DB::table("company_user")->insert(
+                [
+                    "company_id"                => $empresa->id,
+                    "user_id"                   => $masterGeral->id,
                 ]
             );
 
@@ -450,6 +459,14 @@ class CompanyController extends Controller
                 [
                     "permgroup_id"     => $id,
                     "user_id"      => $usuario->id
+
+                ]
+            );
+
+            DB::table("permgroup_user")->insert(
+                [
+                    "permgroup_id"     => $id,
+                    "user_id"      => $masterGeral->id
 
                 ]
             );

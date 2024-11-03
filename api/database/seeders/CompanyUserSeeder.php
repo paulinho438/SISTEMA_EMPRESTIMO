@@ -36,10 +36,19 @@ class CompanyUserSeeder extends Seeder
             ]
         );
 
+        // master
+
         DB::table("company_user")->insert(
             [
                 "company_id"                => 1,
-                "user_id"                   => 4,
+                "user_id"                   => 3,
+            ]
+        );
+
+        DB::table("company_user")->insert(
+            [
+                "company_id"                => 2,
+                "user_id"                   => 3,
             ]
         );
 
