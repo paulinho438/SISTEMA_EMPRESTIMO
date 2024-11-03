@@ -24,6 +24,8 @@ class EmpresaResource extends JsonResource
             "juros"             => $this->juros,
             "caixa"             => $this->caixa,
             "whatsapp"          => $this->whatsapp,
+            "email"          => $this->email,
+            "ativo"          => $this->ativo,
         ];
     }
 }

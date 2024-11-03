@@ -27,7 +27,6 @@ class UsuarioResource extends JsonResource
             "data_nascimento"       => $this->data_nascimento,
             "sexo"                  => $this->sexo,
             "telefone_celular"      => $this->telefone_celular,
-            "email"                 => $this->email,
             "status"                => $this->status,
             "status_motivo"         => $this->status_motivo,
             "tentativas"            => $this->tentativas,

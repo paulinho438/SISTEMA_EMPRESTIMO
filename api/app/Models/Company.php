@@ -14,7 +14,9 @@ class Company extends Model
         'company',
         'juros',
         'caixa',
-        'caixa_pix'
+        'caixa_pix',
+        'ativo',
+        'email'
 
     ];
 

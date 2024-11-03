@@ -38,10 +38,10 @@ export default {
                 geolocalizacao: '17.23213, 12.455345'
             }),
             loading: ref(false),
-            selectedTipoSexo: ref(''),
-            sexo: ref([
-                { name: 'Masculino', value: 'M' },
-                { name: 'Feminino', value: 'F' }
+            selectedAtivo: ref(''),
+            ativo: ref([
+                { name: 'Ativada', value: 1 },
+                { name: 'Inativo', value: 0 }
             ])
         };
     },
@@ -58,6 +58,12 @@ export default {
                     .get(this.route.params.id)
                     .then((response) => {
                         this.empresas = response.data;
+
+						if(this.empresas?.ativo == 1){
+							this.selectedAtivo = { name: 'Ativada', value: 1 };
+						}else{
+							this.selectedAtivo = { name: 'Inativo', value: 0 };
+						}
                     })
                     .catch((error) => {
                         this.toast.add({
@@ -118,7 +124,7 @@ export default {
                 return false;
             }
 
-            this.empresas.sexo = this.selectedTipoSexo.value;
+            this.empresas.ativo = this.selectedAtivo.value;
 
             this.empresasService
                 .save(this.empresas)
@@ -181,7 +187,7 @@ export default {
 
 <template>
     <Toast />
-    <LoadingComponent :loading="true" />
+    <LoadingComponent :loading="loading" />
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">
         <div class="col-8 px-0 py-0">
             <h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
@@ -206,6 +212,10 @@ export default {
 					<div class="field col-12 md:col-3">
                         <label for="firstname2">URL Integração WhatsApp</label>
                         <InputText id="firstname2" :modelValue="empresas?.whatsapp" v-model="empresas.whatsapp" type="text" />
+                    </div>
+					<div class="field col-12 md:col-3">
+                        <label for="lastname2">Status da Empresa</label>
+                        <Dropdown v-model="selectedAtivo" :options="ativo" optionLabel="name" placeholder="Selecione" />
                     </div>
                 </div>
             </div>
