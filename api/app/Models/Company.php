@@ -16,7 +16,8 @@ class Company extends Model
         'caixa',
         'caixa_pix',
         'ativo',
-        'email'
+        'email',
+        'motivo_inativo'
 
     ];
 

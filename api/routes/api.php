@@ -112,6 +112,8 @@ Route::middleware('auth:api')->group(function(){
 
     Route::get('/empresas/{id}', [CompanyController::class, 'get']);
     Route::get('/empresas', [CompanyController::class, 'getAll']);
+    Route::post('/empresas', [CompanyController::class, 'insert']);
+    Route::put('/empresas/{id}', [CompanyController::class, 'update']);
 
 
     Route::get('/contaspagar', [ContaspagarController::class, 'all']);
