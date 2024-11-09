@@ -23,6 +23,8 @@ use App\Models\Contasreceber;
 use App\Models\Movimentacaofinanceira;
 use App\Traits\VerificarPermissao;
 
+use App\Services\BcodexService;
+
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
@@ -57,11 +59,36 @@ class EmprestimoController extends Controller
 
     protected $custom_log;
 
+    protected $bcodexService;
+
+
     use VerificarPermissao;
 
-    public function __construct(Customlog $custom_log)
+
+
+    public function __construct(Customlog $custom_log, BcodexService $bcodexService)
     {
         $this->custom_log = $custom_log;
+        $this->bcodexService = $bcodexService;
+    }
+
+    public function gerarCobranca(Request $request)
+    {
+
+
+        $response = $this->bcodexService->criarCobranca( 18.00);
+
+        // Retorna a resposta da API externa
+        if ($response->successful()) {
+            $response->json()['txid'];
+            return response()->json($response->json(), 201);
+        }
+
+        // Retorna erro caso a API externa retorne falha
+        return response()->json([
+            'error' => 'Erro ao criar a cobrança',
+            'details' => $response->json(),
+        ], $response->status());
     }
 
     public function id(Request $r, $id)
@@ -217,63 +244,6 @@ class EmprestimoController extends Controller
 
         return BancosComSaldoResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
-
-    public function enviarPix($dados)
-    {
-
-
-        $return = [];
-
-        $caminhoAbsoluto = storage_path('app/public/documentos/8fe73da8-28ab-43ce-9768-6aa2680c39e1.p12');
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-        $options = [
-            'clientId' => 'Client_Id_3700b7ff6efd2ef2be6fccbff8252e65b20b283f',
-            'clientSecret' => 'Client_Secret_8309ea2f1426553371867989e8a4a46a9ed29681',
-            'certificate' => $caminhoAbsoluto,
-            'sandbox' => false,
-            "debug" => false,
-            'timeout' => 60,
-        ];
-
-        $params = [
-            "idEnvio" => Str::random(35)
-        ];
-
-        $body = [
-            "valor" => $dados['valor'],
-            "pagador" => [
-                "chave" => "61265167-9729-4926-9c4a-6109febc94c2", // Pix key registered in the authenticated Efí account
-                "infoPagador" => $dados['informacao']
-            ],
-            "favorecido" => [
-                "chave" => $dados['pix_cliente'] // Type key: random, email, phone, cpf or cnpj
-            ]
-
-        ];
-
-        try {
-            $api = EfiPay::getInstance($options);
-            $response = $api->pixSend($params, $body);
-
-            return $response;
-
-            return [
-                'error_code' => null,
-                'error' => null,
-                'error_description' => null,
-                'responde' => $response
-            ];
-        } catch (EfiException $e) {
-            return [
-                'error_code' => $e->code,
-                'error' => $e->error,
-                'error_description' => $e->errorDescription
-            ];
-        } catch (Exception $e) {
-            print_r($e->getMessage());
-        }
-    }
-
     public function insert(Request $request)
     {
 
@@ -342,105 +312,12 @@ class EmprestimoController extends Controller
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
+            //API COBRANCA B.CODEX
+            $response = $this->bcodexService->criarCobranca( $addParcela['valor']);
 
-            if ($dados['banco']['efibank'] == 1) {
-
-                $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-                $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-                $options = [
-                    'clientId' => $dados['banco']['clienteid'],
-                    'clientSecret' => $dados['banco']['clientesecret'],
-                    'certificate' => $caminhoAbsoluto,
-                    'sandbox' => false,
-                    "debug" => false,
-                    'timeout' => 60,
-                ];
-
-                $params = [
-                    "txid" => Str::random(32)
-                ];
-
-                $body = [
-                    "calendario" => [
-                        "dataDeVencimento" => $addParcela['venc_real'],
-                        "validadeAposVencimento" => 0
-                    ],
-                    "devedor" => [
-                        "nome" => $dados['cliente']['nome_completo'],
-                        "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-                    ],
-                    "valor" => [
-                        "original" => number_format(str_replace(',', '', $addParcela['valor']), 2, '.', ''),
-
-                    ],
-                    "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-                    "solicitacaoPagador" => "Parcela " . $addParcela['parcela'],
-                    "infoAdicionais" => [
-                        [
-                            "nome" => "Emprestimo",
-                            "valor" => "R$ " . $emprestimoAdd->valor,
-                        ],
-                        [
-                            "nome" => "Parcela",
-                            "valor" => $addParcela['parcela'] . " / " . $ultimaParcela['parcela']
-                        ]
-                    ]
-                ];
-
-                try {
-                    $api = new EfiPay($options);
-                    $pix = $api->pixCreateDueCharge($params, $body);
-
-                    if ($pix["txid"]) {
-                        $params = [
-                            "id" => $pix["loc"]["id"]
-                        ];
-
-                        $addParcela['identificador'] = $pix["loc"]["id"];
-
-
-                        try {
-                            $qrcode = $api->pixGenerateQRCode($params);
-
-                            $addParcela['chave_pix'] = $qrcode['linkVisualizacao'];
-                        } catch (EfiException $e) {
-
-                            $this->custom_log->create([
-                                'user_id' => auth()->user()->id,
-                                'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                                'operation' => 'error'
-                            ]);
-
-                            print_r($e->code . "<br>");
-                            print_r($e->error . "<br>");
-                            print_r($e->errorDescription) . "<br>";
-                        } catch (Exception $e) {
-                            $this->custom_log->create([
-                                'user_id' => auth()->user()->id,
-                                'content' => $e->getMessage(),
-                                'operation' => 'error'
-                            ]);
-                        }
-                    } else {
-                        $this->custom_log->create([
-                            'user_id' => auth()->user()->id,
-                            'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
-                            'operation' => 'error'
-                        ]);
-                    }
-                } catch (EfiException $e) {
-                    $this->custom_log->create([
-                        'user_id' => auth()->user()->id,
-                        'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                        'operation' => 'error'
-                    ]);
-                } catch (Exception $e) {
-                    $this->custom_log->create([
-                        'user_id' => auth()->user()->id,
-                        'content' => $e->getMessage(),
-                        'operation' => 'error'
-                    ]);
-                }
+            if ($response->successful()) {
+                $addParcela['identificador'] = $response->json()['txid'];
+                $addParcela['chave_pix'] = $response->json()['pixCopiaECola'];
             }
 
             $parcela = Parcela::create($addParcela);
@@ -462,10 +339,6 @@ class EmprestimoController extends Controller
             }
         }
 
-
-
-
-
         if ($dados['banco']['efibank'] == 1) {
 
             $quitacao = [];
@@ -473,97 +346,14 @@ class EmprestimoController extends Controller
             $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
             $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
 
-            $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-            $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-            $options = [
-                'clientId' => $dados['banco']['clienteid'],
-                'clientSecret' => $dados['banco']['clientesecret'],
-                'certificate' => $caminhoAbsoluto,
-                'sandbox' => false,
-                "debug" => false,
-                'timeout' => 60,
-            ];
+            //API COBRANCA B.CODEX
+            $response = $this->bcodexService->criarCobranca(
+                ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
+            );
 
-            $params = [
-                "txid" => Str::random(32)
-            ];
-
-            $body = [
-                "calendario" => [
-                    "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
-                    "validadeAposVencimento" => 10
-                ],
-                "devedor" => [
-                    "nome" => $dados['cliente']['nome_completo'],
-                    "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-                ],
-                "valor" => [
-                    "original" => number_format(str_replace(',', '', $emprestimoAdd->parcelas[0]->totalPendente()), 2, '.', ''),
-
-                ],
-                "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-                "solicitacaoPagador" => "Quitação do Emprestimo ",
-                "infoAdicionais" => [
-                    [
-                        "nome" => "Emprestimo",
-                        "valor" => "R$ " . $emprestimoAdd->valor,
-                    ]
-                ]
-            ];
-
-            try {
-                $api = new EfiPay($options);
-                $pix = $api->pixCreateDueCharge($params, $body);
-
-                if ($pix["txid"]) {
-                    $params = [
-                        "id" => $pix["loc"]["id"]
-                    ];
-
-                    $quitacao['identificador'] = $pix["loc"]["id"];
-
-
-                    try {
-                        $qrcode = $api->pixGenerateQRCode($params);
-
-                        $quitacao['chave_pix'] = $qrcode['linkVisualizacao'];
-                    } catch (EfiException $e) {
-
-                        $this->custom_log->create([
-                            'user_id' => auth()->user()->id,
-                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                            'operation' => 'error'
-                        ]);
-
-                        print_r($e->code . "<br>");
-                        print_r($e->error . "<br>");
-                        print_r($e->errorDescription) . "<br>";
-                    } catch (Exception $e) {
-                        $this->custom_log->create([
-                            'user_id' => auth()->user()->id,
-                            'content' => $e->getMessage(),
-                            'operation' => 'error'
-                        ]);
-                    }
-                } else {
-                    $this->custom_log->create([
-                        'user_id' => auth()->user()->id,
-                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
-                        'operation' => 'error'
-                    ]);
-                }
-            } catch (EfiException $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                    'operation' => 'error'
-                ]);
-            } catch (Exception $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => $e->getMessage(),
-                    'operation' => 'error'
-                ]);
+            if ($response->successful()) {
+                $pagamentoMinimo['identificador'] = $response->json()['txid'];
+                $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
             }
 
             Quitacao::create($quitacao);
@@ -575,108 +365,18 @@ class EmprestimoController extends Controller
             $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
             $pagamentoMinimo['valor'] = ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor']);
 
-            $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-            $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
-            $options = [
-                'clientId' => $dados['banco']['clienteid'],
-                'clientSecret' => $dados['banco']['clientesecret'],
-                'certificate' => $caminhoAbsoluto,
-                'sandbox' => false,
-                "debug" => false,
-                'timeout' => 60,
-            ];
+            //API COBRANCA B.CODEX
+            $response = $this->bcodexService->criarCobranca( $emprestimoAdd->parcelas[0]->totalPendente());
 
-            $params = [
-                "txid" => Str::random(32)
-            ];
-
-            $body = [
-                "calendario" => [
-                    "dataDeVencimento" => $emprestimoAdd->parcelas[0]->venc_real,
-                    "validadeAposVencimento" => 10
-                ],
-                "devedor" => [
-                    "nome" => $dados['cliente']['nome_completo'],
-                    "cpf" => str_replace(['-', '.'], '', $dados['cliente']['cpf']),
-                ],
-                "valor" => [
-                    "original" => number_format(str_replace(',', '', ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])), 2, '.', ''),
-
-                ],
-                "chave" => $dados['banco']['chavepix'], // Pix key registered in the authenticated Efí account
-                "solicitacaoPagador" => "Quitação do Emprestimo ",
-                "infoAdicionais" => [
-                    [
-                        "nome" => "Emprestimo",
-                        "valor" => "R$ " . $emprestimoAdd->valor,
-                    ]
-                ]
-            ];
-
-            try {
-                $api = new EfiPay($options);
-                $pix = $api->pixCreateDueCharge($params, $body);
-
-                if ($pix["txid"]) {
-                    $params = [
-                        "id" => $pix["loc"]["id"]
-                    ];
-
-                    $pagamentoMinimo['identificador'] = $pix["loc"]["id"];
-
-
-                    try {
-                        $qrcode = $api->pixGenerateQRCode($params);
-
-                        $pagamentoMinimo['chave_pix'] = $qrcode['linkVisualizacao'];
-                    } catch (EfiException $e) {
-
-                        $this->custom_log->create([
-                            'user_id' => auth()->user()->id,
-                            'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                            'operation' => 'error'
-                        ]);
-
-                        print_r($e->code . "<br>");
-                        print_r($e->error . "<br>");
-                        print_r($e->errorDescription) . "<br>";
-                    } catch (Exception $e) {
-                        $this->custom_log->create([
-                            'user_id' => auth()->user()->id,
-                            'content' => $e->getMessage(),
-                            'operation' => 'error'
-                        ]);
-                    }
-                } else {
-                    $this->custom_log->create([
-                        'user_id' => auth()->user()->id,
-                        'content' => "<pre>" . json_encode($pix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>",
-                        'operation' => 'error'
-                    ]);
-                }
-            } catch (EfiException $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => 'Error ao gerar a parcela ' . $e->code . ' ' . $e->error . ' ' . $e->errorDescription,
-                    'operation' => 'error'
-                ]);
-            } catch (Exception $e) {
-                $this->custom_log->create([
-                    'user_id' => auth()->user()->id,
-                    'content' => $e->getMessage(),
-                    'operation' => 'error'
-                ]);
+            if ($response->successful()) {
+                $quitacao['identificador'] = $response->json()['txid'];
+                $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
             }
 
             PagamentoMinimo::create($pagamentoMinimo);
         }
 
-
         return $emprestimoAdd;
-
-
-
-        return $array;
     }
 
     public function insertRefinanciamento(Request $request)
