@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\Mail;
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
 
 Route::get('/users', [UserController::class, 'index']);
+
 Route::get('/users/{id}', [UserController::class, 'id']);
 
 Route::get('/setup-teste', function (Request $request){
@@ -50,6 +51,8 @@ Route::get('/setup-teste', function (Request $request){
     return 'Email sent successfully!';
 });
 
+
+Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookRetornoCobranca']);
 
 
 

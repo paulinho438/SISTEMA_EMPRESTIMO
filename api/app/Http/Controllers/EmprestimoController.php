@@ -1331,6 +1331,44 @@ class EmprestimoController extends Controller
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
 
+    public function webhookRetornoCobranca(Request $request)
+    {
+        $data = $request->json()->all();
+
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $parcela = Parcela::where('identificador', $txId)->first();
+
+                while ($parcela && $valor > 0) {
+                    if ($valor >= $parcela->saldo) {
+                        // Quitar a parcela atual
+                        $valor -= $parcela->saldo;
+                        $parcela->saldo = 0;
+                        $parcela->dt_baixa = $horario;
+                    } else {
+                        // Reduzir o saldo da parcela atual
+                        $parcela->saldo -= $valor;
+                        $valor = 0;
+                    }
+                    $parcela->save();
+
+                    // Encontrar a próxima parcela
+                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                                      ->where('id', '>', $parcela->id)
+                                      ->orderBy('id', 'asc')
+                                      ->first();
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Baixas realizadas com sucesso.']);
+    }
+
     public function cobrarAmanha(Request $request, $id)
     {
 
