@@ -26,7 +26,11 @@ import {Dropdown} from 'react-native-element-dropdown';
 import {ListClient} from '../../api/constants';
 import {getHeight, moderateScale} from '../../common/constant';
 
-import {getAuthCompany, getUser} from '../../utils/asyncStorage';
+import {
+  getAuthCompany,
+  getUser,
+  getPermissions,
+} from '../../utils/asyncStorage';
 import {useFocusEffect} from '@react-navigation/native';
 
 import Geolocation from 'react-native-geolocation-service';
@@ -41,6 +45,7 @@ export default function HomeScreen({navigation}) {
   const [location, setLocation] = useState(null);
   const [tipoCliente, setTipoCliente] = useState('');
   const [search, setSearch] = useState('');
+  const [permissoesHoje, setPermissoesHoje] = useState({});
 
   useFocusEffect(
     React.useCallback(() => {
@@ -50,6 +55,21 @@ export default function HomeScreen({navigation}) {
 
   useFocusEffect(
     React.useCallback(() => {
+      async function fetchData() {
+        let a = await getPermissions();
+        console.log('permissions', a);
+        setPermissoesHoje(a);
+      }
+      fetchData();
+
+      const havePermissionsFunction = permission => {
+        if (permissoesHoje.includes(permission)) {
+          return true;
+        } else {
+          return false;
+        }
+      };
+
       const requestLocationPermission = async () => {
         setTipoCliente('');
         if (Platform.OS === 'ios') {
@@ -294,11 +314,14 @@ export default function HomeScreen({navigation}) {
             text="Emprestimo"
             onPress={moveToWith}
           />
-          <FirstImage
-            image={images.Transfer}
-            text='Baixas'
-            onPress={baixaMap}
-          />
+          {havePermissionsFunction('aplicativo_baixas') && (
+            <FirstImage
+              image={images.Transfer}
+              text="Baixas"
+              onPress={baixaMap}
+            />
+          )}
+
           {/* <FirstImage
             image={images.More}
             text={strings.More}

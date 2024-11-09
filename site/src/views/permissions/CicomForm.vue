@@ -419,6 +419,15 @@ export default {
 					</div>
 				</div>
 			</div>
+			<h5>Aplicativo</h5>
+			<div class="grid">
+				<div class="col-12 md:col-4" v-for="option of multiselectValues?.aplicativo" :key="option.id">
+					<div class="field-checkbox mb-0">
+						<Checkbox id="checkOption1" name="option" :value="option.slug" v-model="checkboxValue" />
+						<label for="checkOption1">{{ option.name }}</label>
+					</div>
+				</div>
+			</div>
 
 
 		</template>

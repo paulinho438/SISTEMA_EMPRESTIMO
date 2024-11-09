@@ -370,5 +370,13 @@ class PermItemsSeeder extends Seeder
             ]
         );
 
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Tela de Baixas pelo Aplicativo",
+                "slug"             => "aplicativo_baixas",
+                "group"            => "aplicativo"
+            ]
+        );
+
     }
 }

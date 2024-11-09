@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ACCESS_TOKEN, ON_BOARDING, AUTH_COMPANY, USER } from '../common/constant';
+import { ACCESS_TOKEN, ON_BOARDING, AUTH_COMPANY, USER, PERMISSION } from '../common/constant';
 
 const StorageValue = async () => {
   let asyncData = await AsyncStorage.multiGet([ON_BOARDING, ACCESS_TOKEN]);
@@ -45,9 +45,20 @@ const getUser = async () => {
   return JSON.parse(req);
 };
 
+const permissions = async value => {
+  const stringData = JSON.stringify(value);
+  await AsyncStorage.setItem(PERMISSION, stringData);
+  return;
+};
+
+const getPermissions = async () => {
+  let req = await AsyncStorage.getItem(PERMISSION);
+  return JSON.parse(req);
+};
+
 const removeAuthToken = async () => {
   await AsyncStorage.removeItem(ACCESS_TOKEN);
   return;
 };
 
-export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser};
+export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser, permissions, getPermissions};
