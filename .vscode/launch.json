@@ -2,41 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Listen for Xdebug",
-      "type": "php",
-      "request": "launch",
-      "port": 9003
-    },
-    {
-      "name": "Debug Android",
-      "program": "${workspaceFolder}/appemprestimos/index.js",
+      "name": "Debug Android - Experimental",
       "request": "launch",
       "type": "reactnative",
       "cwd": "${workspaceFolder}/appemprestimos",
       "platform": "android",
-      "sourceMaps": true,
-      "runArguments": ["--no-packager"],
-      "env": {
-        "REACT_NATIVE_PACKAGER_HOSTNAME": "localhost"
-      }
     },
     {
-      "name": "Debug iOS",
-      "program": "${workspaceFolder}/appemprestimos/index.js",
+      "name": "Listen for Xdebug",
+      "type": "php",
       "request": "launch",
-      "type": "reactnative",
-      "cwd": "${workspaceFolder}/appemprestimos",
-      "platform": "ios",
-      "sourceMaps": true,
-      "outDir": "${workspaceFolder}/.vscode/.react"
-    },
-    {
-      "name": "Attach to packager",
-      "request": "attach",
-      "type": "reactnative",
-      "cwd": "${workspaceFolder}/appemprestimos",
-      "sourceMaps": true,
-      "outDir": "${workspaceFolder}/.vscode/.react"
+      "port": 9003
     }
   ]
 }

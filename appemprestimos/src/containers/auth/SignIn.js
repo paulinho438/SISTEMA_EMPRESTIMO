@@ -18,7 +18,7 @@ import CTextInput from '../../components/common/CTextInput';
 import CButton from '../../components/common/CButton';
 import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
-import {authToken, authCompany, user} from '../../utils/asyncStorage';
+import {authToken, authCompany, user, permissions} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
@@ -56,14 +56,14 @@ export default function SignIn({navigation}) {
             await authCompany(result.user.companies[0]);
             if(result.user.permissions.length > 0){
                 let res = result.user.permissions.filter(item => item.company_id === result.user.companies[0]['id'])
-                //this.$store.commit("setPermissions", res[0]['permissions']);
+                await permissions(res[0]['permissions']);
             }else{
-                //this.$store.commit("setPermissions", []);
+              await permissions([]);
             }
-            navigation.reset({
-                index: 0,
-                routes: [{name: StackNav.TabNavigation}],
-                });
+            // navigation.reset({
+            //     index: 0,
+            //     routes: [{name: StackNav.TabNavigation}],
+            //     });
         }else{
             await user(result.user);
             await authToken(result.token);
@@ -76,7 +76,8 @@ export default function SignIn({navigation}) {
                   }
                 }],
               });
-            //this.$store.commit("setPermissions", response.data.user.permissions);
+
+              await permissions(result.user.permissions);
         }
       }else{
         Alert.alert(result.message);

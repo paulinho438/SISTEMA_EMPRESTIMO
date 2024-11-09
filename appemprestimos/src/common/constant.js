@@ -43,4 +43,5 @@ export const ON_BOARDING = 'ON_BOARDING';
 export const ACCESS_TOKEN = 'ACCESS_TOKEN';
 export const AUTH_COMPANY = 'AUTH_COMPANY';
 export const USER = 'USER';
+export const PERMISSION = 'PERMISSION';
 

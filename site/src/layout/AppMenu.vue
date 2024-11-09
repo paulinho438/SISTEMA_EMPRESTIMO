@@ -130,15 +130,16 @@ const model = ref([
                         icon: 'pi pi-fw pi-verified',
                         to: '/emprestimosfinalizados',
                         permission: 'view_fechamentocaixa'
+                    },
+                    { 
+                        label: 'Informações da Empresa', 
+                        icon: 'pi pi-fw pi-verified', 
+                        to: '/empresa', 
+                        permission: 'edit_empresa' 
                     }
                 ]
             }
         ]
-    },
-    {
-        label: 'Empresa',
-        permission: 'edit_empresa',
-        items: [{ label: 'Informações da Empresa', icon: 'pi pi-fw pi-building', to: '/empresa', permission: 'edit_empresa' }]
     },
     {
         label: 'Gestão de Empresas',

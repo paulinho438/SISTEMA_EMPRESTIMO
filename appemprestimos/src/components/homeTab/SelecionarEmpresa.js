@@ -26,7 +26,7 @@ import {ContactsData} from '../../api/constants';
 import MetarialIcon from 'react-native-vector-icons/MaterialIcons';
 import {StackNav} from '../../navigation/navigationKeys';
 
-import {authCompany} from '../../utils/asyncStorage';
+import {authCompany, getPermissions, permissions} from '../../utils/asyncStorage';
 
 export default function TransferMoney({navigation, route}) {
   const { companies } = route.params;
@@ -40,6 +40,13 @@ export default function TransferMoney({navigation, route}) {
 
   const avancarHome = async () => {
     await authCompany(selectedCompany);
+
+    let beforePermissions = await getPermissions();
+
+    const companyPermissions = beforePermissions.find(p => p.company_id === selectedCompany.id)?.permissions || [];
+
+    await permissions(companyPermissions);
+
     navigation.navigate(StackNav.TabNavigation);
   };
 

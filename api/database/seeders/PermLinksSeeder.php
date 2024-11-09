@@ -368,6 +368,14 @@ class PermLinksSeeder extends Seeder
             ]
         );
 
+        DB::table("permgroup_permitem")->insert(
+            [
+                "permgroup_id"     => 1,
+                "permitem_id"      => 45
+
+            ]
+        );
+
 
 
 
