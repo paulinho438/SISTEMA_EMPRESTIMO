@@ -185,6 +185,9 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/baixa/parcelasparaextorno', [EmprestimoController::class, 'parcelasParaExtorno']);
 
 
+    Route::get('/cobrancateste', [EmprestimoController::class, 'gerarCobranca']);
+
+
 
     Route::post('/emprestimo/baixadesconto/{id}', [EmprestimoController::class, 'baixaDesconto']);
     Route::post('/emprestimo/refinanciamento/{id}', [EmprestimoController::class, 'refinanciamento']);
