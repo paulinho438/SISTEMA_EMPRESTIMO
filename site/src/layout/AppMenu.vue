@@ -20,44 +20,54 @@ const model = ref([
                 permission: 'view_menu_cadastro',
                 icon: 'pi pi-fw pi-database',
                 items: [
-                    
-                    { 
-                        label: 'Permissões', 
-                        icon: 'pi pi-fw pi-lock', 
-                        to: '/permissoes', 
-                        permission: 'view_permissions' 
+                    {
+                        label: 'Permissões',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/permissoes',
+                        permission: 'view_permissions'
                     },
-                    { 
-                        label: 'Categorias', 
-                        icon: 'pi pi-fw pi-tags', 
-                        to: '/categorias', 
-                        permission: 'view_categories' 
+                    {
+                        label: 'Categorias',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/categorias',
+                        permission: 'view_categories'
                     },
-                    { 
-                        label: 'Centro de Custo', 
-                        icon: 'pi pi-fw pi-chart-line', 
-                        to: '/centro_de_custo', 
-                        permission: 'view_costcenter' 
+                    {
+                        label: 'Centro de Custo',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/centro_de_custo',
+                        permission: 'view_costcenter'
                     },
-                    { 
-                        label: 'Bancos', 
-                        icon: 'pi pi-fw pi-wallet', 
-                        to: '/bancos', 
-                        permission: 'view_bancos' 
+                    {
+                        label: 'Bancos',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/bancos',
+                        permission: 'view_bancos'
                     },
-                    { 
-                        label: 'Clientes', 
-                        icon: 'pi pi-fw pi-star', 
-                        to: '/clientes', 
-                        permission: 'view_clientes' 
+                    {
+                        label: 'Clientes',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/clientes',
+                        permission: 'view_clientes'
                     },
-                    { 
-                        label: 'Fornecedores', 
-                        icon: 'pi pi-fw pi-star-fill', 
-                        to: '/fornecedores', 
-                        permission: 'view_fornecedores' 
+                    {
+                        label: 'Fornecedores',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/fornecedores',
+                        permission: 'view_fornecedores'
                     },
-                   
+                    {
+                        label: 'Feriados',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/feriados',
+                        permission: 'edit_empresa'
+                    },
+                    {
+                        label: 'Usuários',
+                        icon: 'pi pi-fw pi-database',
+                        to: '/usuarios',
+                        permission: 'edit_empresa'
+                    }
                 ]
             },
             {
@@ -65,15 +75,12 @@ const model = ref([
                 permission: 'view_menu_cadastro',
                 icon: 'pi pi-fw pi-arrow-right-arrow-left',
                 items: [
-                    
-                    { 
-                        label: 'Emprestimos', 
-                        icon: 'pi pi-fw pi-dollar', 
-                        to: '/emprestimos', 
-                        permission: 'view_permissions' 
-                    },
-                   
-                   
+                    {
+                        label: 'Emprestimos',
+                        icon: 'pi pi-fw pi-arrow-right-arrow-left',
+                        to: '/emprestimos',
+                        permission: 'view_permissions'
+                    }
                 ]
             },
             {
@@ -81,72 +88,63 @@ const model = ref([
                 permission: 'view_menu_cadastro',
                 icon: 'pi pi-fw pi-chart-line',
                 items: [
-                    { 
-                        label: 'Aprovação', 
-                        icon: 'pi pi-fw pi-verified', 
-                        to: '/aprovacao', 
-                        permission: 'view_contaspagar' 
+                    {
+                        label: 'Aprovação',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/aprovacao',
+                        permission: 'view_contaspagar'
                     },
-                    { 
-                        label: 'Contas a Pagar', 
-                        icon: 'pi pi-fw pi-angle-double-right', 
-                        to: '/contaspagar', 
-                        permission: 'view_contaspagar' 
+                    {
+                        label: 'Contas a Pagar',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/contaspagar',
+                        permission: 'view_contaspagar'
                     },
-                    { 
-                        label: 'Contas a Receber', 
-                        icon: 'pi pi-fw pi-angle-double-left', 
-                        to: '/contasreceber', 
-                        permission: 'view_contasreceber' 
+                    {
+                        label: 'Contas a Receber',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/contasreceber',
+                        permission: 'view_contasreceber'
                     },
-                    { 
-                        label: 'Movimentacao Financeira', 
-                        icon: 'pi pi-fw pi-globe', 
-                        to: '/movimentacaofinanceira', 
-                        permission: 'view_movimentacaofinanceira' 
+                    {
+                        label: 'Movimentacao Financeira',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/movimentacaofinanceira',
+                        permission: 'view_movimentacaofinanceira'
                     },
-                    { 
-                        label: 'Fechamento de Caixa', 
-                        icon: 'pi pi-fw pi-globe', 
-                        to: '/fechamentocaixa', 
-                        permission: 'view_fechamentocaixa' 
-                    },
-                   
+                    {
+                        label: 'Fechamento de Caixa',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/fechamentocaixa',
+                        permission: 'view_fechamentocaixa'
+                    }
                 ]
             },
             {
                 label: 'Gestão e Cobrança',
                 permission: 'view_menu_cadastro',
-                icon: 'pi pi-fw pi-chart-line',
+                icon: 'pi pi-fw pi-verified',
                 items: [
-                    { 
-                        label: 'Finalizados e Renovações', 
-                        icon: 'pi pi-fw pi-verified', 
-                        to: '/emprestimosfinalizados', 
-                        permission: 'view_fechamentocaixa' 
+                    {
+                        label: 'Finalizados e Renovações',
+                        icon: 'pi pi-fw pi-verified',
+                        to: '/emprestimosfinalizados',
+                        permission: 'view_fechamentocaixa'
                     }
-                   
                 ]
-            },
-  
+            }
         ]
     },
     {
         label: 'Empresa',
         permission: 'edit_empresa',
-        items: [
-        { label: 'Informações da Empresa', icon: 'pi pi-fw pi-building', to: '/empresa', permission: 'edit_empresa' },
-        { label: 'Feriados', icon: 'pi pi-fw pi-calendar-plus', to: '/feriados', permission: 'edit_empresa' },
-        { label: 'Usuários', icon: 'pi pi-user pi-building', to: '/usuarios', permission: 'edit_empresa' },
-        ],
+        items: [{ label: 'Informações da Empresa', icon: 'pi pi-fw pi-building', to: '/empresa', permission: 'edit_empresa' }]
     },
     {
         label: 'Gestão de Empresas',
         permission: 'edit_empresa',
-        items: [
-        { label: 'Empresas', icon: 'pi pi-fw pi-building', to: '/empresas', permission: 'edit_empresa' },
-        ],
-    },
+        items: [{ label: 'Empresas', icon: 'pi pi-fw pi-building', to: '/empresas', permission: 'edit_empresa' }]
+    }
     // {
     //     label: 'UI Componentss',
     //     permission: 'criar_usuarios',
@@ -328,7 +326,6 @@ const model = ref([
             <app-menu-item v-if="!item.separator" :item="item" :index="i"></app-menu-item>
             <li v-if="item.separator" class="menu-separator"></li>
         </template>
-       
     </ul>
 </template>
 
