@@ -20,6 +20,7 @@ import FeriadosRoutes from './feriados.js';
 import FechamentocaixaRoutes from './fechamentocaixa.js';
 import EmprestimosfinalizadosRoutes from './emprestimosfinalizados.js';
 import EmpresasRoutes from './empresas.js';
+import LogRoutes from './log.js';
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -50,6 +51,7 @@ const router = createRouter({
                 ...FechamentocaixaRoutes,
                 ...EmprestimosfinalizadosRoutes,
                 ...EmpresasRoutes,
+                ...LogRoutes,
                 {
                     path: '/uikit/formlayout',
                     name: 'formlayout',

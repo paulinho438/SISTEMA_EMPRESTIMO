@@ -156,6 +156,9 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/movimentacaofinanceira', [MovimentacaofinanceiraController::class, 'all']);
     Route::get('/movimentacaofinanceira/{id}', [MovimentacaofinanceiraController::class, 'id']);
 
+    Route::get('/log', [MovimentacaofinanceiraController::class, 'all']);
+
+
     Route::get('/fornecedor', [FornecedorController::class, 'all']);
     Route::get('/fornecedor/{id}', [FornecedorController::class, 'id']);
     Route::get('/fornecedor/{id}/delete', [FornecedorController::class, 'delete']);
