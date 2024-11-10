@@ -49,7 +49,7 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->get());
+        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->get()->orderBy('id', 'desc'));
     }
 
     public function insert(Request $request){
