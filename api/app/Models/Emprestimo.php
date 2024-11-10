@@ -85,7 +85,7 @@ class Emprestimo extends Model
 
     public function getTotalPagoAttribute()
     {
-        return $this->parcelas()->with('movimentacaofinanceira')->get()->sum(function ($parcela) {
+        return $this->parcelas()->with('movimentacao')->get()->sum(function ($parcela) {
             return $parcela->movimentacao->sum('valor');
         });
     }
