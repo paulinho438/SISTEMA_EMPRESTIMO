@@ -953,6 +953,7 @@ class EmprestimoController extends Controller
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+                $movimentacaoFinanceira['parcela_id'] = $$emprestimo->parcelas[0]->id;
                 $movimentacaoFinanceira['descricao'] = 'Baixa com desconto no Empréstimo Nº ' . $emprestimo->id . ', que tinha um saldo pendente de R$ ' . number_format($request->saldo, 2, ',', '.') . ' e recebeu um desconto de R$ ' . number_format(($request->saldo - $request->valor), 2, ',', '.');
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');

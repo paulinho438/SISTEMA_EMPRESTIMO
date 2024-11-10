@@ -201,8 +201,8 @@ watch(
                         <i class="pi pi-map-marker text-orange-500 text-xl"></i>
                     </div>
                 </div>
-                <!-- <span class="text-green-500 font-medium">%52+ </span>
-                <span class="text-500">since last week</span> -->
+                <span class="text-green-500 font-medium">Valores Recebidos </span>
+                <span class="text-500">{{infoConta?.total_ja_recebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
             </div>
         </div>
         <div class="col-12 lg:col-6 xl:col-3">
