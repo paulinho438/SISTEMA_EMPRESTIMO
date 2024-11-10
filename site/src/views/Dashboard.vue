@@ -235,8 +235,68 @@ watch(
                 <span class="text-500">responded</span> -->
             </div>
         </div>
+        <div class="col-12 lg:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Total de empretimos</span>
+                        <div class="text-900 font-medium text-xl">{{ infoConta?.total_emprestimos ?? 'Carregando...' }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-blue-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                        <i class="pi pi-shopping-cart text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+                <!-- <span class="text-green-500 font-medium">24 new </span>
+                <span class="text-500">since last visit</span> -->
+            </div>
+        </div>
+        <div class="col-12 lg:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Empréstimos Pagos</span>
+                        <div class="text-900 font-medium text-xl">{{ infoConta?.total_emprestimos_pagos ?? 'Carregando...' }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-orange-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                        <i class="pi pi-map-marker text-orange-500 text-xl"></i>
+                    </div>
+                </div>
+                <!-- <span class="text-green-500 font-medium">%52+ </span>
+                <span class="text-500">since last week</span> -->
+            </div>
+        </div>
+        <div class="col-12 lg:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Empréstimos em dias</span>
+                        <div class="text-900 font-medium text-xl">{{ infoConta?.total_emprestimos_em_dias ?? 'Carregando...' }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-cyan-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                        <i class="pi pi-inbox text-cyan-500 text-xl"></i>
+                    </div>
+                </div>
+                <!-- <span class="text-green-500 font-medium">520 </span>
+                <span class="text-500">newly registered</span> -->
+            </div>
+        </div>
+        <div class="col-12 lg:col-6 xl:col-3">
+            <div class="card mb-0">
+                <div class="flex justify-content-between mb-3">
+                    <div>
+                        <span class="block text-500 font-medium mb-3">Empréstimos atrasados</span>
+                        <div class="text-900 font-medium text-xl">{{ infoConta?.total_emprestimos_muito_atrasados ?? 'Carregando...' }}</div>
+                    </div>
+                    <div class="flex align-items-center justify-content-center bg-purple-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                        <i class="pi pi-comment text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+                <!-- <span class="text-green-500 font-medium">85 </span>
+                <span class="text-500">responded</span> -->
+            </div>
+        </div>
 
-        <div class="col-12 xl:col-6">
+        <!-- <div class="col-12 xl:col-6">
             <div class="card">
                 <h5>Últimos empréstimos</h5>
                 <DataTable
@@ -403,8 +463,8 @@ watch(
                     </li>
                 </ul>
             </div>
-        </div>
-        <div class="col-12 xl:col-6">
+        </div> -->
+        <!-- <div class="col-12 xl:col-6">
             <div class="card">
                 <h5>Sales Overview</h5>
                 <Chart type="line" :data="lineData" :options="lineOptions" />
@@ -471,6 +531,6 @@ watch(
                     <a href="https://www.primefaces.org/primeblocks-vue" class="p-button font-bold px-5 py-3 p-button-warning p-button-rounded p-button-raised"> Get Started </a>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 </template>
