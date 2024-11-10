@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddValorRecebidoPixToParcelaExtornoTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -25,9 +25,8 @@ class AddValorRecebidoPixToParcelaExtornoTable extends Migration
      */
     public function down()
     {
-        Schema::table('parcelas', function (Blueprint $table) {
+        Schema::table('parcela_extorno', function (Blueprint $table) {
             $table->dropColumn('valor_recebido_pix');
         });
     }
-}
-
+};
