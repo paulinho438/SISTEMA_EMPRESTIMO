@@ -218,10 +218,12 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['valor'] = $parcela->saldo;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        $parcela->contasreceber->status = 'Pago';
-                        $parcela->contasreceber->dt_baixa = date('Y-m-d');
-                        $parcela->contasreceber->forma_recebto = 'PIX ou Dinheiro';
-                        $parcela->contasreceber->save();
+                        if($parcela->contasreceber){
+                            $parcela->contasreceber->status = 'Pago';
+                            $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                            $parcela->contasreceber->forma_recebto = 'PIX';
+                            $parcela->contasreceber->save();
+                        }
 
                         // Quitar a parcela atual
                         $valor -= $parcela->saldo;
@@ -246,6 +248,71 @@ class BancoController extends Controller
                     }
 
                     $parcela->valor_recebido = 0;
+                    $parcela->save();
+
+
+                    // Encontrar a próxima parcela
+                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                        ->where('id', '>', $parcela->id)
+                        ->orderBy('id', 'asc')
+                        ->first();
+                }
+            }
+
+            // Encontrar a parcela correspondente
+            $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
+                $query->where('banco_id', $id)
+                    ->whereNull('dt_baixa')
+                    ->where('valor_recebido_pix', '>', 0);
+            })->get();
+
+            foreach ($parcelas as $parcela) {
+                $valor = $parcela->valor_recebido_pix;
+
+                while ($parcela && $valor > 0) {
+                    if ($valor >= $parcela->saldo) {
+
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        if($parcela->contasreceber){
+                            $parcela->contasreceber->status = 'Pago';
+                            $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                            $parcela->contasreceber->forma_recebto = 'PIX';
+                            $parcela->contasreceber->save();
+                        }
+
+                        // Quitar a parcela atual
+                        $valor -= $parcela->saldo;
+                        $parcela->saldo = 0;
+                        $parcela->dt_baixa = date('Y-m-d');
+
+                    } else {
+
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcial da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        $parcela->saldo -= $valor;
+                        $valor = 0;
+                    }
+
+                    $parcela->valor_recebido_pix = 0;
                     $parcela->save();
 
 
