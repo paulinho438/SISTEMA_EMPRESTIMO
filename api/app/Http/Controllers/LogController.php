@@ -27,7 +27,7 @@ class LogController extends Controller
 
     public function all(Request $request){
 
-        return $this->custom_log->all();
+        return $this->custom_log->orderBy('created_at', 'desc')->get();
 
     }
 }
