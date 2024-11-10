@@ -81,6 +81,11 @@ export default {
                     detail: 'Fechamento de Caixa Concluido!',
                     life: 3000
                 });
+
+				setTimeout(() => {
+					this.banco.saldo += this.banco.caixa_pix;
+					this.banco.caixa_pix = 0;
+				}, 1200);
                 
             } catch (e) {
                 console.log(e);
