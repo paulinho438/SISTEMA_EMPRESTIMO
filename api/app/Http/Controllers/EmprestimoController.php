@@ -883,6 +883,7 @@ class EmprestimoController extends Controller
                 $addParcelaExtorno['chave_pix'] = $editParcela->chave_pix;
                 $addParcelaExtorno['dt_ult_cobranca'] = $editParcela->dt_ult_cobranca;
                 $addParcelaExtorno['valor_alterado'] = $valor_recebido;
+                $addParcelaExtorno['valor_recebido_pix'] = $editParcela->valor_recebido_pix;
 
                 ParcelaExtorno::create($addParcelaExtorno);
 
@@ -895,10 +896,10 @@ class EmprestimoController extends Controller
                     $editParcela->contasreceber->save();
                 }
 
-                $editParcela->emprestimo->company->caixa_pix = $editParcela->emprestimo->company->caixa_pix + $valor_recebido;
+                $editParcela->emprestimo->company->caixa_pix +=  $valor_recebido;
                 $editParcela->emprestimo->company->save();
 
-                $editParcela->saldo = 0;
+                $editParcela->valor_recebido_pix += $valor_recebido;
                 $editParcela->save();
 
 
@@ -937,16 +938,16 @@ class EmprestimoController extends Controller
                 //     $editParcela->emprestimo->quitacao->save();
                 // }
 
-                $movimentacaoFinanceira = [];
-                $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
-                $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
-                $movimentacaoFinanceira['tipomov'] = 'E';
-                $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
-                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                $movimentacaoFinanceira['valor'] = $saldoParcela;
+                // $movimentacaoFinanceira = [];
+                // $movimentacaoFinanceira['banco_id'] = $editParcela->emprestimo->banco_id;
+                // $movimentacaoFinanceira['company_id'] = $editParcela->emprestimo->company_id;
+                // $movimentacaoFinanceira['descricao'] = 'Baixa manual da parcela Nº ' . $editParcela->parcela . ' do emprestimo n° ' . $editParcela->emprestimo_id;
+                // $movimentacaoFinanceira['tipomov'] = 'E';
+                // $movimentacaoFinanceira['parcela_id'] = $editParcela->id;
+                // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                // $movimentacaoFinanceira['valor'] = $saldoParcela;
 
-                Movimentacaofinanceira::create($movimentacaoFinanceira);
+                // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
                 $this->custom_log->create([
                     'user_id' => auth()->user()->id,

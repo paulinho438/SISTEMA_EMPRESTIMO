@@ -627,7 +627,7 @@ export const ListClient = [
   {label: 'Todos os Status', value: '1'},
   {label: 'Vermelho (mais de 5 dias)', value: '2'},
   {label: 'Amarelo (entre 1 e 5 dias)', value: '3'},
-  {label: 'Azul (1 dia)', value: '4'},
+  {label: 'Verde (1 dia)', value: '4'},
 ];
 
 export const MeSectionData = [
@@ -636,3 +636,69 @@ export const MeSectionData = [
   {label: 'Professional', value: 'Professional'},
   {label: 'Senior Citizen', value: 'Senior Citizen'},
 ];
+
+
+
+const ChartExample = () => {
+  
+  // Dados para o PieChart com valores dinâmicos
+  const pieData = [
+    { key: 1, value: data.verde, svg: { fill: '#4CAF50' } },  // Verde
+    { key: 2, value: data.amarelo, svg: { fill: '#FFC107' } }, // Amarelo
+    { key: 3, value: data.vermelho, svg: { fill: '#F34646' } }, // Vermelho
+  ];
+  
+
+  // Função para adicionar labels de valor no PieChart
+  const Labels = ({ slices }) => {
+    return slices.map((slice, index) => {
+      const { labelCentroid, data } = slice;
+      return (
+        <SVGText
+          key={index}
+          x={labelCentroid[0]}
+          y={labelCentroid[1]}
+          fill="white"
+          fontSize={14}
+          fontWeight="bold"
+          textAnchor="middle"
+          alignmentBaseline="middle"
+        >
+          {data.value}
+        </SVGText>
+      );
+    });
+  };
+
+  return (
+    <View style={styles2.container}>
+      {/* Título */}
+      <Text style={styles2.title}>Status de Atrasos 📆</Text>
+
+      {/* Legenda */}
+      <View style={styles2.legend}>
+        <Text style={[styles2.legendItem, { color: '#4CAF50' }]}>
+          ● Verde: 1 dia de atraso
+        </Text>
+        <Text style={[styles2.legendItem, { color: '#FFC107' }]}>
+          ● Amarelo: entre 1 e 5 dias de atraso
+        </Text>
+        <Text style={[styles2.legendItem, { color: '#F34646' }]}>
+          ● Vermelho: mais de 5 dias de atraso
+        </Text>
+      </View>
+
+      {/* Gráfico de Anel (PieChart) */}
+      <PieChart
+        style={{ height: 150, width: 200, marginBottom: 16 }}
+        data={pieData}
+        innerRadius="70%"
+        outerRadius="100%"
+      >
+        <Labels />
+      </PieChart>
+    </View>
+  );
+};
+
+

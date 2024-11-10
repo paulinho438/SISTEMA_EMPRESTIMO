@@ -238,13 +238,13 @@ export default {
 						<Column field="name" header="Cliente" :sortable="true" class="w-1">
 							<template #body="slotProps">
 								<span class="p-column-title">Cliente</span>
-								{{ slotProps.data.cliente.nome_completo }}
+								{{ slotProps.data.cliente?.nome_completo }}
 							</template>
 						</Column>
 						<Column field="name" header="Consultor" :sortable="true" class="w-1">
 							<template #body="slotProps">
 								<span class="p-column-title">Consultor</span>
-								{{ slotProps.data.consultor.nome_completo }}
+								{{ slotProps.data.consultor?.nome_completo }}
 							</template>
 						</Column>
 						<Column field="valor" header="Valor Emprestimo" :sortable="true" class="w-1">
