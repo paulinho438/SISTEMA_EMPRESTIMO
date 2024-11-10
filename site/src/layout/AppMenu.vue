@@ -136,7 +136,13 @@ const model = ref([
                         icon: 'pi pi-fw pi-verified', 
                         to: '/empresa', 
                         permission: 'edit_empresa' 
-                    }
+                    },
+                    {
+                        label: 'Histótico de Uso',
+                        icon: 'pi pi-fw pi-verified',
+                        to: '/log',
+                        permission: 'view_fechamentocaixa'
+                    },
                 ]
             }
         ]
