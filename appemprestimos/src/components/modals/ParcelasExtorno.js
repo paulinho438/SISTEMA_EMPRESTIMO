@@ -66,7 +66,7 @@ export default function parcelasExtorno(props) {
   const saldoTotal = () => {
     let total = 0;
     parcelasExtorno.map(item => {
-      total += item.saldo_correto;
+      total += item.valor_recebido_pix;
     });
     return total;
   };
@@ -241,7 +241,7 @@ export default function parcelasExtorno(props) {
                     {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.saldo_correto}
+                    Valor da Parcela R$ {item.valor_recebido_pix.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </Text>
                   {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
@@ -263,7 +263,7 @@ export default function parcelasExtorno(props) {
         </ScrollView>
         <View style={localStyles.mainContainer}>
           <CText color={colors.black}>
-            Saldo total R$ {saldoTotal().toFixed(2)}
+            Saldo total R$ {saldoTotal().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </CText>
         </View>
       </ActionSheet>

@@ -361,7 +361,6 @@ export default {
 
 					</template>
 				</Column>
-				<Column field="dt_lancamento" header="Dt. Lançamento" :sortable="false" class="w-1"></Column>
 				<Column field="venc" header="Vencimento" :sortable="false" class="w-1"></Column>
 				<Column field="venc_real" header="Venc. Real" :sortable="false" class="w-1"></Column>
 				<Column field="dt_baixa" header="Dt. Baixa" :sortable="false" class="w-1"></Column>
