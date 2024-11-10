@@ -220,6 +220,12 @@ export default function ParcelasPendentesHoje(props) {
                   </Text>
                 )}
 
+                {item.parcelas_vencidas[0].valor_recebido_pix > 0 && (
+                  <Text style={styles2.subTitleValor}>
+                    Valor recebido em Pix R$ {item.parcelas_vencidas[0].valor_recebido_pix}
+                  </Text>
+                )}
+
                 <View style={styles2.buttonContainer}>
                   <TouchableOpacity
                     onPress={() => onPressClose(item.parcelas_vencidas[0])}
