@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Banco;
 use App\Models\CustomLog;
 use App\Models\Parcela;
+use App\Models\Movimentacaofinanceira;
 
 use App\Http\Resources\BancosResource;
 use App\Http\Resources\BancosComSaldoResource;
@@ -73,14 +74,11 @@ class BancoController extends Controller
                 $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
 
                 $dados['certificado'] = 'storage/documentos/' . $nomeArquivo;
-
-
             }
 
             $newGroup = Banco::create($dados);
 
             return $array;
-
         } else {
             $array['error'] = $validator->errors()->first();
             return $array;
@@ -144,15 +142,12 @@ class BancoController extends Controller
                     $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
 
                     $dados['certificado'] = $nomeArquivo;
-
-
                 }
 
                 $EditBanco->certificado = $dados['certificado'];
 
 
                 $EditBanco->save();
-
             } else {
                 $array['error'] = $validator->errors()->first();
                 return $array;
@@ -161,7 +156,6 @@ class BancoController extends Controller
             DB::commit();
 
             return $array;
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -199,6 +193,8 @@ class BancoController extends Controller
 
             $id = $EditBanco->id;
 
+
+            // Encontrar a parcela correspondente
             $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
                 $query->where('banco_id', $id)
                     ->whereNull('dt_baixa')
@@ -206,86 +202,137 @@ class BancoController extends Controller
             })->get();
 
             foreach ($parcelas as $parcela) {
+                $valor = $parcela->valor_recebido;
 
-                $parcela->saldo = $parcela->saldo - $parcela->valor_recebido;
-                $parcela->valor_recebido = 0;
+                while ($parcela && $valor > 0) {
+                    if ($valor >= $parcela->saldo) {
 
-                if ($parcela->saldo == $parcela->valor_recebido) {
-                    $parcela->dt_baixa = date('Y-m-d');
-                }
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                $parcela->save();
+                        $parcela->contasreceber->status = 'Pago';
+                        $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                        $parcela->contasreceber->forma_recebto = 'PIX ou Dinheiro';
+                        $parcela->contasreceber->save();
 
-                if ($parcela->chave_pix) {
-                    $gerarPix = self::gerarPix(
-                        [
-                            'banco' => [
-                                'client_id' => $parcela->emprestimo->banco->clienteid,
-                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
-                                'certificado' => $parcela->emprestimo->banco->certificado,
-                                'chave' => $parcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $parcela->saldo,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+                        // Quitar a parcela atual
+                        $valor -= $parcela->saldo;
+                        $parcela->saldo = 0;
+                        $parcela->dt_baixa = date('Y-m-d');
 
-                    $parcela->identificador = $gerarPix['identificador'];
-                    $parcela->chave_pix = $gerarPix['chave_pix'];
+                    } else {
+
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcial da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        $parcela->saldo -= $valor;
+                        $valor = 0;
+                    }
+
+                    $parcela->valor_recebido = 0;
                     $parcela->save();
 
+
+                    // Encontrar a próxima parcela
+                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                        ->where('id', '>', $parcela->id)
+                        ->orderBy('id', 'asc')
+                        ->first();
                 }
-
-                if ($parcela->emprestimo->quitacao->chave_pix) {
-
-                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                    $parcela->emprestimo->quitacao->save();
-
-                    $gerarPixQuitacao = self::gerarPixQuitacao(
-                        [
-                            'banco' => [
-                                'client_id' => $parcela->emprestimo->banco->clienteid,
-                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
-                                'certificado' => $parcela->emprestimo->banco->certificado,
-                                'chave' => $parcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
-
-                    $parcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
-                    $parcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
-
-                    $parcela->emprestimo->quitacao->save();
-
-                }
-
-
-
             }
+
+
+            // foreach ($parcelas as $parcela) {
+
+            //     $parcela->saldo = $parcela->saldo - $parcela->valor_recebido;
+            //     $parcela->valor_recebido = 0;
+
+            //     if ($parcela->saldo == $parcela->valor_recebido) {
+            //         $parcela->dt_baixa = date('Y-m-d');
+            //     }
+
+            //     $parcela->save();
+
+            //     if ($parcela->chave_pix) {
+            //         $gerarPix = self::gerarPix(
+            //             [
+            //                 'banco' => [
+            //                     'client_id' => $parcela->emprestimo->banco->clienteid,
+            //                     'client_secret' => $parcela->emprestimo->banco->clientesecret,
+            //                     'certificado' => $parcela->emprestimo->banco->certificado,
+            //                     'chave' => $parcela->emprestimo->banco->chavepix,
+            //                 ],
+            //                 'parcela' => [
+            //                     'parcela' => $parcela->parcela,
+            //                     'valor' => $parcela->saldo,
+            //                     'venc_real' => date('Y-m-d'),
+            //                 ],
+            //                 'cliente' => [
+            //                     'nome_completo' => $parcela->emprestimo->client->nome_completo,
+            //                     'cpf' => $parcela->emprestimo->client->cpf
+            //                 ]
+            //             ]
+            //         );
+
+            //         $parcela->identificador = $gerarPix['identificador'];
+            //         $parcela->chave_pix = $gerarPix['chave_pix'];
+            //         $parcela->save();
+            //     }
+
+            //     if ($parcela->emprestimo->quitacao->chave_pix) {
+
+            //         $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+            //         $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
+            //         $parcela->emprestimo->quitacao->save();
+
+            //         $gerarPixQuitacao = self::gerarPixQuitacao(
+            //             [
+            //                 'banco' => [
+            //                     'client_id' => $parcela->emprestimo->banco->clienteid,
+            //                     'client_secret' => $parcela->emprestimo->banco->clientesecret,
+            //                     'certificado' => $parcela->emprestimo->banco->certificado,
+            //                     'chave' => $parcela->emprestimo->banco->chavepix,
+            //                 ],
+            //                 'parcela' => [
+            //                     'parcela' => $parcela->parcela,
+            //                     'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
+            //                     'venc_real' => date('Y-m-d'),
+            //                 ],
+            //                 'cliente' => [
+            //                     'nome_completo' => $parcela->emprestimo->client->nome_completo,
+            //                     'cpf' => $parcela->emprestimo->client->cpf
+            //                 ]
+            //             ]
+            //         );
+
+            //         $parcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
+            //         $parcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+
+            //         $parcela->emprestimo->quitacao->save();
+            //     }
+            // }
 
 
 
             DB::commit();
 
             return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -314,7 +361,6 @@ class BancoController extends Controller
             ]);
 
             return response()->json(['message' => 'Banco excluído com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -393,7 +439,6 @@ class BancoController extends Controller
                     $return['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     return $return;
-
                 } catch (EfiException $e) {
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
@@ -479,7 +524,6 @@ class BancoController extends Controller
                     $return['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     return $return;
-
                 } catch (EfiException $e) {
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");

@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import React, { useRef, useEffect, useState } from 'react';
 import ActionSheet from 'react-native-actions-sheet';
-import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Local imports
@@ -19,14 +18,12 @@ import { moderateScale } from '../../common/constant';
 import { styles } from '../../themes/index';
 import CText from '../common/CText';
 import { colors } from '../../themes/colors';
-import { LocationData } from '../../api/constants';
 import CButton from '../common/CButton';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
-import { StackNav, TabNav } from '../../navigation/navigationKeys';
+import { StackNav } from '../../navigation/navigationKeys';
 import api from '../../services/api';
 import Saldo from '../modals/Saldo';
-import margin from '../../themes/margin';
 
 export default function ParcelasPendentesHoje(props) {
   let { sheetRef, parcelas, clientes, parcelasPendentes, onAtualizarClientes } = props;
@@ -35,22 +32,7 @@ export default function ParcelasPendentesHoje(props) {
   const [cliente, setCliente] = useState({});
   const [searchText, setSearchText] = useState('');
 
-  const renderData = ({ item }) => {
-    return (
-      <TouchableOpacity>
-        <View style={localStyles.mainComponent}>
-          <Image style={localStyles.imageStyle} source={item.image} />
-          <CText align={'center'} type={'M12'} color={colors.black}>
-            {item.reviews}
-          </CText>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
   const textInputRef = useRef(null);
-
-  
 
   const obterDataAtual = () => {
     const data = new Date();
@@ -165,6 +147,17 @@ export default function ParcelasPendentesHoje(props) {
     item.cliente.nome_completo.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  // Ordenar os itens para que aqueles com valor_recebido_pix igual a null venham primeiro
+  const sortedParcelasPendentes = filteredParcelasPendentes.sort((a, b) => {
+    if (a.parcelas_vencidas[0].valor_recebido_pix === null && b.parcelas_vencidas[0].valor_recebido_pix !== null) {
+      return -1;
+    }
+    if (a.parcelas_vencidas[0].valor_recebido_pix !== null && b.parcelas_vencidas[0].valor_recebido_pix === null) {
+      return 1;
+    }
+    return 0;
+  });
+
   return (
     <View>
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
@@ -203,7 +196,7 @@ export default function ParcelasPendentesHoje(props) {
               </View>
             </View>
 
-            {filteredParcelasPendentes.map(item => (
+            {sortedParcelasPendentes.map(item => (
               <View key={item.id} style={styles2.container}>
                 <Text style={styles2.title}>
                   Empréstimo N°{item.id}
