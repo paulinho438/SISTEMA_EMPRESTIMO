@@ -72,7 +72,8 @@ class DashboardController extends Controller
             'total_emprestimos_pagos' => $totalEmprestimosPagos,
             'total_emprestimos_vencidos' => $totalEmprestimosVencidos,
             'total_emprestimos_em_dias' => $totalEmprestimosEmDias,
-            'total_emprestimos_muito_atrasados' => $totalEmprestimosMuitoAtrasados
+            'total_emprestimos_muito_atrasados' => $totalEmprestimosMuitoAtrasados,
+            'total_ja_recebido' => $totalJaRecebido
         ];
     }
 
