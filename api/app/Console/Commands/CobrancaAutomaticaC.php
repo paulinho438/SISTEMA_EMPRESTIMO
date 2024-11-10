@@ -53,10 +53,12 @@ class CobrancaAutomaticaC extends Command
 
         if (!$isHoliday) {
             $parcelas = Parcela::where('dt_baixa', null)
+                ->whereNull('valor_recebido_pix')
+                ->whereNull('valor_recebido')
                 ->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
-                echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
+            echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
         }
 
 
@@ -92,24 +94,24 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
 
                             // Montagem das parcelas pendentes
-//                             $parcelasString = $parcela->emprestimo->parcelas
-//                                 ->filter(function ($item) {
-//                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
-//                                 })
-//                                 ->map(function ($item) {
-//                                     return "
-// Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-// Parcela: {$item->parcela}
-// Atrasos: {$item->atrasadas}
-// Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-// Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-// Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-// Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-// PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-// Status: Pendente
-// RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-//                                 })
-//                                 ->implode("\n\n");
+                            //                             $parcelasString = $parcela->emprestimo->parcelas
+                            //                                 ->filter(function ($item) {
+                            //                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
+                            //                                 })
+                            //                                 ->map(function ($item) {
+                            //                                     return "
+                            // Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
+                            // Parcela: {$item->parcela}
+                            // Atrasos: {$item->atrasadas}
+                            // Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
+                            // Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
+                            // Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
+                            // Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
+                            // PIX: " . ($item->chave_pix ?? 'Não Contém') . "
+                            // Status: Pendente
+                            // RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
+                            //                                 })
+                            //                                 ->implode("\n\n");
 
 
 
@@ -129,9 +131,7 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
                     }
                 } catch (\Throwable $th) {
                     dd($th);
-
                 }
-
             }
         }
 
@@ -153,5 +153,4 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
             return $saudacoesNoite[array_rand($saudacoesNoite)];
         }
     }
-
 }

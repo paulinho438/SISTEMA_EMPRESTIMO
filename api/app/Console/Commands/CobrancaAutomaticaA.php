@@ -55,6 +55,8 @@ class CobrancaAutomaticaA extends Command
 
         if (!$isHoliday) {
             $parcelas = Parcela::where('dt_baixa', null)
+                ->whereNull('valor_recebido_pix')
+                ->whereNull('valor_recebido')
                 ->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
