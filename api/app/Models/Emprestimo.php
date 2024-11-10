@@ -37,6 +37,11 @@ class Emprestimo extends Model
         return $this->hasMany(Parcela::class, 'emprestimo_id', 'id');
     }
 
+    public function extornos()
+    {
+        return $this->hasMany(ParcelaExtorno::class, 'emprestimo_id', 'id');
+    }
+
     public function costcenter()
     {
         return $this->belongsTo(Costcenter::class, 'costcenter_id', 'id');
