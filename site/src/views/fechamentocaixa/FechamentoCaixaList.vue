@@ -7,6 +7,7 @@ import BancoService from '@/service/BancoService';
 import PermissionsService from '@/service/PermissionsService';
 import EmprestimoService from '@/service/EmprestimoService';
 import { useToast } from 'primevue/usetoast';
+import { useConfirm } from 'primevue/useconfirm';
 
 export default {
     name: 'CicomList',
@@ -18,7 +19,8 @@ export default {
             emprestimoService: new EmprestimoService(),
             router: useRouter(),
             icons: PrimeIcons,
-            toast: useToast()
+            toast: useToast(),
+			
         };
     },
     data() {
@@ -32,6 +34,7 @@ export default {
             form: ref({}),
             valorRecebido: ref(0),
             valorPago: ref(0),
+			confirmPopup: useConfirm(),
             displayFechamento: ref({
                 enabled: false,
                 saldobanco: 0,
@@ -72,6 +75,21 @@ export default {
             this.display = false;
             this.valorDesconto = 0;
         },
+        confirm(event) {
+            this.confirmPopup.require({
+                target: event.target,
+                message: 'Tem certeza de que deseja realizar o fechamento de caixa? Este processo é irreversível.',
+                icon: 'pi pi-exclamation-triangle',
+                acceptLabel: 'Sim',
+                rejectLabel: 'Não',
+                accept: () => {
+                    this.fecharCaixa();
+                },
+                reject: () => {
+                    this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Rotina não iniciada!', life: 3000 });
+                }
+            });
+        },
         async fecharCaixa() {
             try {
                 await this.bancoService.fechamentoCaixa(this.banco.id);
@@ -82,11 +100,10 @@ export default {
                     life: 3000
                 });
 
-				setTimeout(() => {
-					this.banco.saldo += this.banco.caixa_pix;
-					this.banco.caixa_pix = 0;
-				}, 1200);
-                
+                setTimeout(() => {
+                    this.banco.saldo += this.banco.caixa_pix;
+                    this.banco.caixa_pix = 0;
+                }, 1200);
             } catch (e) {
                 console.log(e);
             }
@@ -284,7 +301,7 @@ export default {
 
                         <div v-if="banco" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
-                                <Button label="Encerrar Caixa" @click.prevent="fecharCaixa()" class="p-button-success mr-2 mb-2 mt-4" />
+                                <Button label="Encerrar Caixa" @click="confirm($event)" class="p-button-success mr-2 mb-2 mt-4" />
                             </div>
                         </div>
 

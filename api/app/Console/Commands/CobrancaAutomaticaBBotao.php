@@ -61,12 +61,13 @@ class CobrancaAutomaticaBBotao extends Command
 
             if (!$isHoliday) {
                 $parcelas = Parcela::where('dt_baixa', null)
+                    ->whereNull('valor_recebido_pix')
+                    ->whereNull('valor_recebido')
                     ->whereDate('venc_real', $today)
                     ->whereHas('emprestimo', function ($query) use ($pressed) {
                         $query->where('company_id', $pressed->company_id);
                     })
                     ->get()->unique('emprestimo_id');
-
             }
 
 
