@@ -170,7 +170,7 @@ class EmprestimoController extends Controller
                     });
             })
             ->join('parcelas', 'emprestimos.id', '=', 'parcelas.emprestimo_id')
-            ->orderBy('parcelas.updated_at', 'asc')
+            ->orderBy('parcelas.updated_at', 'desc')
             ->select('emprestimos.*')
             ->get()
         );
