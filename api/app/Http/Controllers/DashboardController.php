@@ -39,29 +39,28 @@ class DashboardController extends Controller
         $totalEmprestimosEmDias = 0;
         $totalEmprestimosMuitoAtrasados = 0;
 
-        // foreach ($emprestimos as $emprestimo) {
-        //     $status = $this->getStatus($emprestimo);
+        foreach ($emprestimos as $emprestimo) {
+            $status = $this->getStatus($emprestimo);
 
-        //     switch ($status) {
-        //         case 'Atrasado':
-        //             $totalEmprestimosAtrasados++;
-        //             break;
-        //         case 'Pago':
-        //             $totalEmprestimosPagos++;
-        //             break;
-        //         case 'Vencido':
-        //             $totalEmprestimosVencidos++;
-        //             break;
-        //         case 'Em Dias':
-        //             $totalEmprestimosEmDias++;
-        //             break;
-        //         case 'Muito Atrasado':
-        //             $totalEmprestimosMuitoAtrasados++;
-        //             break;
-        //     }
-        // }
+            switch ($status) {
+                case 'Atrasado':
+                    $totalEmprestimosAtrasados++;
+                    break;
+                case 'Pago':
+                    $totalEmprestimosPagos++;
+                    break;
+                case 'Vencido':
+                    $totalEmprestimosVencidos++;
+                    break;
+                case 'Em Dias':
+                    $totalEmprestimosEmDias++;
+                    break;
+                case 'Muito Atrasado':
+                    $totalEmprestimosMuitoAtrasados++;
+                    break;
+            }
+        }
         $t = Client::where('company_id', $companyId)->count();
-        $y = Emprestimo::where('company_id', $companyId)->orderBy('id', 'desc')->limit(5)->get();
 
         return [
             'total_clientes' => $t,
@@ -70,8 +69,7 @@ class DashboardController extends Controller
             'total_emprestimos_pagos' => $totalEmprestimosPagos,
             'total_emprestimos_vencidos' => $totalEmprestimosVencidos,
             'total_emprestimos_em_dias' => $totalEmprestimosEmDias,
-            'total_emprestimos_muito_atrasados' => $totalEmprestimosMuitoAtrasados,
-            'ultimos_5_emprestimos' => $y
+            'total_emprestimos_muito_atrasados' => $totalEmprestimosMuitoAtrasados
         ];
     }
 
