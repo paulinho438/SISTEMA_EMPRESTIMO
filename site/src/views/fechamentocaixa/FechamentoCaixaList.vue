@@ -9,408 +9,448 @@ import EmprestimoService from '@/service/EmprestimoService';
 import { useToast } from 'primevue/usetoast';
 
 export default {
-	name: 'CicomList',
-	setup() {
-		return {
-			movimentacaofinanceiraService: new MovimentacaofinanceiraService(),
-			bancoService: new BancoService(),
-			permissionsService: new PermissionsService(),
-			emprestimoService: new EmprestimoService(),
-			router: useRouter(),
-			icons: PrimeIcons,
-			toast: useToast()
-		};
-	},
-	data() {
-		return {
-			MovimentacaofinanceiraReal: ref([]),
-			Movimentacaofinanceira: ref([]),
-			loading: ref(false),
-			filters: ref(null),
-			bancos: ref([]),
-			banco: ref(null),
-			form: ref({}),
-			valorRecebido: ref(0),
-			valorPago: ref(0),
-			displayFechamento: ref({
-				enabled: false,
-				saldobanco: 0,
-				saldocaixa: 0,
-				saldocaixapix: 0
-			}),
-		};
-	},
-	methods: {
-		async searchBanco(event) {
-			try {
-				let response = await this.emprestimoService.searchbancofechamento(event.query);
-				this.bancos = response.data.data;
-			} catch (e) {
-				console.log(e);
-			}
-		},
-		async close() {
+    name: 'CicomList',
+    setup() {
+        return {
+            movimentacaofinanceiraService: new MovimentacaofinanceiraService(),
+            bancoService: new BancoService(),
+            permissionsService: new PermissionsService(),
+            emprestimoService: new EmprestimoService(),
+            router: useRouter(),
+            icons: PrimeIcons,
+            toast: useToast()
+        };
+    },
+    data() {
+        return {
+            MovimentacaofinanceiraReal: ref([]),
+            Movimentacaofinanceira: ref([]),
+            loading: ref(false),
+            filters: ref(null),
+            bancos: ref([]),
+            banco: ref(null),
+            form: ref({}),
+            valorRecebido: ref(0),
+            valorPago: ref(0),
+            displayFechamento: ref({
+                enabled: false,
+                saldobanco: 0,
+                saldocaixa: 0,
+                saldocaixapix: 0
+            })
+        };
+    },
+    methods: {
+        async searchBanco(event) {
+            try {
+                let response = await this.emprestimoService.searchbancofechamento(event.query);
+                this.bancos = response.data.data;
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        async close() {
+            try {
+                await this.bancoService.alterarcaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix);
 
-			try {
-				await this.bancoService.fechamentoCaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix );
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Alteração de Caixa Concluido!',
+                    life: 3000
+                });
 
-				this.toast.add({
-					severity: ToastSeverity.SUCCESS,
-					detail: 'Fechamento de Caixa Concluido!',
-					life: 3000
-				});
+                setTimeout(() => {
+                    this.banco.saldo = this.displayFechamento.saldobanco;
+                    this.banco.caixa_empresa = this.displayFechamento.saldocaixa;
+                    this.banco.caixa_pix = this.displayFechamento.saldocaixapix;
+                    this.displayFechamento.enabled = false;
+                }, 1200);
+            } catch (e) {
+                console.log(e);
+            }
 
-				setTimeout(() => {
-					this.banco.saldo = this.displayFechamento.saldobanco;
-					this.banco.caixa_empresa = this.displayFechamento.saldocaixa;
-					this.banco.caixa_pix = this.displayFechamento.saldocaixapix;
-					this.displayFechamento.enabled = false;
-				}, 1200)
+            this.display = false;
+            this.valorDesconto = 0;
+        },
+        async fecharCaixa() {
+            try {
+                await this.bancoService.fechamentoCaixa(this.banco.id);
 
-			} catch (e) {
-				console.log(e);
-			}
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Fechamento de Caixa Concluido!',
+                    life: 3000
+                });
+                
+            } catch (e) {
+                console.log(e);
+            }
 
-			this.display = false;
-			this.valorDesconto = 0;
-		},
-		modalFechamento() {
-			this.displayFechamento.enabled = !this.displayFechamento.enabled;
-		},
-		dadosSensiveis(dado) {
-			return (this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********')
-		},
-		getMovimentacaofinanceira() {
-			this.loading = true;
+            this.display = false;
+            this.valorDesconto = 0;
+        },
+        modalFechamento() {
+            this.displayFechamento.enabled = !this.displayFechamento.enabled;
+        },
+        modalFechamento() {
+            this.displayFechamento.enabled = !this.displayFechamento.enabled;
+        },
+        dadosSensiveis(dado) {
+            return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
+        },
+        getMovimentacaofinanceira() {
+            this.loading = true;
 
-			this.movimentacaofinanceiraService.getAll()
-				.then((response) => {
-					this.Movimentacaofinanceira = response.data.data;
-					this.MovimentacaofinanceiraReal = response.data.data;
+            this.movimentacaofinanceiraService
+                .getAll()
+                .then((response) => {
+                    this.Movimentacaofinanceira = response.data.data;
+                    this.MovimentacaofinanceiraReal = response.data.data;
 
+                    this.valorRecebido = 0;
 
-					this.valorRecebido = 0;
+                    response.data.data.forEach((item) => {
+                        if (item.tipomov === 'E') {
+                            this.valorRecebido += item.valor;
+                        }
+                    });
 
-					response.data.data.forEach(item => {
-						if (item.tipomov === 'E') {
-							this.valorRecebido += item.valor;
-						}
-					});
+                    this.valorPago = 0;
 
-					this.valorPago = 0;
+                    response.data.data.forEach((item) => {
+                        if (item.tipomov === 'S') {
+                            this.valorPago += item.valor;
+                        }
+                    });
 
-					response.data.data.forEach(item => {
-						if (item.tipomov === 'S') {
-							this.valorPago += item.valor;
-						}
-					});
+                    this.setLastWeekDates();
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        setLastWeekDates() {
+            const today = new Date();
+            const lastWeekEnd = new Date(today);
+            lastWeekEnd.setDate(today.getDate());
+            const lastWeekStart = new Date(lastWeekEnd);
+            lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
 
-					this.setLastWeekDates();
+            this.form.dt_inicio = lastWeekStart;
+            this.form.dt_final = lastWeekEnd;
 
-				})
-				.catch((error) => {
-					this.toast.add({
-						severity: ToastSeverity.ERROR,
-						detail: error.message,
-						life: 3000
-					});
-				})
-				.finally(() => {
-					this.loading = false;
-				});
-		},
-		setLastWeekDates() {
-			const today = new Date();
-			const lastWeekEnd = new Date(today);
-			lastWeekEnd.setDate(today.getDate());
-			const lastWeekStart = new Date(lastWeekEnd);
-			lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
+            this.busca(); // Call the search method to filter data
+        },
+        busca() {
+            if (!this.form.dt_inicio || !this.form.dt_final) {
+                this.toast.add({
+                    severity: ToastSeverity.WARN,
+                    detail: 'Selecione as datas de início e fim',
+                    life: 3000
+                });
+                return;
+            }
 
-			this.form.dt_inicio = lastWeekStart;
-			this.form.dt_final = lastWeekEnd;
+            const dt_inicio = new Date(this.form.dt_inicio);
+            const dt_final = new Date(this.form.dt_final);
+            dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
 
-			this.busca(); // Call the search method to filter data
-		},
-		busca() {
-			if (!this.form.dt_inicio || !this.form.dt_final) {
-				this.toast.add({
-					severity: ToastSeverity.WARN,
-					detail: 'Selecione as datas de início e fim',
-					life: 3000
-				});
-				return;
-			}
+            this.Movimentacaofinanceira = this.MovimentacaofinanceiraReal.filter((mov) => {
+                const [day, month, year] = mov.dt_movimentacao.split('/').map(Number);
+                const dt_mov = new Date(year, month - 1, day); // JavaScript Date uses zero-based month index
+                return dt_mov >= dt_inicio && dt_mov <= dt_final;
+            });
 
-			const dt_inicio = new Date(this.form.dt_inicio);
-			const dt_final = new Date(this.form.dt_final);
-			dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
+            this.valorRecebido = 0;
+            this.valorPago = 0;
 
-			this.Movimentacaofinanceira = this.MovimentacaofinanceiraReal.filter(mov => {
-				const [day, month, year] = mov.dt_movimentacao.split('/').map(Number);
-				const dt_mov = new Date(year, month - 1, day); // JavaScript Date uses zero-based month index
-				return dt_mov >= dt_inicio && dt_mov <= dt_final;
-			});
+            this.Movimentacaofinanceira.forEach((item) => {
+                if (item.tipomov === 'E') {
+                    this.valorRecebido += item.valor;
+                } else if (item.tipomov === 'S') {
+                    this.valorPago += item.valor;
+                }
+            });
+        },
+        editCategory(id) {
+            if (undefined === id) this.router.push('/Movimentacaofinanceira/add');
+            else this.router.push(`/Movimentacaofinanceira/${id}/edit`);
+        },
+        deleteCategory(permissionId) {
+            this.loading = true;
 
-			this.valorRecebido = 0;
-			this.valorPago = 0;
-
-			this.Movimentacaofinanceira.forEach(item => {
-				if (item.tipomov === 'E') {
-					this.valorRecebido += item.valor;
-				} else if (item.tipomov === 'S') {
-					this.valorPago += item.valor;
-				}
-			});
-		},
-		editCategory(id) {
-			if (undefined === id) this.router.push('/Movimentacaofinanceira/add');
-			else this.router.push(`/Movimentacaofinanceira/${id}/edit`);
-		},
-		deleteCategory(permissionId) {
-			this.loading = true;
-
-			this.movimentacaofinanceiraService.delete(permissionId)
-				.then((e) => {
-					console.log(e)
-					this.toast.add({
-						severity: ToastSeverity.SUCCESS,
-						detail: e?.data?.message,
-						life: 3000
-					});
-					this.getMovimentacaofinanceira();
-				})
-				.catch((error) => {
-					this.toast.add({
-						severity: ToastSeverity.ERROR,
-						detail: error?.data?.message,
-						life: 3000
-					});
-				})
-				.finally(() => {
-					this.loading = false;
-				});
-		},
-		initFilters() {
-			this.filters = {
-				nome_completo: { value: null, matchMode: FilterMatchMode.CONTAINS }
-			};
-		},
-		clearFilter() {
-			this.initFilters();
-		}
-	},
-	beforeMount() {
-		this.initFilters();
-	},
-	mounted() {
-		this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
-		this.getMovimentacaofinanceira();
-	}
+            this.movimentacaofinanceiraService
+                .delete(permissionId)
+                .then((e) => {
+                    console.log(e);
+                    this.toast.add({
+                        severity: ToastSeverity.SUCCESS,
+                        detail: e?.data?.message,
+                        life: 3000
+                    });
+                    this.getMovimentacaofinanceira();
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error?.data?.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        initFilters() {
+            this.filters = {
+                nome_completo: { value: null, matchMode: FilterMatchMode.CONTAINS }
+            };
+        },
+        clearFilter() {
+            this.initFilters();
+        }
+    },
+    beforeMount() {
+        this.initFilters();
+    },
+    mounted() {
+        this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
+        this.getMovimentacaofinanceira();
+    }
 };
 </script>
 
 <template>
-	<Dialog header="Encerramento de Caixa" v-model:visible="displayFechamento.enabled"
-		:breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
-		<div class="field col-12 md:col-12">
-			<label for="zip">Saldo no Banco</label>
-			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldobanco" v-model="displayFechamento.saldobanco" :mode="'currency'"
-				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
-		</div>
-		<div class="field col-12 md:col-16 -mt-4">
-			<label for="zip">Saldo no Caixa</label>
-			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixa" v-model="displayFechamento.saldocaixa" :mode="'currency'"
-				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
-		</div>
-		<div class="field col-12 md:col-16 -mt-4">
-			<label for="zip">Saldo no Caixa Pix</label>
-			<InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixapix" v-model="displayFechamento.saldocaixapix" :mode="'currency'"
-				:currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
-		</div>
-		<template #footer>
-			<Button label="Fechar Caixa" @click="close" icon="pi pi-check" class="p-button-outlined" />
-		</template>
-	</Dialog>
-	<Toast />
-	<div class="grid">
-		<div class="col-12">
-			<div class="grid flex flex-wrap mb-3 px-4 pt-2">
-				<div class="col-8 px-0 py-0">
-					<h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Fechamento de Caixa</h5>
-				</div>
+    <Dialog header="Encerramento de Caixa" v-model:visible="displayFechamento.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
+        <div class="field col-12 md:col-12">
+            <label for="zip">Saldo no Banco</label>
+            <InputNumber id="inputnumber" :modelValue="displayFechamento?.saldobanco" v-model="displayFechamento.saldobanco" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+        </div>
+        <div class="field col-12 md:col-16 -mt-4">
+            <label for="zip">Saldo no Caixa</label>
+            <InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixa" v-model="displayFechamento.saldocaixa" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+        </div>
+        <div class="field col-12 md:col-16 -mt-4">
+            <label for="zip">Saldo no Caixa Pix</label>
+            <InputNumber id="inputnumber" :modelValue="displayFechamento?.saldocaixapix" v-model="displayFechamento.saldocaixapix" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+        </div>
+        <template #footer>
+            <Button label="Fechar Caixa" @click="close" icon="pi pi-check" class="p-button-outlined" />
+        </template>
+    </Dialog>
+    <Toast />
+    <div class="grid">
+        <div class="col-12">
+            <div class="grid flex flex-wrap mb-3 px-4 pt-2">
+                <div class="col-8 px-0 py-0">
+                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Fechamento de Caixa</h5>
+                </div>
 
+                <div class="col-4 px-0 py-0 text-right">
+                    <Button v-if="permissionsService.hasPermissions('view_movimentacaofinanceira_create')" label="Novo Cliente" class="p-button-outlined p-button-secondary p-button-sm" icon="pi pi-plus" @click.prevent="editCategory()" />
+                </div>
+            </div>
+            <div class="card">
+                <div class="grid">
+                    <div class="grid col-12 md:col-12">
+                        <div class="col-12 md:col-2">
+                            <div class="flex flex-column gap-2 m-2 mt-1">
+                                <label for="username">Selecione o Banco</label>
+                                <AutoComplete
+                                    :modelValue="banco"
+                                    v-model="banco"
+                                    :dropdown="true"
+                                    :suggestions="bancos"
+                                    placeholder="Informe o nome do banco"
+                                    class="w-full"
+                                    inputClass="w-full p-inputtext-sm"
+                                    @complete="searchBanco($event)"
+                                    optionLabel="name_agencia_conta"
+                                />
+                            </div>
+                        </div>
 
+                        <div v-if="banco" class="col-12 md:col-2">
+                            <div class="flex flex-column gap-2 m-2 mt-1">
+                                <Button label="Encerrar Caixa" @click.prevent="fecharCaixa()" class="p-button-success mr-2 mb-2 mt-4" />
+                            </div>
+                        </div>
 
-				<div class="col-4 px-0 py-0 text-right">
-					<Button v-if="permissionsService.hasPermissions('view_movimentacaofinanceira_create')"
-						label="Novo Cliente" class="p-button-outlined p-button-secondary p-button-sm" icon="pi pi-plus"
-						@click.prevent="editCategory()" />
-				</div>
-			</div>
-			<div class="card">
-				<div class="grid">
+                        <div v-if="banco" class="col-12 md:col-2">
+                            <div class="flex flex-column gap-2 m-2 mt-1">
+                                <Button label="Alterar Caixa" @click.prevent="modalFechamento()" class="p-button-primary mr-2 mb-2 mt-4" />
+                            </div>
+                        </div>
+                    </div>
 
-					<div class="grid col-12 md:col-12">
-						<div class="col-12 md:col-2">
-							<div class="flex flex-column gap-2 m-2 mt-1">
-								<label for="username">Selecione o Banco</label>
-								<AutoComplete :modelValue="banco" v-model="banco" :dropdown="true" :suggestions="bancos"
-									placeholder="Informe o nome do banco" class="w-full" inputClass="w-full p-inputtext-sm"
-									@complete="searchBanco($event)" optionLabel="name_agencia_conta" />
-							</div>
-						</div>
+                    <div v-if="banco?.efibank == true" class="col-12 md:col-3">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <div class="surface-card shadow-2 p-3 border-round">
+                                <div class="flex justify-content-between mb-3">
+                                    <div>
+                                        <span class="block text-500 font-medium mb-3">Saldo Banco Efi</span>
+                                        <div class="text-900 font-medium text-xl">
+                                            {{
+                                                parseFloat(banco?.saldo_banco).toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                }) ?? 'R$ 0,00'
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                                        <i class="pi pi-money-bill text-green-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-						<div v-if="banco" class="col-12 md:col-2">
-							<div class="flex flex-column gap-2 m-2 mt-1">
-								<Button label="Encerrar Caixa" @click.prevent="modalFechamento()"
-									class="p-button-primary mr-2 mb-2 mt-4" />
-							</div>
-						</div>
-					</div>
+                    <div class="col-12 md:col-3">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <div class="surface-card shadow-2 p-3 border-round">
+                                <div class="flex justify-content-between mb-3">
+                                    <div>
+                                        <span class="block text-500 font-medium mb-3">Saldo Banco Sistema</span>
+                                        <div class="text-900 font-medium text-xl">
+                                            {{
+                                                banco?.saldo.toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                }) ?? 'R$ 0,00'
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                                        <i class="pi pi-money-bill text-green-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="col-12 md:col-3">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <div class="surface-card shadow-2 p-3 border-round">
+                                <div class="flex justify-content-between mb-3">
+                                    <div>
+                                        <span class="block text-500 font-medium mb-3">Saldo Caixa</span>
+                                        <div class="text-900 font-medium text-xl">
+                                            {{
+                                                banco?.caixa_empresa?.toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                }) ?? 'R$ 0,00'
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                                        <i class="pi pi-money-bill text-green-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-					<div v-if="banco?.efibank == true" class="col-12 md:col-3">
-						<div class="flex flex-column gap-2 m-2 mt-1">
-							<div class="surface-card shadow-2 p-3 border-round">
-								<div class="flex justify-content-between mb-3">
-									<div>
-										<span class="block text-500 font-medium mb-3">Saldo Banco Efi</span>
-										<div class="text-900 font-medium text-xl">{{
-											parseFloat(banco?.saldo_banco).toLocaleString('pt-BR', {
-												style: 'currency', currency: 'BRL'
-											}) ?? 'R$ 0,00' }}</div>
-									</div>
-									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
-										style="width:2.5rem;height:2.5rem">
-										<i class="pi pi-money-bill text-green-500 text-xl"></i>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+                    <div class="col-12 md:col-3">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <div class="surface-card shadow-2 p-3 border-round">
+                                <div class="flex justify-content-between mb-3">
+                                    <div>
+                                        <span class="block text-500 font-medium mb-3">Saldo Caixa Pix</span>
+                                        <div class="text-900 font-medium text-xl">
+                                            {{
+                                                banco?.caixa_pix?.toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                }) ?? 'R$ 0,00'
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                                        <i class="pi pi-money-bill text-green-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-					<div class="col-12 md:col-3">
-						<div class="flex flex-column gap-2 m-2 mt-1">
-							<div class="surface-card shadow-2 p-3 border-round">
-								<div class="flex justify-content-between mb-3">
-									<div>
-										<span class="block text-500 font-medium mb-3">Saldo Banco Sistema</span>
-										<div class="text-900 font-medium text-xl">{{ banco?.saldo.toLocaleString('pt-BR', {
-											style: 'currency', currency: 'BRL'
-										}) ?? 'R$ 0,00' }}</div>
-									</div>
-									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
-										style="width:2.5rem;height:2.5rem">
-										<i class="pi pi-money-bill text-green-500 text-xl"></i>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					
-
-					<div class="col-12 md:col-3">
-						<div class="flex flex-column gap-2 m-2 mt-1">
-							<div class="surface-card shadow-2 p-3 border-round">
-								<div class="flex justify-content-between mb-3">
-									<div>
-										<span class="block text-500 font-medium mb-3">Saldo Caixa</span>
-										<div class="text-900 font-medium text-xl">{{
-											banco?.caixa_empresa?.toLocaleString('pt-BR', {
-												style: 'currency', currency: 'BRL'
-											}) ?? 'R$ 0,00' }}</div>
-									</div>
-									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
-										style="width:2.5rem;height:2.5rem">
-										<i class="pi pi-money-bill text-green-500 text-xl"></i>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div class="col-12 md:col-3">
-						<div class="flex flex-column gap-2 m-2 mt-1">
-							<div class="surface-card shadow-2 p-3 border-round">
-								<div class="flex justify-content-between mb-3">
-									<div>
-										<span class="block text-500 font-medium mb-3">Saldo Caixa Pix</span>
-										<div class="text-900 font-medium text-xl">{{
-											banco?.caixa_pix?.toLocaleString('pt-BR', {
-												style: 'currency', currency: 'BRL'
-											}) ?? 'R$ 0,00' }}</div>
-									</div>
-									<div class="flex align-items-center justify-content-center bg-green-100 border-round"
-										style="width:2.5rem;height:2.5rem">
-										<i class="pi pi-money-bill text-green-500 text-xl"></i>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div v-if="banco?.efibank == true" class="col-12 md:col-3">
-						<div class="flex flex-column gap-2 m-2 mt-1">
-							<div class="surface-card shadow-2 p-3 border-round">
-								<div class="flex justify-content-between mb-3">
-									<div>
-										<span class="block text-500 font-medium mb-3">Diferença Entre Bancos</span>
-										<div class="text-900 font-medium text-xl">{{ (parseFloat(banco?.saldo_banco) -
-											banco?.saldo).toLocaleString('pt-BR', {
-												style: 'currency', currency: 'BRL'
-											}) ?? 'R$ 0,00' }}</div>
-									</div>
-									<div class="flex align-items-center justify-content-center bg-red-100 border-round"
-										style="width:2.5rem;height:2.5rem">
-										<i class="pi pi-money-bill text-red-500 text-xl"></i>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-				</div>
-				<div class="mt-3">
-					<DataTable dataKey="id" :value="banco?.parcelas_baixa_manual" :paginator="true" :rows="10" :loading="loading"
-						:filters="filters"
-						paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-						:rowsPerPageOptions="[5, 10, 25]"
-						currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} parcela(s)"
-						responsiveLayout="scroll">
-						<Column field="id" header="ID" :sortable="true" class="w-1">
-							<template #body="slotProps">
-								<span class="p-column-title">ID</span>
-								{{ slotProps.data.id }}
-							</template>
-						</Column>
-						<Column field="dt_movimentacao" header="Emprestimo ID" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Emprestimo ID</span>
-								{{ slotProps.data.emprestimo_id }}
-							</template>
-						</Column>
-						<Column field="banco" header="Parcela" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Parcela</span>
-								{{ slotProps.data.parcela }}
-							</template>
-						</Column>
-						<Column field="descricao" header="Valor Parcela" :sortable="true" class="w-4">
-							<template #body="slotProps">
-								<span class="p-column-title">Transação realizada</span>
-								{{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
-							</template>
-						</Column>
-						<Column field="descricao" header="Valor Recebido" :sortable="true" class="w-4">
-							<template #body="slotProps">
-								<span class="p-column-title">Transação realizada</span>
-								{{ slotProps.data.valor_recebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
-							</template>
-						</Column>
-					</DataTable>
-				</div>
-			</div>
-		</div>
-	</div>
+                    <div v-if="banco?.efibank == true" class="col-12 md:col-3">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <div class="surface-card shadow-2 p-3 border-round">
+                                <div class="flex justify-content-between mb-3">
+                                    <div>
+                                        <span class="block text-500 font-medium mb-3">Diferença Entre Bancos</span>
+                                        <div class="text-900 font-medium text-xl">
+                                            {{
+                                                (parseFloat(banco?.saldo_banco) - banco?.saldo).toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                }) ?? 'R$ 0,00'
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-center bg-red-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                                        <i class="pi pi-money-bill text-red-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <DataTable
+                        dataKey="id"
+                        :value="banco?.parcelas_baixa_manual"
+                        :paginator="true"
+                        :rows="10"
+                        :loading="loading"
+                        :filters="filters"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 25]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} parcela(s)"
+                        responsiveLayout="scroll"
+                    >
+                        <Column field="id" header="ID" :sortable="true" class="w-1">
+                            <template #body="slotProps">
+                                <span class="p-column-title">ID</span>
+                                {{ slotProps.data.id }}
+                            </template>
+                        </Column>
+                        <Column field="dt_movimentacao" header="Emprestimo ID" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Emprestimo ID</span>
+                                {{ slotProps.data.emprestimo_id }}
+                            </template>
+                        </Column>
+                        <Column field="banco" header="Parcela" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Parcela</span>
+                                {{ slotProps.data.parcela }}
+                            </template>
+                        </Column>
+                        <Column field="descricao" header="Valor Parcela" :sortable="true" class="w-4">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Transação realizada</span>
+                                {{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+                            </template>
+                        </Column>
+                        <Column field="descricao" header="Valor Recebido" :sortable="true" class="w-4">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Transação realizada</span>
+                                {{ slotProps.data.valor_recebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>

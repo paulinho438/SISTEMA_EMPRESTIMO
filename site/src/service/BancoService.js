@@ -25,8 +25,12 @@ export default class BancoService {
 		else return await axios.put(`${apiPath}/bancos/${permissions.id}`, permissions);
 	};
 
-	fechamentoCaixa = async (id, saldobanco, saldocaixa, saldocaixapix) => {
-		return await axios.post(`${apiPath}/fechamentocaixa/${id}`, { saldobanco: saldobanco, saldocaixa: saldocaixa, saldocaixapix: saldocaixapix  });
+	fechamentoCaixa = async (id) => {
+		return await axios.post(`${apiPath}/fechamentocaixa/${id}`, {});
+	};
+
+	alterarcaixa = async (id, saldobanco, saldocaixa, saldocaixapix) => {
+		return await axios.post(`${apiPath}/alterarcaixa/${id}`, { saldobanco: saldobanco, saldocaixa: saldocaixa, saldocaixapix: saldocaixapix  });
 	};
 
 	saveComCertificado = async (data) => {
