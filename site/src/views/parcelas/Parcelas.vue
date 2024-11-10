@@ -347,6 +347,20 @@ export default {
 
 					</template>
 				</Column>
+				<Column field="valor_recebido" header="Valor Recebido" :sortable="false" class="w-1">
+					<template #body="slotProps">
+						<span class="p-column-title">Valor Recebido Consultor</span>
+						{{ slotProps.data.valor_recebido?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+
+					</template>
+				</Column>
+				<Column field="valor_recebido_pix" header="Valor Recebido Pix" :sortable="false" class="w-1">
+					<template #body="slotProps">
+						<span class="p-column-title">Valor Recebido Pix</span>
+						{{ slotProps.data.valor_recebido_pix?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+
+					</template>
+				</Column>
 				<Column field="dt_lancamento" header="Dt. Lançamento" :sortable="false" class="w-1"></Column>
 				<Column field="venc" header="Vencimento" :sortable="false" class="w-1"></Column>
 				<Column field="venc_real" header="Venc. Real" :sortable="false" class="w-1"></Column>
