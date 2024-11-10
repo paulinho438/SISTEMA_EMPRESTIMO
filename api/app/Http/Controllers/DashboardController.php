@@ -87,11 +87,7 @@ class DashboardController extends Controller
         }
 
         if ($qtAtrasadas > 0) {
-            if ($this->isMaiorQuatro($qtAtrasadas, $qtParcelas)) {
-                $status = 'Muito Atrasado';
-            } else {
-                $status = 'Atrasado';
-            }
+            $status = 'Muito Atrasado';
 
             if ($qtAtrasadas == $qtParcelas) {
                 $status = 'Vencido';
