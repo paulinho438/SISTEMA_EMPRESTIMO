@@ -764,12 +764,10 @@ class EmprestimoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-
-
             // Obter todas as parcelas de extorno com o mesmo hash_extorno
             $extorno = ParcelaExtorno::where('hash_extorno', $extornoParcela->hash_extorno)->get();
 
-            $extorno[0]->emprestimo->company->caixa_pix = $extorno[0]->emprestimo->company->caixa_pix - $extorno[0]->valor_alterado;
+            $extorno[0]->emprestimo->company->caixa_pix -= $extorno[0]->valor_alterado;
             $extorno[0]->emprestimo->company->save();
 
             foreach ($extorno as $ext) {
@@ -785,6 +783,7 @@ class EmprestimoController extends Controller
                 $editParcela->dt_ult_cobranca = $ext->dt_ult_cobranca;
                 $editParcela->created_at = $ext->created_at;
                 $editParcela->updated_at = $ext->updated_at;
+                $editParcela->valor_recebido_pix = $ext->valor_recebido_pix;
                 $editParcela->save();
             }
 

@@ -8,7 +8,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import React, {useRef,useState} from 'react';
+import React, {useRef, useState} from 'react';
 import ActionSheet, {FlatList} from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -190,12 +190,15 @@ export default function parcelasExtorno(props) {
 
   // Filtrar parcelas com base no texto de pesquisa
   const filteredParcelasExtorno = parcelasExtorno.filter(item =>
-    item.nome_cliente.toLowerCase().includes(searchText.toLowerCase())
+    item.nome_cliente.toLowerCase().includes(searchText.toLowerCase()),
   );
 
   return (
     <View>
-      <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
+      <ActionSheet
+        containerStyle={localStyles.actionSheet}
+        ref={sheetRef}
+        onOpen={() => {
           textInputRef.current?.focus();
         }}>
         <View
@@ -241,11 +244,28 @@ export default function parcelasExtorno(props) {
                     {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R$ {item.valor_recebido_pix.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    Valor da Parcela R${' '}
+                    {item.saldo.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
                   </Text>
+                  
                   {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro R$ {item.valor_recebido}
+                      Valor recebido em dinheiro R$ {item.valor_recebido?.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                    </Text>
+                  )}
+
+                  {item.valor_recebido_pix > 0 && (
+                    <Text style={styles2.subTitleValor}>
+                      Valor recebido em dinheiro R$ {item.valor_recebido_pix?.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
                     </Text>
                   )}
 
@@ -263,7 +283,11 @@ export default function parcelasExtorno(props) {
         </ScrollView>
         <View style={localStyles.mainContainer}>
           <CText color={colors.black}>
-            Saldo total R$ {saldoTotal().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            Saldo total R${' '}
+            {saldoTotal().toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
           </CText>
         </View>
       </ActionSheet>
