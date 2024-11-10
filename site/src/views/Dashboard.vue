@@ -239,8 +239,8 @@ watch(
             <div class="card mb-0">
                 <div class="flex justify-content-between mb-3">
                     <div>
-                        <span class="block text-500 font-medium mb-3">Total de empretimos</span>
-                        <div class="text-900 font-medium text-xl">{{ infoConta?.total_emprestimos ?? 'Carregando...' }}</div>
+                        <span class="block text-500 font-medium mb-3">Empréstimos Ativos</span>
+                        <div class="text-900 font-medium text-xl">{{ (infoConta?.total_emprestimos_em_dias + infoConta?.total_emprestimos_muito_atrasados) ?? 'Carregando...' }}</div>
                     </div>
                     <div class="flex align-items-center justify-content-center bg-blue-100 border-round" style="width: 2.5rem; height: 2.5rem">
                         <i class="pi pi-shopping-cart text-blue-500 text-xl"></i>
