@@ -177,9 +177,12 @@ class BancoController extends Controller
             $EditBanco = Banco::find($id);
 
             $EditBanco->saldo += $EditBanco->company->caixa_pix;
-
             $EditBanco->save();
 
+            $EditBanco->company->caixa_pix = 0;
+            $EditBanco->company->save();
+
+            $id = $EditBanco->id;
 
             // Encontrar a parcela correspondente
             $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
