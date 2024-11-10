@@ -58,7 +58,6 @@ export default {
             const lastWeekEnd = new Date(today);
             lastWeekEnd.setDate(today.getDate());
             const lastWeekStart = new Date(lastWeekEnd);
-            lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
 
             this.form.dt_inicio = lastWeekStart;
             this.form.dt_final = lastWeekEnd;
