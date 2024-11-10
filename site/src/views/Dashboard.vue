@@ -186,8 +186,8 @@ watch(
                         <i class="pi pi-shopping-cart text-blue-500 text-xl"></i>
                     </div>
                 </div>
-                <!-- <span class="text-green-500 font-medium">24 new </span>
-                <span class="text-500">since last visit</span> -->
+                <span class="text-green-500 font-medium">Total de Clientes </span>
+                <span class="text-500">{{infoConta?.total_clientes}}</span>
             </div>
         </div>
         <div class="col-12 lg:col-6 xl:col-3">
