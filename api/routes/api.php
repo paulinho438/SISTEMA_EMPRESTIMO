@@ -22,6 +22,7 @@ use App\Http\Controllers\{
     BotaoCobrancaController,
     DashboardController,
     GestaoController,
+    LogController,
     PlanosController
 
 };
@@ -156,7 +157,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/movimentacaofinanceira', [MovimentacaofinanceiraController::class, 'all']);
     Route::get('/movimentacaofinanceira/{id}', [MovimentacaofinanceiraController::class, 'id']);
 
-    Route::get('/log', [MovimentacaofinanceiraController::class, 'all']);
+    Route::get('/log', [LogController::class, 'all']);
 
 
     Route::get('/fornecedor', [FornecedorController::class, 'all']);
