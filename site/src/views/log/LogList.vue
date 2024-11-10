@@ -75,8 +75,12 @@ export default {
                 return;
             }
 
+
             const dt_inicio = new Date(this.form.dt_inicio);
             const dt_final = new Date(this.form.dt_final);
+
+
+            dt_inicio.setHours(0, 0, 0, 999); // Ensure the end date covers the entire day
             dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
 
             this.Log = this.LogReal.filter((mov) => {
