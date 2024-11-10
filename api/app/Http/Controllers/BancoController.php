@@ -191,6 +191,12 @@ class BancoController extends Controller
             foreach ($parcelas as $parcela) {
                 $valor = $parcela->valor_recebido;
 
+                if($parcela->emprestimo->extornos) {
+                    foreach ($parcela->emprestimo->extornos as $ext) {
+                        $ext->delete();
+                    }
+                }
+
                 while ($parcela && $valor > 0) {
                     if ($valor >= $parcela->saldo) {
 
