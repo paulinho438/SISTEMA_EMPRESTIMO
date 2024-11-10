@@ -173,25 +173,12 @@ class BancoController extends Controller
         DB::beginTransaction();
 
         try {
-            $array = ['error' => ''];
-
-            $user = auth()->user();
-
-
-            $dados = $request->all();
 
             $EditBanco = Banco::find($id);
 
-            $EditBanco->saldo = $dados['saldobanco'];
+            $EditBanco->saldo += $EditBanco->company->caixa_pix;
 
             $EditBanco->save();
-
-            $EditBanco->company->caixa = $dados['saldocaixa'];
-            $EditBanco->company->caixa_pix = $dados['saldocaixapix'];
-
-            $EditBanco->company->save();
-
-            $id = $EditBanco->id;
 
 
             // Encontrar a parcela correspondente
@@ -400,6 +387,45 @@ class BancoController extends Controller
             DB::commit();
 
             return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao fechar o Caixa.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function alterarCaixa(Request $request, $id)
+    {
+
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+
+            $dados = $request->all();
+
+            $EditBanco = Banco::find($id);
+
+            $EditBanco->saldo = $dados['saldobanco'];
+
+            $EditBanco->save();
+
+            $EditBanco->company->caixa = $dados['saldocaixa'];
+
+            $EditBanco->company->caixa_pix = $dados['saldocaixapix'];
+
+            $EditBanco->company->save();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Alteração de Caixa Concluido.']);
         } catch (\Exception $e) {
             DB::rollBack();
 
