@@ -27,7 +27,8 @@ class ParcelaExtorno extends Model
         'dt_ult_cobranca',
         'valor_alterado',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'valor_recebido_pix'
 
     ];
 

@@ -26,6 +26,9 @@ import {Dropdown} from 'react-native-element-dropdown';
 import {ListClient} from '../../api/constants';
 import {getHeight, moderateScale} from '../../common/constant';
 
+import {PieChart, BarChart} from 'react-native-svg-charts';
+import {G, Text as SVGText} from 'react-native-svg';
+
 import {
   getAuthCompany,
   getUser,
@@ -45,7 +48,35 @@ export default function HomeScreen({navigation}) {
   const [location, setLocation] = useState(null);
   const [tipoCliente, setTipoCliente] = useState('');
   const [search, setSearch] = useState('');
-  const [permissoesHoje, setPermissoesHoje] = useState({});
+  const [permissoesHoje, setPermissoesHoje] = useState([]);
+  const [data, setData] = useState({
+    verde: 0,
+    amarelo: 0,
+    vermelho: 0,
+  });
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let verde = 0;
+      let amarelo = 0;
+      let vermelho = 0;
+  
+      // Processa os dados de atraso das parcelas
+      clientes.forEach(clientes => {
+        const diasAtraso = clientes.atrasadas;
+  
+        if (diasAtraso === 0) {
+          verde += 1; // Sem atraso
+        } else if (diasAtraso >= 1 && diasAtraso <= 5) {
+          amarelo += 1; // Entre 1 e 5 dias de atraso
+        } else if (diasAtraso > 5) {
+          vermelho += 1; // Mais de 5 dias de atraso
+        }
+      });
+  
+      setData({ verde, amarelo, vermelho });
+    }, [clientes]),
+  );
 
   useFocusEffect(
     React.useCallback(() => {
@@ -57,18 +88,9 @@ export default function HomeScreen({navigation}) {
     React.useCallback(() => {
       async function fetchData() {
         let a = await getPermissions();
-        console.log('permissions', a);
         setPermissoesHoje(a);
       }
       fetchData();
-
-      const havePermissionsFunction = permission => {
-        if (permissoesHoje.includes(permission)) {
-          return true;
-        } else {
-          return false;
-        }
-      };
 
       const requestLocationPermission = async () => {
         setTipoCliente('');
@@ -133,8 +155,42 @@ export default function HomeScreen({navigation}) {
       setClientes(filteredData);
     }
 
-    //console.log(clientes)
   }, [tipoCliente]);
+
+  const pieData = [
+    {
+      key: 1,
+      value: 60,
+      svg: {fill: '#4A90E2'}, // Azul para "Investimento"
+    },
+    {
+      key: 2,
+      value: 40,
+      svg: {fill: '#4CAF50'}, // Verde para "Lucro"
+    },
+  ];
+
+  // Dados para o BarChart
+  const barData = [
+    {
+      value: 50,
+      svg: {fill: '#4A90E2'},
+      label: 'Nov',
+    },
+    {
+      value: 20,
+      svg: {fill: '#4A90E2'},
+      label: 'Dez',
+    },
+  ];
+
+  const havePermissionsFunction = permission => {
+    if (permissoesHoje.includes(permission)) {
+      return true;
+    } else {
+      return false;
+    }
+  };
 
   const setFilterSearch = () => {
     if (search) {
@@ -289,8 +345,10 @@ export default function HomeScreen({navigation}) {
 
             <CNotification onPress={moveToNot} />
           </View>
+        </View>
+        <ChartExample parcelas={clientes} />
 
-          <View style={localStyles.ParentImg}>
+        {/* <View style={localStyles.ParentImg}>
             <Image source={images.cardBalance} style={localStyles.card3Style} />
             <View style={localStyles.parentNomeEmpresa}>
               <CText
@@ -300,8 +358,7 @@ export default function HomeScreen({navigation}) {
                 {company?.company}
               </CText>
             </View>
-          </View>
-        </View>
+          </View> */}
 
         <View style={localStyles.mainImg}>
           {/* <FirstImage 
@@ -390,6 +447,70 @@ export default function HomeScreen({navigation}) {
     );
   };
 
+  const ChartExample = () => {
+  
+    // Dados para o PieChart com valores dinâmicos
+    const pieData = [
+      { key: 1, value: data.verde, svg: { fill: '#4CAF50' } },  // Verde
+      { key: 2, value: data.amarelo, svg: { fill: '#FFC107' } }, // Amarelo
+      { key: 3, value: data.vermelho, svg: { fill: '#F34646' } }, // Vermelho
+    ].filter(item => item.value !== 0);
+
+
+    
+  
+    // Função para adicionar labels de valor no PieChart
+    const Labels = ({ slices }) => {
+      return slices.map((slice, index) => {
+        const { labelCentroid, data } = slice;
+        return (
+          <SVGText
+            key={index}
+            x={labelCentroid[0]}
+            y={labelCentroid[1]}
+            fill="white"
+            fontSize={14}
+            fontWeight="bold"
+            textAnchor="middle"
+            alignmentBaseline="middle"
+          >
+            {data.value}
+          </SVGText>
+        );
+      });
+    };
+  
+    return (
+      <View style={styles2.container}>
+        {/* Título */}
+        <Text style={styles2.title}>Status de Atrasos 📆</Text>
+  
+        {/* Legenda */}
+        <View style={styles2.legend}>
+          <Text style={[styles2.legendItem, { color: '#4CAF50' }]}>
+            ● Verde: 1 dia de atraso
+          </Text>
+          <Text style={[styles2.legendItem, { color: '#FFC107' }]}>
+            ● Amarelo: entre 1 e 5 dias de atraso
+          </Text>
+          <Text style={[styles2.legendItem, { color: '#F34646' }]}>
+            ● Vermelho: mais de 5 dias de atraso
+          </Text>
+        </View>
+  
+        {/* Gráfico de Anel (PieChart) */}
+        <PieChart
+          style={{ height: 150, width: 200, marginBottom: 16 }}
+          data={pieData}
+          innerRadius="70%"
+          outerRadius="100%"
+        >
+          <Labels />
+        </PieChart>
+      </View>
+    );
+  };
+
   const renderHomeData = ({item}) => {
     return (
       <TouchableOpacity
@@ -434,7 +555,7 @@ export default function HomeScreen({navigation}) {
   };
 
   return (
-    <SafeAreaView style={[styles.mainContainerSurface]}>
+    <SafeAreaView style={[styles2.mainContainerSurface]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {ListHeaderComponent()}
         <FlatList
@@ -449,9 +570,39 @@ export default function HomeScreen({navigation}) {
   );
 }
 
+
+
+const styles2 = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#1E1E1E',
+    padding: 16,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  legend: {
+    flexDirection: 'column',
+    marginBottom: 16,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  legendItem: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginVertical: 4,
+  },
+});
+
 const localStyles = StyleSheet.create({
   main: {
-    backgroundColor: colors.Primary,
+    backgroundColor: '#1E1E1E',
   },
   mainParent: {
     ...styles.mh20,
@@ -480,12 +631,12 @@ const localStyles = StyleSheet.create({
   },
   ParentImg: {
     ...styles.center,
-    top: moderateScale(63),
+    marginTop: moderateScale(30),
   },
   mainImg: {
     ...styles.rowSpaceAround,
     backgroundColor: colors.GreyScale,
-    ...styles.mt90,
+    ...styles.mt30,
     ...styles.mh25,
     ...styles.p15,
     borderRadius: moderateScale(16),

@@ -23,7 +23,9 @@ class Parcela extends Model
         'identificador',
         'chave_pix',
         'tentativas',
-        'dt_ult_cobranca'
+        'dt_ult_cobranca',
+        'valor_recebido_pix',
+        'valor_recebido'
     ];
 
     public function emprestimo()
