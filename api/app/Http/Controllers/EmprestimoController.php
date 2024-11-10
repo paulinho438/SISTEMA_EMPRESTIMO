@@ -168,7 +168,11 @@ class EmprestimoController extends Controller
                     ->whereHas('emprestimo', function ($query) use ($request) {
                         $query->where('company_id', $request->header('company-id'));
                     });
-            })->get()
+            })
+            ->join('parcelas', 'emprestimos.id', '=', 'parcelas.emprestimo_id')
+            ->orderBy('parcelas.updated_at', 'asc')
+            ->select('emprestimos.*')
+            ->get()
         );
     }
 
