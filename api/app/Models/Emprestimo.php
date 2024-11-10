@@ -9,7 +9,7 @@ class Emprestimo extends Model
 {
     public $table = 'emprestimos';
 
-    protected $appends = ['count_late_parcels', 'data_quitacao'];
+    protected $appends = ['count_late_parcels', 'data_quitacao', 'total_pago'];
     protected $fillable = [
         'dt_lancamento',
         'valor',
@@ -83,4 +83,10 @@ class Emprestimo extends Model
         return $ultimaParcela ? $ultimaParcela->dt_baixa : null;
     }
 
+    public function getTotalPagoAttribute()
+    {
+        return $this->parcelas()->with('movimentacaofinanceira')->get()->sum(function ($parcela) {
+            return $parcela->movimentacao->sum('valor');
+        });
+    }
 }

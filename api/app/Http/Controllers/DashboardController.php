@@ -38,8 +38,11 @@ class DashboardController extends Controller
         $totalEmprestimosVencidos = 0;
         $totalEmprestimosEmDias = 0;
         $totalEmprestimosMuitoAtrasados = 0;
+        $totalJaRecebido = 0;
 
         foreach ($emprestimos as $emprestimo) {
+            $totalJaRecebido += $emprestimo->total_pago;
+
             $status = $this->getStatus($emprestimo);
 
             switch ($status) {
