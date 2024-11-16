@@ -74,15 +74,36 @@ class BcodexService
     public function consultarChavePix(float $valor, string $pix, string $accountId)
     {
 
-         // Dados da consulta
+
+        // Dados da consulta
         $data = [
-            "amount" => number_format($valor, 2, '.', ''),
+            "amount" => $valor,
             "pixKey" => $pix,
             "description" => "Informação/Descrição",
             "clientReferenceId" => ""
         ];
 
         $url = "{$this->baseUrl}/bcodex-pix-dex/api/v1/account/{$accountId}/initiate-pix";
+
+        $accessToken = $this->login();
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->put($url, $data);
+
+        return $response;
+    }
+
+    public function realizarPagamentoPix(float $valor, string $accountId, string $paymentId)
+    {
+         // Dados da consulta
+        $data = [
+            "amount" => $valor,
+            "paymentId" => $paymentId,
+        ];
+
+        $url = "{$this->baseUrl}/bcodex-pix-dex/api/v1/account/$accountId/confirm-pix";
 
         $accessToken = $this->login();
 

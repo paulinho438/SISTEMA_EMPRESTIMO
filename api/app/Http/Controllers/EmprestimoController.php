@@ -598,30 +598,40 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
-            // if ($emprestimo) {
-            //     $envio = self::enviarPix([
-            //         'valor' => $emprestimo->valor,
-            //         'informacao' => 'Emprestimo de R$ ' . $emprestimo->valor . ' para o ' . $emprestimo->client->nome_completo,
-            //         'pix_cliente' => $emprestimo->client->cpf
-            //     ]);
-
-            //     if ($envio['error_code'] != null) {
-            //         return response()->json([
-            //             "message" => $envio['error_description'],
-            //             "error" => ''
-            //         ], Response::HTTP_FORBIDDEN);
-            //     }
-
-            // }
-
             if ($emprestimo->banco->wallet == 1) {
+                if(!$emprestimo->client->pix_cliente){
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'Cliente não possui chave pix cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->client->accountId);
+
+                if ($response->successful()) {
+                    if($response->json()['status'] == 'AWAITING_CONFIRMATION') {
+
+                        $response = $this->bcodexService->realizarPagamentoPix(($emprestimo->valor * 100),$emprestimo->client->accountId, $response->json()['paymentId']);
+
+                        if (!$response->successful()) {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => "Erro ao efetuar a transferencia do Emprestimo."
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                    }
+                }else{
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+                    ], Response::HTTP_FORBIDDEN);
+                }
                 // Disparar o job para processar o empréstimo em paralelo
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService);
             }
 
 
             $emprestimo->contaspagar->status = 'Pagamento Efetuado';
-
 
             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
             $emprestimo->contaspagar->save();
