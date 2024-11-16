@@ -141,7 +141,7 @@ export default {
                         <div
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="goToPixLink(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Clique aqui para pagar a parcela do dia"
+                                <Button @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Clique aqui para pagar a parcela do dia"
                                     class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
                             </div>
                         </div>
@@ -168,7 +168,7 @@ export default {
                                     <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
                                         class="p-button-raised p-button-success mr-2 mb-2" />
                                     <Button v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'" label="Pendente Pagar com Pix"
-                                        @click="goToPixLink(slotProps.data?.chave_pix)"
+                                        @click="copyToClipboard(slotProps.data?.chave_pix)"
                                         class="p-button-raised p-button-danger mr-2 mb-2" />
                                     <Button v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago' " label="Copiar Chave Pix"
                                         @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
