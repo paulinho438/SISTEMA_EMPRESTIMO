@@ -90,7 +90,7 @@ class BcodexService
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
-        ])->put($url, $data);
+        ])->post($url, $data);
 
         return $response;
     }
@@ -110,7 +110,7 @@ class BcodexService
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
-        ])->put($url, $data);
+        ])->post($url, $data);
 
         return $response;
     }
