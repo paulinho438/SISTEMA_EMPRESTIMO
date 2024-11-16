@@ -611,7 +611,7 @@ class EmprestimoController extends Controller
                 if ($response->successful()) {
                     if($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
-                        $response = $this->bcodexService->realizarPagamentoPix(($emprestimo->valor * 100),$emprestimo->client->accountId, $response->json()['paymentId']);
+                        $response = $this->bcodexService->realizarPagamentoPix(($emprestimo->valor * 100),$emprestimo->banco->accountId, $response->json()['paymentId']);
 
                         if (!$response->successful()) {
                             return response()->json([
