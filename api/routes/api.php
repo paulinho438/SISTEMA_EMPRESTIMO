@@ -23,7 +23,8 @@ use App\Http\Controllers\{
     DashboardController,
     GestaoController,
     LogController,
-    PlanosController
+    PlanosController,
+    LocacaoController
 
 };
 use App\Models\BotaoCobranca;
@@ -54,6 +55,7 @@ Route::get('/setup-teste', function (Request $request){
 
 
 Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookRetornoCobranca']);
+Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataCorte']);
 
 
 

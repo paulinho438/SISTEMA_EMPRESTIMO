@@ -37,11 +37,11 @@ class LocacaoController extends Controller
         return Locacao::orderBy('id', 'desc')->get();
     }
 
-    public function dataCorte(Request $request)
+    public function dataCorte(Request $request, $id)
     {
-        $company = Company::where('id', $request->header('company-id'))->first();
+        $company = Company::where('id', $id)->first();
 
-        $quantidade = Emprestimo::where('company_id', $request->header('company-id'))
+        $quantidade = Emprestimo::where('company_id', $id)
         ->whereNull('hash_locacao')
         ->count();
 
@@ -71,14 +71,14 @@ class LocacaoController extends Controller
             }
         }
 
-        $emprestimos = Emprestimo::where('company_id', $request->header('company-id'))
+        $emprestimos = Emprestimo::where('company_id', $id)
             ->whereNull('hash_locacao')
             ->get();
 
 
         $dataVencimento = Carbon::create(null, null, 15)->toDateString();
 
-        $response = $this->bcodexService->criarCobranca(18.00, '55439708000135');
+        $response = $this->bcodexService->criarCobranca($valor, '55439708000135');
 
         if($response->successful()){
             $response = $response->json();
@@ -88,9 +88,11 @@ class LocacaoController extends Controller
             'type' => $company->plano->nome,
             'data_vencimento'=> $dataVencimento,
             'valor'=> $valor,
-            'company_id'=> $request->header('company-id'),
+            'company_id'=> $id,
             'chave_pix' => $response['pixCopiaECola'] ?? null,
+            'identificador' => $response['txid'] ?? null
         ];
+
         $locacao = Locacao::create($locacaoInsert);
 
         foreach($emprestimos as $emprestimo){
