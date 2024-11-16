@@ -19,7 +19,8 @@ class Banco extends Model
         'juros',
         'chavepix',
         'company_id',
-        'info_recebedor_pix'
+        'info_recebedor_pix',
+        'accountId'
     ];
 
     public function company()

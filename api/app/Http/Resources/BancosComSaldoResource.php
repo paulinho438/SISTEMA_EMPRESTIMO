@@ -35,6 +35,7 @@ class BancosComSaldoResource extends JsonResource
             "wallet" => ($this->wallet) ? true : false,
             "juros" => $this->juros,
             "document" => $this->document,
+            "accountId" => $this->accountId,
             "chavepix" => $this->chavepix,
             "info_recebedor_pix" => $this->info_recebedor_pix,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),
