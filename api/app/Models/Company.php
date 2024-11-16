@@ -3,6 +3,7 @@
 namespace App\Models;
 use App\Models\User;
 use App\Models\Planos;
+use App\Models\Locacao;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,7 +36,8 @@ class Company extends Model
         return $this->belongsTo(Planos::class);
     }
 
-    public function locacoes() {
-        return $this->belongsToMany(Locacao::class);
+    public function locacoes()
+    {
+        return $this->hasMany(Locacao::class);
     }
 }
