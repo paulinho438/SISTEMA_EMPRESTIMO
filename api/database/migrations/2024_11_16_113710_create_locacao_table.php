@@ -18,6 +18,7 @@ class CreateLocacaoTable extends Migration
             $table->timestamps(); // Campos created_at e updated_at
             $table->string('type');
             $table->string('chave_pix')->nullable();
+            $table->string('identificador')->nullable();
             $table->date('data_vencimento');
             $table->date('data_pagamento')->nullable();
             $table->decimal('valor', 10, 2);

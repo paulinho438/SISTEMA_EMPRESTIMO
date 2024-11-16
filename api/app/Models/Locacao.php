@@ -15,7 +15,8 @@ class Locacao extends Model
         'data_pagamento',
         'valor',
         'company_id',
-        'chave_pix'
+        'chave_pix',
+        'identificador'
     ];
 
     public function company()
