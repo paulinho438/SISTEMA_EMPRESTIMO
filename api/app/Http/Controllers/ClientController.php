@@ -184,6 +184,7 @@ class ClientController extends Controller
             'telefone_celular_2' => 'required',
             'email' => 'required',
             'password' => 'required',
+            'pix_cliente' => 'required'
         ]);
 
         $dados = $request->all();
@@ -232,6 +233,7 @@ class ClientController extends Controller
                 'telefone_celular_2' => 'required',
                 'email' => 'required',
                 'status' => 'required',
+                'pix_cliente' => 'required'
             ]);
 
             $dados = $request->all();
@@ -251,6 +253,7 @@ class ClientController extends Controller
                 $EditClient->observation = $dados['observation'];
                 $EditClient->limit = $dados['limit'];
                 $EditClient->observation = $dados['observation'];
+                $EditClient->pix_cliente = $dados['pix_cliente'];
                 $EditClient->save();
 
                 $ids = [];
