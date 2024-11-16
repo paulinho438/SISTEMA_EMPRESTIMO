@@ -167,22 +167,6 @@ export default {
 				</div>
 			</div>
 
-			<div v-if="banco?.efibank" class="formgrid grid">
-				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<label for="name">Chave Client ID</label>
-					<InputText :modelValue="banco?.clienteid" v-model="banco.clienteid" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
-					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
-				</div>
-			</div>
-
-			<div v-if="banco?.efibank" class="formgrid grid">
-				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<label for="name">Chave Client Secret</label>
-					<InputText :modelValue="banco?.clientesecret" v-model="banco.clientesecret" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
-					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
-				</div>
-			</div>
-
 			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="name">Beneficiário Pix</label>
@@ -199,7 +183,7 @@ export default {
 				</div>
 			</div>
 
-			<div v-if="banco?.efibank" class="formgrid grid">
+			<div v-if="banco?.wallet" class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="name">Juros de cobrança</label>
 					<InputText :modelValue="banco?.juros" v-model="banco.juros" id="name" type="text" class="w-full p-inputtext-sm" placeholder="Exemplo 1.9" :class="{ 'p-invalid': errors?.description }" />
@@ -207,19 +191,18 @@ export default {
 				</div>
 			</div>
 
-			<Chip v-if="banco?.efibank && typeof banco?.certificado === 'string' " :label="banco?.certificado" class="w-full p-inputtext-sm"></Chip>
-
-			<div v-if="banco?.efibank" class="field col-3 md:col-3 lg:col-3 xl:col-3 justify-content-center align-items-center">
-				<div class="field">
-					<FileUpload mode="basic" type="file" :modelValue="banco?.certificado" name="certificado" id="certificado" ref="certificado" accept=".p12" label="Anexar Certificado" chooseLabel="Anexar Certificado" 
-					@change="uploadCertificado" class="w-full mb-3" />
+			<div class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<h5>Wallet?</h5>
+					<InputSwitch :modelValue="banco?.wallet" v-model="banco.wallet" />
 				</div>
 			</div>
 
-			<div class="formgrid grid">
+			<div v-if="banco?.wallet" class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<h5>Efi Bank?</h5>
-					<InputSwitch :modelValue="banco?.efibank" v-model="banco.efibank" />
+					<label for="name">B.CODEX Documento</label>
+					<InputText :modelValue="banco?.document" v-model="banco.document" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
 				</div>
 			</div>
 

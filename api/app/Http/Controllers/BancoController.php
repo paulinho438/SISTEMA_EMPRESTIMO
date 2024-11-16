@@ -55,26 +55,13 @@ class BancoController extends Controller
             'agencia' => 'required',
             'conta' => 'required',
             'saldo' => 'required',
-            'efibank' => 'required',
+            'wallet' => 'required',
         ]);
 
         $dados = $request->all();
         if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
-
-            if (isset($_FILES['certificado'])) {
-
-                $certificado = $request->file('certificado');
-
-                // Gerar um nome único para o arquivo
-                $nomeArquivo = Str::uuid() . '.' . $certificado->getClientOriginalExtension();
-
-                // Salvar o arquivo na pasta 'public/fotos'
-                $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
-
-                $dados['certificado'] = 'storage/documentos/' . $nomeArquivo;
-            }
 
             $newGroup = Banco::create($dados);
 
@@ -84,7 +71,6 @@ class BancoController extends Controller
             return $array;
         }
 
-        return $array;
     }
 
     public function update(Request $request, $id)
@@ -103,7 +89,7 @@ class BancoController extends Controller
                 'agencia' => 'required',
                 'conta' => 'required',
                 'saldo' => 'required',
-                'efibank' => 'required',
+                'wallet' => 'required',
             ]);
 
             $dados = $request->all();
@@ -115,37 +101,12 @@ class BancoController extends Controller
                 $EditBanco->agencia = $dados['agencia'];
                 $EditBanco->conta = $dados['conta'];
                 $EditBanco->saldo = $dados['saldo'];
-                $EditBanco->efibank = $dados['efibank'];
+                $EditBanco->wallet = $dados['wallet'];
                 $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'];
 
-                if ($dados['efibank'] == 1) {
-                    $EditBanco->clienteid = $dados['clienteid'];
-                    $EditBanco->clientesecret = $dados['clientesecret'];
-                    $EditBanco->chavepix = $dados['chavepix'];
-                    $EditBanco->juros = $dados['juros'];
-                } else {
-                    $EditBanco->clienteid = null;
-                    $EditBanco->clientesecret = null;
-                    $EditBanco->chavepix = $dados['chavepix'];
-                    $EditBanco->juros = null;
+                if ($dados['wallet'] == 1) {
+                    $EditBanco->document = $dados['document'];
                 }
-
-
-                if (isset($_FILES['certificado'])) {
-
-                    $certificado = $request->file('certificado');
-
-                    // Gerar um nome único para o arquivo
-                    $nomeArquivo = Str::uuid() . '.' . $certificado->getClientOriginalExtension();
-
-                    // Salvar o arquivo na pasta 'public/fotos'
-                    $caminhoArquivo = $certificado->storeAs('public/documentos', $nomeArquivo);
-
-                    $dados['certificado'] = $nomeArquivo;
-                }
-
-                $EditBanco->certificado = $dados['certificado'];
-
 
                 $EditBanco->save();
             } else {
