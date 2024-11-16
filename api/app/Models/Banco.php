@@ -14,11 +14,9 @@ class Banco extends Model
         'agencia',
         'conta',
         'saldo',
-        'efibank',
-        'clienteid',
-        'clientesecret',
+        'wallet',
+        'document',
         'juros',
-        'certificado',
         'chavepix',
         'company_id',
         'info_recebedor_pix'
