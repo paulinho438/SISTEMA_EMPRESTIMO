@@ -78,7 +78,7 @@ class CobrancaAutomaticaC extends Command
                             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                             $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
                             $saudacao = self::obterSaudacao();
-
+                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
@@ -88,7 +88,11 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
- ";
+ Copie e cole abaixo a chave pix referente a parcela do dia:
+
+{$parcelaPendente->chave_pix}
+
+";
 
 
 
@@ -152,5 +156,16 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
         } else {
             return $saudacoesNoite[array_rand($saudacoesNoite)];
         }
+    }
+
+    function encontrarPrimeiraParcelaPendente($parcelas) {
+
+        foreach($parcelas as $parcela){
+            if($parcela->dt_baixa === ''){
+                return $parcela;
+            }
+        }
+
+        return null;
     }
 }

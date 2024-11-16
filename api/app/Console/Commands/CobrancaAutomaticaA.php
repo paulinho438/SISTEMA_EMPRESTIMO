@@ -80,6 +80,8 @@ class CobrancaAutomaticaA extends Command
 
                             $saudacao = self::obterSaudacao();
 
+                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
+
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
@@ -89,7 +91,11 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
- ";
+Copie e cole abaixo a chave pix referente a parcela do dia:
+
+{$parcelaPendente->chave_pix}
+
+";
 
 
 
@@ -155,6 +161,17 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
         } else {
             return $saudacoesNoite[array_rand($saudacoesNoite)];
         }
+    }
+
+    function encontrarPrimeiraParcelaPendente($parcelas) {
+
+        foreach($parcelas as $parcela){
+            if($parcela->dt_baixa === ''){
+                return $parcela;
+            }
+        }
+
+        return null;
     }
 
 }
