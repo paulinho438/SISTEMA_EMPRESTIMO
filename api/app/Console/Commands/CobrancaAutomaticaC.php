@@ -88,11 +88,15 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
- Copie e cole abaixo a chave pix referente a parcela do dia:
-
-{$parcelaPendente->chave_pix}
 
 ";
+
+if($parcelaPendente !=  null){
+    $fraseInicial .= "Copie e cole abaixo a chave pix referente a parcela do dia:
+
+{$parcelaPendente->chave_pix}
+";
+}
 
 
 
