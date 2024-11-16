@@ -599,7 +599,7 @@ class EmprestimoController extends Controller
             $emprestimo = Emprestimo::find($id);
 
             if ($emprestimo->banco->wallet == 1) {
-                if(!$emprestimo->client->pix_cliente){
+                if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
                         "error" => 'Cliente não possui chave pix cadastrada'
@@ -609,9 +609,9 @@ class EmprestimoController extends Controller
                 $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
 
                 if ($response->successful()) {
-                    if($response->json()['status'] == 'AWAITING_CONFIRMATION') {
+                    if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
-                        $response = $this->bcodexService->realizarPagamentoPix(($emprestimo->valor * 100),$emprestimo->banco->accountId, $response->json()['paymentId']);
+                        $response = $this->bcodexService->realizarPagamentoPix(($emprestimo->valor * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
 
                         if (!$response->successful()) {
                             return response()->json([
@@ -620,7 +620,7 @@ class EmprestimoController extends Controller
                             ], Response::HTTP_FORBIDDEN);
                         }
                     }
-                }else{
+                } else {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
                         "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
@@ -681,7 +681,7 @@ class EmprestimoController extends Controller
             $emprestimo = Emprestimo::find($id);
 
             if ($emprestimo->banco->wallet == 1) {
-                if(!$emprestimo->client->pix_cliente){
+                if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
                         "error" => 'Cliente não possui chave pix cadastrada'
@@ -692,7 +692,7 @@ class EmprestimoController extends Controller
 
                 if ($response->successful()) {
                     return $response->json();
-                }else{
+                } else {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
                         "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
@@ -1199,24 +1199,59 @@ class EmprestimoController extends Controller
                 // Encontrar a parcela correspondente
                 $parcela = Parcela::where('identificador', $txId)->first();
 
-                while ($parcela && $valor > 0) {
-                    if ($valor >= $parcela->saldo) {
-                        // Quitar a parcela atual
-                        $valor -= $parcela->saldo;
-                        $parcela->saldo = 0;
-                        $parcela->dt_baixa = $horario;
-                    } else {
-                        // Reduzir o saldo da parcela atual
-                        $parcela->saldo -= $valor;
-                        $valor = 0;
-                    }
-                    $parcela->save();
+                $parcela->saldo = 0;
+                $parcela->dt_baixa = $horario;
+                $parcela->save();
 
-                    // Encontrar a próxima parcela
-                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                        ->where('id', '>', $parcela->id)
-                        ->orderBy('id', 'asc')
-                        ->first();
+                if ($parcela->contasreceber) {
+                    $parcela->contasreceber->status = 'Pago';
+                    $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                    $parcela->contasreceber->forma_recebto = 'PIX';
+                    $parcela->contasreceber->save();
+
+                    # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+
+                    $movimentacaoFinanceira = [];
+                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                    $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                    $movimentacaoFinanceira['tipomov'] = 'E';
+                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                    $movimentacaoFinanceira['valor'] = $valor;
+
+                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                    # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                    $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
+                    $parcela->emprestimo->banco->save();
+
+                    // $movimentacaoFinanceira = [];
+                    // $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                    // $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                    // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $parcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                    // $movimentacaoFinanceira['tipomov'] = 'S';
+                    // $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                    // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                    // $movimentacaoFinanceira['valor'] = $juros;
+
+                    // Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                    if ($parcela->emprestimo->quitacao->chave_pix) {
+
+                        $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                        $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
+                        $parcela->emprestimo->quitacao->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->quitacao->save();
+                        }
+                    }
                 }
             }
         }
