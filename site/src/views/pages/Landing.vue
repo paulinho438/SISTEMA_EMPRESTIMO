@@ -168,7 +168,7 @@ export default {
                                     <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
                                         class="p-button-raised p-button-success mr-2 mb-2" />
                                     <Button v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'" label="Pendente Pagar com Pix"
-                                        @click="copyToClipboard(slotProps.data?.chave_pix)"
+                                        @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
                                         class="p-button-raised p-button-danger mr-2 mb-2" />
                                     <Button v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago' " label="Copiar Chave Pix"
                                         @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
