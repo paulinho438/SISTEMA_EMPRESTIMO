@@ -54,7 +54,7 @@ class LoginResource extends JsonResource
         // Remover os companies que atendem ao requisito especificado
         $filteredCompanies = $companies->reject(function ($company) use ($today) {
             $ultimaLocacao = $company->locacoes->first();
-            return $ultimaLocacao && $ultimaLocacao->data_vencimento > $today && $ultimaLocacao->data_pagamento == null;
+            return $ultimaLocacao && $ultimaLocacao->data_vencimento > $today || $ultimaLocacao && $ultimaLocacao->data_vencimento <= $today && $ultimaLocacao->data_pagamento == null;
         });
 
         return $filteredCompanies;
