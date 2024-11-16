@@ -655,6 +655,64 @@ class EmprestimoController extends Controller
         }
     }
 
+    public function pagamentoTransferenciaConsultar(Request $request, $id)
+    {
+
+        if (!$this->contem($request->header('Company_id'), auth()->user(), 'view_fornecedores_create')) {
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' não tem permissão para autorizar o pagamento do emprestimo ' . $id,
+                'operation' => 'error'
+            ]);
+
+            return response()->json([
+                "message" => "Sem permissão para efetuar o pagamento.",
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $emprestimo = Emprestimo::find($id);
+
+            if ($emprestimo->banco->wallet == 1) {
+                if(!$emprestimo->client->pix_cliente){
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'Cliente não possui chave pix cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
+
+                if ($response->successful()) {
+                    return $response->json();
+                }else{
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
+            DB::commit();
+
+            return $array;
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
     public function reprovarEmprestimo(Request $request, $id)
     {
 
