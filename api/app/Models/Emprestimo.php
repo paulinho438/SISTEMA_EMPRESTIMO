@@ -20,6 +20,7 @@ class Emprestimo extends Model
         'client_id',
         'user_id',
         'company_id',
+        'hash_locacao'
     ];
 
     public function company()
