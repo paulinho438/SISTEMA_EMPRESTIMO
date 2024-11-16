@@ -28,6 +28,8 @@ use App\Services\BcodexService;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
+use App\Jobs\ProcessarPixJob;
+
 use DateTime;
 
 use Ramsey\Uuid\Uuid;
@@ -76,7 +78,7 @@ class EmprestimoController extends Controller
     {
 
 
-        $response = $this->bcodexService->criarCobranca(18.00);
+        $response = $this->bcodexService->criarCobranca(18.00, '55439708000135');
 
         // Retorna a resposta da API externa
         if ($response->successful()) {
@@ -314,12 +316,12 @@ class EmprestimoController extends Controller
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
             //API COBRANCA B.CODEX
-            $response = $this->bcodexService->criarCobranca($addParcela['valor']);
+            // $response = $this->bcodexService->criarCobranca($addParcela['valor']);
 
-            if ($response->successful()) {
-                $addParcela['identificador'] = $response->json()['txid'];
-                $addParcela['chave_pix'] = $response->json()['pixCopiaECola'];
-            }
+            // if ($response->successful()) {
+            //     $addParcela['identificador'] = $response->json()['txid'];
+            //     $addParcela['chave_pix'] = $response->json()['pixCopiaECola'];
+            // }
 
             $parcela = Parcela::create($addParcela);
 
@@ -348,14 +350,14 @@ class EmprestimoController extends Controller
             $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
 
             //API COBRANCA B.CODEX
-            $response = $this->bcodexService->criarCobranca(
-                ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
-            );
+            // $response = $this->bcodexService->criarCobranca(
+            //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
+            // );
 
-            if ($response->successful()) {
-                $pagamentoMinimo['identificador'] = $response->json()['txid'];
-                $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
-            }
+            // if ($response->successful()) {
+            //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
+            //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
+            // }
 
             Quitacao::create($quitacao);
         }
@@ -367,12 +369,12 @@ class EmprestimoController extends Controller
             $pagamentoMinimo['valor'] = ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor']);
 
             //API COBRANCA B.CODEX
-            $response = $this->bcodexService->criarCobranca($emprestimoAdd->parcelas[0]->totalPendente());
+            // $response = $this->bcodexService->criarCobranca($emprestimoAdd->parcelas[0]->totalPendente());
 
-            if ($response->successful()) {
-                $quitacao['identificador'] = $response->json()['txid'];
-                $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
-            }
+            // if ($response->successful()) {
+            //     $quitacao['identificador'] = $response->json()['txid'];
+            //     $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
+            // }
 
             PagamentoMinimo::create($pagamentoMinimo);
         }
@@ -612,7 +614,16 @@ class EmprestimoController extends Controller
 
             // }
 
-            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+            if ($emprestimo->banco->efibank == 1) {
+                $emprestimo->contaspagar->status = 'Gerando Pix';
+
+                // Disparar o job para processar o empréstimo em paralelo
+                ProcessarPixJob::dispatch($emprestimo);
+
+            } else {
+                $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+            }
+
             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
             $emprestimo->contaspagar->save();
 
@@ -960,7 +971,6 @@ class EmprestimoController extends Controller
                 $movimentacaoFinanceira['valor'] = $request->valor;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
-
             }
 
             DB::commit();

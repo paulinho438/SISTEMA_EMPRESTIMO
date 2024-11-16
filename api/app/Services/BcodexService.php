@@ -11,7 +11,7 @@ class BcodexService
 
     public function __construct()
     {
-        $this->baseUrl = 'https://sandbox.bcodex.io';
+        $this->baseUrl = 'https://api.bcodex.io';
     }
 
     protected function login()
@@ -37,7 +37,7 @@ class BcodexService
         throw new \Exception('Falha no login: ' . $response->body());
     }
 
-    public function criarCobranca(float $valor)
+    public function criarCobranca(float $valor , string $document)
     {
 
          // Dados da cobrança
@@ -49,7 +49,7 @@ class BcodexService
                 "original" => number_format($valor, 2, '.', ''),
                 "modalidadeAlteracao" => 1
             ],
-            "chave" => '05546356154',
+            "chave" => $document,
             "solicitacaoPagador" => "RJ EMPRESTIMOS",
             "infoAdicionais" => [
                 [
