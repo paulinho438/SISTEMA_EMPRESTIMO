@@ -606,7 +606,7 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->client->accountId);
+                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
 
                 if ($response->successful()) {
                     if($response->json()['status'] == 'AWAITING_CONFIRMATION') {
