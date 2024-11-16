@@ -32,9 +32,9 @@ class LocacaoController extends Controller
         $this->bcodexService = $bcodexService;
     }
 
-    public function get(Request $request, $id)
+    public function all(Request $request, $id)
     {
-        return Locacao::find($id);
+        return Locacao::orderBy('id', 'desc')->get();
     }
 
     public function dataCorte(Request $request)
@@ -98,48 +98,6 @@ class LocacaoController extends Controller
             $emprestimo->save();
         }
 
-
-
     }
 
-    public function update(Request $request)
-    {
-
-
-        DB::beginTransaction();
-
-        try {
-            $array = ['error' => ''];
-
-            $user = auth()->user();
-
-            $validator = Validator::make($request->all(), [
-                'juros' => 'required',
-            ]);
-
-            $dados = $request->all();
-            if (!$validator->fails()) {
-
-                $EditJuros = Juros::where('company_id', $request->header('company-id'))->first();
-
-                $EditJuros->juros = $dados['juros'];
-
-                $EditJuros->save();
-            } else {
-                $array['error'] = $validator->errors()->first();
-                return $array;
-            }
-
-            DB::commit();
-
-            return $array;
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                "message" => "Erro ao editar o Juros.",
-                "error" => $e->getMessage()
-            ], Response::HTTP_FORBIDDEN);
-        }
-    }
 }
