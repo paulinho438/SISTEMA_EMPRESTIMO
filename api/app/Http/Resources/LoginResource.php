@@ -36,7 +36,7 @@ class LoginResource extends JsonResource
             "tentativas"        => $this->tentativas,
             // "companies"         => CompaniesResource::collection($this->companies),
             "permissions"       => PermissionsResource::collection($this->groups),
-            "companies"  => $this->getFilteredCompanies(),
+            "companies"         => $this->getFilteredCompanies(),
             // "permissions"       => $this->groups
 
         ];
@@ -44,20 +44,21 @@ class LoginResource extends JsonResource
 
     public function getFilteredCompanies()
     {
-        $today = Carbon::today()->toDateString();
+        $comp = [];
 
-        // Filtrar os companies com base nas condições especificadas
-        $companies = Company::with(['locacoes' => function ($query) {
-            $query->orderBy('data_vencimento', 'desc')->limit(1);
-        }])->get();
+        foreach($this->companies as $company) {
+            if($company->locacoes->isEmpty()) {
+                $comp[] = $company;
+            }else{
+                $ultimaLocacao = $company->locacoes->last();
+                if ($ultimaLocacao->data_vencimento >= Carbon::today()->toDateString() || $ultimaLocacao->data_vencimento < Carbon::today()->toDateString() && $ultimaLocacao->data_pagamento != null) {
+                    $comp[] = $company;
+                }
+            }
 
-        // Remover os companies que atendem ao requisito especificado
-        $filteredCompanies = $companies->reject(function ($company) use ($today) {
-            $ultimaLocacao = $company->locacoes->sortByDesc('data_vencimento')->first();
-            return $ultimaLocacao && $ultimaLocacao->data_vencimento > $today || $ultimaLocacao && $ultimaLocacao->data_vencimento <= $today && $ultimaLocacao->data_pagamento != null;
-        });
+        }
 
-        return $filteredCompanies;
+        return $comp;
     }
 }
 
