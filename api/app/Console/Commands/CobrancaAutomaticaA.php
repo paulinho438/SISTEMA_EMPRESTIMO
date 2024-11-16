@@ -170,7 +170,7 @@ if($parcelaPendente !=  null){
     function encontrarPrimeiraParcelaPendente($parcelas) {
 
         foreach($parcelas as $parcela){
-            if($parcela->dt_baixa === ''){
+            if($parcela->dt_baixa == null){
                 return $parcela;
             }
         }
