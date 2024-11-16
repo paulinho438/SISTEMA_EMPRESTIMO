@@ -94,7 +94,7 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
 ";
 
-if($parcelaPendente->chave_pix){
+if($parcelaPendente !=  null){
     $fraseInicial .= "Copie e cole abaixo a chave pix referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
