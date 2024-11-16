@@ -618,7 +618,7 @@ class EmprestimoController extends Controller
                 $emprestimo->contaspagar->status = 'Gerando Pix';
 
                 // Disparar o job para processar o empréstimo em paralelo
-                ProcessarPixJob::dispatch($emprestimo);
+                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService);
 
             } else {
                 $emprestimo->contaspagar->status = 'Pagamento Efetuado';
