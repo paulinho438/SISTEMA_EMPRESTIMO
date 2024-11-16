@@ -6,7 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 use App\Models\Parcela;
-
+use App\Services\BcodexService;
 use App\Models\CustomLog;
 
 use Efi\Exception\EfiException;
@@ -46,34 +46,18 @@ class BancosComSaldoResource extends JsonResource
     private function getSaldoBanco()
     {
 
-        try {
+        if ($this->wallet) {
 
-            // if ($this->efibank) {
-            //     $api = new EfiPay([
-            //         'clientId' => $this->clienteid,
-            //         'clientSecret' => $this->clientesecret,
-            //         'certificate' => storage_path('app/public/documentos/' . $this->certificado),
-            //         'sandbox' => false,
-            //         "debug" => false,
-            //         'timeout' => 60,
-            //     ]);
+            $bcodexService = new BcodexService();
 
-            //     $response = $api->getAccountBalance(["bloqueios" => false]);
+            $response = $bcodexService->consultarSaldo($this->accountId);
 
-            //     if (isset($response['saldo'])) {
-            //         return $response['saldo'];
-            //     }else{
-            //         return null;
-            //     }
+            if ($response->successful()) {
 
-            // } else {
-            //     return null;
-            // }
+                return ($response->json()['balance'] / 100);
+            }
 
-
-        } catch (EfiException $e) {
-            return null;
-        } catch (Exception $e) {
+        } else {
             return null;
         }
 

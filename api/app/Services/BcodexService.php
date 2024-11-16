@@ -114,4 +114,20 @@ class BcodexService
 
         return $response;
     }
+
+
+
+    public function consultarSaldo(string $accountId)
+    {
+        $url = "{$this->baseUrl}/bcodex-pix-dex/api/v1/account/{$accountId}/balance";
+
+        $accessToken = $this->login();
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->get($url, []);
+
+        return $response;
+    }
 }
