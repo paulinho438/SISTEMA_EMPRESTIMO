@@ -317,7 +317,7 @@ export default {
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
                                     <div>
-                                        <span class="block text-500 font-medium mb-3">Saldo Banco Efi</span>
+                                        <span class="block text-500 font-medium mb-3">Saldo Banco wallet</span>
                                         <div class="text-900 font-medium text-xl">
                                             {{
                                                 parseFloat(banco?.saldo_banco).toLocaleString('pt-BR', {
