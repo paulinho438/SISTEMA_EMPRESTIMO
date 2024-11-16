@@ -32,11 +32,9 @@ class BancosComSaldoResource extends JsonResource
             "parcelas_baixa_manual" => $this->getParcelasBaixaManual(),
             "caixa_empresa" => $this->company->caixa,
             "caixa_pix" => $this->company->caixa_pix,
-            "efibank" => ($this->efibank) ? true : false,
-            "clienteid" => $this->clienteid,
-            "clientesecret" => $this->clientesecret,
+            "wallet" => ($this->wallet) ? true : false,
             "juros" => $this->juros,
-            "certificado" => $this->certificado,
+            "document" => $this->document,
             "chavepix" => $this->chavepix,
             "info_recebedor_pix" => $this->info_recebedor_pix,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),
@@ -49,27 +47,27 @@ class BancosComSaldoResource extends JsonResource
 
         try {
 
-            if ($this->efibank) {
-                $api = new EfiPay([
-                    'clientId' => $this->clienteid,
-                    'clientSecret' => $this->clientesecret,
-                    'certificate' => storage_path('app/public/documentos/' . $this->certificado),
-                    'sandbox' => false,
-                    "debug" => false,
-                    'timeout' => 60,
-                ]);
+            // if ($this->efibank) {
+            //     $api = new EfiPay([
+            //         'clientId' => $this->clienteid,
+            //         'clientSecret' => $this->clientesecret,
+            //         'certificate' => storage_path('app/public/documentos/' . $this->certificado),
+            //         'sandbox' => false,
+            //         "debug" => false,
+            //         'timeout' => 60,
+            //     ]);
 
-                $response = $api->getAccountBalance(["bloqueios" => false]);
+            //     $response = $api->getAccountBalance(["bloqueios" => false]);
 
-                if (isset($response['saldo'])) {
-                    return $response['saldo'];
-                }else{
-                    return null;
-                }
+            //     if (isset($response['saldo'])) {
+            //         return $response['saldo'];
+            //     }else{
+            //         return null;
+            //     }
 
-            } else {
-                return null;
-            }
+            // } else {
+            //     return null;
+            // }
 
 
         } catch (EfiException $e) {
