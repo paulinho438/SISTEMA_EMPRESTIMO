@@ -8,6 +8,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 use App\Models\Locacao;
+use App\Models\Company;
+
 
 class LoginResource extends JsonResource
 {
@@ -32,9 +34,9 @@ class LoginResource extends JsonResource
             "status"            => $this->status,
             "status_motivo"     => $this->status_motivo,
             "tentativas"        => $this->tentativas,
-            "companies"         => CompaniesResource::collection($this->companies),
+            // "companies"         => CompaniesResource::collection($this->companies),
             "permissions"       => PermissionsResource::collection($this->groups),
-            "companies_ativas"  => $this->getFilteredCompanies(),
+            "companies"  => $this->getFilteredCompanies(),
             // "permissions"       => $this->groups
 
         ];
@@ -42,14 +44,17 @@ class LoginResource extends JsonResource
 
     public function getFilteredCompanies()
     {
-        $today = Carbon::today();
+        $today = Carbon::today()->toDateString();
 
-        $filteredCompanies = array_filter($this->companies, function ($company) use ($today) {
-            // Obter a última locação do company
-            $ultimaLocacao = $company->locacoes()->orderBy('data_vencimento', 'desc')->first();
+        // Filtrar os companies com base nas condições especificadas
+        $companies = Company::with(['locacoes' => function ($query) {
+            $query->orderBy('data_vencimento', 'desc')->limit(1);
+        }])->get();
 
-            // Verificar se a data de vencimento da última locação é menor ou igual a hoje
-            return $ultimaLocacao && Carbon::parse($ultimaLocacao->data_vencimento)->lte($today);
+        // Remover os companies que atendem ao requisito especificado
+        $filteredCompanies = $companies->reject(function ($company) use ($today) {
+            $ultimaLocacao = $company->locacoes->first();
+            return $ultimaLocacao && $ultimaLocacao->data_vencimento > $today && $ultimaLocacao->data_pagamento == null;
         });
 
         return $filteredCompanies;
