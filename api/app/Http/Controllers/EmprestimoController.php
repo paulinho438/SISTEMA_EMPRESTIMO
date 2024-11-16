@@ -617,10 +617,11 @@ class EmprestimoController extends Controller
             if ($emprestimo->banco->wallet == 1) {
                 // Disparar o job para processar o empréstimo em paralelo
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService);
-
-            } else {
-                $emprestimo->contaspagar->status = 'Pagamento Efetuado';
             }
+
+
+            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+
 
             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
             $emprestimo->contaspagar->save();
