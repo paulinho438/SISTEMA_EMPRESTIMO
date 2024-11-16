@@ -71,7 +71,7 @@ class EnvioManual extends Command
             //     });
             // })->get();
 
-            if ($banco['efibank'] == 1) {
+            if ($banco['wallet'] == 1) {
 
                 $parcelas = $parcela->where('dt_baixa', null)->whereHas('emprestimo', function ($query) use ($banco) {
                     $query->whereHas('banco', function ($query) use ($banco) {

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('agencia', 200);
             $table->string('conta', 200);
             $table->float('saldo', 8, 2);
-            $table->boolean('efibank')->default(false);
+            $table->boolean('wallet')->default(false);
             $table->timestamps();
             $table->unsignedBigInteger('company_id');
             $table->foreign('company_id')->references('id')->on('company');

@@ -342,7 +342,7 @@ class EmprestimoController extends Controller
             }
         }
 
-        if ($dados['banco']['efibank'] == 1) {
+        if ($dados['banco']['wallet'] == 1) {
 
             $quitacao = [];
             $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
@@ -362,7 +362,7 @@ class EmprestimoController extends Controller
             Quitacao::create($quitacao);
         }
 
-        if ($dados['banco']['efibank'] == 1 && count($dados['parcelas']) == 1) {
+        if ($dados['banco']['wallet'] == 1 && count($dados['parcelas']) == 1) {
 
             $pagamentoMinimo = [];
             $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
@@ -448,7 +448,7 @@ class EmprestimoController extends Controller
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
 
-            if ($dados['banco']['efibank'] == 1) {
+            if ($dados['banco']['wallet'] == 1) {
 
                 $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
                 $options = [
@@ -614,7 +614,7 @@ class EmprestimoController extends Controller
 
             // }
 
-            if ($emprestimo->banco->efibank == 1) {
+            if ($emprestimo->banco->wallet == 1) {
                 $emprestimo->contaspagar->status = 'Gerando Pix';
 
                 // Disparar o job para processar o empréstimo em paralelo
