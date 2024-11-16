@@ -160,4 +160,15 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
             return $saudacoesNoite[array_rand($saudacoesNoite)];
         }
     }
+
+    function encontrarPrimeiraParcelaPendente($parcelas) {
+
+        foreach($parcelas as $parcela){
+            if($parcela->dt_baixa === ''){
+                return $parcela;
+            }
+        }
+
+        return null;
+    }
 }
