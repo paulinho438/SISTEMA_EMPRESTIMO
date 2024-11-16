@@ -312,7 +312,7 @@ export default {
                         </div>
                     </div>
 
-                    <div v-if="banco?.efibank == true" class="col-12 md:col-3">
+                    <div v-if="banco?.wallet == true" class="col-12 md:col-3">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
@@ -404,7 +404,7 @@ export default {
                         </div>
                     </div>
 
-                    <div v-if="banco?.efibank == true" class="col-12 md:col-3">
+                    <div v-if="banco?.wallet == true" class="col-12 md:col-3">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
