@@ -106,6 +106,7 @@ class BancoController extends Controller
 
                 if ($dados['wallet'] == 1) {
                     $EditBanco->document = $dados['document'];
+                    $EditBanco->accountId = $dados['accountId'];
                 }
 
                 $EditBanco->save();
