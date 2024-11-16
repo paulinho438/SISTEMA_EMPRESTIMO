@@ -635,6 +635,9 @@ class EmprestimoController extends Controller
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
+            $emprestimo->banco->saldo -= $emprestimo->valor;
+            $emprestimo->banco->save();
+
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $emprestimo->valor . ' para o cliente ' . $emprestimo->client->nome_completo,
