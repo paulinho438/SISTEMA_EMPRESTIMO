@@ -102,7 +102,7 @@ class BancoController extends Controller
                 $EditBanco->conta = $dados['conta'];
                 $EditBanco->saldo = $dados['saldo'];
                 $EditBanco->wallet = $dados['wallet'];
-                $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'];
+                $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'] ?? null;
 
                 if ($dados['wallet'] == 1) {
                     $EditBanco->document = $dados['document'];

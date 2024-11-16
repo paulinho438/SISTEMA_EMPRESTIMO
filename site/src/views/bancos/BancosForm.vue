@@ -73,7 +73,7 @@ export default {
 			this.changeLoading();
 			this.errors = [];
 
-			this.banco.efibank = (this.banco.efibank) ? 1 : 0;
+			this.banco.wallet = (this.banco.wallet) ? 1 : 0;
 
 			this.bancoService.saveComCertificado(this.banco)
 			.then((response) => {
