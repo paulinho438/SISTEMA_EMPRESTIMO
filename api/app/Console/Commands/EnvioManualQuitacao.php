@@ -70,7 +70,7 @@ class EnvioManualQuitacao extends Command
             //     });
             // })->get();
 
-            if ($banco['efibank'] == 1) {
+            if ($banco['wallet'] == 1) {
 
 
                 $quitacaoQry = $quitacao->where('dt_baixa', null)->whereHas('emprestimo', function ($query) use ($banco) {
