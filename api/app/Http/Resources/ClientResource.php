@@ -32,6 +32,7 @@ class ClientResource extends JsonResource
             "status_motivo"         => $this->status_motivo,
             "observation"           => $this->observation,
             "limit"                 => $this->limit,
+            "pix_cliente"           => $this->pix_cliente,
             "created_at"            => $this->created_at->format('d/m/Y H:i:s'),
             "address"               => AddressResource::collection($this->address),
             "nome_completo_cpf"     => "{$this->nome_completo} - {$this->cpf}",
