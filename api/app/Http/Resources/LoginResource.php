@@ -2,9 +2,12 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
+
 use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
+use App\Models\Locacao;
 
 class LoginResource extends JsonResource
 {
@@ -31,9 +34,25 @@ class LoginResource extends JsonResource
             "tentativas"        => $this->tentativas,
             "companies"         => CompaniesResource::collection($this->companies),
             "permissions"       => PermissionsResource::collection($this->groups),
+            "companies_ativas"  => $this->getFilteredCompanies(),
             // "permissions"       => $this->groups
 
         ];
+    }
+
+    public function getFilteredCompanies()
+    {
+        $today = Carbon::today();
+
+        $filteredCompanies = array_filter($this->companies, function ($company) use ($today) {
+            // Obter a última locação do company
+            $ultimaLocacao = $company->locacoes()->orderBy('data_vencimento', 'desc')->first();
+
+            // Verificar se a data de vencimento da última locação é menor ou igual a hoje
+            return $ultimaLocacao && Carbon::parse($ultimaLocacao->data_vencimento)->lte($today);
+        });
+
+        return $filteredCompanies;
     }
 }
 
