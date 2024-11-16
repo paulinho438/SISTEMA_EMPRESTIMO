@@ -268,7 +268,6 @@ class EmprestimoController extends Controller
 
         gerarPixParcelas::dispatch();
 
-
         $emprestimoAdd = Emprestimo::create($emprestimoAdd);
 
         if ($emprestimoAdd) {
@@ -286,18 +285,8 @@ class EmprestimoController extends Controller
             $contaspagar['company_id'] = $request->header('company-id');
             Contaspagar::create($contaspagar);
 
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $dados['banco']['id'];
-            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
-            $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
-            $movimentacaoFinanceira['tipomov'] = 'S';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $dados['valor'];
 
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-            $emprestimoAdd->banco->saldo = $emprestimoAdd->banco->saldo - $dados['valor'];
-            $emprestimoAdd->banco->save();
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -635,6 +624,16 @@ class EmprestimoController extends Controller
 
             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
             $emprestimo->contaspagar->save();
+
+            $movimentacaoFinanceira = [];
+            $movimentacaoFinanceira['banco_id'] = $emprestimo->banco->id;
+            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
+            $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->cliente->nome_completo;
+            $movimentacaoFinanceira['tipomov'] = 'S';
+            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            $movimentacaoFinanceira['valor'] = $emprestimo->valor;
+
+            Movimentacaofinanceira::create($movimentacaoFinanceira);
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
