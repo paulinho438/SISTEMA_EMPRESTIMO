@@ -206,6 +206,14 @@ export default {
 				</div>
 			</div>
 
+			<div v-if="banco?.wallet" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="name">B.CODEX accountId</label>
+					<InputText :modelValue="banco?.accountId" v-model="banco.accountId" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
+					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+				</div>
+			</div>
+
 		</template>
 	</Card>
 

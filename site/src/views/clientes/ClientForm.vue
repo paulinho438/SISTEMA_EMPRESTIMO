@@ -207,6 +207,7 @@ export default {
                         <label for="zip">RG</label>
                         <InputMask id="inputmask" :modelValue="client?.rg" v-model="client.rg" mask="9.999.999" ></InputMask>
                     </div>
+					
 					<div class="field col-12 md:col-6">
                         <label for="zip">Limite de Emprestimo</label>
 						<InputNumber id="inputnumber" :modelValue="client?.limit" v-model="client.limit" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
@@ -214,6 +215,10 @@ export default {
 					<div v-if="(!this.route.params?.id)" class="field col-12 md:col-6">
                         <label for="firstname2">Senha</label>
                         <InputText id="firstname2" :modelValue="client?.password" v-model="client.password" type="password" />
+                    </div>
+					<div class="field col-12 md:col-3">
+                        <label for="firstname2">PIX</label>
+                        <InputText id="firstname2" :modelValue="client?.pix_cliente" v-model="client.pix_cliente" type="text" />
                     </div>
                 </div>
             

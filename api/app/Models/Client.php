@@ -32,7 +32,8 @@ class Client extends Model
         'observation',
         'limit',
         'company_id',
-        'password'
+        'password',
+        'pix_cliente'
     ];
 
     public function address()

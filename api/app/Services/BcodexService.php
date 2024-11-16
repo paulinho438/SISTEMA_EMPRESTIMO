@@ -70,4 +70,27 @@ class BcodexService
 
         return $response;
     }
+
+    public function consultarChavePix(float $valor, string $pix, string $accountId)
+    {
+
+         // Dados da consulta
+        $data = [
+            "amount" => number_format($valor, 2, '.', ''),
+            "pixKey" => $pix,
+            "description" => "Informação/Descrição",
+            "clientReferenceId" => ""
+        ];
+
+        $url = "{$this->baseUrl}/bcodex-pix-dex/api/v1/account/{$accountId}/initiate-pix";
+
+        $accessToken = $this->login();
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->put($url, $data);
+
+        return $response;
+    }
 }
