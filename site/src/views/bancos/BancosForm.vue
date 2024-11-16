@@ -54,7 +54,7 @@ export default {
 					this.loading = false;
 				});
 			}else{
-				this.banco.efibank = false;
+				this.banco.wallet = false;
 			}
 		
 			

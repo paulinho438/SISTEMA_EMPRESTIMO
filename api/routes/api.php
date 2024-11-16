@@ -209,7 +209,7 @@ Route::middleware('auth:api')->group(function(){
     Route::post('/emprestimo/search/costcenter', [EmprestimoController::class, 'searchCostcenter']);
     Route::post('/emprestimo/search/consultor', [EmprestimoController::class, 'searchConsultor']);
     Route::get('/feriados', [EmprestimoController::class, 'feriados']);
-    Route::get('/efibank', [EmprestimoController::class, 'wallet']);
+    Route::get('/wallet', [EmprestimoController::class, 'wallet']);
     Route::get('/testebank', [EmprestimoController::class, 'testeBank']);
 
     Route::get('/recalcularparcelas', [EmprestimoController::class, 'recalcularParcelas']);

@@ -75,7 +75,7 @@ class CobrancaAutomaticaBBotao extends Command
             $r = [];
             foreach ($parcelas as $parcela) {
 
-                if ($parcela->emprestimo->banco->efibank == 0) {
+                if ($parcela->emprestimo->banco->wallet == 0) {
                     return;
                 }
 
