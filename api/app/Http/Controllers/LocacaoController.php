@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Services\BcodexService;
+use Illuminate\Support\Str;
 
 class LocacaoController extends Controller
 {
@@ -83,8 +84,10 @@ class LocacaoController extends Controller
         if($response->successful()){
             $response = $response->json();
         }
+        $hashId = md5(now()->format('YmdHis'));
 
         $locacaoInsert = [
+            'id' => $hashId,
             'type' => $company->plano->nome,
             'data_vencimento'=> $dataVencimento,
             'valor'=> $valor,
@@ -96,9 +99,11 @@ class LocacaoController extends Controller
         $locacao = Locacao::create($locacaoInsert);
 
         foreach($emprestimos as $emprestimo){
-            $emprestimo->hash_locacao = $locacao->id;
+            $emprestimo->hash_locacao = $hashId;
             $emprestimo->save();
         }
+
+        return response()->json($locacao, Response::HTTP_CREATED);
 
     }
 

@@ -10,6 +10,7 @@ class Locacao extends Model
     public $table = 'locacao';
 
     protected $fillable = [
+        'id',
         'type',
         'data_vencimento',
         'data_pagamento',

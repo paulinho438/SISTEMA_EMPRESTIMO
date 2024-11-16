@@ -34,4 +34,8 @@ class Company extends Model
     {
         return $this->belongsTo(Planos::class);
     }
+
+    public function locacoes() {
+        return $this->belongsToMany(Locacao::class);
+    }
 }
