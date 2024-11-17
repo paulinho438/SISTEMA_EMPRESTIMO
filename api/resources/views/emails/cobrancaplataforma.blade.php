@@ -93,7 +93,7 @@
             <p>Após pagamento de fatura pela chave Pix O SISTEMA RENOVARÁ SUA LICENÇA DE FORMA
                 AUTOMATICA!</p>
 
-            <h2>Resumo</h2>
+            <h2>Resumo {{ count($emprestimosData) }} Empréstimos</h2>
             <table class="table">
                 <thead>
                     <tr>
@@ -107,22 +107,23 @@
                 <tbody>
                     @foreach ($emprestimosData as $emprestimo)
                         <tr>
-                            <td>{{ $emprestimo[0] }}</td>
-                            <td>{{ $emprestimo[1] }}</td>
-                            <td>{{ $emprestimo[2] }}</td>
-                            <td>{{ $emprestimo[3] }}</td>
-                            <td>{{ $emprestimo[4] }}</td>
+                            <td>{{ $emprestimo[0] }}</td>   // data de lançamento
+                            <td>{{ $emprestimo[1] }}</td>   // nome do cliente
+                            <td>{{ $emprestimo[2] }}</td>   // valor do emprestimo
+                            <td>{{ $emprestimo[3] }}</td>   // lucro
+                            <td>{{ $emprestimo[4] }}</td>   // juros
                         </tr>
                     @endforeach
                 </tbody>
             </table>
-            <h2>Custo Total</h2>
+            <h2>Detalhes</h2>
 
-            {{--  <p>O custo total para esses clientes foi de R$ {{ count($clientData) * 10 }}.</p>  --}}
+            <p>Seu plano contratado: {{ count($locacao->type) }}.</p>
+            <p>O custo total para esses empréstimos foi de R$ {{ count($locacao->valor) }}.</p>
 
         </div>
         <div class="footer">
-            <p>&copy; 2023 Sua Empresa. Todos os direitos reservados.</p>
+            <p>&copy; 2024 RJ EMPRÉSTIMOS. Todos os direitos reservados.</p>
         </div>
     </div>
 </body>
