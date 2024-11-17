@@ -16,6 +16,7 @@ class Planos extends Model
         'nome',
         'preco',
         'descricao',
+        'min_contratos',
         'max_contratos'
 
     ];
