@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Emprestimo;
 use App\Models\Parcela;
+use App\Models\Locacao;
 use App\Models\ParcelaExtornox;
 use App\Models\Quitacao;
 use App\Models\PagamentoMinimo;
@@ -29,6 +30,9 @@ use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
 use App\Jobs\ProcessarPixJob;
+
+use App\Mail\ExampleEmail;
+use Illuminate\Support\Facades\Mail;
 
 use DateTime;
 
@@ -1192,6 +1196,7 @@ class EmprestimoController extends Controller
     {
         $data = $request->json()->all();
 
+        //REFERENTE A PARCELAS
         if (isset($data['pix']) && is_array($data['pix'])) {
             foreach ($data['pix'] as $pix) {
                 $txId = $pix['txId'];
@@ -1201,60 +1206,86 @@ class EmprestimoController extends Controller
                 // Encontrar a parcela correspondente
                 $parcela = Parcela::where('identificador', $txId)->first();
 
-                $parcela->saldo = 0;
-                $parcela->dt_baixa = $horario;
-                $parcela->save();
+                if($parcela) {
+                    $parcela->saldo = 0;
+                    $parcela->dt_baixa = $horario;
+                    $parcela->save();
 
-                if ($parcela->contasreceber) {
-                    $parcela->contasreceber->status = 'Pago';
-                    $parcela->contasreceber->dt_baixa = date('Y-m-d');
-                    $parcela->contasreceber->forma_recebto = 'PIX';
-                    $parcela->contasreceber->save();
+                    if ($parcela->contasreceber) {
+                        $parcela->contasreceber->status = 'Pago';
+                        $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                        $parcela->contasreceber->forma_recebto = 'PIX';
+                        $parcela->contasreceber->save();
 
-                    # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+                        # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
 
-                    $movimentacaoFinanceira = [];
-                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                    $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
-                    $movimentacaoFinanceira['tipomov'] = 'E';
-                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                    $movimentacaoFinanceira['valor'] = $valor;
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
 
-                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                    # ADICIONANDO O VALOR NO SALDO DO BANCO
+                        # ADICIONANDO O VALOR NO SALDO DO BANCO
 
-                    $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
-                    $parcela->emprestimo->banco->save();
+                        $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
+                        $parcela->emprestimo->banco->save();
 
-                    // $movimentacaoFinanceira = [];
-                    // $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                    // $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                    // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $parcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
-                    // $movimentacaoFinanceira['tipomov'] = 'S';
-                    // $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                    // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                    // $movimentacaoFinanceira['valor'] = $juros;
+                        // $movimentacaoFinanceira = [];
+                        // $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        // $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $parcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        // $movimentacaoFinanceira['tipomov'] = 'S';
+                        // $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        // $movimentacaoFinanceira['valor'] = $juros;
 
-                    // Movimentacaofinanceira::create($movimentacaoFinanceira);
+                        // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                    if ($parcela->emprestimo->quitacao->chave_pix) {
+                        if ($parcela->emprestimo->quitacao->chave_pix) {
 
-                        $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                        $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                        $parcela->emprestimo->quitacao->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
-
-                        if ($response->successful()) {
-                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                            $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                             $parcela->emprestimo->quitacao->save();
+
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+
+                            if ($response->successful()) {
+                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->quitacao->save();
+                            }
                         }
                     }
                 }
+
+            }
+        }
+
+        //REFERENTE A LOCACAO
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $locacao = Locacao::where('identificador', $txId)->first();
+                $locacao->data_pagamento = $horario;
+                $locacao->save();
+
+                $details = [
+                    'title' => 'Relatório de Emprestimos',
+                    'body' => 'This is a test email using MailerSend in Laravel.'
+                ];
+
+                Mail::to($locacao->company->email)->send(new ExampleEmail($details, $locacao));
+
+
             }
         }
 
