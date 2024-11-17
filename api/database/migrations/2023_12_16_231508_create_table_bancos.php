@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('conta', 200);
             $table->float('saldo', 8, 2);
             $table->boolean('wallet')->default(false);
+            $table->string('document')->nullable();
             $table->timestamps();
             $table->unsignedBigInteger('company_id');
             $table->foreign('company_id')->references('id')->on('company');
