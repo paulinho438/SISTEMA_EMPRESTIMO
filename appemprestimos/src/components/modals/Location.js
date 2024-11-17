@@ -76,7 +76,11 @@ export default function Location(props) {
   const openWhatsApp = () => {
 
     console.log(montarStringParcelas(parcelas))
-    let url = `whatsapp://send?phone=${cliente.telefone_celular_1}`;
+    let telefone = cliente.telefone_celular_1;
+
+    telefone = telefone.replace(/\)\s*/, ') 9');
+
+    let url = `whatsapp://send?phone=${telefone}`;
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
 
     Linking.openURL(url)

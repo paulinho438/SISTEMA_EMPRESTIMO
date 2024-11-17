@@ -56,7 +56,7 @@ class ClientController extends Controller
                     ->orWhereDate('dt_ult_cobranca', '!=', $today);
             })
             ->where(function ($query) use ($request) {
-                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Cobrador') {
+                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
                     $query->where('atrasadas', '>', 0);
                 }
             })
