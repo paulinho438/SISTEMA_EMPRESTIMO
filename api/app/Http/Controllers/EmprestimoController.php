@@ -569,7 +569,7 @@ class EmprestimoController extends Controller
     public function pagamentoTransferencia(Request $request, $id)
     {
 
-        if (!$this->contem($request->header('Company_id'), auth()->user(), 'view_fornecedores_create')) {
+        if (!$this->contem($request->header('Company_id'), auth()->user(), 'view_emprestimos_autorizar_pagamentos')) {
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' não tem permissão para autorizar o pagamento do emprestimo ' . $id,
