@@ -118,8 +118,8 @@
             </table>
             <h2>Detalhes</h2>
 
-            <p>Seu plano contratado: {{ count($locacao->type) }}.</p>
-            <p>O custo total para esses empréstimos foi de R$ {{ count($locacao->valor) }}.</p>
+            <p>Seu plano contratado: {{ $locacao->type }}.</p>
+            <p>O custo total para esses empréstimos foi de R$ {{ $locacao->valor }}.</p>
 
         </div>
         <div class="footer">
