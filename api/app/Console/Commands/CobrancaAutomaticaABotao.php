@@ -70,7 +70,7 @@ class CobrancaAutomaticaABotao extends Command
 
             $r = [];
             foreach ($parcelas as $parcela) {
-                if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+                if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
 
                     try {
 
