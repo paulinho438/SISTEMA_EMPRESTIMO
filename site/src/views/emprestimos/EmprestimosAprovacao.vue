@@ -7,6 +7,7 @@ import UtilService from '@/service/UtilService';
 import EmprestimoParcelas from '../parcelas/Parcelas.vue';
 import skeletonEmprestimos from '../skeleton/SkeletonEmprestimos.vue';
 import EmprestimoAdd from '../emprestimos/EmprestimosAdd.vue';
+import PermissionsService from '@/service/PermissionsService';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
 
@@ -20,6 +21,7 @@ export default {
             route: useRoute(),
             router: useRouter(),
             emprestimoService: new EmprestimoService(),
+            permissionsService: new PermissionsService(),
             icons: PrimeIcons,
             toast: useToast(),
             confirmPopup: useConfirm()
@@ -348,7 +350,7 @@ export default {
                         </div>
                     </div>
                     <div class="col-12 px-0 py-0 text-right">
-                        <Button label="Realizar Transferência" class="p-button p-button-success p-button-sm" :icon="icons.CHECK" @click="realizarTransferencia($event)" />
+                        <Button v-if="!permissionsService.hasPermissions('view_emprestimos_autorizar_pagamentos')" label="Realizar Transferência" class="p-button p-button-success p-button-sm" :icon="icons.CHECK" @click="realizarTransferencia($event)" />
                         <Button label="Reprovar Empréstimo" class="p-button p-button-danger p-button-sm ml-3" :icon="icons.TIMES" type="button" @click.prevent="reprovarEmprestimo" />
                     </div>
                 </div>

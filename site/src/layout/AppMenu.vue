@@ -149,8 +149,8 @@ const model = ref([
     },
     {
         label: 'Gestão de Empresas',
-        permission: 'edit_empresa',
-        items: [{ label: 'Empresas', icon: 'pi pi-fw pi-building', to: '/empresas', permission: 'edit_empresa' }]
+        permission: 'view_criacao_empresas',
+        items: [{ label: 'Empresas', icon: 'pi pi-fw pi-building', to: '/empresas', permission: 'view_criacao_empresas' }]
     }
     // {
     //     label: 'UI Componentss',

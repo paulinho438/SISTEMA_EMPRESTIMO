@@ -299,13 +299,13 @@ export default {
                             </div>
                         </div>
 
-                        <div v-if="banco" class="col-12 md:col-2">
+                        <div v-if="banco && permissionsService.hasPermissions('view_encerrarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Encerrar Caixa" @click="confirm($event)" class="p-button-success mr-2 mb-2 mt-4" />
                             </div>
                         </div>
 
-                        <div v-if="banco" class="col-12 md:col-2">
+                        <div v-if="banco && permissionsService.hasPermissions('view_alterarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Alterar Caixa" @click.prevent="modalFechamento()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
