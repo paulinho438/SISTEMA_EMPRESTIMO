@@ -79,16 +79,20 @@
             <h1>Cobrança da Plataforma</h1>
         </div>
         <div class="content">
+            <h2>Código para pagamento Pix:</h2>
+            <div style="display:flex; justify-content: center; align-itens: center;">
+                <img src="data:image/png;base64, {!! base64_encode($qrCode) !!}" alt="QR Code">
+            </div>
+            <h2>Detalhes</h2>
+            <p>Seu plano contratado: <b>{{ $locacao->type }}</b>.</p>
+            <p>O custo total para esses empréstimos foi de <b>{{ 'R$ ' . number_format($locacao->valor, 2, ',', '.') }}</b>.</p>
             <h2>Atenção</h2>
             <p>A partir de agora a renovação da sua licença acontecerá de forma automatica e no mesmo momento em que
                 voce fizer o
                 pagamento, portando para que isso aconteça você precisará efetuar o pagamento da sua fatura através do
                 código pix
                 gerado (Código para pagamento Pix) ou através da leitura do QRcode gerado.</p>
-            <h2>Código para pagamento Pix:</h2>
-            <div>
-                <img src="data:image/png;base64, {!! base64_encode($qrCode) !!}" alt="QR Code">
-            </div>
+
             <h2>O que você precisa saber!</h2>
             <p>Após pagamento de fatura pela chave Pix O SISTEMA RENOVARÁ SUA LICENÇA DE FORMA
                 AUTOMATICA!</p>
@@ -116,10 +120,7 @@
                     @endforeach
                 </tbody>
             </table>
-            <h2>Detalhes</h2>
 
-            <p>Seu plano contratado: <b>{{ $locacao->type }}</b>.</p>
-            <p>O custo total para esses empréstimos foi de <b>{{ 'R$ ' . number_format($locacao->valor, 2, ',', '.') }}</b>.</p>
 
         </div>
         <div class="footer">
