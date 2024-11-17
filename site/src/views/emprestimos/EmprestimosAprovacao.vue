@@ -105,60 +105,87 @@ export default {
         },
         realizarTransferencia(event) {
             if (this.route.params?.id) {
-                this.emprestimoService
-                    .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
-                    .then((response) => {
-                        console.log('response', response.data);
+                if (this.banco.wallet) {
+                    this.emprestimoService
+                        .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
+                        .then((response) => {
+                            console.log('response', response.data);
 
-                        this.confirmPopup.require({
-                            target: event.target,
-                            message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
-                            icon: 'pi pi-exclamation-triangle',
-                            acceptLabel: 'Sim',
-                            rejectLabel: 'Não',
-                            accept: () => {
-                                if (this.route.params?.id) {
-                                	this.emprestimoService.efetuarPagamentoEmprestimo(this.route.params.id)
-                                	.then((response) => {
-                                		if(response){
-                                			this.toast.add({
-                                				severity: ToastSeverity.SUCCESS,
-                                				detail: 'Pagamento Efetuado',
-                                				life: 3000
-                                			});
-                                			setTimeout(() => {
-                                				this.router.push(`/aprovacao`);
-                                			}, 1200)
-                                		}
-                                	})
-                                	.catch((error) => {
-                                		if (error?.response?.status != 422) {
-                                			this.toast.add({
-                                				severity: ToastSeverity.ERROR,
-                                				detail: UtilService.message(error.response.data),
-                                				life: 3000
-                                			});
-                                		}
-                                	})
-                                	.finally(() => {
-                                	});
+                            this.confirmPopup.require({
+                                target: event.target,
+                                message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
+                                icon: 'pi pi-exclamation-triangle',
+                                acceptLabel: 'Sim',
+                                rejectLabel: 'Não',
+                                accept: () => {
+                                    if (this.route.params?.id) {
+                                        this.emprestimoService
+                                            .efetuarPagamentoEmprestimo(this.route.params.id)
+                                            .then((response) => {
+                                                if (response) {
+                                                    this.toast.add({
+                                                        severity: ToastSeverity.SUCCESS,
+                                                        detail: 'Pagamento Efetuado',
+                                                        life: 3000
+                                                    });
+                                                    setTimeout(() => {
+                                                        this.router.push(`/aprovacao`);
+                                                    }, 1200);
+                                                }
+                                            })
+                                            .catch((error) => {
+                                                if (error?.response?.status != 422) {
+                                                    this.toast.add({
+                                                        severity: ToastSeverity.ERROR,
+                                                        detail: UtilService.message(error.response.data),
+                                                        life: 3000
+                                                    });
+                                                }
+                                            })
+                                            .finally(() => {});
+                                    }
+                                },
+                                reject: () => {
+                                    this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
                                 }
-                            },
-                            reject: () => {
-                                this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
-                            }
-                        });
-                    })
-                    .catch((error) => {
-                        if (error?.response?.status != 422) {
-                            this.toast.add({
-                                severity: ToastSeverity.ERROR,
-                                detail: UtilService.message(error.response.data),
-                                life: 3000
                             });
-                        }
-                    })
-                    .finally(() => {});
+                        })
+                        .catch((error) => {
+                            if (error?.response?.status != 422) {
+                                this.toast.add({
+                                    severity: ToastSeverity.ERROR,
+                                    detail: UtilService.message(error.response.data),
+                                    life: 3000
+                                });
+                            }
+                        })
+                        .finally(() => {});
+                } else {
+                    this.emprestimoService
+                        .efetuarPagamentoEmprestimo(this.route.params.id)
+                        .then((response) => {
+                            if (response) {
+                                this.toast.add({
+                                    severity: ToastSeverity.SUCCESS,
+                                    detail: 'Pagamento Efetuado',
+                                    life: 3000
+                                });
+                                setTimeout(() => {
+                                    this.router.push(`/aprovacao`);
+                                }, 1200);
+                            }
+                        })
+                        .catch((error) => {
+                            if (error?.response?.status != 422) {
+                                this.toast.add({
+                                    severity: ToastSeverity.ERROR,
+                                    detail: UtilService.message(error.response.data),
+                                    life: 3000
+                                });
+                            }
+                        })
+                        .finally(() => {});
+                }
             }
         },
         reprovarEmprestimo() {
@@ -350,7 +377,13 @@ export default {
                         </div>
                     </div>
                     <div class="col-12 px-0 py-0 text-right">
-                        <Button v-if="permissionsService.hasPermissions('view_emprestimos_autorizar_pagamentos')" label="Realizar Transferência" class="p-button p-button-success p-button-sm" :icon="icons.CHECK" @click="realizarTransferencia($event)" />
+                        <Button
+                            v-if="permissionsService.hasPermissions('view_emprestimos_autorizar_pagamentos')"
+                            label="Realizar Transferência"
+                            class="p-button p-button-success p-button-sm"
+                            :icon="icons.CHECK"
+                            @click="realizarTransferencia($event)"
+                        />
                         <Button label="Reprovar Empréstimo" class="p-button p-button-danger p-button-sm ml-3" :icon="icons.TIMES" type="button" @click.prevent="reprovarEmprestimo" />
                     </div>
                 </div>
