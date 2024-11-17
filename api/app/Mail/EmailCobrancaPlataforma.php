@@ -50,6 +50,8 @@ class EmailCobrancaPlataforma extends Mailable
 
         $emprestimos = $this->locacao->company->emprestimos;
 
+        $locacao = $this->locacao;
+
         // Transformar os dados dos clientes em uma coleção
         $emprestimosData = $emprestimos->map(function ($emprestimo) {
             return [
@@ -58,6 +60,9 @@ class EmailCobrancaPlataforma extends Mailable
                 'R$ ' . number_format($emprestimo->valor, 2, ',', '.'),
                 'R$ ' . number_format($emprestimo->lucro, 2, ',', '.'),
                 'R$ ' . number_format($emprestimo->juros, 2, ',', '.'),
+                $emprestimo->valor,
+                $emprestimo->lucro,
+                $emprestimo->juros
             ];
         });
 
@@ -66,6 +71,6 @@ class EmailCobrancaPlataforma extends Mailable
 
         return $this->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'))
                     ->subject('Cobrança da Plataforma')
-                    ->view('emails.cobrancaplataforma', compact('qrCode', 'emprestimosData'));
+                    ->view('emails.cobrancaplataforma', compact('qrCode', 'emprestimosData', 'locacao'));
     }
 }
