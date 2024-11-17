@@ -14,7 +14,7 @@ class AlterTableBancos extends Migration
     public function up()
     {
         Schema::table('bancos', function (Blueprint $table) {
-            $table->dropColumn(['clienteid', 'clientesecret', 'certificado', 'wallet']);
+            $table->dropColumn(['clienteid', 'clientesecret', 'certificado']);
             $table->string('document')->nullable();
             $table->boolean('wallet')->default(false);
         });
