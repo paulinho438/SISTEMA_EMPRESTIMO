@@ -250,6 +250,14 @@ class PermItemsSeeder extends Seeder
 
         DB::table("permitems")->insert(
             [
+                "name"             => "Autorizar Pagamentos Empréstimos",
+                "slug"             => "view_emprestimos_autorizar_pagamentos",
+                "group"            => "emprestimos"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
                 "name"             => "Visualizar Fornecedores",
                 "slug"             => "view_fornecedores",
                 "group"            => "fornecedores"
@@ -364,8 +372,24 @@ class PermItemsSeeder extends Seeder
 
         DB::table("permitems")->insert(
             [
-                "name"             => "Fechamento de caixa",
+                "name"             => "Visualizar Fechamento de caixa",
                 "slug"             => "view_fechamentocaixa",
+                "group"            => "fechamentocaixa"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Encerrar Fechamento de caixa",
+                "slug"             => "view_encerrarfechamentocaixa",
+                "group"            => "fechamentocaixa"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Alterar Fechamento de caixa",
+                "slug"             => "view_alterarfechamentocaixa",
                 "group"            => "fechamentocaixa"
             ]
         );
@@ -375,6 +399,30 @@ class PermItemsSeeder extends Seeder
                 "name"             => "Tela de Baixas pelo Aplicativo",
                 "slug"             => "aplicativo_baixas",
                 "group"            => "aplicativo"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Visualizar Criação de empresas",
+                "slug"             => "view_criacao_empresas",
+                "group"            => "companies"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Editar empresas",
+                "slug"             => "view_editar_empresas",
+                "group"            => "companies"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Visualizar Permissões MASTERGERAL",
+                "slug"             => "view_mastergeral",
+                "group"            => "geral"
             ]
         );
 
