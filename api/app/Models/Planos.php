@@ -16,6 +16,8 @@ class Planos extends Model
         'nome',
         'preco',
         'descricao',
+        'max_contratos'
+
     ];
 
     public function companies()

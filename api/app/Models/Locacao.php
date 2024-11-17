@@ -17,8 +17,7 @@ class Locacao extends Model
         'valor',
         'company_id',
         'chave_pix',
-        'identificador',
-        'max_contratos'
+        'identificador'
     ];
 
     public function company()
