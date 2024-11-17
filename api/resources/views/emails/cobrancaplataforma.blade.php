@@ -70,6 +70,10 @@
             background-color: #f4f4f4;
             color: #666666;
         }
+
+        .p-15px {
+            margin-top: -15px;
+        }
     </style>
 </head>
 
@@ -121,11 +125,11 @@
                 </tbody>
             </table>
             <h4>Total Valor Emprestado</h2>
-            <p style="margin-top: -15px;">R$ {{ number_format($totalValorEmprestado, 2, ',', '.') }}</p>
+            <p class="p-15px">R$ {{ number_format($totalValorEmprestado, 2, ',', '.') }}</p>
             <h4>Total Lucro</h2>
-            <p style="margin-top: -15px;">R$ {{ number_format($totalLucro, 2, ',', '.') }}</p>
+            <p class="p-15px">R$ {{ number_format($totalLucro, 2, ',', '.') }}</p>
             <h4>Média de Juros</h2>
-            <p style="margin-top: -15px;">R$ {{ number_format($mediaJuros, 2, ',', '.') }}</p>
+            <p class="p-15px">R$ {{ number_format($mediaJuros, 2, ',', '.') }}</p>
 
 
         </div>
