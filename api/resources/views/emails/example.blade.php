@@ -85,7 +85,9 @@
                 </tbody>
             </table>
             <h2>Custo Total</h2>
-            <p>O custo total para esses clientes foi de R$ {{ $clientData->count() * 10 }}.</p>
+            <p>Estamos lhe enviando este email para informar que acabamos de confirmar o seu pagamento.</p>
+                E para sua maior comodidade e segurança estamos disponibilizando também via Excel, um backup de todos os seus clientes e empréstimos em andamento.
+                Mais uma vez agradecemos por utilizar a nossa plataforma.</p>
         </div>
         <div class="footer">
             <p>&copy; 2024 RJ EMPRESTIMOS. Todos os direitos reservados.</p>

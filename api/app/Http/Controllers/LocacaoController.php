@@ -53,8 +53,7 @@ class LocacaoController extends Controller
 
         $valor = 0;
 
-        $plano = Planos::whereBetween($quantidade, ['min_quantidade', 'max_quantidade'])
-        ->first();
+        $plano = Planos::whereBetween('min_quantidade', [$quantidade, 'max_quantidade'])->first();
 
         $valor = $plano->preco;
 
