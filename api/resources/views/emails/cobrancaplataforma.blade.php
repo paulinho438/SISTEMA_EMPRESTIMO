@@ -85,9 +85,9 @@
                 pagamento, portando para que isso aconteça você precisará efetuar o pagamento da sua fatura através do
                 código pix
                 gerado (Código para pagamento Pix) ou através da leitura do QRcode gerado.</p>
-                <div>
+                {{--  <div>
                     <img src="data:image/png;base64, {!! $qrCode !!}" alt="QR Code">
-                </div>
+                </div>  --}}
 
             <h2>Custo Total</h2>
             {{--  <p>O custo total para esses clientes foi de R$ {{ count($clientData) * 10 }}.</p>  --}}
