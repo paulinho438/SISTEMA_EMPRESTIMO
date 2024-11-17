@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('planos', function (Blueprint $table) {
+            $table->string('min_contratos')->nullable();
             $table->string('max_contratos')->nullable();
         });
     }
@@ -26,6 +27,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('planos', function (Blueprint $table) {
+            $table->dropColumn('min_contratos');
             $table->dropColumn('max_contratos');
         });
     }
