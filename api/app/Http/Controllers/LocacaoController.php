@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Log;
 use App\Services\BcodexService;
 use Illuminate\Support\Str;
 
+use App\Mail\EmailCobrancaPlataforma;
+use Illuminate\Support\Facades\Mail;
+
+
 class LocacaoController extends Controller
 {
 
@@ -49,10 +53,10 @@ class LocacaoController extends Controller
         $valor = 0;
 
         if($company->plano->id == 1){
-            $valor = 50;
+            $valor = 49.90;
 
-            if($quantidade > 50){
-                $valor = 50 + ($quantidade - 50) * 1.50;
+            if($quantidade > 35){
+                $valor = 49.90 + ($quantidade - 35) * 1.99;
             }
         }
 
@@ -60,7 +64,7 @@ class LocacaoController extends Controller
             $valor = 100;
 
             if($quantidade > 100){
-                $valor = 100 + ($quantidade - 100) * 1.50;
+                $valor = 100 + ($quantidade - 100) * 1.99;
             }
         }
 
@@ -68,7 +72,7 @@ class LocacaoController extends Controller
             $valor = 150;
 
             if($quantidade > 150){
-                $valor = 150 + ($quantidade - 150) * 1.50;
+                $valor = 150 + ($quantidade - 150) * 1.99;
             }
         }
 
@@ -102,6 +106,13 @@ class LocacaoController extends Controller
             $emprestimo->hash_locacao = $hashId;
             $emprestimo->save();
         }
+
+        $details = [
+            'title' => 'Cobrança de Plataforma',
+            'body' => 'This is a test email using MailerSend in Laravel.'
+        ];
+
+        Mail::to($locacao->company->email)->send(new EmailCobrancaPlataforma($details, $locacao));
 
         return response()->json($locacao, Response::HTTP_CREATED);
 

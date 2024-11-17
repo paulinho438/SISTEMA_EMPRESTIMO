@@ -48,7 +48,7 @@ Route::get('/setup-teste', function (Request $request){
         'body' => 'This is a test email using MailerSend in Laravel.'
     ];
 
-    Mail::to('paulo_henrique500@hotmail.com')->send(new ExampleEmail($details));
+    Mail::to('paulo_henrique500@hotmail.com')->send(new ExampleEmail($details, []));
 
     return 'Email sent successfully!';
 });
