@@ -49,10 +49,10 @@ class EmailCobrancaPlataforma extends Mailable
         ];
 
          // Gerar o QR code baseado em uma string
-        // $qrCode = QrCode::format('png')->size(200)->generate($this->locacao->chave_pix);
+        $qrCode = QrCode::format('png')->size(200)->generate($this->locacao->chave_pix);
 
         return $this->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'))
                     ->subject('Cobrança da Plataforma')
-                    ->view('emails.cobrancaplataforma');
+                    ->view('emails.cobrancaplataforma', compact('qrCode'));
     }
 }
