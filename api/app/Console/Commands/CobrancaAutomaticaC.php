@@ -92,9 +92,14 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 ";
 
 if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
-    $fraseInicial .= "Copie e cole abaixo a chave pix referente a parcela do dia:
+    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
+";
+}else{
+    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
+
+Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
 }
 
