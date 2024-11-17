@@ -12,7 +12,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ClientsExport;
 use App\Exports\EmprestimosExport;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
+use Carbon\Carbon;
 
 class EmailCobrancaPlataforma extends Mailable
 {
@@ -53,7 +53,7 @@ class EmailCobrancaPlataforma extends Mailable
         // Transformar os dados dos clientes em uma coleção
         $emprestimosData = $emprestimos->map(function ($emprestimo) {
             return [
-                $emprestimo->dt_lancamento->format('d/m/Y'),
+                Carbon::parse($emprestimo->dt_lancamento)->format('d/m/Y'),
                 $emprestimo->client->nome_completo,
                 'R$ ' . number_format($emprestimo->valor, 2, ',', '.'),
                 'R$ ' . number_format($emprestimo->lucro, 2, ',', '.'),
