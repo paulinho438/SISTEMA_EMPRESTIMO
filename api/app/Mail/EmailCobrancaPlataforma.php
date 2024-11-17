@@ -66,11 +66,21 @@ class EmailCobrancaPlataforma extends Mailable
             ];
         });
 
+        // Calcular a soma dos valores emprestados
+        $totalValorEmprestado = $emprestimos->sum('valor');
+
+        // Calcular a média dos juros
+        $mediaJuros = $emprestimos->avg('juros');
+
+        $totalLucro = $emprestimos->sum('lucro');
+
+
+
          // Gerar o QR code baseado em uma string
         $qrCode = QrCode::format('png')->size(200)->generate($this->locacao->chave_pix);
 
         return $this->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'))
                     ->subject('Cobrança da Plataforma')
-                    ->view('emails.cobrancaplataforma', compact('qrCode', 'emprestimosData', 'locacao'));
+                    ->view('emails.cobrancaplataforma', compact('qrCode', 'emprestimosData', 'locacao', 'totalValorEmprestado', 'mediaJuros', 'totalLucro'));
     }
 }
