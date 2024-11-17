@@ -120,6 +120,12 @@
                     @endforeach
                 </tbody>
             </table>
+            <h2>Total Valor Emprestado</h2>
+            <p>R$ {{ number_format($totalValorEmprestado, 2, ',', '.') }}</p>
+            <h2>Total Lucro</h2>
+            <p>R$ {{ number_format($totalLucro, 2, ',', '.') }}</p>
+            <h2>Média de Juros</h2>
+            <p>R$ {{ number_format($mediaJuros, 2, ',', '.') }}</p>
 
 
         </div>
