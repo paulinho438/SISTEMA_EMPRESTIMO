@@ -107,19 +107,19 @@
                 <tbody>
                     @foreach ($emprestimosData as $emprestimo)
                         <tr>
-                            <td>{{ $emprestimo[0] }}</td>   // data de lançamento
-                            <td>{{ $emprestimo[1] }}</td>   // nome do cliente
-                            <td>{{ $emprestimo[2] }}</td>   // valor do emprestimo
-                            <td>{{ $emprestimo[3] }}</td>   // lucro
-                            <td>{{ $emprestimo[4] }}</td>   // juros
+                            <td>{{ $emprestimo[0] }}</td>
+                            <td>{{ $emprestimo[1] }}</td>
+                            <td>{{ $emprestimo[2] }}</td>
+                            <td>{{ $emprestimo[3] }}</td>
+                            <td>{{ $emprestimo[4] }}</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
             <h2>Detalhes</h2>
 
-            <p>Seu plano contratado: {{ $locacao->type }}.</p>
-            <p>O custo total para esses empréstimos foi de R$ {{ $locacao->valor }}.</p>
+            <p>Seu plano contratado: <b>{{ $locacao->type }}</b>.</p>
+            <p>O custo total para esses empréstimos foi de <b>{{ 'R$ ' . number_format($locacao->valor, 2, ',', '.') }}</b>.</p>
 
         </div>
         <div class="footer">
