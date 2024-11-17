@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Locacao;
 use App\Models\CustomLog;
 use App\Models\User;
+use App\Models\Planos;
 
 use App\Http\Resources\JurosResource;
 use App\Models\Company;
@@ -52,28 +53,14 @@ class LocacaoController extends Controller
 
         $valor = 0;
 
-        if($company->plano->id == 1){
-            $valor = 49.90;
+        $plano = Planos::whereBetween($quantidade, ['min_quantidade', 'max_quantidade'])
+        ->first();
 
-            if($quantidade > 35){
-                $valor = 49.90 + ($quantidade - 35) * 1.99;
-            }
-        }
+        $valor = $plano->preco;
 
-        if($company->plano->id == 2){
-            $valor = 100;
+        if($plano->id == 1 && $quantidade > 100){
+            $valor = $plano->preco + ($quantidade - 100) * 1.99;
 
-            if($quantidade > 100){
-                $valor = 100 + ($quantidade - 100) * 1.99;
-            }
-        }
-
-        if($company->plano->id == 3){
-            $valor = 150;
-
-            if($quantidade > 150){
-                $valor = 150 + ($quantidade - 150) * 1.99;
-            }
         }
 
         $emprestimos = Emprestimo::where('company_id', $id)
@@ -81,7 +68,7 @@ class LocacaoController extends Controller
             ->get();
 
 
-        $dataVencimento = Carbon::create(null, null, 15)->toDateString();
+        $dataVencimento = Carbon::create(null, null,1)->toDateString();
 
         $response = $this->bcodexService->criarCobranca($valor, '55439708000135');
 
@@ -92,7 +79,7 @@ class LocacaoController extends Controller
 
         $locacaoInsert = [
             'id' => $hashId,
-            'type' => $company->plano->nome,
+            'type' => $plano->nome,
             'data_vencimento'=> $dataVencimento,
             'valor'=> $valor,
             'company_id'=> $id,
