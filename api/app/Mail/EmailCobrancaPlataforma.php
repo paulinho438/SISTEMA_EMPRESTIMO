@@ -48,11 +48,24 @@ class EmailCobrancaPlataforma extends Mailable
             "data_vencimento" => $this->locacao->data_vencimento,
         ];
 
+        $emprestimos = $this->locacao->company->emprestimos;
+
+        // Transformar os dados dos clientes em uma coleção
+        $emprestimosData = $emprestimos->map(function ($emprestimo) {
+            return [
+                $emprestimo->dt_lancamento->format('d/m/Y'),
+                $emprestimo->client->nome_completo,
+                'R$ ' . number_format($emprestimo->valor, 2, ',', '.'),
+                'R$ ' . number_format($emprestimo->lucro, 2, ',', '.'),
+                'R$ ' . number_format($emprestimo->juros, 2, ',', '.'),
+            ];
+        });
+
          // Gerar o QR code baseado em uma string
         $qrCode = QrCode::format('png')->size(200)->generate($this->locacao->chave_pix);
 
         return $this->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'))
                     ->subject('Cobrança da Plataforma')
-                    ->view('emails.cobrancaplataforma', compact('qrCode'));
+                    ->view('emails.cobrancaplataforma', compact('qrCode', 'emprestimosData'));
     }
 }

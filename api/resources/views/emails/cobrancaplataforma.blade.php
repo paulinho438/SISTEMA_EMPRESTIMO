@@ -85,12 +85,39 @@
                 pagamento, portando para que isso aconteça você precisará efetuar o pagamento da sua fatura através do
                 código pix
                 gerado (Código para pagamento Pix) ou através da leitura do QRcode gerado.</p>
-                  <div>
-                    <img src="data:image/png;base64, {!! base64_encode($qrCode) !!}" alt="QR Code">
-                </div>
+            <h2>Código para pagamento Pix:</h2>
+            <div>
+                <img src="data:image/png;base64, {!! base64_encode($qrCode) !!}" alt="QR Code">
+            </div>
+            <h2>O que você precisa saber!</h2>
+            <p>Após pagamento de fatura pela chave Pix O SISTEMA RENOVARÁ SUA LICENÇA DE FORMA
+                AUTOMATICA!</p>
 
-
+            <h2>Resumo</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Data de lançamento</th>
+                        <th>Nome do Cliente</th>
+                        <th>Valor do Empréstimo</th>
+                        <th>Lucro</th>
+                        <th>Juros</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($emprestimosData as $emprestimo)
+                        <tr>
+                            <td>{{ $emprestimo[0] }}</td>
+                            <td>{{ $emprestimo[1] }}</td>
+                            <td>{{ $emprestimo[2] }}</td>
+                            <td>{{ $emprestimo[3] }}</td>
+                            <td>{{ $emprestimo[4] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
             <h2>Custo Total</h2>
+
             {{--  <p>O custo total para esses clientes foi de R$ {{ count($clientData) * 10 }}.</p>  --}}
 
         </div>
