@@ -79,7 +79,7 @@
             <h1>Cobrança da Plataforma</h1>
         </div>
         <div class="content">
-            <div style="display:flex; justify-content: center; align-itens: center;">
+            <div style="display:flex; justify-content: center; align-itens: center; flex-direction:column;">
                 <h2>Código para pagamento Pix:</h2>
                 <img src="data:image/png;base64, {!! base64_encode($qrCode) !!}" alt="QR Code">
             </div>
