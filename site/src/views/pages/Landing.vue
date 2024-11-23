@@ -184,7 +184,7 @@ export default {
                         <div
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="goToPixLink(this.products?.data?.emprestimo?.quitacao.chave_pix)" :label="`Clique aqui para quitar seu Empréstimo no Valor ${this.products?.data?.emprestimo?.quitacao.valor}`"
+                                <Button @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)" :label="`Clique aqui para quitar seu Empréstimo no Valor ${this.products?.data?.emprestimo?.quitacao.valor}`"
                                     class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
                             </div>
                         </div>
@@ -194,7 +194,7 @@ export default {
                         <div
                             style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
                             <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="goToPixLink(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)" :label="`Clique aqui para efetuar o pagamento mínimo do seu Empréstimo no Valor ${this.products?.data?.emprestimo?.pagamentominimo.valor}`"
+                                <Button @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)" :label="`Clique aqui para efetuar o pagamento mínimo do seu Empréstimo no Valor ${this.products?.data?.emprestimo?.pagamentominimo.valor}`"
                                     class="p-button-raised p-button-danger mr-2 mb-2" style="height: 60px;" />
                             </div>
                         </div>
