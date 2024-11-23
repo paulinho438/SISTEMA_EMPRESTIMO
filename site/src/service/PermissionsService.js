@@ -18,6 +18,10 @@ export default class PermissionsService {
         }
     };
 
+    isMaster = () => {
+        return store.getters?.usuario.login === "MASTERGERAL";
+    };
+
     get = async (id) => {
 		return await axios.get(`${apiPath}/permission_groups/${id}`);
 	};

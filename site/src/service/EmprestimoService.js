@@ -1,5 +1,6 @@
 import store from '@/store';
 import { useRouter } from 'vue-router';
+import { mapGetters, mapMutations } from 'vuex';
 import axios from 'axios';
 const apiPath = import.meta.env.VITE_APP_BASE_URL;
 export default class EmprestimoService {
@@ -23,8 +24,6 @@ export default class EmprestimoService {
     save = async (permissions) => {
         if (undefined === permissions.id) return await axios.post(`${apiPath}/emprestimo`, permissions);
 		else return await axios.put(`${apiPath}/emprestimo/${permissions.id}`, permissions);
-        
-
 	};
 
 	saveRefinanciamento = async (permissions) => {

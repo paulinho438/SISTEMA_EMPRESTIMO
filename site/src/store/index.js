@@ -6,6 +6,7 @@ const store = createStore({
 		return {
 			isAutenticated: false,
 			isCompany: null,
+			usuario: null,
 			permissions: [],
 		};
 	},
@@ -15,6 +16,9 @@ const store = createStore({
 		},
 		setCompany(state, company){
 			state.isCompany = company;
+		},
+		setUsuario(state, usuario){
+			state.usuario = usuario;
 		},
 		setPermissions(state, newPermissions){
 			state.permissions = newPermissions;
@@ -36,7 +40,10 @@ const store = createStore({
 		},
 		permissions(state) {
 			return state.permissions;
-		}
+		},
+		usuario(state) {
+			return state.usuario;
+		},
 	},
   	plugins: [createPersistedState()],
 });
