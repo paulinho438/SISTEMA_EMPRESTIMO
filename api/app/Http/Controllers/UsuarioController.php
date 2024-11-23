@@ -86,6 +86,7 @@ class UsuarioController extends Controller
             'rg' => 'required',
             'data_nascimento' => 'required',
             'sexo' => 'required',
+            'email' => 'required',
             'telefone_celular' => 'required',
         ]);
 
