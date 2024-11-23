@@ -18,15 +18,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+
+use App\Services\BcodexService;
 
 class BancoController extends Controller
 {
 
     protected $custom_log;
 
-    public function __construct(Customlog $custom_log)
+    protected $bcodexService;
+
+    public function __construct(Customlog $custom_log, BcodexService $bcodexService)
     {
         $this->custom_log = $custom_log;
+        $this->bcodexService = $bcodexService;
     }
 
     public function id(Request $r, $id)
@@ -70,7 +76,6 @@ class BancoController extends Controller
             $array['error'] = $validator->errors()->first();
             return $array;
         }
-
     }
 
     public function update(Request $request, $id)
@@ -161,57 +166,123 @@ class BancoController extends Controller
 
 
                 while ($parcela && $valor > 0) {
-                    if ($valor >= $parcela->saldo) {
 
+                    if ($parcela->emprestimo->pagamentominimo) {
                         // MOVIMENTACAO FINANCEIRA
                         $movimentacaoFinanceira = [];
                         $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                         $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Pagamento da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                        $movimentacaoFinanceira['valor'] = $valor;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        if($parcela->contasreceber){
-                            $parcela->contasreceber->status = 'Pago';
-                            $parcela->contasreceber->dt_baixa = date('Y-m-d');
-                            $parcela->contasreceber->forma_recebto = 'PIX';
-                            $parcela->contasreceber->save();
+                        if ($valor >= $parcela->emprestimo->pagamentominimo->valor) {
+                            // Quitar a parcela atual
+                            $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                            $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+
+                            $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+                            $diferencaEmMeses++;
+                            $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
                         }
 
-                        // Quitar a parcela atual
-                        $valor -= $parcela->saldo;
-                        $parcela->saldo = 0;
-                        $parcela->dt_baixa = date('Y-m-d');
+                        $parcela->saldo -= $valor;
+                        $parcela->save();
+
+                        if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
+
+                            $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+
+                            if ($response->successful()) {
+                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                                $parcela->emprestimo->quitacao->save();
+                            }
+                        }
+
+                        if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix) {
+
+                            $parcela->emprestimo->pagamentominimo->valor =  $parcela->emprestimo->juros * $parcela->totalPendente() / 100;
+
+                            $parcela->emprestimo->pagamentominimo->save();
+
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+
+                            if ($response->successful()) {
+                                $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->pagamentominimo->save();
+                            }
+                        }
 
                     } else {
 
-                        // MOVIMENTACAO FINANCEIRA
-                        $movimentacaoFinanceira = [];
-                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcial da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
-                        $movimentacaoFinanceira['tipomov'] = 'E';
-                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
-                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+                        if ($valor >= $parcela->saldo) {
 
-                        $parcela->saldo -= $valor;
-                        $valor = 0;
+                            // MOVIMENTACAO FINANCEIRA
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['tipomov'] = 'E';
+                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                            if ($parcela->contasreceber) {
+                                $parcela->contasreceber->status = 'Pago';
+                                $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                                $parcela->contasreceber->forma_recebto = 'PIX';
+                                $parcela->contasreceber->save();
+                            }
+
+                            // Quitar a parcela atual
+                            $valor -= $parcela->saldo;
+                            $parcela->saldo = 0;
+                            $parcela->dt_baixa = date('Y-m-d');
+                        } else {
+
+                            // MOVIMENTACAO FINANCEIRA
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcial da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['tipomov'] = 'E';
+                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                            $parcela->saldo -= $valor;
+                            $valor = 0;
+                        }
+
+                        $parcela->valor_recebido = 0;
+                        $parcela->save();
+
+                        if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
+
+                            $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+
+                            if ($response->successful()) {
+                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                                $parcela->emprestimo->quitacao->save();
+                            }
+                        }
+
+                        // Encontrar a próxima parcela
+                        $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                            ->where('id', '>', $parcela->id)
+                            ->orderBy('id', 'asc')
+                            ->first();
                     }
-
-                    $parcela->valor_recebido = 0;
-                    $parcela->save();
-
-
-                    // Encontrar a próxima parcela
-                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                        ->where('id', '>', $parcela->id)
-                        ->orderBy('id', 'asc')
-                        ->first();
                 }
             }
 
@@ -225,7 +296,7 @@ class BancoController extends Controller
             foreach ($parcelas as $parcela) {
                 $valor = $parcela->valor_recebido_pix;
 
-                if($parcela->emprestimo->extornos) {
+                if ($parcela->emprestimo->extornos) {
                     foreach ($parcela->emprestimo->extornos as $ext) {
                         $ext->delete();
                     }
@@ -245,7 +316,7 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['valor'] = $parcela->saldo;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        if($parcela->contasreceber){
+                        if ($parcela->contasreceber) {
                             $parcela->contasreceber->status = 'Pago';
                             $parcela->contasreceber->dt_baixa = date('Y-m-d');
                             $parcela->contasreceber->forma_recebto = 'PIX';
@@ -256,7 +327,6 @@ class BancoController extends Controller
                         $valor -= $parcela->saldo;
                         $parcela->saldo = 0;
                         $parcela->dt_baixa = date('Y-m-d');
-
                     } else {
 
                         // MOVIMENTACAO FINANCEIRA
