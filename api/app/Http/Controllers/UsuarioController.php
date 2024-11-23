@@ -101,12 +101,22 @@ class UsuarioController extends Controller
 
             $newGroup = User::create($dados);
 
-            $companyIds = array_map(function($company) {
-                return $company['id'];
-            }, $dados['empresas']);
+            $user = auth()->user();
 
-            // Sincronize as empresas com o usuário
-            $newGroup->companies()->sync($companyIds);
+            if($user->login == 'MASTERGERAL'){
+                $companyIds = array_map(function($company) {
+                    return $company['id'];
+                }, $dados['empresas']);
+
+                // Sincronize as empresas com o usuário
+                $newGroup->companies()->sync($companyIds);
+            } else {
+
+                $companyId = $request->header('company-id');
+                $newGroup->companies()->sync([$companyId]);
+            }
+
+
 
             return $array;
 
