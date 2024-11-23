@@ -56,10 +56,13 @@ class RecalcularParcelas extends Command
 
         $bcodexService = new BcodexService();
 
+
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
 
             if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+                $valorJuros = 0;
+
 
                 echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
 
@@ -68,7 +71,8 @@ class RecalcularParcelas extends Command
                 $novoValor = $valorJuros + $parcela->saldo;
 
                 if ($parcela->emprestimo->pagamentominimo) {
-                    $novoValor = $parcela->saldo + ( 1 * $parcela->saldo / 100 );
+                    $novoValor = $parcela->saldo + (1 * $parcela->saldo / 100);
+                    $valorJuros = (1 * $parcela->saldo / 100);
                 }
 
                 $parcela->saldo = $novoValor;
@@ -101,7 +105,7 @@ class RecalcularParcelas extends Command
 
                 if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix) {
 
-                    $parcela->emprestimo->pagamentominimo->valor += ( 1 * $parcela->saldo / 100 );
+                    $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
 
                     $parcela->emprestimo->pagamentominimo->save();
 
