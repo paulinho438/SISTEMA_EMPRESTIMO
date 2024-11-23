@@ -101,11 +101,11 @@ class RecalcularParcelas extends Command
 
                 if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix) {
 
-                    $parcela->emprestimo->pagamentominimo->valor = $juros;
+                    $parcela->emprestimo->pagamentominimo->valor += ( 1 * $parcela->saldo / 100 );
 
                     $parcela->emprestimo->pagamentominimo->save();
 
-                    $response = $bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
+                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
 
                     if ($response->successful()) {
                         $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
