@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
 // Local imports
 import images from '../../assets/images/index';
@@ -18,8 +18,30 @@ import strings from '../../i18n/strings';
 import CHeader from '../../components/common/CHeader';
 import Material from 'react-native-vector-icons/MaterialIcons';
 import {StackNav} from '../../navigation/navigationKeys';
+import {useFocusEffect} from '@react-navigation/native';
+
+import {
+  getAuthCompany,
+  getUser,
+  getPermissions,
+} from '../../utils/asyncStorage';
+import margin from '../../themes/margin';
 
 export default function ProfileScreen({navigation}) {
+  const [user, setUser] = useState(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getInfo();
+      return () => {};
+    }, [])
+  );
+
+  const getInfo = async position => {
+    let userReq = await getUser();
+    setUser(userReq);
+  };
+
   const moveToAcc = () => {
     navigation.navigate(StackNav.AccountInfo);
   };
@@ -65,14 +87,14 @@ export default function ProfileScreen({navigation}) {
   const RenderHeaderComponent = () => {
     return (
       <View>
-        <Image source={images.ProfileImg} style={localStyles.imgSty} />
+        <Image source={images.AGELOGO} style={localStyles.imgSty} />
 
         <View style={localStyles.outerComponent}>
           <CText color={colors.black} type={'B20'}>
-            {strings.Anna}
+            {user?.nome_completo}
           </CText>
           <CText type={'R12'} color={colors.tabColor}>
-            {strings.AnnaEmail}
+          {user?.email}
           </CText>
         </View>
       </View>
@@ -143,8 +165,10 @@ const localStyles = StyleSheet.create({
     ...styles.flex,
   },
   imgSty: {
-    width: moderateScale(258),
-    height: moderateScale(206),
+    width: moderateScale(100),
+    height: moderateScale(100),
+    marginTop: moderateScale(20),
+    marginBottom: moderateScale(150),
     ...styles.selfCenter,
   },
   parentImg: {

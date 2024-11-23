@@ -79,4 +79,7 @@ export default {
   AppleRound: require('./AppleRound.png'),
   GoogleRound: require('./GoogleRound.png'),
   Slider: require('./Slider.png'),
+
+  AGELOGO: require('./AGELOGO.png'),
+  AGE: require('./AGE.jpeg'),
 };
