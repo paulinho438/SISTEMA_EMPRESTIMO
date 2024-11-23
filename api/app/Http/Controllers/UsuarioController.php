@@ -160,7 +160,7 @@ class UsuarioController extends Controller
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
-                    "error" => ""
+                    "error" => $validator->errors()->first()
                 ], Response::HTTP_FORBIDDEN);
             }
 
