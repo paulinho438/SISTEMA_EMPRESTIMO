@@ -48,7 +48,7 @@ class ProcessarPixJob implements ShouldQueue
             $parcela->save();
         }
 
-        if (count($this->emprestimo->parcelas) == 1) {
+        if ($this->emprestimo->pagamentominimo) {
 
             $response = $this->bcodexService->criarCobranca($this->emprestimo->pagamentominimo->valor, $this->emprestimo->banco->document);
 
