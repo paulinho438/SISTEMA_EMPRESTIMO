@@ -55,7 +55,7 @@ export default {
 		logoUrl() {
 			return `${this.contextPath.contextPath}layout/images/${this.layoutConfig.darkTheme ? 'logo' : 'logo'}.png`;
 		},
-		...mapGetters(['isAutenticated'])
+		...mapGetters(['isAutenticated', 'usuario'])
 	},
 	methods: {
 		async login() {
@@ -74,6 +74,7 @@ export default {
 
 				localStorage.setItem('app.emp.token', `${response.data.token}`);
 				this.setAuthenticated({ isAuthenticated: true });
+				this.setUsuario({ usuario: response.data.user });
 
                 if(response.data.user.companies.length == 0){
                     this.toast.add({ 
@@ -144,7 +145,7 @@ export default {
                         });
             }
 		},
-		...mapMutations(['setAuthenticated']),
+		...mapMutations(['setAuthenticated', 'setUsuario']),
         
 	},
     

@@ -6,6 +6,7 @@ import UsuarioService from '@/service/UsuarioService';
 import EmpresaService from '@/service/EmpresaService';
 import UtilService from '@/service/UtilService';
 import AddressClient from '../address/Address.vue';
+import PermissionsService from '@/service/PermissionsService';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
 
 import LoadingComponent from '../../components/Loading.vue';
@@ -19,6 +20,7 @@ export default {
 			router: useRouter(),
 			usuarioService: new UsuarioService(),
 			empresaService: new EmpresaService(),
+			permissionsService: new PermissionsService(),
 			icons: PrimeIcons,
 			toast: useToast()
 		};
@@ -218,7 +220,7 @@ export default {
 		<template #content>
 			<div class="col-12">
 				<div class="p-fluid formgrid grid">
-					<div class="field col-12 md:col-12">
+					<div v-if="this.permissionsService.isMaster()" class="field col-12 md:col-12">
 						<label for="firstname2">Empresas</label>
 						<MultiSelect v-model="multiselectValue" :options="empresas" optionLabel="company"
 							placeholder="Selecione as Empresas" :filter="true">

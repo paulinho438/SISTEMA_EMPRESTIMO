@@ -64,7 +64,6 @@ class PermgroupController extends Controller
             return $array;
         }
 
-        return $array;
     }
 
     public function update(Request $request, $id){
