@@ -192,7 +192,6 @@ class ClientController extends Controller
 
             $dados['company_id'] = $request->header('company-id');
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
-            $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
 
             $newGroup = Client::create($dados);
 
@@ -208,8 +207,6 @@ class ClientController extends Controller
                 "error" => $validator->errors()->first()
             ], Response::HTTP_FORBIDDEN);
         }
-
-        return $array;
     }
 
     public function update(Request $request, $id)
