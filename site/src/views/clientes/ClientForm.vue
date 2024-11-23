@@ -155,6 +155,7 @@ export default {
 	},
 	mounted() {
 		this.getclient();
+		this.client.limit = 2000;
 	}
 };
 </script>
