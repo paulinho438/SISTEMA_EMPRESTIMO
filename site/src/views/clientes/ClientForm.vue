@@ -74,6 +74,7 @@ export default {
 				});
 			}else{
 				this.client = ref({});
+				this.client.limit = 2000;
 				this.client.address = [];
 			}
 			
@@ -154,8 +155,8 @@ export default {
 		}
 	},
 	mounted() {
-		this.client.limit = 2000;
 		this.getclient();
+
 	}
 };
 </script>
