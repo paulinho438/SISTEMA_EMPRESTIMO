@@ -27,7 +27,7 @@ export default function LogOut() {
   return (
     <View style={localStyles.mainContainer}>
       <CText align={'center'} type={'B24'} color={colors.black}>
-        Você confirma que deseja sair do RJ EMPRESTIMOS ?
+        Você confirma que deseja sair do AGE CONTROLE ?
       </CText>
 
       <View style={localStyles.outerComponentOfCButtons}>

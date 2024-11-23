@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-
+use Carbon\Carbon;
 use App\Models\Permgroup;
 
 use DateTime;
@@ -24,7 +24,7 @@ class UsuarioResource extends JsonResource
             "nome_completo"         => $this->nome_completo,
             "rg"                    => $this->rg,
             "cpf"                   => $this->cpf,
-            "data_nascimento"       => $this->data_nascimento,
+            "data_nascimento"       => Carbon::parse($this->data_nascimento)->format('d/m/Y'),
             "sexo"                  => $this->sexo,
             "telefone_celular"      => $this->telefone_celular,
             "status"                => $this->status,
