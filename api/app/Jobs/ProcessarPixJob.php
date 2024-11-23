@@ -54,7 +54,7 @@ class ProcessarPixJob implements ShouldQueue
 
             if ($response->successful()) {
                 $this->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                $this->emprestimo->pagamentominimo->chave_pix = $response->json()['chave_pix'];
+                $this->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                 $this->emprestimo->pagamentominimo->save();
             }
         }
