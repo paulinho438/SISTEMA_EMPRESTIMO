@@ -115,12 +115,14 @@ class RecalcularParcelas extends Command
                     $parcela->venc_real = date('Y-m-d');
                     $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                    $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                    if($parcela->emprestimo->banco->wallet) {
+                        $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                    if ($response->successful()) {
-                        $parcela->identificador = $response->json()['txid'];
-                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->save();
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
                     }
 
                     $parcela->save();
