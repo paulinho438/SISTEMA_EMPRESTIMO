@@ -165,7 +165,7 @@ export default {
 					if (error?.response?.status != 422) {
 						this.toast.add({
 							severity: ToastSeverity.ERROR,
-							detail: UtilService.message(error.response),
+							detail: UtilService.message(error.response.data),
 							life: 3000
 						});
 					}
