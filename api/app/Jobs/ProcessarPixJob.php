@@ -50,12 +50,14 @@ class ProcessarPixJob implements ShouldQueue
 
         if ($this->emprestimo->pagamentominimo) {
 
-            $response = $this->bcodexService->criarCobranca($this->emprestimo->pagamentominimo->valor, $this->emprestimo->banco->document);
+            foreach($this->emprestimo->pagamentominimo as $pagamento) {
+                $response = $this->bcodexService->criarCobranca($pagamento['valor'], $this->emprestimo->banco->document);
 
-            if ($response->successful()) {
-                $this->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                $this->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                $this->emprestimo->pagamentominimo->save();
+                if ($response->successful()) {
+                    $pagamento['identificador'] = $response->json()['txid'];
+                    $pagamento['chave_pix'] = $response->json()['pixCopiaECola'];
+                }
+                $pagamento->save();
             }
         }
     }
