@@ -18,24 +18,28 @@ use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 class UsuarioController extends Controller
 {
 
     protected $custom_log;
 
-    public function __construct(Customlog $custom_log){
+    public function __construct(Customlog $custom_log)
+    {
         $this->custom_log = $custom_log;
     }
 
-    public function id(Request $r, $id){
+    public function id(Request $r, $id)
+    {
         return new UsuarioResource(User::find($id));
     }
 
-    public function parcelasAtrasadas(Request $request){
+    public function parcelasAtrasadas(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Usuarios',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Usuarios',
             'operation' => 'index'
         ]);
 
@@ -44,39 +48,41 @@ class UsuarioController extends Controller
         return ParcelaResource::collection(Parcela::where('atrasadas', '>', 0)
             ->where('dt_baixa', null)
             ->where('valor_recebido', null)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $today = Carbon::now()->toDateString();
                 $query->whereNull('dt_ult_cobranca')
-                      ->orWhereDate('dt_ult_cobranca', '!=', $today);
+                    ->orWhereDate('dt_ult_cobranca', '!=', $today);
             })
             ->whereHas('emprestimo', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             })
             ->get()->unique('emprestimo_id'));
-
     }
 
-    public function all(Request $request){
+    public function all(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Usuarios',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Usuarios',
             'operation' => 'index'
         ]);
 
         return UsuarioResource::collection(User::all());
     }
 
-    public function allCompany(Request $request){
+    public function allCompany(Request $request)
+    {
 
         $companyId = $request->header('company-id');
 
-        return UsuarioResource::collection(User::whereHas('companies', function($query) use ($companyId) {
+        return UsuarioResource::collection(User::whereHas('companies', function ($query) use ($companyId) {
             $query->where('id', $companyId);
         })->get());
     }
 
-    public function insert(Request $request){
+    public function insert(Request $request)
+    {
         $array = ['error' => ''];
 
         $validator = Validator::make($request->all(), [
@@ -90,34 +96,47 @@ class UsuarioController extends Controller
         ]);
 
         $dados = $request->all();
-        if(!$validator->fails()){
+        if (!$validator->fails()) {
 
-            $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
 
-            $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
-            $dados['cpf'] = $cpf;
-            $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
 
-            $newGroup = User::create($dados);
+            try {
+                $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
 
-            $companyIds = array_map(function($company) {
-                return $company['id'];
-            }, $dados['empresas']);
+                $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
+                $dados['cpf'] = $cpf;
+                $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
 
-            // Sincronize as empresas com o usuário
-            $newGroup->companies()->sync($companyIds);
+                $newGroup = User::create($dados);
 
-            return $array;
+                $companyIds = array_map(function ($company) {
+                    return $company['id'];
+                }, $dados['empresas']);
 
+                // Sincronize as empresas com o usuário
+                $newGroup->companies()->sync($companyIds);
+
+                return $array;
+            } catch (\Exception $e) {
+
+                return response()->json([
+                    "message" => $e->getMessage(),
+                    "error" => $e->getMessage()
+                ], Response::HTTP_FORBIDDEN);
+            }
         } else {
-            $array['error'] = $validator->errors()->first();
-            return $array;
+
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => $validator->errors()->first()
+            ], Response::HTTP_FORBIDDEN);
+
         }
 
-        return $array;
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
         DB::beginTransaction();
 
         try {
@@ -136,7 +155,7 @@ class UsuarioController extends Controller
             ]);
 
             $dados = $request->all();
-            if(!$validator->fails()){
+            if (!$validator->fails()) {
 
                 $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
 
@@ -150,13 +169,12 @@ class UsuarioController extends Controller
                 $EditUser->telefone_celular = $dados['telefone_celular'];
                 $EditUser->save();
 
-                $companyIds = array_map(function($company) {
+                $companyIds = array_map(function ($company) {
                     return $company['id'];
                 }, $dados['empresas']);
 
                 // Sincronize as empresas com o usuário
                 $EditUser->companies()->sync($companyIds);
-
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
@@ -167,7 +185,6 @@ class UsuarioController extends Controller
             DB::commit();
 
             return $array;
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -193,18 +210,17 @@ class UsuarioController extends Controller
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' deletou o Usere: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' deletou o Usere: ' . $id,
                 'operation' => 'destroy'
             ]);
 
             return response()->json(['message' => 'Usere excluída com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' tentou deletar o Usere: '.$id.' ERROR: '.$e->getMessage(),
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' tentou deletar o Usere: ' . $id . ' ERROR: ' . $e->getMessage(),
                 'operation' => 'error'
             ]);
 
