@@ -22,6 +22,7 @@ class PagamentoMinimo extends Model
     public function emprestimo()
     {
         return $this->belongsTo(Emprestimo::class, 'emprestimo_id', 'id');
+
     }
 
 }
