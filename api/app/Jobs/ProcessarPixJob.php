@@ -50,7 +50,7 @@ class ProcessarPixJob implements ShouldQueue
 
         if (count($this->emprestimo->parcelas) == 1) {
 
-            $expiration = 2.592e+9;
+            $expiration = 959200000;
 
             $response = $this->bcodexService->criarCobranca(($this->emprestimo->parcelas[0]->totalPendente() - $this->emprestimo->valor), $this->emprestimo->banco->document, $expiration);
 
