@@ -163,7 +163,7 @@ export default {
                             <Column field="venc_real" header="Venc."></Column>
                             <Column field="valor" header="Parcela"></Column>
                             <Column field="saldo" header="Saldo c/ Juros"></Column>
-                            <Column field="total_pago_parcela" header="Pago"></Column>
+                            <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
                             <Column field="status" header="Status">
                                 <template #body="slotProps">
                                     <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
