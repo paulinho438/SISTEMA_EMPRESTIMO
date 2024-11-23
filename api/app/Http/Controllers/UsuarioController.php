@@ -84,17 +84,11 @@ class UsuarioController extends Controller
     public function allCompany(Request $request)
     {
 
-        $user = auth()->user();
+        $companyId = $request->header('company-id');
 
-        if ($user->login === 'MASTERGERAL') {
-            return UsuarioResource::collection(User::all());
-        } else {
-            $companyId = $request->header('company-id');
-
-            return UsuarioResource::collection(User::whereHas('companies', function ($query) use ($companyId) {
-                $query->where('id', $companyId);
-            })->get());
-        }
+        return UsuarioResource::collection(User::whereHas('companies', function ($query) use ($companyId) {
+            $query->where('id', $companyId);
+        })->get());
     }
 
     public function insert(Request $request)
@@ -200,8 +194,6 @@ class UsuarioController extends Controller
                     // Sincronize as empresas com o usuário
                     $EditUser->companies()->sync($companyIds);
                 }
-
-
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
