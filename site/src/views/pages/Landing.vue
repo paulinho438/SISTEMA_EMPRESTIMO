@@ -153,6 +153,7 @@ export default {
                             <div class="p-3 surface-card h-full" style="border-radius: 8px;">
                                 <p>{{this.products?.data?.emprestimo?.banco.info_recebedor_pix}}</p>
                                 <span @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{this.products?.data?.emprestimo?.banco.chavepix}}</span>
+                                <p style="margin-top: 10px;">Saldo devedor: {{ this.products?.data?.emprestimo?.parcelas[0].total_pendente }}</p>
                             </div>
                         </div>
                     </div>

@@ -47,7 +47,7 @@ class BcodexService
             ],
             "valor" => [
                 "original" => number_format($valor, 2, '.', ''),
-                "modalidadeAlteracao" => 1
+                "modalidadeAlteracao" => 0
             ],
             "chave" => $document,
             "solicitacaoPagador" => "RJ EMPRESTIMOS",
