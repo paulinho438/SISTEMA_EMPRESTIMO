@@ -192,7 +192,7 @@ export default {
 	},
 	computed: {
 		title() {
-			return this.route.params?.id ? 'Editar Cliente' : 'Criar Cliente';
+			return this.route.params?.id ? 'Editar Usuário' : 'Criar Usuário';
 		}
 	},
 	mounted() {
