@@ -45,7 +45,7 @@ class ProcessarPixJob implements ShouldQueue
                 $parcela['chave_pix'] = $response->json()['pixCopiaECola'];
             }
 
-            $parcela->save();
+            // $parcela->save();
         }
 
         if ($this->emprestimo->pagamentominimo) {
