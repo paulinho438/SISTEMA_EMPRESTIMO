@@ -51,8 +51,10 @@ class JurosController extends Controller
                 $EditJuros->save();
 
             } else {
-                $array['error'] = $validator->errors()->first();
-                return $array;
+                return response()->json([
+                    "message" => $validator->errors()->first(),
+                    "error" => $validator->errors()->first()
+                ], Response::HTTP_FORBIDDEN);
             }
 
             DB::commit();
