@@ -288,9 +288,6 @@ class EmprestimoController extends Controller
             $contaspagar['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
             $contaspagar['company_id'] = $request->header('company-id');
             Contaspagar::create($contaspagar);
-
-
-
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -621,7 +618,6 @@ class EmprestimoController extends Controller
                 }
                 // Disparar o job para processar o empréstimo em paralelo
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService);
-
             }
 
 
@@ -1209,7 +1205,7 @@ class EmprestimoController extends Controller
                 // Encontrar a parcela correspondente
                 $parcela = Parcela::where('identificador', $txId)->first();
 
-                if($parcela) {
+                if ($parcela) {
                     $parcela->saldo = 0;
                     $parcela->dt_baixa = $horario;
                     $parcela->save();
@@ -1265,7 +1261,6 @@ class EmprestimoController extends Controller
                         }
                     }
                 }
-
             }
         }
 
@@ -1287,8 +1282,117 @@ class EmprestimoController extends Controller
                 ];
 
                 Mail::to($locacao->company->email)->send(new ExampleEmail($details, $locacao));
+            }
+        }
+
+        //REFERENTE A PAGAMENTO MINIMO
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $minimo = PagamentoMinimo::where('identificador', $txId)->first();
+
+                $parcela = Parcela::where('emprestimo_id', $minimo->emprestimo_id)->first();
+
+                if ($parcela) {
+
+                    $parcela->saldo -= $minimo->valor;
+
+                    $dt_lancamento = Carbon::parse($parcela->dt_lancamento);
+                    $venc = Carbon::parse($parcela->venc);
+
+                    $differenceInDays = $dt_lancamento->diffInDays($venc);
+
+                    $parcela->venc_real = $parcela->venc_real->addDays($differenceInDays * $parcela->atrasadas);
+
+                    $parcela->save();
+
+                    if ($parcela->contasreceber) {
+
+                        # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Pagamento Minimo da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $minimo->valor;
+
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                        $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $minimo->valor;
+                        $parcela->emprestimo->banco->save();
+
+                        if ($parcela->emprestimo->quitacao->chave_pix) {
+
+                            $juros = $parcela->emprestimo->juros * $parcela->saldo / 100;
+
+                            $parcela->emprestimo->quitacao->valor = $juros;
+
+                            $parcela->emprestimo->quitacao->saldo = $juros;
+
+                            $parcela->emprestimo->quitacao->save();
+
+                            $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
+
+                            if ($response->successful()) {
+                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->quitacao->save();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //REFERENTE A QUITACAO
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $quitacao = Quitacao::where('identificador', $txId)->first();
+
+                $parcelas = Parcela::where('emprestimo_id', $quitacao->emprestimo_id)->get();
+
+                foreach($parcelas as $parcela){
+                    $parcela->saldo = 0;
+                    $parcela->dt_baixa = Carbon::parse($pix['horario'])->toDateTimeString();
+                    $parcela->save();
+
+                    if ($parcela->contasreceber) {
+
+                        # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Quitação da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $parcela->saldo;
+
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                        $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $parcela->saldo;
+                        $parcela->emprestimo->banco->save();
 
 
+                    }
+                }
             }
         }
 
