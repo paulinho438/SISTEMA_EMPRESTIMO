@@ -1306,19 +1306,22 @@ class EmprestimoController extends Controller
 
                         $parcela->saldo -= $minimo->valor;
 
+                        //valor usado lá na frente em pagamento minimo
                         $juros = $parcela->emprestimo->juros * $parcela->saldo / 100;
 
                         $parcela->saldo += $parcela->emprestimo->juros * $parcela->saldo / 100;
 
-                        $dt_lancamento = Carbon::parse($parcela->dt_lancamento);
-                        $venc = Carbon::parse($parcela->venc);
-
-                        $differenceInDays = $dt_lancamento->diffInDays($venc);
-
                         $qtAtrasadas = 1;
                         $qtAtrasadas += $parcela->atrasadas;
 
-                        $parcela->venc_real = Carbon::parse($parcela->venc_real)->addDays($differenceInDays * $qtAtrasadas);
+                        $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                        $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+
+                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+
+                        $diferencaEmMeses++;
+
+                        $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
