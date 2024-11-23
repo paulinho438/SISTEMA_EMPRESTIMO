@@ -61,7 +61,7 @@ class RecalcularParcelas extends Command
 
             if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
 
-                if ($parcela->emprestimo->pagamentominimo) {
+                if (1 != 1) {
                     $parcela->saldo += $parcela->emprestimo->juros * $parcela->saldo / 100;;
                     $parcela->venc_real = date('Y-m-d');
                     $parcela->atrasadas = $parcela->atrasadas + 1;
