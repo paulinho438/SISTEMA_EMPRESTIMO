@@ -74,7 +74,8 @@ export default {
 
 				localStorage.setItem('app.emp.token', `${response.data.token}`);
 				this.setAuthenticated({ isAuthenticated: true });
-				this.setUsuario({ usuario: response.data.user });
+				console.log('user', response.data.user);
+				this.$store.commit("setUsuario", response.data.user);
 
                 if(response.data.user.companies.length == 0){
                     this.toast.add({ 

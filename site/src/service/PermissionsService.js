@@ -19,6 +19,7 @@ export default class PermissionsService {
     };
 
     isMaster = () => {
+        console.log(store.getters?.usuario.login);
         return store.getters?.usuario.login === "MASTERGERAL";
     };
 
