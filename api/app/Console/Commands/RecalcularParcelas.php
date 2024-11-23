@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Juros;
 use App\Models\Parcela;
 
+use App\Services\BcodexService;
+
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
@@ -28,6 +30,8 @@ class RecalcularParcelas extends Command
      * @var string
      */
     protected $signature = 'recalcular:Parcelas';
+
+    protected $bcodexService;
 
     /**
      * The console command description.
@@ -50,115 +54,103 @@ class RecalcularParcelas extends Command
 
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
 
+        $bcodexService = new BcodexService();
+
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
 
             if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
 
-                echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
+                if ($parcela->emprestimo->pagamentominimo) {
+                    $parcela->saldo += $parcela->emprestimo->juros * $parcela->saldo / 100;;
+                    $parcela->venc_real = date('Y-m-d');
+                    $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
+                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                $novoValor = $valorJuros + $parcela->saldo;
+                    if ($response->successful()) {
+                        $parcela->identificador = $response->json()['txid'];
+                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->save();
+                    }
 
-                $parcela->saldo = $novoValor;
-                $parcela->venc_real = date('Y-m-d');
-                $parcela->atrasadas = $parcela->atrasadas + 1;
+                    $parcela->save();
 
+                    if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
-                if ($parcela->chave_pix) {
-                    $gerarPix = self::gerarPix(
-                        [
-                            'banco' => [
-                                'client_id' => $parcela->emprestimo->banco->clienteid,
-                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
-                                'certificado' => $parcela->emprestimo->banco->certificado,
-                                'chave' => $parcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $novoValor,
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+                        $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
 
-                    $parcela->identificador = $gerarPix['identificador'];
-                    $parcela->chave_pix = $gerarPix['chave_pix'];
+                        if ($response->successful()) {
+                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                            $parcela->emprestimo->quitacao->save();
+                        }
+                    }
 
-                }
+                    if ($parcela->emprestimo->pagamentominimo->chave_pix) {
 
-                $parcela->save();
+                        $parcela->emprestimo->pagamentominimo->valor = $juros;
 
-                if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
+                        $parcela->emprestimo->pagamentominimo->save();
 
-                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                    echo "<pre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
-                    $parcela->emprestimo->quitacao->save();
+                        $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
 
-                    $gerarPixQuitacao = self::gerarPixQuitacao(
-                        [
-                            'banco' => [
-                                'client_id' => $parcela->emprestimo->banco->clienteid,
-                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
-                                'certificado' => $parcela->emprestimo->banco->certificado,
-                                'chave' => $parcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => $parcela->emprestimo->parcelas[0]->totalPendente(),
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+                        if ($response->successful()) {
+                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
+                    }
 
-                    $parcela->emprestimo->quitacao->identificador = $gerarPixQuitacao['identificador'];
-                    $parcela->emprestimo->quitacao->chave_pix = $gerarPixQuitacao['chave_pix'];
+                } else {
 
-                    $parcela->emprestimo->quitacao->save();
+                    echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
 
-                }
+                    $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
 
-                if ($parcela->emprestimo->pagamentominimo->chave_pix) {
+                    $novoValor = $valorJuros + $parcela->saldo;
 
-                    $parcela->emprestimo->pagamentominimo->valor = ($parcela->emprestimo->parcelas[0]->totalPendente() - $parcela->emprestimo->valor);
-                    echo "<pre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
-                    $parcela->emprestimo->pagamentominimo->save();
+                    $parcela->saldo = $novoValor;
+                    $parcela->venc_real = date('Y-m-d');
+                    $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                    $gerarPixQuitacao = self::gerarPixQuitacao(
-                        [
-                            'banco' => [
-                                'client_id' => $parcela->emprestimo->banco->clienteid,
-                                'client_secret' => $parcela->emprestimo->banco->clientesecret,
-                                'certificado' => $parcela->emprestimo->banco->certificado,
-                                'chave' => $parcela->emprestimo->banco->chavepix,
-                            ],
-                            'parcela' => [
-                                'parcela' => $parcela->parcela,
-                                'valor' => ($parcela->emprestimo->parcelas[0]->totalPendente() - $parcela->emprestimo->valor),
-                                'venc_real' => date('Y-m-d'),
-                            ],
-                            'cliente' => [
-                                'nome_completo' => $parcela->emprestimo->client->nome_completo,
-                                'cpf' => $parcela->emprestimo->client->cpf
-                            ]
-                        ]
-                    );
+                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                    $parcela->emprestimo->pagamentominimo->identificador = $gerarPixQuitacao['identificador'];
-                    $parcela->emprestimo->pagamentominimo->chave_pix = $gerarPixQuitacao['chave_pix'];
+                    if ($response->successful()) {
+                        $parcela->identificador = $response->json()['txid'];
+                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->save();
+                    }
 
-                    $parcela->emprestimo->pagamentominimo->save();
+                    $parcela->save();
 
+                    if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
+
+                        $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                            $parcela->emprestimo->quitacao->save();
+                        }
+                    }
+
+                    if ($parcela->emprestimo->pagamentominimo->chave_pix) {
+
+                        $parcela->emprestimo->pagamentominimo->valor = $juros;
+
+                        $parcela->emprestimo->pagamentominimo->save();
+
+                        $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
+                    }
                 }
             }
         }
@@ -232,7 +224,6 @@ class RecalcularParcelas extends Command
                     $return['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     return $return;
-
                 } catch (EfiException $e) {
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
@@ -314,7 +305,6 @@ class RecalcularParcelas extends Command
                     $return['chave_pix'] = $qrcode['linkVisualizacao'];
 
                     return $return;
-
                 } catch (EfiException $e) {
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
