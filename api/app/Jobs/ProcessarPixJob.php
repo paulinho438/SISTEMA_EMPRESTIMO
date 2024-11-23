@@ -61,7 +61,7 @@ class ProcessarPixJob implements ShouldQueue
 
         if ($this->emprestimo->quitacao) {
 
-            $response = $this->bcodexService->criarCobranca($this->emprestimo->quitacao->valor, $this->emprestimo->banco->document);
+            $response = $this->bcodexService->criarCobranca($this->emprestimo->quitacao->saldo, $this->emprestimo->banco->document);
 
             if ($response->successful()) {
                 $this->emprestimo->quitacao->identificador = $response->json()['txid'];
