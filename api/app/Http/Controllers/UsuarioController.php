@@ -103,7 +103,15 @@ class UsuarioController extends Controller
 
             $user = auth()->user();
 
-            if($user->login == 'MASTERGERAL'){
+            if($user->login === 'MASTERGERAL'){
+
+                if(count($dados['empresas']) == 0){
+                    return response()->json([
+                        "message" => "O usuário deve pertencer a pelo menos uma empresa.",
+                        "error" => "O usuário deve pertencer a pelo menos uma empresa."
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
                 $companyIds = array_map(function($company) {
                     return $company['id'];
                 }, $dados['empresas']);
