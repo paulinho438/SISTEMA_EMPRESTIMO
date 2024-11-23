@@ -58,8 +58,10 @@ class AuthController extends Controller
             $EditUser->save();
 
         } else {
-            $array['error'] = $validator->errors()->first();
-            return $array;
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
         }
 
         return $array;
@@ -139,7 +141,7 @@ class AuthController extends Controller
 
         if(!$validator->fails()){
 
-            $validTentativas = User::where('login', $request->usuario)->orWhere('cpf', $request->usuario)->first();
+            $validTentativas = User::where('login', $request->usuario)->first();
 
             if($validTentativas && $validTentativas->tentativas == '5'){
                 return response()->json([
@@ -155,38 +157,30 @@ class AuthController extends Controller
             }
 
             $token = Auth::attempt([
-                'cpf' => $request->usuario,
+                'login' => $request->usuario,
                 'password' => $request->password
             ]);
 
-
             if(!$token){
-                $token = Auth::attempt([
-                    'login' => $request->usuario,
-                    'password' => $request->password
-                ]);
+                $tentativas = 0;
 
-                if(!$token){
-                    $tentativas = 0;
+                $validTentativas = User::where('login', $request->usuario)->first();
+                if($validTentativas){
+                    $tentativas = ++$validTentativas->tentativas;
+                    $validTentativas->tentativas = $tentativas;
+                    $validTentativas->save();
 
-                    $validTentativas = User::where('login', $request->usuario)->orWhere('cpf', $request->usuario)->first();
-                    if($validTentativas){
-                        $tentativas = ++$validTentativas->tentativas;
-                        $validTentativas->tentativas = $tentativas;
-                        $validTentativas->save();
+                    return response()->json([
+                        "message" => $tentativas
+                    ], Response::HTTP_FORBIDDEN);
 
-                        return response()->json([
-                            "message" => $tentativas
-                        ], Response::HTTP_FORBIDDEN);
-
-                    }else{
-                        return response()->json([
-                            "message" => "Seus dados estão incorretos!"
-                        ], Response::HTTP_FORBIDDEN);
-                    }
-
-
+                }else{
+                    return response()->json([
+                        "message" => "Seus dados estão incorretos!"
+                    ], Response::HTTP_FORBIDDEN);
                 }
+
+
             }
 
             $array['token'] = $token;

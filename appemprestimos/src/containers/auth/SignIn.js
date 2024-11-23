@@ -150,6 +150,8 @@ export default function SignIn({navigation}) {
                 {strings.WelcomeBack}
               </CText>
 
+              <Image source={images.AGE} style={localStyles.imgSty} />
+
               <CTextInput
                 value={email}
                 onChangeText={setEmail}
@@ -169,7 +171,7 @@ export default function SignIn({navigation}) {
                 isSecure={true}
               />
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={localStyles.mainContainer}
                 onPress={moveToPassRec}>
                 <CText
@@ -178,7 +180,7 @@ export default function SignIn({navigation}) {
                   style={localStyles.forgotPassTxt}>
                   {strings.forgotPass}
                 </CText>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </SafeAreaView>
 
             <CButton
@@ -204,11 +206,11 @@ export default function SignIn({navigation}) {
             </CText>
           </TouchableOpacity>
         </View> */}
-        <View style={localStyles.rjemprestimos}>
+        {/* <View style={localStyles.rjemprestimos}>
           <CText color={colors.black} type={'B14'}>
             RJ EMPRESTIMOS
           </CText>
-        </View>
+        </View> */}
       </View>
     </SafeAreaView>
   );
@@ -293,5 +295,11 @@ const localStyles = StyleSheet.create({
     ...styles.ph20,
     ...styles.flex,
     ...styles.justifyBetween,
+  },
+  imgSty: {
+    width: moderateScale(150),
+    height: moderateScale(150),
+    marginTop: moderateScale(20),
+    ...styles.selfCenter,
   },
 });
