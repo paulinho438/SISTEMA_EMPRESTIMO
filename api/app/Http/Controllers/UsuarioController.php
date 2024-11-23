@@ -191,12 +191,17 @@ class UsuarioController extends Controller
                 $EditUser->telefone_celular = $dados['telefone_celular'];
                 $EditUser->save();
 
-                $companyIds = array_map(function ($company) {
-                    return $company['id'];
-                }, $dados['empresas']);
+                if ($user->login === 'MASTERGERAL') {
 
-                // Sincronize as empresas com o usuário
-                $EditUser->companies()->sync($companyIds);
+                    $companyIds = array_map(function ($company) {
+                        return $company['id'];
+                    }, $dados['empresas']);
+
+                    // Sincronize as empresas com o usuário
+                    $EditUser->companies()->sync($companyIds);
+                }
+
+
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
