@@ -37,7 +37,7 @@ class ProcessarPixJob implements ShouldQueue
     public function handle()
     {
 
-        foreach($this->emprestimo->parcelas as $parcela){
+        foreach ($this->emprestimo->parcelas as $parcela) {
             $response = $this->bcodexService->criarCobranca($parcela['valor'], $this->emprestimo->banco->document);
 
             if ($response->successful()) {
@@ -48,5 +48,18 @@ class ProcessarPixJob implements ShouldQueue
             $parcela->save();
         }
 
+        if (count($this->emprestimo->parcelas) == 1) {
+
+            $expiration = 2.592e+9;
+
+            $response = $this->bcodexService->criarCobranca(($this->emprestimo->parcelas[0]->totalPendente() - $this->emprestimo->valor), $this->emprestimo->banco->document, $expiration);
+
+            if ($response->successful()) {
+                $this->emprestimo->pagamentominimo->valor = ($this->emprestimo->parcelas[0]->totalPendente() - $this->emprestimo->valor);
+                $this->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                $this->emprestimo->pagamentominimo->identificador = $response->json()['chave_pix'];
+                $this->emprestimo->pagamentominimo->save();
+            }
+        }
     }
 }

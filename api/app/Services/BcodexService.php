@@ -37,13 +37,13 @@ class BcodexService
         throw new \Exception('Falha no login: ' . $response->body());
     }
 
-    public function criarCobranca(float $valor , string $document)
+    public function criarCobranca(float $valor , string $document, int $expiracao = 86400000)
     {
 
          // Dados da cobrança
          $data = [
             "calendario" => [
-                "expiracao" => 86400000
+                "expiracao" => $expiracao
             ],
             "valor" => [
                 "original" => number_format($valor, 2, '.', ''),
