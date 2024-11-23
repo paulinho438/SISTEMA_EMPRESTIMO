@@ -43,7 +43,7 @@ class BcodexService
          // Dados da cobrança
          $data = [
             "calendario" => [
-                "expiracao" => 959200000
+                "expiracao" => 95920000
             ],
             "valor" => [
                 "original" => number_format($valor, 2, '.', ''),
