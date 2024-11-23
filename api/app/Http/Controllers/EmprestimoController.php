@@ -588,6 +588,13 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
+            if($emprestimo->contaspagar->status == 'Pagamento Efetuado'){
+                return response()->json([
+                    "message" => "Pagamento já efetuado.",
+                    "error" => ""
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             if ($emprestimo->banco->wallet == 1) {
                 if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
@@ -682,6 +689,13 @@ class EmprestimoController extends Controller
             $user = auth()->user();
 
             $emprestimo = Emprestimo::find($id);
+
+            if($emprestimo->contaspagar->status == 'Pagamento Efetuado'){
+                return response()->json([
+                    "message" => "Pagamento já efetuado.",
+                    "error" => ""
+                ], Response::HTTP_FORBIDDEN);
+            }
 
             if ($emprestimo->banco->wallet == 1) {
                 if (!$emprestimo->client->pix_cliente) {
