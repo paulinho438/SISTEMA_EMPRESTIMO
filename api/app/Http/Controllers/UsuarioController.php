@@ -177,6 +177,10 @@ class UsuarioController extends Controller
 
                 $EditUser = User::find($id);
 
+                if($dados['password'] != null){
+                    $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
+                }
+
                 $EditUser->nome_completo = $dados['nome_completo'];
                 $EditUser->cpf =  $cpf;
                 $EditUser->rg = $dados['rg'];
