@@ -66,7 +66,7 @@ class RecalcularParcelas extends Command
                     $parcela->venc_real = date('Y-m-d');
                     $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                    $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
                     if ($response->successful()) {
                         $parcela->identificador = $response->json()['txid'];
@@ -78,7 +78,7 @@ class RecalcularParcelas extends Command
 
                     if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
-                        $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+                        $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
                             $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -94,7 +94,7 @@ class RecalcularParcelas extends Command
 
                         $parcela->emprestimo->pagamentominimo->save();
 
-                        $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
+                        $response = $bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
                             $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
@@ -115,7 +115,7 @@ class RecalcularParcelas extends Command
                     $parcela->venc_real = date('Y-m-d');
                     $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                    $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
                     if ($response->successful()) {
                         $parcela->identificador = $response->json()['txid'];
@@ -127,7 +127,7 @@ class RecalcularParcelas extends Command
 
                     if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
-                        $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+                        $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
                             $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -143,7 +143,7 @@ class RecalcularParcelas extends Command
 
                         $parcela->emprestimo->pagamentominimo->save();
 
-                        $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
+                        $response = $bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
                             $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
