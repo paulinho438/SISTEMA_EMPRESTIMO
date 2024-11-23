@@ -105,7 +105,7 @@ class UsuarioController extends Controller
 
             if($user->login === 'MASTERGERAL'){
 
-                if(count($dados['empresas']) == 0){
+                if($dados['empresas'] == null){
                     return response()->json([
                         "message" => "O usuário deve pertencer a pelo menos uma empresa.",
                         "error" => "O usuário deve pertencer a pelo menos uma empresa."
