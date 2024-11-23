@@ -139,7 +139,7 @@ class RecalcularParcelas extends Command
                         }
                     }
 
-                    if ($parcela->emprestimo->pagamentominimo->chave_pix) {
+                    if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix ) {
 
                         $parcela->emprestimo->pagamentominimo->valor = $juros;
 
