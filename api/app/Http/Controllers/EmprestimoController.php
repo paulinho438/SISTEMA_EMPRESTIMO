@@ -622,16 +622,6 @@ class EmprestimoController extends Controller
                 // Disparar o job para processar o empréstimo em paralelo
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService);
 
-                if ($emprestimo->quitacao) {
-
-                    $response = $this->bcodexService->criarCobranca($emprestimo->quitacao->saldo, $emprestimo->banco->document);
-
-                    if ($response->successful()) {
-                        $emprestimo->quitacao->identificador = $response->json()['txid'];
-                        $emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                        $emprestimo->quitacao->save();
-                    }
-                }
             }
 
 
