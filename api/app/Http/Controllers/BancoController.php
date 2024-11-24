@@ -244,7 +244,7 @@ class BancoController extends Controller
             foreach ($parcelas as $parcela) {
                 $valor = $parcela->valor_recebido_pix;
 
-                if ($parcela->emprestimo->pagamentominimo) {
+                if (count($parcela->emprestimo->parcelas) == 1) {
                     // MOVIMENTACAO FINANCEIRA
                     $movimentacaoFinanceira = [];
                     $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
@@ -256,7 +256,9 @@ class BancoController extends Controller
                     $movimentacaoFinanceira['valor'] = $parcela->valor_recebido_pix;
                     Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                    if ($valor >= $parcela->emprestimo->pagamentominimo->valor) {
+                    $pagamentoMinimo = $parcela->emprestimo->juros * $parcela->emprestimo->valor / 100;
+
+                    if ($valor >= $pagamentoMinimo) {
                         // Quitar a parcela atual
                         $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                         $dataFinalCarbon = Carbon::parse($parcela->venc_real);
@@ -270,6 +272,11 @@ class BancoController extends Controller
                     $parcela->valor_recebido_pix = 0;
 
                     $parcela->save();
+
+                    if ($valor >= $pagamentoMinimo) {
+                        $parcela->emprestimo->valor = $parcela->saldo;
+                        $parcela->emprestimo->save();
+                    }
 
                     if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
@@ -297,6 +304,8 @@ class BancoController extends Controller
                             $parcela->emprestimo->pagamentominimo->save();
                         }
                     }
+
+
                 } else {
 
 
