@@ -62,6 +62,7 @@ class EmprestimoResource extends JsonResource
             "pagamentominimo"   => new PagamentoMinimoResource($this->pagamentominimo),
             "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
             "status"            => $this->getStatus(),
+            "telefone_empresa"  => $this->company->numero_contato,
 
 
         ];

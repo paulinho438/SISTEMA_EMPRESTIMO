@@ -22,7 +22,8 @@ class Company extends Model
         'email',
         'motivo_inativo',
         'plano_id',
-        'login'
+        'login',
+        'numero_contato'
 
     ];
 
