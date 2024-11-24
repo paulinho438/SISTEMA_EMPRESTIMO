@@ -122,7 +122,7 @@ if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
 {$parcelaPendente->chave_pix}
 ";
 }else if(count($parcela->emprestimo->parcelas) > 1){
-    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->totalPendenteHoje()." referente ao saldo pendente:
+    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
