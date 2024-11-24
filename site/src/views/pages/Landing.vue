@@ -49,11 +49,7 @@ export default {
             })
             .catch((error) => {
                 if (error?.response?.status != 422) {
-                    this.toast.add({
-                        severity: ToastSeverity.ERROR,
-                        detail: UtilService.message(error.response.data),
-                        life: 3000
-                    });
+                    alert(UtilService.message(error.response.data));
                 }
             });
 
