@@ -70,7 +70,7 @@ class RecalcularParcelas extends Command
 
                 $novoValor = $valorJuros + $parcela->saldo;
 
-                if ($parcela->emprestimo->pagamentominimo) {
+                if (count($parcela->emprestimo->parcelas) == 1) {
                     $novoValor = $parcela->saldo + (1 * $parcela->saldo / 100);
                     $valorJuros = (1 * $parcela->saldo / 100);
                 }
