@@ -142,8 +142,7 @@ export default {
             <section class="payment-section">
                 <h2>Pagamento Personalizado</h2>
                 <p>
-                    Informe um valor superior ao pagamento mínimo. O valor será aplicado para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês. Ao clicar no botão abaixo, i O sistema enviará a chave Pix por
-                    mensagem
+                    Ao clicar no botão abaixo, você conseguirá personalizar o valor e será aplicado para abater os juros e parte do empréstimo.
                 </p>
 
                 <button class="btn-secondary" @click="openConfirmation()">Personalizar Valor</button>
@@ -182,7 +181,7 @@ export default {
     </div>
 
     <Dialog header="Personalizar Valor" v-model:visible="display" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
-        <p class="line-height-3 m-0">Selecione um valor para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês.</p>
+        <p class="line-height-3 m-0">Selecione um valor para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês, o sistema enviará a chave Pix pelo WhatsApp.</p>
        
         <h2 style="margin-top:20px; text-align: center;"> Valor: <b>{{sliderValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</b></h2>
         <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.min" :max="this.max" :step="0.50"/>
