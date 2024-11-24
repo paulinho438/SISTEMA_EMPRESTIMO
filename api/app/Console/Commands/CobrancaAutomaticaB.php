@@ -93,6 +93,7 @@ class CobrancaAutomaticaB extends Command
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+
 ";
 
 $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
@@ -108,6 +109,11 @@ $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$p
 
 {$parcelaPendente->chave_pix}
 
+";
+
+$fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento minimo de R$ ".$parcelaPendente->emprestimo->pagamentominimo->valor." :
+
+{$parcelaPendente->emprestimo->pagamentominimo->chave_pix}
 
 ";
 
