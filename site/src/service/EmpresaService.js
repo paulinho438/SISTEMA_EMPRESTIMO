@@ -42,4 +42,8 @@ export default class EmpresaService {
         return await axios.post(`${apiPath}/empresa`, dados);
 	};
 
+	save = async (data) => {
+        return await axios.put(`${apiPath}/empresa/${data.id}`, data);
+	};
+
 }

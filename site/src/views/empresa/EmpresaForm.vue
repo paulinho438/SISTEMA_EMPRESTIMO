@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import contaspagarService from '@/service/ContaspagarService';
 import UtilService from '@/service/UtilService';
-import EmpresaService from '@/service/EmpresaService';
+import EmpresaService from '@/service/EmpresasService';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
 
 import LoadingComponent from '../../components/Loading.vue';
@@ -130,22 +130,18 @@ export default {
 			this.changeLoading();
 			this.errors = [];
 
-			if( this.selectedTipoDocumento.value == undefined){
-				this.toast.add({
-					severity: ToastSeverity.ERROR,
-					detail: 'Selecione o Tipo de Documento',
-					life: 3000
-				});
+			// if( this.selectedTipoDocumento.value == undefined){
+			// 	this.toast.add({
+			// 		severity: ToastSeverity.ERROR,
+			// 		detail: 'Selecione o Tipo de Documento',
+			// 		life: 3000
+			// 	});
 
-				return false;
-			}
+			// 	return false;
+			// }
 
-			this.contaspagar.tipodoc = this.selectedTipoDocumento.value;
-			this.contaspagar.costcenter = this.costcenter;
-			this.contaspagar.banco = this.banco;
-			this.contaspagar.fornecedor = this.fornecedor;
 
-			this.empresaService.save(this.contaspagar)
+			this.empresaService.save(this.empresa)
 			.then((response) => {
 				if (undefined != response.data.data) {
 					this.contaspagar = response.data.data;

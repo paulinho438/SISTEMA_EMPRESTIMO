@@ -555,6 +555,8 @@ class CompanyController extends Controller
             $EditCompany->motivo_inativo = $dados['motivo_inativo'] ?? null;
             $EditCompany->whatsapp = $dados['whatsapp'] ?? null;
             $EditCompany->plano_id = $dados['plano_id'] ?? null;
+            $EditCompany->juros = $dados['juros'] ?? null;
+            $EditCompany->caixa = $dados['caixa'] ?? null;
             $EditCompany->save();
 
 
