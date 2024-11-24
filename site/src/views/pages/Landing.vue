@@ -1,7 +1,6 @@
 <script>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import EmprestimoService from '../../service/EmprestimoService';
 
 export default {
@@ -36,38 +35,29 @@ export default {
             }
         },
         copyToClipboard(text) {
-      // Cria um elemento de texto temporário
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
 
-      // Seleciona o texto
-      textArea.select();
-      textArea.setSelectionRange(0, 99999); // Para dispositivos móveis
+            textArea.select();
+            textArea.setSelectionRange(0, 99999);
 
-      // Copia o texto para a área de transferência
-      document.execCommand('copy');
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
 
-      // Remove o elemento de texto temporário
-      document.body.removeChild(textArea);
-
-      // Exibe uma mensagem de confirmação (opcional)
-      alert('Chave PIX copiado para a área de transferência!');
-    },
+            alert('Chave PIX copiado para a área de transferência!');
+        },
         encontrarPrimeiraParcelaPendente() {
             for (let i = 0; i < this.products?.data?.emprestimo?.parcelas.length; i++) {
                 if (this.products?.data?.emprestimo?.parcelas[i].dt_baixa === "") {
                     return this.products?.data?.emprestimo?.parcelas[i];
                 }
             }
-
             return {};
         }
     },
 
-    beforeMount: function () {
-        //Requisição para buscar informações do pedido
-
+    beforeMount() {
         this.emprestimoService.infoEmprestimoFront(this.id_pedido)
             .then((response) => {
                 if (response.data?.data?.emprestimo?.parcelas) {
@@ -79,8 +69,7 @@ export default {
                     });
                 }
                 this.products = response.data;
-                console.log(this.products)
-
+                console.log(this.products);
             })
             .catch((error) => {
                 if (error?.response?.status != 422) {
@@ -90,120 +79,175 @@ export default {
                         life: 3000
                     });
                 }
-            })
-            .finally(() => {
             });
     }
 };
 </script>
 
 <template>
-    <div class="surface-0 flex justify-content-center">
-        <div id="home" class="landing-wrapper overflow-hidden center text-center">
-            <div id="hero" class="flex flex-column pt-4 px-4 lg:px-8 overflow-hidden pb-6"
-                style="background: linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), radial-gradient(77.36% 256.97% at 77.36% 57.52%, rgba(0, 0, 0, 1) 0%, #003360 100%); clip-path: ellipse(150% 87% at 93% 13%)">
-                <div class="mx-4 md:mx-8 mt-0 center text-center">
-                    <!-- <img width="200px" src="https://www.gruporialma.com.br/wp-content/uploads/2023/12/imagem_2023-12-01_162149885.png" /> -->
-                    <h3 style="color: white" class="font-bold line-height-2">Histórico de parcelas</h3>
-                </div>
+    <div class="container">
+        <header>
+            <h1>Histórico de Parcelas</h1>
+        </header>
+
+        <main>
+            <!-- Como funciona o pagamento -->
+            <section class="info-section">
+                <h2>Como funciona o pagamento?</h2>
+                <p>
+                    O sistema utiliza chaves Pix para facilitar o pagamento das suas parcelas. Ao copiar a chave Pix e efetuar o pagamento pelo seu aplicativo bancário, o sistema reconhece automaticamente a transação e atualiza o status do seu empréstimo.
+                </p>
+            </section>
+
+            <!-- Quitar Empréstimo -->
+            <section class="payment-section">
+                <h2>Quitar Empréstimo</h2>
+                <p>Copie a chave Pix abaixo para quitar o valor total do empréstimo e encerrar automaticamente seu saldo pendente.</p>
+                <button class="btn-primary" @click="copyToClipboard('chave-pix-quitar')">Copiar Chave Pix - Quitar Empréstimo (R$ 1,00)</button>
+            </section>
+
+            <!-- Pagamento Mínimo -->
+            <section class="payment-section">
+                <h2>Pagamento Mínimo</h2>
+                <p>Copie a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
+                <button class="btn-secondary" @click="copyToClipboard('chave-pix-minimo')">Copiar Chave Pix - Pagamento Mínimo (R$ 0,00)</button>
+            </section>
+
+            <!-- Parcela do Dia -->
+            <section class="payment-section">
+                <h2>Parcela do Dia</h2>
+                <p>Esta é a parcela com vencimento mais próximo. Efetue o pagamento para evitar juros adicionais.</p>
+                <p><strong>Vencimento:</strong> 25/11/2024</p>
+                <p><strong>Valor:</strong> R$ 1,00</p>
+                <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
+            </section>
+
+            <!-- Mostrar Todas as Parcelas -->
+            <section class="payment-section">
+                <h2>Outras Parcelas</h2>
+                <p>Clique no botão abaixo para visualizar todas as parcelas disponíveis para pagamento.</p>
+                <button class="btn-light">Mostrar Todas as Parcelas</button>
+            </section>
+
+            <!-- Parcelas Pagas -->
+            <section class="paid-section">
+                <h2>Parcelas Pagas</h2>
+                <p>Estas são as parcelas que já foram quitadas. O sistema atualizou automaticamente o status após o pagamento.</p>
+                <p><strong>Parcela 1:</strong> R$ 1,00 - <strong>Quitada em:</strong> 20/11/2024</p>
+            </section>
+
+            <!-- Tabela de Parcelas -->
+            <div class="card">
+                <DataTable :value="this.products?.data?.emprestimo?.parcelas">
+                    <Column field="venc_real" header="Venc."></Column>
+                    <Column field="valor" header="Parcela"></Column>
+                    <Column field="saldo" header="Saldo c/ Juros"></Column>
+                    <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
+                    <Column field="status" header="Status">
+                        <template #body="slotProps">
+                            <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="btn-primary" />
+                            <Button v-if="slotProps.data?.chave_pix && slotProps.data.status !== 'Pago'" label="Copiar Chave Pix"
+                                    @click="copyToClipboard(slotProps.data.chave_pix)" class="btn-danger" />
+                            <Button v-if="!slotProps.data?.chave_pix && slotProps.data.status !== 'Pago'" label="Copiar Chave Pix"
+                                    @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)" class="btn-danger" />
+                        </template>
+                    </Column>
+                </DataTable>
             </div>
 
-            <div id="features" class="py-4 px-4 lg:px-8 mt-5 mx-0 lg:mx-8">
-                <div class="grid justify-content-center">
-                    <div class="col-6 md:col-6 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
-                        <div
-                            style="height: 160px; padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(145, 226, 237, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(172, 180, 223, 0.2))">
-                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <div class="icon-wrapper flex align-items-center justify-content-center bg-green-200 mb-3">
-                                    <i class="pi pi-fw pi-money-bill text-2xl text-cyan-700 p-1"></i>
-                                </div>
-                                <h5 class="mb-2 text-900">Valor do Empréstimo</h5>
-                                <span class="text-600">{{ this.products?.data?.emprestimo?.valor }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-6 md:col-6 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
-                        <div
-                            style="height: 160px; padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
-                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <div
-                                    class="icon-wrapper flex align-items-center justify-content-center bg-bluegray-200 mb-3">
-                                    <i class="pi pi-fw pi-building text-2xl text-bluegray-700 p-1"></i>
-                                </div>
-                                <h5 class="mb-2 text-900">Parcelas</h5>
-                                <span class="text-600">{{ this.products?.data?.emprestimo?.parcelas.length }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="this.encontrarPrimeiraParcelaPendente() && this.encontrarPrimeiraParcelaPendente().chave_pix != ''" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
-                        <div
-                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
-                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)" label="Copiar chave Pix da parcela pendente"
-                                    class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="this.encontrarPrimeiraParcelaPendente() && this.encontrarPrimeiraParcelaPendente().chave_pix == ''" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 mt-4 lg:mt-0 p-2">
-                        <div
-                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
-                            <div class="p-3 surface-card h-full" style="border-radius: 8px;">
-                                <p>{{this.products?.data?.emprestimo?.banco.info_recebedor_pix}}</p>
-                                <span @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{this.products?.data?.emprestimo?.banco.chavepix}}</span>
-                                <p style="margin-top: 10px;">Saldo devedor: {{ this.products?.data?.emprestimo?.parcelas[0].total_pendente }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <DataTable :value="this.products?.data?.emprestimo?.parcelas">
-                            <Column field="venc_real" header="Venc."></Column>
-                            <Column field="valor" header="Parcela"></Column>
-                            <Column field="saldo" header="Saldo c/ Juros"></Column>
-                            <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
-                            <Column field="status" header="Status">
-                                <template #body="slotProps">
-                                    <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
-                                        class="p-button-raised p-button-success mr-2 mb-2" />
-                                    <Button v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'" label="Copiar Chave Pix"
-                                        @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
-                                        class="p-button-raised p-button-danger mr-2 mb-2" />
-                                    <Button v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago' " label="Copiar Chave Pix"
-                                        @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
-                                        class="p-button-raised p-button-danger mr-2 mb-2" />
-                                </template>
-                                
-                            </Column>
-                        </DataTable>
-                    </div>
-
-                    <div v-if="this.products?.data?.emprestimo?.quitacao" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 lg:mt-0 p-2">
-                        <div
-                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
-                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)" :label="`Clique aqui para quitar seu Empréstimo no Valor ${this.products?.data?.emprestimo?.quitacao.saldo}`"
-                                    class="p-button-raised p-button-success mr-2 mb-2" style="height: 60px;" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-if="this.products?.data?.emprestimo?.pagamentominimo" class="col-12 md:col-12 lg:col-4 p-0 lg:pr-5 lg:pb-5 lg:mt-0 p-2">
-                        <div
-                            style=" padding: 10px; border-radius: 1px; background: linear-gradient(90deg, rgba(187, 199, 205, 0.2), rgba(251, 199, 145, 0.2)), linear-gradient(180deg, rgba(253, 228, 165, 0.2), rgba(145, 210, 204, 0.2))">
-                            <div class="p-3 surface-card h-full" style="border-radius: 8px">
-                                <Button @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)" :label="`Clique aqui para efetuar o pagamento mínimo do seu Empréstimo no Valor ${this.products?.data?.emprestimo?.pagamentominimo.valor}`"
-                                    class="p-button-raised p-button-danger mr-2 mb-2" style="height: 60px;" />
-                            </div>
-                        </div>
-                    </div>
-
-
-                </div>
-            </div>
-        </div>
+        </main>
     </div>
-    <AppConfig simple />
 </template>
+
+<style scoped>
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+.container{
+    padding: 2rem;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+    padding: 1rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+h1 {
+    font-size: 2rem;
+    color: #0056b3;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+section {
+    background: #fff;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    color: #0056b3;
+}
+
+p {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+button {
+    width: 100%;
+    padding: 0.8rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background: #28a745;
+    color: #fff;
+}
+
+.btn-secondary {
+    background: #007bff;
+    color: #fff;
+}
+
+.btn-light {
+    background: #f8f9fa;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.card {
+    margin-top: 1rem;
+}
+</style>
