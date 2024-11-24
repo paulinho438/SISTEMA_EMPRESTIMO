@@ -1497,6 +1497,42 @@ class EmprestimoController extends Controller
             }
         }
 
+        //REFERENTE A PAGAMENTO PERSONALIZADO
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $pagamento = PagamentoPersonalizado::where('identificador', $txId)->first();
+                $pagamento->dt_baixa = $horario;
+                $pagamento->save();
+
+                $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
+
+                while ($parcela && $valor > 0) {
+                    if ($valor >= $parcela->saldo) {
+                        // Quitar a parcela atual
+                        $valor -= $parcela->saldo;
+                        $parcela->saldo = 0;
+                        $parcela->dt_baixa = $horario;
+                    } else {
+                        // Reduzir o saldo da parcela atual
+                        $parcela->saldo -= $valor;
+                        $valor = 0;
+                    }
+                    $parcela->save();
+
+                    // Encontrar a próxima parcela
+                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                        ->where('id', '>', $parcela->id)
+                        ->orderBy('id', 'asc')
+                        ->first();
+                }
+            }
+        }
+
         return response()->json(['message' => 'Baixas realizadas com sucesso.']);
     }
 
@@ -1764,7 +1800,6 @@ class EmprestimoController extends Controller
                     ];
 
                     $response = Http::asJson()->post($baseUrl, $data);
-                    sleep(8);
                 }
             }
         } catch (\Throwable $th) {
