@@ -97,8 +97,15 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
 $valorJuros = $parcelaPendente->emprestimo->juros * $parcelaPendente->emprestimo->valor / 100;
 if(count($parcela->emprestimo->parcelas) == 1){
+$fraseInicial .= "Copie e cole abaixo a chave pix
+
+Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
+Chave pix: {$parcela->emprestimo->banco->chavepix}
+";
+
     $fraseInicial .= "
 Pagamento Total R$ {$parcelaPendente->saldo}
+
 Pagamento mínimo - Juros R$ {$valorJuros}
 
 Para pagamento de demais valores
@@ -114,7 +121,7 @@ if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
 
 {$parcelaPendente->chave_pix}
 ";
-}else{
+}else if(count($parcela->emprestimo->parcelas) > 1){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
