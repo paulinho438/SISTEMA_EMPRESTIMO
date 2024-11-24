@@ -95,7 +95,7 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 ";
 
-$valorJuros = $parcelaPendente->emprestimo->juros * $parcelaPendente->emprestimo->valor / 100;
+$valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
 if(count($parcela->emprestimo->parcelas) == 1){
 $fraseInicial .= "Copie e cole abaixo a chave pix
 
