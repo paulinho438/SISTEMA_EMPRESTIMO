@@ -64,6 +64,7 @@ Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataC
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, 'infoEmprestimoFront']);
+Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class, 'personalizarPagamento']);
 
 
 Route::middleware('auth:api')->group(function(){
