@@ -102,7 +102,7 @@ export default {
             <!-- Quitar Empréstimo -->
             <section class="payment-section">
                 <h2>Quitar Empréstimo</h2>
-                <p>Copie a chave Pix abaixo para quitar o valor total do empréstimo e encerrar automaticamente seu saldo pendente.</p>
+                <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" @click="copyToClipboard('chave-pix-quitar')">Copiar Chave Pix - Quitar Empréstimo (R$ 1,00)</button>
             </section>
 
@@ -168,6 +168,14 @@ export default {
 }
 .container{
     padding: 2rem;
+}
+
+.payment-section p {
+    text-align: center;
+}
+
+.payment-section h2 {
+    text-align: center;
 }
 
 body {
