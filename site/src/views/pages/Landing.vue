@@ -114,21 +114,6 @@ export default {
                 <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
             </section>
 
-            <!-- Mostrar Todas as Parcelas -->
-            <section class="payment-section">
-                <h2>Outras Parcelas</h2>
-                <p>Clique no botão abaixo para visualizar todas as parcelas disponíveis para pagamento.</p>
-                <button class="btn-light">Mostrar Todas as Parcelas</button>
-            </section>
-
-            <!-- Parcelas Pagas -->
-            <section class="paid-section">
-                <h2>Parcelas Pagas</h2>
-                <p>Estas são as parcelas que já foram quitadas. O sistema atualizou automaticamente o status após o pagamento.</p>
-                <p><strong>Parcela 1:</strong> R$ 1,00 - <strong>Quitada em:</strong> 20/11/2024</p>
-            </section>
-
-            <!-- Tabela de Parcelas -->
             <div class="card">
                 <DataTable :value="this.products?.data?.emprestimo?.parcelas">
                     <Column field="venc_real" header="Venc."></Column>
@@ -137,12 +122,16 @@ export default {
                     <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
                     <Column field="status" header="Status">
                         <template #body="slotProps">
-                            <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="btn-primary" />
-                            <Button v-if="slotProps.data?.chave_pix && slotProps.data.status !== 'Pago'" label="Copiar Chave Pix"
-                                    @click="copyToClipboard(slotProps.data.chave_pix)" class="btn-danger" />
-                            <Button v-if="!slotProps.data?.chave_pix && slotProps.data.status !== 'Pago'" label="Copiar Chave Pix"
-                                    @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)" class="btn-danger" />
+                            <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
+                                class="p-button-raised p-button-success mr-2 mb-2" />
+                            <Button v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'" label="Copiar Chave Pix"
+                                @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
+                                class="p-button-raised p-button-danger mr-2 mb-2" />
+                            <Button v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago' " label="Copiar Chave Pix"
+                                @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
+                                class="p-button-raised p-button-danger mr-2 mb-2" />
                         </template>
+                        
                     </Column>
                 </DataTable>
             </div>
