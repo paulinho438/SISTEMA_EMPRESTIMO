@@ -101,6 +101,21 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 
 ";
 
+$valorJuros = $parcelaPendente->emprestimo->juros * $parcelaPendente->emprestimo->valor / 100;
+
+if(count($parcela->emprestimo->parcelas) == 1){
+    $fraseInicial .= "
+Pagamento Total R$ {$parcelaPendente->saldo}
+Pagamento mínimo - Juros R$ {$valorJuros}
+
+Para pagamento de demais valores
+
+Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
+
+";
+}
+
+
 if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 

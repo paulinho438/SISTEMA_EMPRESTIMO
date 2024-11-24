@@ -19,7 +19,7 @@ export default {
             sliderValue: ref(1),
             min: ref(0),
             max: ref(1000),
-            toast: useToast(),
+            toast: useToast()
         };
     },
 
@@ -38,22 +38,28 @@ export default {
         openConfirmation() {
             this.display = true;
         },
-
+        formatarTelefone(telefone) {
+            if (!telefone) return '';
+            const regex = /^(\d{2})(\d{5})(\d{4})$/;
+            const match = telefone.match(regex);
+            if (match) {
+                return `(${match[1]}) ${match[2]}-${match[3]}`;
+            }
+            return telefone;
+        },
         closeConfirmation() {
             this.display = false;
 
             this.emprestimoService
-            .personalizarPagamento(this.id_pedido, this.sliderValue)
-            .then((response) => {
-                alert('Aguarde e verifique seu WhatsApp para receber a chave PIX.');
-            })
-            .catch((error) => {
-                if (error?.response?.status != 422) {
-                    alert(UtilService.message(error.response.data));
-                }
-            });
-
-
+                .personalizarPagamento(this.id_pedido, this.sliderValue)
+                .then((response) => {
+                    alert('Aguarde e verifique seu WhatsApp para receber a chave PIX.');
+                })
+                .catch((error) => {
+                    if (error?.response?.status != 422) {
+                        alert(UtilService.message(error.response.data));
+                    }
+                });
         },
         goToPixLink(pixLink) {
             if (pixLink) {
@@ -159,13 +165,20 @@ export default {
                 <button class="btn-secondary" @click="openConfirmation()">Personalizar Valor</button>
             </section>
 
-
             <!-- Pagamento Mínimo BANCO MANUAL-->
 
-             <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
-                <h2>Para pagamento de demais valores</h2>
-                <p>Entre em contato pelo WhatsApp {{this.products?.data?.emprestimo?.telefone_empresa}}, e um dos nossos atendentes </p>
+            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
+                <h2>Pagamento Total {{(this.encontrarPrimeiraParcelaPendente().saldo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</h2>
+                <h2 style="margin-top: -3px;">Pagamento mínimo - Juros {{(this.products?.data?.emprestimo?.juros * this.products?.data?.emprestimo?.valor / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</h2>
+                <p>Para pagamento de demais valores<br>Entre em contato pelo WhatsApp {{ formatarTelefone(this.products?.data?.emprestimo?.telefone_empresa) }}</p>
             </section>
+
+            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
+                <h2>{{this.products?.data?.emprestimo?.banco.info_recebedor_pix}}</h2>
+                <h2 style="margin-top: -3px;" @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{this.products?.data?.emprestimo?.banco.chavepix}}</h2>
+            </section>
+
+           
 
             <DataTable :value="this.products?.data?.emprestimo?.parcelas">
                 <Column field="venc_real" header="Venc."></Column>
