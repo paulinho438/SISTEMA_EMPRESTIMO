@@ -90,5 +90,9 @@ export default class EmprestimoService {
 		return await axios.post(`${apiPath}/parcela/${id}/infoemprestimofront`);
 	};
 
+	personalizarPagamento = async (id, valor) => {
+		return await axios.post(`${apiPath}/parcela/${id}/personalizarpagamento`, { valor: valor });
+	};
+
 
 }
