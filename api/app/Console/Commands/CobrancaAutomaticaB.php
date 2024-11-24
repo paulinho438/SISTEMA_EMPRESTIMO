@@ -116,6 +116,7 @@ if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
 ";
 }else{
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
+
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
