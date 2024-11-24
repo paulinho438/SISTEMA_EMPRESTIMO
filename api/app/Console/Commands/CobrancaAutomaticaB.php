@@ -93,58 +93,44 @@ class CobrancaAutomaticaB extends Command
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
-
 ";
 
 $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
-if(count($parcela->emprestimo->parcelas) == 1 && $parcela->emprestimo->pagamentominimo){
+if(count($parcela->emprestimo->parcelas) == 1){
+if(!$parcelaPendente->emprestimo->pagamentominimo){
+    $fraseInicial .= "Copie e cole abaixo a chave pix
 
-// $fraseInicial .= "Copie e cole abaixo a chave pix
-
-// Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-// Chave pix: {$parcela->emprestimo->banco->chavepix}
-// ";
-
-$fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
-
-{$parcelaPendente->chave_pix}
-
+    Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
+    Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
-
-$fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento minimo de R$ ".$parcelaPendente->emprestimo->pagamentominimo->valor." :
-
-{$parcelaPendente->emprestimo->pagamentominimo->chave_pix}
-
-";
-
+}else{
     $fraseInicial .= "
-💸 Pagamento Total R$ {$parcelaPendente->saldo}
+    💸 Pagamento Total R$ {$parcelaPendente->saldo}
 
-Pagamento mínimo - Juros R$ {$valorJuros}
+    Pagamento mínimo - Juros R$ {$valorJuros}
 
-Para pagamento de demais valores
+    Para pagamento de demais valores
 
-📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 }
 
 
-if($parcelaPendente !=  null && $parcelaPendente->chave_pix != '' && count($parcela->emprestimo->parcelas) > 1){
+
+}
+
+
+if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
 
 📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
-
-
 }else if(count($parcela->emprestimo->parcelas) > 1){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
-
-📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 }
 
