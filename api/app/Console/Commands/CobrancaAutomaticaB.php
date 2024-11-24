@@ -96,11 +96,19 @@ https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
 ";
 
 $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
-if(count($parcela->emprestimo->parcelas) == 1){
-$fraseInicial .= "Copie e cole abaixo a chave pix
+if(count($parcela->emprestimo->parcelas) == 1 && $parcela->emprestimo->pagamentominimo){
 
-Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-Chave pix: {$parcela->emprestimo->banco->chavepix}
+// $fraseInicial .= "Copie e cole abaixo a chave pix
+
+// Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
+// Chave pix: {$parcela->emprestimo->banco->chavepix}
+// ";
+
+$fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
+
+{$parcelaPendente->chave_pix}
+
+📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 
     $fraseInicial .= "
@@ -110,19 +118,19 @@ Pagamento mínimo - Juros R$ {$valorJuros}
 
 Para pagamento de demais valores
 
-📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
-
 ";
 }
 
 
-if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
+if($parcelaPendente !=  null && $parcelaPendente->chave_pix != '' && count($parcela->emprestimo->parcelas) > 1){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
 
 📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
+
+
 }else if(count($parcela->emprestimo->parcelas) > 1){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
 
