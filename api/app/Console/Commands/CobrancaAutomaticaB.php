@@ -117,12 +117,12 @@ Para pagamento de demais valores
 
 
 if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
-    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
+    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->totalPendenteHoje()." referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
 ";
 }else if(count($parcela->emprestimo->parcelas) > 1){
-    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
+    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->totalPendenteHoje()." referente a parcela do dia:
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
