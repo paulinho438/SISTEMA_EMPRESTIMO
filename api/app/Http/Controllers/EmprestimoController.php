@@ -23,6 +23,7 @@ use App\Models\Contaspagar;
 use App\Models\Contasreceber;
 use App\Models\Movimentacaofinanceira;
 use App\Traits\VerificarPermissao;
+use App\Models\PagamentoPersonalizado;
 
 use App\Services\BcodexService;
 
@@ -588,7 +589,7 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
-            if($emprestimo->contaspagar->status == 'Pagamento Efetuado'){
+            if ($emprestimo->contaspagar->status == 'Pagamento Efetuado') {
                 return response()->json([
                     "message" => "Pagamento já efetuado.",
                     "error" => ""
@@ -690,7 +691,7 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
-            if($emprestimo->contaspagar->status == 'Pagamento Efetuado'){
+            if ($emprestimo->contaspagar->status == 'Pagamento Efetuado') {
                 return response()->json([
                     "message" => "Pagamento já efetuado.",
                     "error" => ""
@@ -1205,6 +1206,59 @@ class EmprestimoController extends Controller
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
 
+    public function personalizarPagamento(Request $request, $id)
+    {
+
+        $array = ['error' => '', 'data' => []];
+
+        $user = auth()->user();
+
+        $dados = $request->all();
+
+        $parcela = Parcela::find($id);
+
+        if ($parcela) {
+
+            //API COBRANCA B.CODEX
+            $response = $this->bcodexService->criarCobranca($dados['valor'], $parcela->emprestimo->banco->document);
+
+            if ($response->successful()) {
+
+                $newPagamento = [];
+
+                $newPagamento['emprestimo_id'] = $parcela->emprestimo_id;
+                $newPagamento['valor'] = $dados['valor'];
+
+                $newPagamento['identificador'] = $response->json()['txid'];
+                $newPagamento['chave_pix'] = $response->json()['pixCopiaECola'];
+
+                PagamentoPersonalizado::create($newPagamento);
+
+                self::enviarMensagem($parcela, 'Olá ' . $parcela->emprestimo->client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Conforme solicitado segue chave pix referente ao valor personalizado de R$ ' . $dados['valor'] . '');
+
+                self::enviarMensagem($parcela, $response->json()['pixCopiaECola']);
+
+                return 'ok';
+            } else {
+                return response()->json([
+                    "message" => "Erro ao gerar pagamento personalizado",
+                    "error" => $response->json()
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+        } else {
+            return response()->json([
+                "message" => "Erro ao gerar pagamento personalizado",
+                "error" => ''
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($parcela) {
+            $array['data']['emprestimo'] = new EmprestimoResource($parcela->emprestimo);
+            return $array;
+        }
+    }
+
     public function webhookRetornoCobranca(Request $request)
     {
         $data = $request->json()->all();
@@ -1394,7 +1448,6 @@ class EmprestimoController extends Controller
                                     $parcela->emprestimo->pagamentominimo->save();
                                 }
                             }
-
                         }
                     }
                 }
@@ -1690,5 +1743,34 @@ class EmprestimoController extends Controller
         } catch (Exception $e) {
             print_r($e->getMessage());
         }
+    }
+
+    public function enviarMensagem($parcela, $frase)
+    {
+        try {
+
+            $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+
+            if ($response->successful()) {
+                $r = $response->json();
+                if ($r['loggedIn']) {
+
+                    $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                    $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+
+                    $data = [
+                        "numero" => "55" . $telefone,
+                        "mensagem" => $frase
+                    ];
+
+                    $response = Http::asJson()->post($baseUrl, $data);
+                    sleep(8);
+                }
+            }
+        } catch (\Throwable $th) {
+            dd($th);
+        }
+
+        return true;
     }
 }
