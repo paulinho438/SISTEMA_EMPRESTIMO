@@ -121,7 +121,7 @@ export default {
                 <h2>Parcela do Dia</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <p><strong>Vencimento:</strong> 25/11/2024</p>
-                <p><strong>Valor:</strong> R$ {{this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
+                <p><strong>Valor:</strong>{{this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
                 <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)">Copiar Chave Pix - Parcela do Dia</button>
             </section>
 
@@ -129,14 +129,14 @@ export default {
             <section class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">Copiar Chave Pix - Quitar Empréstimo (R$ {{ this.products?.data?.emprestimo?.quitacao.saldo }})</button>
+                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">Copiar Chave Pix - Quitar Empréstimo ({{ this.products?.data?.emprestimo?.quitacao.saldo }})</button>
             </section>
 
             <!-- Pagamento Mínimo -->
             <section class="payment-section">
                 <h2>Pagamento Mínimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo (R$ {{ this.products?.data?.emprestimo?.pagamentominimo.valor }})</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo ({{ this.products?.data?.emprestimo?.pagamentominimo.valor }})</button>
             </section>
 
             <section class="payment-section">
