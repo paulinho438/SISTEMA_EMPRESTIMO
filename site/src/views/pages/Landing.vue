@@ -18,7 +18,7 @@ export default {
             sliderValue: ref(1),
             min: ref(0),
             max: ref(1000),
-            toast: useToast()
+            toast: useToast(),
         };
     },
 
