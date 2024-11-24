@@ -17,7 +17,8 @@ export default {
             display: ref(false),
             sliderValue: ref(1),
             min: ref(0),
-            max: ref(1000)
+            max: ref(1000),
+            toast: useToast()
         };
     },
 
@@ -39,6 +40,31 @@ export default {
 
         closeConfirmation() {
             this.display = false;
+
+            // this.emprestimoService
+            // .personalizarPagamento(this.id_pedido)
+            // .then((response) => {
+            //     this.toast.add({
+            //             severity: ToastSeverity.SUCCESS,
+            //             detail: UtilService.message('Aguarde e verifique seu WhatsApp para receber a chave PIX.'),
+            //             life: 3000
+            //         });
+            // })
+            // .catch((error) => {
+            //     if (error?.response?.status != 422) {
+            //         this.toast.add({
+            //             severity: ToastSeverity.ERROR,
+            //             detail: UtilService.message(error.response.data),
+            //             life: 3000
+            //         });
+            //     }
+            // });
+
+            this.toast.add({
+                severity: ToastSeverity.SUCCESS,
+                detail: 'Aguarde e verifique seu WhatsApp para receber a chave PIX.',
+                life: 3000
+            });
         },
         goToPixLink(pixLink) {
             if (pixLink) {
@@ -89,12 +115,7 @@ export default {
 
                 let valor = this.max - this.min;
 
-                this.sliderValue =  this.min + (valor / 2);
-
-
-                console.log(this.min);
-                console.log(this.max);
-                console.log(this.sliderValue);
+                this.sliderValue = this.min + valor / 2;
             })
             .catch((error) => {
                 if (error?.response?.status != 422) {
@@ -121,7 +142,7 @@ export default {
                 <h2>Parcela do Dia</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <p><strong>Vencimento:</strong> 25/11/2024</p>
-                <p><strong>Valor: </strong>{{this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
+                <p><strong>Valor: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
                 <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)">Copiar Chave Pix - Parcela do Dia</button>
             </section>
 
@@ -129,21 +150,22 @@ export default {
             <section class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">Copiar Chave Pix - Quitar Empréstimo <br> {{ this.products?.data?.emprestimo?.quitacao.saldo }}</button>
+                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
+                    Copiar Chave Pix - Quitar Empréstimo <br />
+                    {{ this.products?.data?.emprestimo?.quitacao.saldo }}
+                </button>
             </section>
 
             <!-- Pagamento Mínimo -->
             <section class="payment-section">
                 <h2>Pagamento Mínimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo <br>{{ this.products?.data?.emprestimo?.pagamentominimo.valor }}</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.pagamentominimo.valor }}</button>
             </section>
 
             <section class="payment-section">
                 <h2>Pagamento Personalizado</h2>
-                <p>
-                    Ao clicar no botão abaixo, você conseguirá personalizar o valor e será aplicado para abater os juros e parte do empréstimo.
-                </p>
+                <p>Ao clicar no botão abaixo, você conseguirá personalizar o valor e será aplicado para abater os juros e parte do empréstimo.</p>
 
                 <button class="btn-secondary" @click="openConfirmation()">Personalizar Valor</button>
             </section>
@@ -154,7 +176,7 @@ export default {
                     <Column field="valor" header="Parcela"></Column>
                     <Column field="saldo" header="Saldo c/ Juros">
                         <template #body="slotProps">
-                            <span>{{slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</span>
+                            <span>{{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
                         </template>
                     </Column>
                     <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
@@ -182,9 +204,11 @@ export default {
 
     <Dialog header="Personalizar Valor" v-model:visible="display" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
         <p class="line-height-3 m-0">Selecione um valor para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês, o sistema enviará a chave Pix pelo WhatsApp.</p>
-       
-        <h2 style="margin-top:20px; text-align: center;"> Valor: <b>{{sliderValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</b></h2>
-        <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.min" :max="this.max" :step="0.50"/>
+
+        <h2 style="margin-top: 20px; text-align: center">
+            Valor: <b>{{ sliderValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</b>
+        </h2>
+        <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.min" :max="this.max" :step="0.5" />
 
         <template #footer>
             <Button label="Enviar" @click="closeConfirmation" icon="pi pi-check" class="p-button-outlined" />
