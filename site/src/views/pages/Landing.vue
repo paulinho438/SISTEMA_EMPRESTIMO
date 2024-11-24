@@ -87,12 +87,14 @@ export default {
                 this.min = this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao;
                 this.max = this.products?.data?.emprestimo?.saldoareceber;
 
-                this.sliderValue = this.max / 2;
+                let valor = this.max - this.min;
+
+                this.sliderValue =  this.min + (valor / 2);
 
 
                 console.log(this.min);
                 console.log(this.max);
-                console.log(this.products);
+                console.log(this.sliderValue);
             })
             .catch((error) => {
                 if (error?.response?.status != 422) {
