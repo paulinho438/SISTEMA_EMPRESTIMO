@@ -93,12 +93,9 @@ Não identificamos seu pagamento, evite multas!
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
-
-
 ";
 
 $valorJuros = $parcelaPendente->emprestimo->juros * $parcelaPendente->emprestimo->valor / 100;
-
 if(count($parcela->emprestimo->parcelas) == 1){
     $fraseInicial .= "
 Pagamento Total R$ {$parcelaPendente->saldo}
@@ -119,7 +116,7 @@ if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
 ";
 }else{
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
-
+Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
 }
