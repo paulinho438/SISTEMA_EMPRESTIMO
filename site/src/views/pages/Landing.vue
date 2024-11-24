@@ -91,14 +91,6 @@ export default {
         </header>
 
         <main>
-            <!-- Como funciona o pagamento -->
-            <section class="info-section">
-                <h2>Como funciona o pagamento?</h2>
-                <p>
-                    O sistema utiliza chaves Pix para facilitar o pagamento das suas parcelas. Ao copiar a chave Pix e efetuar o pagamento pelo seu aplicativo bancário, o sistema reconhece automaticamente a transação e atualiza o status do seu empréstimo.
-                </p>
-            </section>
-
             <!-- Quitar Empréstimo -->
             <section class="payment-section">
                 <h2>Quitar Empréstimo</h2>
@@ -109,7 +101,7 @@ export default {
             <!-- Pagamento Mínimo -->
             <section class="payment-section">
                 <h2>Pagamento Mínimo</h2>
-                <p>Copie a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
+                <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo mantendo seu empréstimo em dia.</p>
                 <button class="btn-secondary" @click="copyToClipboard('chave-pix-minimo')">Copiar Chave Pix - Pagamento Mínimo (R$ 0,00)</button>
             </section>
 
@@ -119,7 +111,7 @@ export default {
                 <p>Esta é a parcela com vencimento mais próximo. Efetue o pagamento para evitar juros adicionais.</p>
                 <p><strong>Vencimento:</strong> 25/11/2024</p>
                 <p><strong>Valor:</strong> R$ 1,00</p>
-                <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
+                <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Ao clicar no botão abaixo, Copiará a chave Pix - Parcela do Dia</button>
             </section>
 
             <!-- Mostrar Todas as Parcelas -->
