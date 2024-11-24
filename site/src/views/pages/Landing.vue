@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import EmprestimoService from '../../service/EmprestimoService';
 import { useToast } from 'primevue/usetoast';
+import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
 
 export default {
