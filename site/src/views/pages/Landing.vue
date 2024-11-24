@@ -159,34 +159,32 @@ export default {
                 <button class="btn-secondary" @click="openConfirmation()">Personalizar Valor</button>
             </section>
 
-            <div class="card">
-                <DataTable :value="this.products?.data?.emprestimo?.parcelas">
-                    <Column field="venc_real" header="Venc."></Column>
-                    <Column field="saldo" header="Saldo c/ Juros">
-                        <template #body="slotProps">
-                            <span>{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
-                        </template>
-                    </Column>
-                    <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
-                    <Column field="status" header="Status">
-                        <template #body="slotProps">
-                            <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
-                            <Button
-                                v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'"
-                                label="Copiar Chave Pix"
-                                @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
-                                class="p-button-raised p-button-danger mr-2 mb-2"
-                            />
-                            <Button
-                                v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago'"
-                                label="Copiar Chave Pix"
-                                @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
-                                class="p-button-raised p-button-danger mr-2 mb-2"
-                            />
-                        </template>
-                    </Column>
-                </DataTable>
-            </div>
+            <DataTable :value="this.products?.data?.emprestimo?.parcelas">
+                <Column field="venc_real" header="Venc."></Column>
+                <Column field="saldo" header="Saldo c/ Juros">
+                    <template #body="slotProps">
+                        <span>{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
+                    </template>
+                </Column>
+                <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
+                <Column field="status" header="Status">
+                    <template #body="slotProps">
+                        <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
+                        <Button
+                            v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'"
+                            label="Copiar Chave Pix"
+                            @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
+                            class="p-button-raised p-button-danger mr-2 mb-2"
+                        />
+                        <Button
+                            v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago'"
+                            label="Copiar Chave Pix"
+                            @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
+                            class="p-button-raised p-button-danger mr-2 mb-2"
+                        />
+                    </template>
+                </Column>
+            </DataTable>
         </main>
     </div>
 
@@ -208,7 +206,7 @@ export default {
 /* Reset */
 
 .container {
-    padding: 2rem;
+    padding: 1rem;
 }
 
 .payment-section p {
