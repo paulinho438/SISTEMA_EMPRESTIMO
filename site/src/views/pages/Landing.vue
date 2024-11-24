@@ -162,7 +162,6 @@ export default {
             <div class="card">
                 <DataTable :value="this.products?.data?.emprestimo?.parcelas">
                     <Column field="venc_real" header="Venc."></Column>
-                    <Column field="valor" header="Parcela"></Column>
                     <Column field="saldo" header="Saldo c/ Juros">
                         <template #body="slotProps">
                             <span>{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
