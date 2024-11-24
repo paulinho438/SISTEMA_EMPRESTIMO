@@ -136,12 +136,12 @@ export default {
             </section>
 
             <!-- Quitar Empréstimo -->
-            <section class="payment-section">
+            <section v-if="this.products?.data?.emprestimo?.quitacao?.saldo" class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
                     Copiar Chave Pix - Quitar Empréstimo <br />
-                    {{ this.products?.data?.emprestimo?.quitacao.saldo }}
+                    {{ this.products?.data?.emprestimo?.quitacao?.saldo }}
                 </button>
             </section>
 
@@ -165,7 +165,7 @@ export default {
                     <Column field="valor" header="Parcela"></Column>
                     <Column field="saldo" header="Saldo c/ Juros">
                         <template #body="slotProps">
-                            <span>{{ slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
+                            <span>{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
                         </template>
                     </Column>
                     <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
