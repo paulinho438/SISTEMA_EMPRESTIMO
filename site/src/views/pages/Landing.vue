@@ -91,6 +91,15 @@ export default {
         </header>
 
         <main>
+            <!-- Parcela do Dia -->
+            <section class="payment-section">
+                <h2>Parcela do Dia</h2>
+                <p>Ao clicar no botão abaixo, Copiará a chave Pix, esta é a parcela com vencimento mais próximo. Efetue o pagamento para evitar juros adicionais.</p>
+                <p><strong>Vencimento:</strong> 25/11/2024</p>
+                <p><strong>Valor:</strong> R$ 1,00</p>
+                <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
+            </section>
+
             <!-- Quitar Empréstimo -->
             <section class="payment-section">
                 <h2>Quitar Empréstimo</h2>
@@ -105,13 +114,10 @@ export default {
                 <button class="btn-secondary" @click="copyToClipboard('chave-pix-minimo')">Copiar Chave Pix - Pagamento Mínimo (R$ 0,00)</button>
             </section>
 
-            <!-- Parcela do Dia -->
             <section class="payment-section">
-                <h2>Parcela do Dia</h2>
-                <p>Ao clicar no botão abaixo, Copiará a chave Pix, esta é a parcela com vencimento mais próximo. Efetue o pagamento para evitar juros adicionais.</p>
-                <p><strong>Vencimento:</strong> 25/11/2024</p>
-                <p><strong>Valor:</strong> R$ 1,00</p>
-                <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
+                <h2>Pagamento Personalizado</h2>
+                <p>Ao clicar no botão abaixo, você poderá digitar um valor. O sistema enviará uma mensagem com a chave Pix e, dependendo do valor informado, as parcelas serão baixadas automaticamente.</p>
+                <button class="btn-secondary" @click="copyToClipboard('chave-pix-minimo')">Personalizar Valor</button>
             </section>
 
             <div class="card">
