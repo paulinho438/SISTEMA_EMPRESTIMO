@@ -154,9 +154,7 @@ export default {
 					life: 3000
 				});
 
-				setTimeout(() => {
-					this.router.push({ name: 'contaspagarList'})
-				}, 1200)
+				this.getinfoempresa();
 
 			})
 			.catch((error) => {
