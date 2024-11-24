@@ -276,6 +276,11 @@ class BancoController extends Controller
                     if ($valor >= $pagamentoMinimo) {
                         $parcela->emprestimo->valor = $parcela->saldo;
                         $parcela->emprestimo->save();
+
+                        $novoValorParcela = $parcela->emprestimo->juros * $parcela->emprestimo->valor / 100;
+
+                        $parcela->saldo += $novoValorParcela;
+                        $parcela->save();
                     }
 
                     if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
