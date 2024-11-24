@@ -229,6 +229,10 @@ export default {
                         <label for="firstname2">Caixa</label>
 						<InputNumber id="inputnumber" :modelValue="empresa?.caixa" v-model="empresa.caixa" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
                     </div>
+					<div class="field col-12 md:col-4">
+                        <label for="firstname2">Número para Contato</label>
+						<InputNumber id="inputnumber" :modelValue="empresa?.numero_contato" v-model="empresa.numero_contato" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
+                    </div>
                 </div>
 				<div v-if="empresa?.whatsapp != null" class="card">
 					
