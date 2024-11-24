@@ -146,13 +146,13 @@ export default {
             </section>
 
             <!-- Pagamento Mínimo -->
-            <section class="payment-section">
+            <section v-if="this.products?.data?.emprestimo?.pagamentominimo" class="payment-section">
                 <h2>Pagamento Mínimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
                 <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.pagamentominimo.valor }}</button>
             </section>
 
-            <section class="payment-section">
+            <section v-if="this.products?.data?.emprestimo?.pagamentominimo" class="payment-section">
                 <h2>Pagamento Personalizado</h2>
                 <p>Ao clicar no botão abaixo, você conseguirá personalizar o valor e será aplicado para abater os juros e parte do empréstimo.</p>
 
