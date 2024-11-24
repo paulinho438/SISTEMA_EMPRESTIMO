@@ -85,10 +85,10 @@ class CobrancaAutomaticaB extends Command
 
                             $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                            $saudacaoTexto = "👋{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-Não identificamos seu pagamento, evite multas!
+🤷‍♂️ Não identificamos seu pagamento, evite multas!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
@@ -104,13 +104,13 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
 
     $fraseInicial .= "
-Pagamento Total R$ {$parcelaPendente->saldo}
+💸 Pagamento Total R$ {$parcelaPendente->saldo}
 
 Pagamento mínimo - Juros R$ {$valorJuros}
 
 Para pagamento de demais valores
 
-Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
+📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 
 ";
 }
@@ -180,9 +180,9 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
     function obterSaudacao()
     {
         $hora = date('H');
-        $saudacoesManha = ['Bom dia', 'Olá, bom dia', 'Tenha um excelente dia'];
-        $saudacoesTarde = ['Boa tarde', 'Olá, boa tarde', 'Espero que sua tarde esteja ótima'];
-        $saudacoesNoite = ['Boa noite', 'Olá, boa noite', 'Espero que sua noite esteja ótima'];
+        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌈 Tenha um excelente dia'];
+        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌈 Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌈 Espero que sua noite esteja ótima'];
 
         if ($hora < 12) {
             return $saudacoesManha[array_rand($saudacoesManha)];
