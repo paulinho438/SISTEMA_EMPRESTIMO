@@ -100,18 +100,22 @@ if(count($parcela->emprestimo->parcelas) == 1){
 if(!$parcelaPendente->emprestimo->pagamentominimo){
     $fraseInicial .= "Copie e cole abaixo a chave pix
 
-    Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-    Chave pix: {$parcela->emprestimo->banco->chavepix}
+Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
+Chave pix: {$parcela->emprestimo->banco->chavepix}
+
+📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 }else{
     $fraseInicial .= "
-    💸 Pagamento Total R$ {$parcelaPendente->saldo}
+💸 Pagamento Total R$ {$parcelaPendente->saldo}
 
-    Pagamento mínimo - Juros R$ {$valorJuros}
+Pagamento mínimo - Juros R$ {$valorJuros}
 
-    Para pagamento de demais valores
+Para pagamento de demais valores
 
-";
+
+
+    ";
 }
 
 
