@@ -22,6 +22,7 @@ class PagamentoMinimoResource extends JsonResource
             "id"                    => $this->id,
             "emprestimo_id"         => $this->emprestimo_id,
             "valor"                 => $this->formatarMoeda($this->valor),
+            "valorSemFormatacao"    => $this->valor,
             "dt_baixa"              => ($this->dt_baixa != null) ? (new DateTime($this->dt_baixa))->format('d/m/Y') : '',
             "identificador"         => $this->identificador,
             "chave_pix"             => ($this->chave_pix != null) ? $this->chave_pix : '',

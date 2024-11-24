@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import EmprestimoService from '../../service/EmprestimoService';
+import { useToast } from 'primevue/usetoast';
+import { useConfirm } from 'primevue/useconfirm';
 
 export default {
     data() {
@@ -11,13 +13,15 @@ export default {
             emprestimoService: new EmprestimoService(),
             id_pedido: ref(this.$route.params.id_pedido),
             informacoes: ref(null),
-            products: ref([])
+            products: ref([]),
+            display: ref(false),
+            sliderValue: ref(200)
         };
     },
 
     computed: {
         parcelasComStatus() {
-            return this.products?.data?.emprestimo?.parcelas.map(parcela => {
+            return this.products?.data?.emprestimo?.parcelas.map((parcela) => {
                 return {
                     ...parcela,
                     status: parcela.dt_baixa ? 'Pago' : 'Pendente'
@@ -27,6 +31,13 @@ export default {
     },
 
     methods: {
+        openConfirmation() {
+            this.display = true;
+        },
+
+        closeConfirmation() {
+            this.display = false;
+        },
         goToPixLink(pixLink) {
             if (pixLink) {
                 window.location.href = pixLink;
@@ -49,7 +60,7 @@ export default {
         },
         encontrarPrimeiraParcelaPendente() {
             for (let i = 0; i < this.products?.data?.emprestimo?.parcelas.length; i++) {
-                if (this.products?.data?.emprestimo?.parcelas[i].dt_baixa === "") {
+                if (this.products?.data?.emprestimo?.parcelas[i].dt_baixa === '') {
                     return this.products?.data?.emprestimo?.parcelas[i];
                 }
             }
@@ -58,10 +69,11 @@ export default {
     },
 
     beforeMount() {
-        this.emprestimoService.infoEmprestimoFront(this.id_pedido)
+        this.emprestimoService
+            .infoEmprestimoFront(this.id_pedido)
             .then((response) => {
                 if (response.data?.data?.emprestimo?.parcelas) {
-                    response.data.data.emprestimo.parcelas = response.data.data.emprestimo.parcelas.map(parcela => {
+                    response.data.data.emprestimo.parcelas = response.data.data.emprestimo.parcelas.map((parcela) => {
                         return {
                             ...parcela,
                             status: parcela.dt_baixa ? 'Pago' : 'Pendente'
@@ -94,7 +106,7 @@ export default {
             <!-- Parcela do Dia -->
             <section class="payment-section">
                 <h2>Parcela do Dia</h2>
-                <p>Ao clicar no botão abaixo, Copiará a chave Pix, esta é a parcela com vencimento mais próximo. Efetue o pagamento para evitar juros adicionais.</p>
+                <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <p><strong>Vencimento:</strong> 25/11/2024</p>
                 <p><strong>Valor:</strong> R$ 1,00</p>
                 <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
@@ -116,8 +128,12 @@ export default {
 
             <section class="payment-section">
                 <h2>Pagamento Personalizado</h2>
-                <p>Ao clicar no botão abaixo, você poderá digitar um valor. O sistema enviará uma mensagem com a chave Pix e, dependendo do valor informado, as parcelas serão baixadas automaticamente.</p>
-                <button class="btn-secondary" @click="copyToClipboard('chave-pix-minimo')">Personalizar Valor</button>
+                <p>
+                    Informe um valor superior ao pagamento mínimo. O valor será aplicado para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês. Ao clicar no botão abaixo, i O sistema enviará a chave Pix por
+                    mensagem
+                </p>
+
+                <button class="btn-secondary" @click="openConfirmation()">Personalizar Valor</button>
             </section>
 
             <div class="card">
@@ -128,32 +144,42 @@ export default {
                     <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
                     <Column field="status" header="Status">
                         <template #body="slotProps">
-                            <Button v-if="slotProps.data.status === 'Pago'" label="Pago"
-                                class="p-button-raised p-button-success mr-2 mb-2" />
-                            <Button v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'" label="Copiar Chave Pix"
+                            <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
+                            <Button
+                                v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'"
+                                label="Copiar Chave Pix"
                                 @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
-                                class="p-button-raised p-button-danger mr-2 mb-2" />
-                            <Button v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago' " label="Copiar Chave Pix"
+                                class="p-button-raised p-button-danger mr-2 mb-2"
+                            />
+                            <Button
+                                v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago'"
+                                label="Copiar Chave Pix"
                                 @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
-                                class="p-button-raised p-button-danger mr-2 mb-2" />
+                                class="p-button-raised p-button-danger mr-2 mb-2"
+                            />
                         </template>
-                        
                     </Column>
                 </DataTable>
             </div>
-
         </main>
     </div>
+
+    <Dialog header="Personalizar Valor" v-model:visible="display" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
+        <p class="line-height-3 m-0">Selecione um valor para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês.</p>
+       
+        <h2 style="margin-top:20px; text-align: center;"> Valor: <b>{{sliderValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</b></h2>
+        <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao" :max="this.products?.data?.emprestimo?.saldoareceber"/>
+
+        <template #footer>
+            <Button label="Enviar" @click="closeConfirmation" icon="pi pi-check" class="p-button-outlined" />
+        </template>
+    </Dialog>
 </template>
 
 <style scoped>
 /* Reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-.container{
+
+.container {
     padding: 2rem;
 }
 
