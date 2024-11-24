@@ -120,12 +120,16 @@ if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
+
+📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 }else if(count($parcela->emprestimo->parcelas) > 1){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
+
+📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 }
 
