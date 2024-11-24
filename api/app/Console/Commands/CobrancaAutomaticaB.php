@@ -108,7 +108,7 @@ $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$p
 
 {$parcelaPendente->chave_pix}
 
-📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
+
 ";
 
     $fraseInicial .= "
@@ -118,6 +118,7 @@ Pagamento mínimo - Juros R$ {$valorJuros}
 
 Para pagamento de demais valores
 
+📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
 }
 
