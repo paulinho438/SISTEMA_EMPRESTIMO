@@ -87,6 +87,9 @@ export default {
                 this.min = this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao;
                 this.max = this.products?.data?.emprestimo?.saldoareceber;
 
+                this.sliderValue = this.max / 2;
+
+
                 console.log(this.min);
                 console.log(this.max);
                 console.log(this.products);
