@@ -121,22 +121,22 @@ export default {
                 <h2>Parcela do Dia</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <p><strong>Vencimento:</strong> 25/11/2024</p>
-                <p><strong>Valor:</strong> R$ 1,00</p>
-                <button class="btn-secondary" @click="copyToClipboard('chave-pix-parcela-dia')">Copiar Chave Pix - Parcela do Dia</button>
+                <p><strong>Valor:</strong> R$ {{this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
+                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)">Copiar Chave Pix - Parcela do Dia</button>
             </section>
 
             <!-- Quitar Empréstimo -->
             <section class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
-                <button class="btn-primary" @click="copyToClipboard('chave-pix-quitar')">Copiar Chave Pix - Quitar Empréstimo (R$ 1,00)</button>
+                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">Copiar Chave Pix - Quitar Empréstimo (R$ {{ this.products?.data?.emprestimo?.quitacao.saldo }})</button>
             </section>
 
             <!-- Pagamento Mínimo -->
             <section class="payment-section">
                 <h2>Pagamento Mínimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
-                <button class="btn-secondary" @click="copyToClipboard('chave-pix-minimo')">Copiar Chave Pix - Pagamento Mínimo (R$ 0,00)</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo (R$ {{ this.products?.data?.emprestimo?.pagamentominimo.valor }})</button>
             </section>
 
             <section class="payment-section">
@@ -153,7 +153,11 @@ export default {
                 <DataTable :value="this.products?.data?.emprestimo?.parcelas">
                     <Column field="venc_real" header="Venc."></Column>
                     <Column field="valor" header="Parcela"></Column>
-                    <Column field="saldo" header="Saldo c/ Juros"></Column>
+                    <Column field="saldo" header="Saldo c/ Juros">
+                        <template #body="slotProps">
+                            <span>{{slotProps.data.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</span>
+                        </template>
+                    </Column>
                     <Column v-if="!this.products?.data?.emprestimo?.pagamentominimo" field="total_pago_parcela" header="Pago"></Column>
                     <Column field="status" header="Status">
                         <template #body="slotProps">
