@@ -85,7 +85,7 @@ class CobrancaAutomaticaB extends Command
 
                             $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-                            $saudacaoTexto = "👋{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
 🤷‍♂️ Não identificamos seu pagamento, evite multas!
