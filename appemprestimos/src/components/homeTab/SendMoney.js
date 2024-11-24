@@ -342,7 +342,7 @@ export default function SendMoney({navigation, route}) {
         <View>
           <CHeader color={colors.black} title={'Empréstimo'} />
           <View style={localStyles.mainImg}>
-            <Image source={images.Girl} style={localStyles.girlImg} />
+            <Image source={images.AGE} style={localStyles.girlImg} />
           </View>
           <CText
             color={colors.black}

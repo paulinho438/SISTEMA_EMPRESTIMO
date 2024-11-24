@@ -62,6 +62,7 @@ export default function CadastroCliente({navigation}) {
   const [cellphone2, setCellphone2] = useState('');
   const [nascimento, setNascimento] = useState('');
   const [sexo, setSexo] = useState('M');
+  const [pix, setPix] = useState('');
 
   const data = [
     { label: 'Masculino', value: 'M' },
@@ -167,7 +168,7 @@ export default function CadastroCliente({navigation}) {
     }
 
     navigation.navigate(StackNav.ClientMap, {
-      clientes : {parcelas: [], name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo}
+      clientes : {parcelas: [], name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, pix}
     });
   };
 
@@ -281,6 +282,14 @@ export default function CadastroCliente({navigation}) {
                 onFocus={onFocus2}
                 onBlur={onBlur2}
                 text={'E-mail'}
+              />
+              <CTextInput
+                value={pix}
+                onChangeText={(text) => setPix(text)}
+                mainTxtInp={[localStyles.border, focus]}
+                onFocus={onFocus}
+                onBlur={onBlur}
+                text={'Chave PIX'}
               />
 
               <CTextInput

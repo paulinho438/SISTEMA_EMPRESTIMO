@@ -134,7 +134,7 @@ export default {
         return json;
     },
 
-    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao) => {
+    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao, pix) => {
         let token = await getAuthToken();
         console.log('cadasro', {
             nome_completo       : name,
@@ -162,7 +162,8 @@ export default {
             observation         : '',
             limit               : 1000,
             password            : 1234,
-            address             : [localizacao]
+            address             : [localizacao],
+            pix_cliente         : pix
         }, token);
         return json;
     },

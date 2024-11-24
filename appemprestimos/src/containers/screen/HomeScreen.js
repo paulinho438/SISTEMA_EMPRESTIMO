@@ -65,9 +65,9 @@ export default function HomeScreen({navigation}) {
       clientes.forEach(clientes => {
         const diasAtraso = clientes.atrasadas;
   
-        if (diasAtraso === 0) {
+        if (diasAtraso <= 1) {
           verde += 1; // Sem atraso
-        } else if (diasAtraso >= 1 && diasAtraso <= 5) {
+        } else if (diasAtraso > 1 && diasAtraso <= 5) {
           amarelo += 1; // Entre 1 e 5 dias de atraso
         } else if (diasAtraso > 5) {
           vermelho += 1; // Mais de 5 dias de atraso
@@ -428,11 +428,11 @@ export default function HomeScreen({navigation}) {
     if (at == 0) {
       return '#32a83c';
     } else if (at == 1) {
-      return '#17a2b8';
+      return '#4CAF50';
     } else if (at > 1 && at <= 5) {
-      return '#dae32d';
+      return '#FFC107';
     } else if (at > 5) {
-      return '#dc3545';
+      return '#F34646';
     }
   };
 

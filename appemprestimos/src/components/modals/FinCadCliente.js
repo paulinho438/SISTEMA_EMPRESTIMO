@@ -58,7 +58,7 @@ export default function InfoParcelas(props) {
 
   const onPressCadastroCliente = async () => {
 
-    let req = await api.cadastroCliente(clientes.name, clientes.email, clientes.cellphone, clientes.cellphone2, clientes.cpf, clientes.rg, clientes.nascimento, clientes.sexo,  localizacao);
+    let req = await api.cadastroCliente(clientes.name, clientes.email, clientes.cellphone, clientes.cellphone2, clientes.cpf, clientes.rg, clientes.nascimento, clientes.sexo,  localizacao, clientes.pix);
 
     Alert.alert('Cliente Cadastrado com Sucesso!');
 
