@@ -127,7 +127,7 @@ export default {
 
         <main>
             <!-- Parcela do Dia -->
-            <section class="payment-section">
+            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length > 1" class="payment-section">
                 <h2>Parcela do Dia</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <p><strong>Vencimento:</strong> 25/11/2024</p>
@@ -147,7 +147,7 @@ export default {
 
             <!-- Pagamento Mínimo -->
             <section v-if="this.products?.data?.emprestimo?.pagamentominimo" class="payment-section">
-                <h2>Pagamento Mínimo</h2>
+                <h2>Pagamento Mínimo - Juros</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
                 <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.pagamentominimo.valor }}</button>
             </section>
@@ -157,6 +157,14 @@ export default {
                 <p>Ao clicar no botão abaixo, você conseguirá personalizar o valor e será aplicado para abater os juros e parte do empréstimo.</p>
 
                 <button class="btn-secondary" @click="openConfirmation()">Personalizar Valor</button>
+            </section>
+
+
+            <!-- Pagamento Mínimo BANCO MANUAL-->
+
+             <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
+                <h2>Para pagamento de demais valores</h2>
+                <p>Entre em contato pelo WhatsApp {{this.products?.data?.emprestimo?.telefone_empresa}}, e um dos nossos atendentes </p>
             </section>
 
             <DataTable :value="this.products?.data?.emprestimo?.parcelas">
