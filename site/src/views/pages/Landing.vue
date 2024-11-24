@@ -42,30 +42,22 @@ export default {
         closeConfirmation() {
             this.display = false;
 
-            // this.emprestimoService
-            // .personalizarPagamento(this.id_pedido)
-            // .then((response) => {
-            //     this.toast.add({
-            //             severity: ToastSeverity.SUCCESS,
-            //             detail: UtilService.message('Aguarde e verifique seu WhatsApp para receber a chave PIX.'),
-            //             life: 3000
-            //         });
-            // })
-            // .catch((error) => {
-            //     if (error?.response?.status != 422) {
-            //         this.toast.add({
-            //             severity: ToastSeverity.ERROR,
-            //             detail: UtilService.message(error.response.data),
-            //             life: 3000
-            //         });
-            //     }
-            // });
-
-            this.toast.add({
-                severity: ToastSeverity.SUCCESS,
-                detail: 'Aguarde e verifique seu WhatsApp para receber a chave PIX.',
-                life: 3000
+            this.emprestimoService
+            .personalizarPagamento(this.id_pedido, this.sliderValue)
+            .then((response) => {
+                alert('Aguarde e verifique seu WhatsApp para receber a chave PIX.');
+            })
+            .catch((error) => {
+                if (error?.response?.status != 422) {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: UtilService.message(error.response.data),
+                        life: 3000
+                    });
+                }
             });
+
+
         },
         goToPixLink(pixLink) {
             if (pixLink) {
