@@ -6,6 +6,8 @@ import { useToast } from 'primevue/usetoast';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
 
+import moment from 'moment';
+
 export default {
     data() {
         return {
@@ -46,6 +48,10 @@ export default {
                 return `(${match[1]}) ${match[2]}-${match[3]}`;
             }
             return telefone;
+        },
+        isToday(date) {
+            if (!date) return false;
+            return moment(date, 'DD/MM/YYYY').isSame(moment(), 'day');
         },
         closeConfirmation() {
             this.display = false;
@@ -168,23 +174,27 @@ export default {
             <!-- Pagamento Mínimo BANCO MANUAL-->
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
-                <h2>Pagamento Total {{(this.encontrarPrimeiraParcelaPendente().saldo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</h2>
-                <h2 style="margin-top: -3px;">Pagamento mínimo - Juros {{(this.encontrarPrimeiraParcelaPendente().saldo - this.products?.data?.emprestimo?.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</h2>
-                <p>Para pagamento de demais valores<br>Entre em contato pelo WhatsApp {{ formatarTelefone(this.products?.data?.emprestimo?.telefone_empresa) }}</p>
+                <h2>Pagamento Total {{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2 style="margin-top: -3px">Pagamento mínimo - Juros {{ (this.encontrarPrimeiraParcelaPendente().saldo - this.products?.data?.emprestimo?.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <p>Para pagamento de demais valores<br />Entre em contato pelo WhatsApp {{ formatarTelefone(this.products?.data?.emprestimo?.telefone_empresa) }}</p>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
-                <h2>{{this.products?.data?.emprestimo?.banco.info_recebedor_pix}}</h2>
-                <h2 style="margin-top: -3px;" @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{this.products?.data?.emprestimo?.banco.chavepix}}</h2>
+                <h2>{{ this.products?.data?.emprestimo?.banco.info_recebedor_pix }}</h2>
+                <h2 style="margin-top: -3px" @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{ this.products?.data?.emprestimo?.banco.chavepix }}</h2>
             </section>
 
-           
-
             <DataTable :value="this.products?.data?.emprestimo?.parcelas">
-                <Column field="venc_real" header="Venc."></Column>
+                <Column field="venc_real" header="Venc.">
+                    <template #body="slotProps">
+                        <span :style="{ color: isToday(slotProps.data?.venc_real) ? 'red' : 'black' }">
+                            {{ slotProps.data?.venc_real }}
+                        </span>
+                    </template>
+                </Column>
                 <Column field="saldo" header="Saldo c/ Juros">
                     <template #body="slotProps">
-                        <span>{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
+                        <span :style="{ color: isToday(slotProps.data?.venc_real) ? 'red' : 'black' }">{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
                     </template>
                 </Column>
                 <Column v-if="!this.products?.data?.emprestimo?.parcelas.length > 1" field="total_pago_parcela" header="Pago"></Column>
