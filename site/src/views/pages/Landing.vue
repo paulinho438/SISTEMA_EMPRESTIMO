@@ -15,7 +15,9 @@ export default {
             informacoes: ref(null),
             products: ref([]),
             display: ref(false),
-            sliderValue: ref(200)
+            sliderValue: ref(1),
+            min: ref(0),
+            max: ref(1000)
         };
     },
 
@@ -81,6 +83,12 @@ export default {
                     });
                 }
                 this.products = response.data;
+
+                this.min = this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao;
+                this.max = this.products?.data?.emprestimo?.saldoareceber;
+
+                console.log(this.min);
+                console.log(this.max);
                 console.log(this.products);
             })
             .catch((error) => {
@@ -168,7 +176,7 @@ export default {
         <p class="line-height-3 m-0">Selecione um valor para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês.</p>
        
         <h2 style="margin-top:20px; text-align: center;"> Valor: <b>{{sliderValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}}</b></h2>
-        <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao" :max="this.products?.data?.emprestimo?.saldoareceber"/>
+        <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.min" :max="this.max" :step="0.50"/>
 
         <template #footer>
             <Button label="Enviar" @click="closeConfirmation" icon="pi pi-check" class="p-button-outlined" />
