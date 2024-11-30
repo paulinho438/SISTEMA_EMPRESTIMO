@@ -584,6 +584,77 @@ class BancoController extends Controller
         }
     }
 
+    public function efetuarSaque(Request $request, $id)
+    {
+
+        try {
+            $array = ['error' => ''];
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' consultou o envio de pix no valor de R$' . $request->valor,
+                'operation' => 'index'
+            ]);
+
+            $user = auth()->user();
+
+
+            $dados = $request->all();
+
+            $banco = Banco::find($id);
+
+            if ($banco->wallet == 1) {
+                if (!$banco->chavepix) {
+                    return response()->json([
+                        "message" => "Banco não possui chave pix cadastrada!",
+                        "error" => 'Banco não possui chave pix cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $response = $this->bcodexService->consultarChavePix($dados['valor'], $banco->chavepix, $banco->accountId);
+
+                if ($response->successful()) {
+                    if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
+
+                        $response = $this->bcodexService->realizarPagamentoPix($dados['valor'], $banco->accountId, $response->json()['paymentId']);
+
+                        if (!$response->successful()) {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => "Erro ao efetuar a transferencia do Emprestimo."
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                    }
+                } else {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                // Disparar o job para processar o empréstimo em paralelo
+            }
+
+
+            $movimentacaoFinanceira = [];
+            $movimentacaoFinanceira['banco_id'] = $banco->id;
+            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
+            $movimentacaoFinanceira['descricao'] = 'Saque realizado para '. $response->json()['creditParty']['name'];
+            $movimentacaoFinanceira['tipomov'] = 'S';
+            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            $movimentacaoFinanceira['valor'] = $dados['valor'];
+
+            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "message" => "Erro ao efetuar saque.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+
+
     public function delete(Request $r, $id)
     {
         DB::beginTransaction();
