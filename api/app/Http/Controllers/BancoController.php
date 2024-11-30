@@ -559,7 +559,7 @@ class BancoController extends Controller
             if ($banco->wallet == 1) {
                 if (!$banco->chavepix) {
                     return response()->json([
-                        "message" => "Erro ao efetuar a transferencia do Saque.",
+                        "message" => "Banco não possui chave pix cadastrada!",
                         "error" => 'Banco não possui chave pix cadastrada'
                     ], Response::HTTP_FORBIDDEN);
                 }

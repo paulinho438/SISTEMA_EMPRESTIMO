@@ -9,6 +9,8 @@ import EmprestimoService from '@/service/EmprestimoService';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 
+import UtilService from '@/service/UtilService';
+
 export default {
     name: 'CicomList',
     setup() {
