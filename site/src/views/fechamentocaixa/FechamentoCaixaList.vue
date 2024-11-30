@@ -143,6 +143,7 @@ export default {
                     this.bancoService
                         .efetuarSaque(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
+                            this.displaySacar.enabled = false;
                             this.banco.saldo_banco -= this.displaySacar.valor;
                             this.toast.add({
                                     severity: ToastSeverity.SUCCESS,
@@ -452,12 +453,12 @@ export default {
                                 <Button label="Alterar Caixa" @click.prevent="modalFechamento()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
                         </div>
-                        <div v-if="banco && permissionsService.hasPermissions('view_alterarfechamentocaixa')" class="col-12 md:col-2">
+                        <div v-if="banco && banco.wallet == 1 permissionsService.hasPermissions('view_sacarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Sacar" @click.prevent="modalSacar()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
                         </div>
-                        <div v-if="banco && permissionsService.hasPermissions('view_alterarfechamentocaixa')" class="col-12 md:col-2">
+                        <div v-if="banco && banco.wallet == 1 && permissionsService.hasPermissions('view_depositarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Depositar" @click.prevent="modalDepositar()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
