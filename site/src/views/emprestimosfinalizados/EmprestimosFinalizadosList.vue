@@ -177,11 +177,11 @@ export default {
         <div class="col-12">
             <div class="grid flex flex-wrap mb-3 px-4 pt-2">
                 <div class="col-8 px-0 py-0">
-                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes Disponíveis</h5>
+                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes Disponíveis </h5>
                 </div>
                 <div class="col-4 px-0 py-0 text-right">
 					<div class="col-12 px-0 py-0 text-right">
-						<Button label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS"
+						<Button v-if="$store?.getters?.isCompany?.whatsapp && $store.getters.isCompany.whatsapp.trim() !== ''" label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS"
 							@click="display = true" />
 					</div>
                 </div>
