@@ -220,7 +220,7 @@ export default {
 				});
 			}
 
-			if (data.id && data.dt_baixa && !this.aprovacao) {
+			if (data.id && data.valor_recebido || data.id && data.valor_recebido_pix) {
 				contextMenuItems.push({
 					label: 'Cancelar Baixa',
 					icon: 'pi pi-history',
