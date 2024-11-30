@@ -102,7 +102,7 @@ class ClientController extends Controller
         // Filtrar os resultados em PHP
         $filteredClients = $clients->filter(function ($client) use ($dtInicio, $dtFinal) {
             $dataQuitacao = $client->emprestimos->data_quitacao;
-                return $dataQuitacao >= $dtInicio && $dataQuitacao <= $dtFinal;
+            return $dataQuitacao >= $dtInicio && $dataQuitacao <= $dtFinal;
         });
 
 
@@ -157,15 +157,14 @@ class ClientController extends Controller
         $clients = Client::where('company_id', $request->header('company-id'))
             ->whereDoesntHave('emprestimos', function ($query) {
                 $query->whereHas('parcelas', function ($query) {
-                    $query->where('dt_baixa', null);
+                    $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
                 });
             })
             ->with(['emprestimos' => function ($query) {
                 $query->whereDoesntHave('parcelas', function ($query) {
-                    $query->where('dt_baixa', null);
+                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
-            ->whereNotNull('emprestimos')
             ->get();
 
         return response()->json($clients);
