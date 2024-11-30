@@ -85,6 +85,9 @@ class ClientController extends Controller
         $dtInicio = $request->input('dt_inicio');
         $dtFinal = $request->input('dt_final');
 
+        $dtInicio = Carbon::parse($dtInicio)->format('Y-m-d');
+        $dtFinal = Carbon::parse($dtFinal)->format('Y-m-d');
+
         // Buscar clientes e seus empréstimos
         $clients = Client::where('company_id', $request->header('company-id'))
             ->whereHas('emprestimos', function ($query) {
