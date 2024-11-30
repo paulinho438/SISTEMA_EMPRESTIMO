@@ -564,7 +564,7 @@ class BancoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix($dados['valor'], $banco->chavepix, $banco->accountId);
+                $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
 
                 if ($response->successful()) {
                     return $response->json();
@@ -611,12 +611,12 @@ class BancoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix($dados['valor'], $banco->chavepix, $banco->accountId);
+                $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
 
                 if ($response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
-                        $response = $this->bcodexService->realizarPagamentoPix($dados['valor'], $banco->accountId, $response->json()['paymentId']);
+                        $response = $this->bcodexService->realizarPagamentoPix(($dados['valor'] * 100), $banco->accountId, $response->json()['paymentId']);
 
                         if (!$response->successful()) {
                             return response()->json([
