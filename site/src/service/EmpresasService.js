@@ -25,6 +25,20 @@ export default class EmpresasService {
 		else return await axios.put(`${apiPath}/empresas/${data.id}`, data);
 	};
 
+	zap = async (zap) => {
+
+		try {
+			const response = await fetch(`${zap}/logar`);
+			return await response.json();
+		  } catch (error) {
+			console.log(error);
+			this.errored = true;
+		  } finally {
+			this.loading = false;
+		  }
+		
+	};
+
 	
 
 }
