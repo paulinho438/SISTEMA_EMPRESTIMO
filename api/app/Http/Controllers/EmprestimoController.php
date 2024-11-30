@@ -403,7 +403,7 @@ class EmprestimoController extends Controller
             $contaspagar['banco_id'] = $dados['banco']['id'];
             $contaspagar['emprestimo_id'] = $emprestimoAdd->id;
             $contaspagar['costcenter_id'] = $dados['costcenter']['id'];
-            $contaspagar['status'] = 'Aguardando Pagamento';
+            $contaspagar['status'] = 'Pagamento Efetuado';
             $contaspagar['tipodoc'] = 'Empréstimo';
             $contaspagar['lanc'] = date('Y-m-d');
             $contaspagar['venc'] = date('Y-m-d');
