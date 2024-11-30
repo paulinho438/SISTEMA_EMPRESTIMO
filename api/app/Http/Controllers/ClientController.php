@@ -165,6 +165,7 @@ class ClientController extends Controller
                     $query->where('dt_baixa', null);
                 });
             }])
+            ->whereNotNull('emprestimos')
             ->get();
 
         return response()->json($clients);
