@@ -66,18 +66,45 @@ export default function ATMDetails({navigation, route}) {
     navigation.navigate(TabNav.HomeScreen);
   };
 
+  const obterDataAtual = () => {
+    const data = new Date();
+    const ano = data.getFullYear();
+    let mes = data.getMonth() + 1; // Os meses vão de 0 a 11 em JavaScript, então adicionamos 1
+    let dia = data.getDate();
+
+    // Adicionar um zero à esquerda se o mês ou o dia for menor que 10
+    mes = mes < 10 ? '0' + mes : mes;
+    dia = dia < 10 ? '0' + dia : dia;
+
+    return `${ano}-${mes}-${dia}`;
+  };
+
   const cobrarAmanha = async () => {
     let req = await api.cobrarAmanha(clientes.id, obterDataAtual());
 
-    Alert.alert('Cobranca alterada com sucesso!');
+    alert('Cobranca alterada com sucesso!');
 
     navigation.navigate(StackNav.TabNavigation);
   }
 
+  const formatPhoneNumber = (phone) => {
+    // Remove todos os caracteres não numéricos
+    const cleaned = phone.replace(/[^\d]/g, '');
+  
+    // Verifica se o número tem 10 dígitos (incluindo o DDD)
+    if (cleaned.length === 10) {
+      const ddd = cleaned.slice(0, 2); // Extrai o DDD
+      const restOfNumber = cleaned.slice(2); // Extrai o restante do número
+      return ddd + '9' + restOfNumber; // Adiciona o "9" após o DDD
+    }
+  
+    // Retorna o número como está se já tiver 11 dígitos
+    return cleaned;
+  };
+
   const openWhatsApp = () => {
 
-    console.log(montarStringParcelas(parcelas))
-    let url = `whatsapp://send?phone=${clientes.telefone_celular_1}`;
+    let url = `whatsapp://send?phone=${formatPhoneNumber(clientes.telefone_celular_1)}`;
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
 
     Linking.openURL(url)
@@ -120,13 +147,14 @@ export default function ATMDetails({navigation, route}) {
   
 `;
 
+
     const parcelasString = parcelas
       .filter(item => item.atrasadas > 0 && !item.dt_baixa)
       .map(item => {
               return `Data: ${formatDate(item.venc)}
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
-        Valor: R$ ${item.valor.toFixed(2)}
+        Valor: R$ ${item.valor}
         Juros: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
         Multa: R$ ${(item.multa || 0).toFixed(2)}
         Pago: R$ ${(item.pago || 0).toFixed(2)}
@@ -165,7 +193,7 @@ export default function ATMDetails({navigation, route}) {
 
           <View style={localStyles.outerComponent}>
             <View style={localStyles.outerContainer}>
-              <Image style={localStyles.iconSty} source={images.Boy} />
+              <Image style={localStyles.iconSty} source={images.AGE} />
 
               <View style={{gap: moderateScale(4)}}>
                 <CText color={colors.black} type={'B16'}>
@@ -253,7 +281,7 @@ export default function ATMDetails({navigation, route}) {
         </View> */}
 
         <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
-        <InfoParcelas sheetRef={Info} parcelas={parcelas} clientes={clientes} />
+        <InfoParcelas sheetRef={Info} parcelas={parcelas} clientes={clientes} getInfo={getInfo} />
       </SafeAreaView>
     </KeyBoardAvoidWrapper> 
   );

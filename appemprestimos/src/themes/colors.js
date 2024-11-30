@@ -18,4 +18,5 @@ export const colors = {
   secondary: '#FFF8F7',
   Toggle: '#0A6375',
   Green: '#008000',
+  wellow: '#FFF314FF'
 };
