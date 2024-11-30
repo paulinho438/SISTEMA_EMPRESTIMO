@@ -90,10 +90,17 @@ export default {
             try {
                 let a = await this.bancoService.depositar(this.banco.id, this.displayDepositar.valor);
 
-                console.log('aa', a);
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Chave pix para depósito criada com sucesso!',
+                    life: 3000
+                });
 
-                
+                this.displayDepositar.valor = 0;
+                this.displayDepositar.enabled = false;
 
+                this.displayChavepix.enabled = true;
+                this.displayChavepix.valor = a.data.chavepix;
             } catch (e) {
                 console.log(e);
             }
@@ -103,20 +110,55 @@ export default {
         },
         async sacar() {
             try {
-                await this.bancoService.alterarcaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix);
-
-                this.toast.add({
-                    severity: ToastSeverity.SUCCESS,
-                    detail: 'Alteração de Caixa Concluido!',
-                    life: 3000
-                });
-
-                setTimeout(() => {
-                    this.banco.saldo = this.displayFechamento.saldobanco;
-                    this.banco.caixa_empresa = this.displayFechamento.saldocaixa;
-                    this.banco.caixa_pix = this.displayFechamento.saldocaixapix;
-                    this.displayFechamento.enabled = false;
-                }, 1200);
+                if (this.banco.wallet) {
+                    this.bancoService
+                        .saqueConsulta(this.banco.id, this.displaySacar.valor)
+                        .then((response) => {
+                            this.confirmPopup.require({
+                                target: event.target,
+                                message: `Tem certeza que deseja realizar o de ${this.displaySacar.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
+                                icon: 'pi pi-exclamation-triangle',
+                                acceptLabel: 'Sim',
+                                rejectLabel: 'Não',
+                                accept: () => {
+                                    this.bancoService
+                                        .efetuarSaque(this.banco.id, this.displaySacar.valor)
+                                        .then((response) => {
+                                            if (response) {
+                                                this.toast.add({
+                                                    severity: ToastSeverity.SUCCESS,
+                                                    detail: 'Saque Efetuado',
+                                                    life: 3000
+                                                });
+                                            }
+                                        })
+                                        .catch((error) => {
+                                            if (error?.response?.status != 422) {
+                                                this.toast.add({
+                                                    severity: ToastSeverity.ERROR,
+                                                    detail: UtilService.message(error.response.data),
+                                                    life: 3000
+                                                });
+                                            }
+                                        })
+                                        .finally(() => {});
+                                },
+                                reject: () => {
+                                    this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
+                                }
+                            });
+                        })
+                        .catch((error) => {
+                            if (error?.response?.status != 422) {
+                                this.toast.add({
+                                    severity: ToastSeverity.ERROR,
+                                    detail: UtilService.message(error.response.data),
+                                    life: 3000
+                                });
+                            }
+                        })
+                        .finally(() => {});
+                } 
             } catch (e) {
                 console.log(e);
             }
@@ -352,7 +394,7 @@ export default {
 
     <Dialog header="Geração chave pix deposito" v-model:visible="displayChavepix.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw', display: 'flex' }" :modal="true">
         <div class="chave-pix-container">
-            <button @click="copiarChavePix" class="copiar-botao" style="marginRight: 10px" title="Copiar chave Pix">
+            <button @click="copiarChavePix" class="copiar-botao" style="marginright: 10px" title="Copiar chave Pix">
                 <i class="pi pi-copy"></i>
             </button>
 
@@ -580,3 +622,37 @@ export default {
         </div>
     </div>
 </template>
+
+<style>
+/* Estilização do container */
+.chave-pix-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espaçamento entre o texto e o ícone */
+    overflow: hidden; /* Garante que o texto não ultrapasse os limites */
+}
+
+/* Estilização do texto com truncamento */
+.chave-pix-text {
+    cursor: pointer;
+    color: #000;
+    font-size: 16px;
+    white-space: nowrap; /* Garante que o texto fique em uma linha */
+    overflow: hidden; /* Esconde o excesso de texto */
+    text-overflow: ellipsis; /* Adiciona reticências (...) */
+}
+
+/* Estilização do botão de cópia */
+.copiar-botao {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: #007bff; /* Azul para ícone */
+    padding: 0;
+}
+
+.copiar-botao:hover {
+    color: #0056b3; /* Azul mais escuro ao passar o mouse */
+}
+</style>
