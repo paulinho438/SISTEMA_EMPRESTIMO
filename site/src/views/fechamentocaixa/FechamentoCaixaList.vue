@@ -453,7 +453,7 @@ export default {
                                 <Button label="Alterar Caixa" @click.prevent="modalFechamento()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
                         </div>
-                        <div v-if="banco && banco.wallet == 1 permissionsService.hasPermissions('view_sacarfechamentocaixa')" class="col-12 md:col-2">
+                        <div v-if="banco && banco.wallet == 1 && permissionsService.hasPermissions('view_sacarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Sacar" @click.prevent="modalSacar()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
