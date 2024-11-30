@@ -380,6 +380,22 @@ class PermItemsSeeder extends Seeder
 
         DB::table("permitems")->insert(
             [
+                "name"             => "Efetuar Saque no Fechamento de Caixa",
+                "slug"             => "view_sacarfechamentocaixa",
+                "group"            => "fechamentocaixa"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Gerar Deposito Fechamento de Caixa",
+                "slug"             => "view_depositarfechamentocaixa",
+                "group"            => "fechamentocaixa"
+            ]
+        );
+
+        DB::table("permitems")->insert(
+            [
                 "name"             => "Encerrar Fechamento de caixa",
                 "slug"             => "view_encerrarfechamentocaixa",
                 "group"            => "fechamentocaixa"
