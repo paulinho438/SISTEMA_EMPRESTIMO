@@ -283,7 +283,10 @@ export default {
 						<Column field="descricao" header="Transação realizada" :sortable="true" class="w-4">
 							<template #body="slotProps">
 								<span class="p-column-title">Transação realizada</span>
-								{{ slotProps.data.descricao }}
+								<span 
+									:class="{'text-red': slotProps.data.descricao.includes('Baixa com desconto no')}">
+									{{ slotProps.data.descricao }}
+								</span>
 							</template>
 						</Column>
 						<Column field="valor" header="Valor R$" :sortable="true" class="w-1">
