@@ -325,3 +325,9 @@ export default {
 		</div>
 	</div>
 </template>
+
+<style>
+.text-red {
+    color: red;
+}
+</style>
