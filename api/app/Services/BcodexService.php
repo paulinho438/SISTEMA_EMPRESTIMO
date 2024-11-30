@@ -130,4 +130,5 @@ class BcodexService
 
         return $response;
     }
+
 }
