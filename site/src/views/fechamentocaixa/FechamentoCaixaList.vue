@@ -118,39 +118,6 @@ export default {
                         .saqueConsulta(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
                             this.displaySacar.mensagemRecebedor = `Tem certeza que deseja realizar o saque de ${this.displaySacar.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
-                            // this.confirmPopup.require({
-                            //     target: event.target,
-                            //     message: ,
-                            //     icon: 'pi pi-exclamation-triangle',
-                            //     acceptLabel: 'Sim',
-                            //     rejectLabel: 'Não',
-                            //     accept: () => {
-                            //         this.bancoService
-                            //             .efetuarSaque(this.banco.id, this.displaySacar.valor)
-                            //             .then((response) => {
-                            //                 if (response) {
-                            //                     this.toast.add({
-                            //                         severity: ToastSeverity.SUCCESS,
-                            //                         detail: 'Saque Efetuado',
-                            //                         life: 3000
-                            //                     });
-                            //                 }
-                            //             })
-                            //             .catch((error) => {
-                            //                 if (error?.response?.status != 422) {
-                            //                     this.toast.add({
-                            //                         severity: ToastSeverity.ERROR,
-                            //                         detail: UtilService.message(error.response.data),
-                            //                         life: 3000
-                            //                     });
-                            //                 }
-                            //             })
-                            //             .finally(() => {});
-                            //     },
-                            //     reject: () => {
-                            //         this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
-                            //     }
-                            // });
                         })
                         .catch((error) => {
                             if (error?.response?.status != 422) {
@@ -176,6 +143,7 @@ export default {
                     this.bancoService
                         .efetuarSaque(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
+                            this.banco?.saldo_banco -= this.displaySacar.valor;
                             this.toast.add({
                                     severity: ToastSeverity.SUCCESS,
                                     detail: 'Saque Efetuado com sucesso',
