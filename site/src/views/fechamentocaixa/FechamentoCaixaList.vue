@@ -143,7 +143,7 @@ export default {
                     this.bancoService
                         .efetuarSaque(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
-                            this.banco?.saldo_banco -= this.displaySacar.valor;
+                            this.banco?.saldo_banco =  this.banco?.saldo_banco - this.displaySacar.valor;
                             this.toast.add({
                                     severity: ToastSeverity.SUCCESS,
                                     detail: 'Saque Efetuado com sucesso',
