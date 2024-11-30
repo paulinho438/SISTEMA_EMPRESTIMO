@@ -110,7 +110,7 @@ export default {
             this.display = false;
             this.valorDesconto = 0;
         },
-        async sacar() {
+        async sacar(event) {
             try {
                 if (this.banco.wallet) {
                     this.bancoService
@@ -390,7 +390,7 @@ export default {
             <InputNumber id="inputnumber" :modelValue="displaySacar?.valor" v-model="displaySacar.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
         </div>
         <template #footer>
-            <Button label="Sacar" @click="sacar" icon="pi pi-check" class="p-button-outlined" />
+            <Button label="Sacar" @click="sacar($event)" icon="pi pi-check" class="p-button-outlined" />
         </template>
     </Dialog>
 
