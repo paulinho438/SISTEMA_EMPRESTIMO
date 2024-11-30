@@ -48,7 +48,8 @@ export default {
             }),
             displaySacar: ref({
                 enabled: false,
-                valor: 0
+                valor: 0,
+                mensagemRecebedor: null
             }),
             displayChavepix: ref({
                 enabled: false,
@@ -116,39 +117,70 @@ export default {
                     this.bancoService
                         .saqueConsulta(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
-                            this.confirmPopup.require({
-                                target: event.target,
-                                message: `Tem certeza que deseja realizar o de ${this.displaySacar.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
-                                icon: 'pi pi-exclamation-triangle',
-                                acceptLabel: 'Sim',
-                                rejectLabel: 'Não',
-                                accept: () => {
-                                    this.bancoService
-                                        .efetuarSaque(this.banco.id, this.displaySacar.valor)
-                                        .then((response) => {
-                                            if (response) {
-                                                this.toast.add({
-                                                    severity: ToastSeverity.SUCCESS,
-                                                    detail: 'Saque Efetuado',
-                                                    life: 3000
-                                                });
-                                            }
-                                        })
-                                        .catch((error) => {
-                                            if (error?.response?.status != 422) {
-                                                this.toast.add({
-                                                    severity: ToastSeverity.ERROR,
-                                                    detail: UtilService.message(error.response.data),
-                                                    life: 3000
-                                                });
-                                            }
-                                        })
-                                        .finally(() => {});
-                                },
-                                reject: () => {
-                                    this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
-                                }
-                            });
+                            this.displaySacar.mensagemRecebedor = `Tem certeza que deseja realizar o saque de ${this.displaySacar.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
+                            // this.confirmPopup.require({
+                            //     target: event.target,
+                            //     message: ,
+                            //     icon: 'pi pi-exclamation-triangle',
+                            //     acceptLabel: 'Sim',
+                            //     rejectLabel: 'Não',
+                            //     accept: () => {
+                            //         this.bancoService
+                            //             .efetuarSaque(this.banco.id, this.displaySacar.valor)
+                            //             .then((response) => {
+                            //                 if (response) {
+                            //                     this.toast.add({
+                            //                         severity: ToastSeverity.SUCCESS,
+                            //                         detail: 'Saque Efetuado',
+                            //                         life: 3000
+                            //                     });
+                            //                 }
+                            //             })
+                            //             .catch((error) => {
+                            //                 if (error?.response?.status != 422) {
+                            //                     this.toast.add({
+                            //                         severity: ToastSeverity.ERROR,
+                            //                         detail: UtilService.message(error.response.data),
+                            //                         life: 3000
+                            //                     });
+                            //                 }
+                            //             })
+                            //             .finally(() => {});
+                            //     },
+                            //     reject: () => {
+                            //         this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
+                            //     }
+                            // });
+                        })
+                        .catch((error) => {
+                            if (error?.response?.status != 422) {
+                                this.toast.add({
+                                    severity: ToastSeverity.ERROR,
+                                    detail: UtilService.message(error.response.data),
+                                    life: 3000
+                                });
+                            }
+                        })
+                        .finally(() => {});
+                } 
+            } catch (e) {
+                console.log(e);
+            }
+
+            this.display = false;
+            this.valorDesconto = 0;
+        },
+        async efetivarSaque(event) {
+            try {
+                if (this.banco.wallet) {
+                    this.bancoService
+                        .efetuarSaque(this.banco.id, this.displaySacar.valor)
+                        .then((response) => {
+                            this.toast.add({
+                                    severity: ToastSeverity.SUCCESS,
+                                    detail: 'Saque Efetuado com sucesso',
+                                    life: 3000
+                                });
                         })
                         .catch((error) => {
                             if (error?.response?.status != 422) {
@@ -389,8 +421,12 @@ export default {
             <label for="zip">Valor</label>
             <InputNumber id="inputnumber" :modelValue="displaySacar?.valor" v-model="displaySacar.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
         </div>
+        <div class="field col-12 md:col-12">
+            <label for="zip">{{ displaySacar?.mensagemRecebedor }}</label>
+        </div>
         <template #footer>
-            <Button label="Sacar" @click="sacar($event)" icon="pi pi-check" class="p-button-outlined" />
+            <Button  v-if="displaySacar?.mensagemRecebedor == null" label="Sacar" @click="sacar($event)" icon="pi pi-check" class="p-button-outlined" />
+            <Button  v-if="displaySacar?.mensagemRecebedor != null" label="Efetuar Saque" @click="efetivarSaque($event)" icon="pi pi-check" class="p-button-outlined" />
         </template>
     </Dialog>
 
