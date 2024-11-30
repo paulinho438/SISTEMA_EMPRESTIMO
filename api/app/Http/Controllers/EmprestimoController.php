@@ -852,6 +852,54 @@ class EmprestimoController extends Controller
             $user = auth()->user();
 
             // Obter a primeira parcela de extorno correspondente ao ID fornecido
+            $parcela = Parcela::find( $id);
+
+
+
+            // Verificar se a parcela de extorno foi encontrada
+            if (!$parcela) {
+                return response()->json([
+                    "message" => "Erro ao cancelar baixa.",
+                    "error" => 'Parcela não encontrada.'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $parcela->valor_recebido_pix = null;
+            $parcela->valor_recebido = null;
+
+            $parcela->save();
+
+            DB::commit();
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' cancelou a baixa manual da parcela: ' . $id,
+                'operation' => 'index'
+            ]);
+
+            return response()->json(['message' => 'Baixa cancelada com sucesso.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao editar o Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function cancelarBaixaManualBK(Request $request, $id)
+    {
+
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            // Obter a primeira parcela de extorno correspondente ao ID fornecido
             $extornoParcela = ParcelaExtorno::where('parcela_id', $id)->first();
 
             // Verificar se a parcela de extorno foi encontrada
