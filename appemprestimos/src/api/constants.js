@@ -628,6 +628,8 @@ export const ListClient = [
   {label: 'Vermelho (mais de 5 dias)', value: '2'},
   {label: 'Amarelo (entre 1 e 5 dias)', value: '3'},
   {label: 'Verde (1 dia)', value: '4'},
+  {label: 'Azul (Sem atraso)', value: '5'}
+
 ];
 
 export const MeSectionData = [

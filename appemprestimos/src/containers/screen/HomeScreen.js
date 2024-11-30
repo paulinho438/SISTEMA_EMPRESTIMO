@@ -57,6 +57,7 @@ export default function HomeScreen({navigation}) {
 
   useFocusEffect(
     React.useCallback(() => {
+      let azul = 0;
       let verde = 0;
       let amarelo = 0;
       let vermelho = 0;
@@ -65,16 +66,18 @@ export default function HomeScreen({navigation}) {
       clientes.forEach(clientes => {
         const diasAtraso = clientes.atrasadas;
   
-        if (diasAtraso <= 1) {
-          verde += 1; // Sem atraso
-        } else if (diasAtraso > 1 && diasAtraso <= 5) {
+        if (diasAtraso == 0) {
+          azul += 1; // Sem atraso
+        } else if (diasAtraso >= 1 && diasAtraso <= 2) {
+          verde += 1; // Entre 1 e 5 dias de atraso
+        } else if (diasAtraso >= 3 && diasAtraso <= 10) {
           amarelo += 1; // Entre 1 e 5 dias de atraso
-        } else if (diasAtraso > 5) {
+        } else if (diasAtraso > 10) {
           vermelho += 1; // Mais de 5 dias de atraso
         }
       });
   
-      setData({ verde, amarelo, vermelho });
+      setData({ azul, verde, amarelo, vermelho });
     }, [clientes]),
   );
 
@@ -140,17 +143,23 @@ export default function HomeScreen({navigation}) {
     if (tipoCliente.value == 1) {
       setClientes(clientesOrig);
     } else if (tipoCliente.value == 2) {
-      const filteredData = clientesOrig.filter(item => item.atrasadas > 5);
+      const filteredData = clientesOrig.filter(item => item.atrasadas > 10);
 
       setClientes(filteredData);
     } else if (tipoCliente.value == 3) {
       const filteredData = clientesOrig.filter(
-        item => item.atrasadas > 1 && item.atrasadas <= 5,
+        item => item.atrasadas >= 3 && item.atrasadas <= 10,
+      );
+
+      setClientes(filteredData);
+    } else if (tipoCliente.value == 4) {
+      const filteredData = clientesOrig.filter(
+        item => item.atrasadas >= 1 && item.atrasadas <= 2,
       );
 
       setClientes(filteredData);
     } else {
-      const filteredData = clientesOrig.filter(item => item.atrasadas == 1);
+      const filteredData = clientesOrig.filter(item => item.atrasadas == 0);
 
       setClientes(filteredData);
     }
@@ -426,12 +435,12 @@ export default function HomeScreen({navigation}) {
 
   const corSelect = at => {
     if (at == 0) {
-      return '#32a83c';
-    } else if (at == 1) {
-      return '#4CAF50';
-    } else if (at > 1 && at <= 5) {
-      return '#FFC107';
-    } else if (at > 5) {
+      return '#194ADFFF';
+    } else if (at >= 1 && at <= 2) {
+      return '#07FF41FF';
+    } else if (at >= 3 && at <= 10) {
+      return '#EFF616FF';
+    } else if (at > 10) {
       return '#F34646';
     }
   };
@@ -451,9 +460,10 @@ export default function HomeScreen({navigation}) {
   
     // Dados para o PieChart com valores dinâmicos
     const pieData = [
-      { key: 1, value: data.verde, svg: { fill: '#4CAF50' } },  // Verde
-      { key: 2, value: data.amarelo, svg: { fill: '#FFC107' } }, // Amarelo
-      { key: 3, value: data.vermelho, svg: { fill: '#F34646' } }, // Vermelho
+      { key: 1, value: data.azul, svg: { fill: '#194ADFFF' } },  // Verde
+      { key: 2, value: data.verde, svg: { fill: '#4CAF50' } },  // Verde
+      { key: 3, value: data.amarelo, svg: { fill: '#FFC107' } }, // Amarelo
+      { key: 4, value: data.vermelho, svg: { fill: '#F34646' } }, // Vermelho
     ].filter(item => item.value !== 0);
 
 
@@ -487,14 +497,17 @@ export default function HomeScreen({navigation}) {
   
         {/* Legenda */}
         <View style={styles2.legend}>
+          <Text style={[styles2.legendItem, { color: '#194ADFFF' }]}>
+            ● Azul: Sem atrasos
+          </Text>
           <Text style={[styles2.legendItem, { color: '#4CAF50' }]}>
-            ● Verde: 1 dia de atraso
+            ● Verde: entre 1 e 2 dias de atraso
           </Text>
           <Text style={[styles2.legendItem, { color: '#FFC107' }]}>
-            ● Amarelo: entre 1 e 5 dias de atraso
+            ● Amarelo: entre 3 e 10 dias de atraso
           </Text>
           <Text style={[styles2.legendItem, { color: '#F34646' }]}>
-            ● Vermelho: mais de 5 dias de atraso
+            ● Vermelho: mais de 10 dias de atraso
           </Text>
         </View>
   

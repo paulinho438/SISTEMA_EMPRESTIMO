@@ -20,7 +20,7 @@ import Saldo from '../modals/Saldo';
 import margin from '../../themes/margin';
 
 export default function InfoParcelas(props) {
-  let {sheetRef, parcelas, clientes} = props;
+  let {sheetRef, parcelas, clientes, getInfo} = props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
@@ -133,6 +133,7 @@ export default function InfoParcelas(props) {
     if(item?.id){
       setCliente(item)
     }
+    getInfo();
     setVisible(!visible);
   };
 
@@ -162,6 +163,7 @@ export default function InfoParcelas(props) {
           <CText color={colors.black} type={'M16'}>
             Clique na parcela para efetuar a baixa!
           </CText>
+         
         </View>
       </View>
       <View style={localStyles.outerComponent2}>
@@ -180,9 +182,22 @@ export default function InfoParcelas(props) {
           key={item.id}
           onPress={() => onPressClose(item)}
           text={
-            item.atrasadas > 0 && !item.dt_baixa ? `Venc. ${item.venc} ${item.saldo}` :
-            item.dt_baixa ? `Dt. Baixa ${item.dt_baixa} R$ ${item.total_pago_parcela}` :
-            `Venc. ${item.venc} R$ ${item.saldo}`
+            !item.dt_baixa && !item.valor_recebido ? `Venc. ${item.venc} ${item.saldo.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}` :
+            item.dt_baixa ? `Dt. Baixa ${item.dt_baixa} R$ ${item.total_pago_parcela.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}` :
+            `Venc. ${item.venc} R$ ${item.saldo.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
+Baixa Manual ${item.valor_recebido.toLocaleString('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+})}` 
           }
           containerStyle={
             item.atrasadas > 0 && !item.dt_baixa ? localStyles.buttonContainerRed :

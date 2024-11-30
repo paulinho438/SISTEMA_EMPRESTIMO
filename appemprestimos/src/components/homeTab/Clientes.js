@@ -109,7 +109,7 @@ export default function TransferMoney({navigation}) {
               style={localStyles.doneIcon}
             />
           ) : null}
-          <Image source={Images.Girl} style={localStyles.imgSty} />
+          <Image source={Images.AGE} style={localStyles.imgSty} />
           <CText
             color={colors.black}
             align={'center'}

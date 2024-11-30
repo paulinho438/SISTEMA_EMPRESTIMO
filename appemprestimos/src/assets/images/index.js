@@ -25,7 +25,7 @@ export default {
   Deposit2: require('./Deposit2.png'),
   cardBalance: require('./cardBalance.png'),
   Boy: require('./Boy.png'),
-  Girl: require('./Girl.png'),
+  Girl: require('./avatar1.png'),
   TransferPopUp: require('./TransferPopUp.png'),
   Congratulation: require('./Congratulation.png'),
   TopUpComplete: require('./TopUpComplete.png'),

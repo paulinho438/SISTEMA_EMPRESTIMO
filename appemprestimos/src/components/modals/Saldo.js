@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   ImageBackground,
   Platform,
-  Alert
+  Alert,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
@@ -28,14 +28,13 @@ import api from '../../services/api';
 export default function Saldo(props) {
   let {visible, onPressClose, cliente, feriados, tela} = props;
 
-
   const navigation = useNavigation();
 
   const [valores, setValores] = useState(cliente.saldo);
 
   useEffect(() => {
-    console.log(tela)
-    if(typeof cliente.saldo !== 'string'){
+    console.log(tela);
+    if (typeof cliente.saldo !== 'string') {
       handleSaldoNovo(cliente.total_pendente_hoje);
     }
 
@@ -49,10 +48,12 @@ export default function Saldo(props) {
 
       setValores(currency);
     }
-  },[visible])
+  }, [visible]);
 
   function converterParaNumero(valor) {
-    return parseFloat(valor.replace("R$", "").replace(/\./g, "").replace(",", "."));
+    return parseFloat(
+      valor.replace('R$', '').replace(/\./g, '').replace(',', '.'),
+    );
   }
 
   const obterDataAtual = () => {
@@ -60,118 +61,134 @@ export default function Saldo(props) {
     const ano = data.getFullYear();
     let mes = data.getMonth() + 1; // Os meses vão de 0 a 11 em JavaScript, então adicionamos 1
     let dia = data.getDate();
-  
+
     // Adicionar um zero à esquerda se o mês ou o dia for menor que 10
     mes = mes < 10 ? '0' + mes : mes;
     dia = dia < 10 ? '0' + dia : dia;
-  
+
     return `${ano}-${mes}-${dia}`;
   };
 
   const moveToHome = async () => {
-
-    if(typeof cliente.saldo !== 'string'){
-
+    if (typeof cliente.saldo !== 'string') {
       // if(converterParaNumero(valores) > cliente.saldo){
       //   Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
       //   return
       // }
 
-      if(tela == 'baixa_pendentes_hoje'){
-        let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
-      }else{
-        let req = await api.baixaManualCobrador(cliente.id, obterDataAtual(), converterParaNumero(valores));
+      if (tela == 'baixa_pendentes_hoje') {
+        let req = await api.baixaManual(
+          cliente.id,
+          obterDataAtual(),
+          converterParaNumero(valores),
+        );
+      } else {
+        let req = await api.baixaManualCobrador(
+          cliente.id,
+          obterDataAtual(),
+          converterParaNumero(valores),
+        );
       }
-  
+
       Alert.alert('Baixa realizada com sucesso!');
 
       onPressClose();
-
-    }else{
-
-      if(converterParaNumero(valores) > converterParaNumero(cliente.saldo)){
-        Alert.alert(`Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`);
-        return
+    } else {
+      if (converterParaNumero(valores) > converterParaNumero(cliente.saldo)) {
+        Alert.alert(
+          `Valor da Baixa de ${valores} não pode ser maior que o saldo de ${cliente.saldo}`,
+        );
+        return;
       }
-  
-      let req = await api.baixaManual(cliente.id, obterDataAtual(), converterParaNumero(valores));
-  
+
+      let req = await api.baixaManual(
+        cliente.id,
+        obterDataAtual(),
+        converterParaNumero(valores),
+      );
+
       Alert.alert('Baixa realizada com sucesso!');
-  
+
       navigation.navigate(StackNav.TabNavigation);
     }
   };
 
+  const cancelarBaixaManual = async () => {
+    let req = await api.cancelarBaixaManual(cliente.id);
 
-  const save = async () =>  {
+    Alert.alert('Baixa cancelada com sucesso!');
+
+    onPressClose();
+  };
+
+  const save = async () => {
     this.changeLoading();
     this.errors = [];
 
     const client = {};
 
-    
     client.cliente = valores?.cliente;
-    client.banco = {id: valores?.banco}
-    client.costcenter = {id: valores?.costcenter}
+    client.banco = {id: valores?.banco};
+    client.costcenter = {id: valores?.costcenter};
     client.consultor = valores?.consultor;
     client.parcelas = newParcelas;
 
-    if(res?.data){
+    if (res?.data) {
       setFeriados(res.data);
     }
 
-    this.emprestimoService.save(this.client)
-    .then((response) => {
-      if (undefined != response.data.data) {
-        this.client = response.data.data;
-        
-      }
+    this.emprestimoService
+      .save(this.client)
+      .then(response => {
+        if (undefined != response.data.data) {
+          this.client = response.data.data;
+        }
 
-      this.toast.add({
-        severity: ToastSeverity.SUCCESS,
-        detail: this.client?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
-        life: 3000
-      });
-
-      setTimeout(() => {
-        this.router.push({ name: 'emprestimosList'})
-      }, 1200)
-
-    })
-    .catch((error) => {
-      this.changeLoading();
-      this.errors = error?.response?.data?.errors;
-
-      if (error?.response?.status != 422) {
         this.toast.add({
-          severity: ToastSeverity.ERROR,
-          detail: UtilService.message(error.response.data),
-          life: 3000
+          severity: ToastSeverity.SUCCESS,
+          detail: this.client?.id
+            ? 'Dados alterados com sucesso!'
+            : 'Dados inseridos com sucesso!',
+          life: 3000,
         });
-      }
 
-      this.changeLoading();
-    })
-    .finally(() => {
-      this.changeLoading();
-    });
-  }
+        setTimeout(() => {
+          this.router.push({name: 'emprestimosList'});
+        }, 1200);
+      })
+      .catch(error => {
+        this.changeLoading();
+        this.errors = error?.response?.data?.errors;
 
+        if (error?.response?.status != 422) {
+          this.toast.add({
+            severity: ToastSeverity.ERROR,
+            detail: UtilService.message(error.response.data),
+            life: 3000,
+          });
+        }
 
-  const formatarDataParaString = (data) => {
+        this.changeLoading();
+      })
+      .finally(() => {
+        this.changeLoading();
+      });
+  };
+
+  const formatarDataParaString = data => {
     const dia = String(data.getDate()).padStart(2, '0');
     const mes = String(data.getMonth() + 1).padStart(2, '0');
     const ano = data.getFullYear();
     return `${dia}/${mes}/${ano}`;
-  }
+  };
 
-  const isFeriado = (data) => {
+  const isFeriado = data => {
     const dataFormatada = formatarDataParaString(data);
-    
-    return feriados.some(feriado => feriado.data_feriado === dataFormatada);
-  }
 
-  const handleSaldo = (text) => {
+    return feriados.some(feriado => feriado.data_feriado === dataFormatada);
+  };
+
+  const handleSaldo = text => {
     let cleaned = text.replace(/\D/g, ''); // Remove tudo que não é número
     let number = parseFloat(cleaned) / 100; // Divide por 100 para obter o decimal correto
 
@@ -181,7 +198,6 @@ export default function Saldo(props) {
     }); // Formata o número para o formato monetário brasileiro
 
     setValores(currency);
-
   };
 
   const Detail = ({
@@ -235,14 +251,12 @@ export default function Saldo(props) {
           style={localStyles.modalMainContainer}
           onPress={onPressClose}>
           <TouchableOpacity activeOpacity={1}>
-            <ImageBackground
-              source={images.Saldo}
-              style={localStyles.imgStyle}>
+            <ImageBackground source={images.Saldo} style={localStyles.imgStyle}>
               <View style={localStyles.innerContainer}>
                 <View>
                   <View style={localStyles.parentAmt}>
                     <CText type={'M20'} color={colors.tabColor}>
-                    Valor da Baixa:
+                      Valor da Baixa:
                     </CText>
                   </View>
 
@@ -269,6 +283,24 @@ export default function Saldo(props) {
                   ]}
                   onPress={moveToHome}
                 />
+                {cliente.valor_recebido && (
+                  <CButton
+                    text={`Cancelar Baixa Manual\nValor ${cliente.valor_recebido.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}`}
+                    containerStyle={[
+                      localStyles.ParentLgnBtnCancelarBaixa,
+                      {
+                        bottom:
+                          Platform.OS === 'ios'
+                            ? moderateScale(0)
+                            : moderateScale(40),
+                      },
+                    ]}
+                    onPress={cancelarBaixaManual}
+                  />
+                )}
                 <CButton
                   text={'Cancelar'}
                   containerStyle={[
@@ -309,7 +341,11 @@ const localStyles = StyleSheet.create({
     ...styles.mv15,
   },
   ParentLgnBtnCancelar: {
-    backgroundColor: '#f00'
+    backgroundColor: '#f00',
+    // bottom: moderateScale(40),
+  },
+  ParentLgnBtnCancelarBaixa: {
+    backgroundColor: '#00f',
     // bottom: moderateScale(40),
   },
   ParentLgnBtn: {

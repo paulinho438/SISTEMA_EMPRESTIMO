@@ -134,6 +134,12 @@ export default {
         return json;
     },
 
+    cancelarBaixaManual: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('get', `/parcela/${id}/cancelarbaixamanual`, {}, token);
+        return json;
+    },
+
     cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao, pix) => {
         let token = await getAuthToken();
         console.log('cadasro', {
