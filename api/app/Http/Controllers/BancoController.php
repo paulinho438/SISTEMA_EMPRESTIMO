@@ -310,8 +310,6 @@ class BancoController extends Controller
                             $parcela->emprestimo->pagamentominimo->save();
                         }
                     }
-
-
                 } else {
 
 
@@ -495,6 +493,42 @@ class BancoController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
+            return response()->json([
+                "message" => "Erro ao fechar o Caixa.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function depositar(Request $request, $id)
+    {
+
+
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+
+            $dados = $request->all();
+
+            $banco = Banco::find($id);
+
+            if ($banco->wallet) {
+                $response = $this->bcodexService->criarCobranca($dados['valor'], $banco->document);
+
+                if ($response->successful()) {
+                    return response()->json(['message' => 'Pix criado com sucesso!', 'chavepix' =>  $response->json()['pixCopiaECola']]);
+                }
+            }else{
+                return response()->json([
+                    "message" => "Banco não é do tipo wallet.",
+                    "error" => "Banco não é do tipo wallet."
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+        } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
                 "error" => $e->getMessage()

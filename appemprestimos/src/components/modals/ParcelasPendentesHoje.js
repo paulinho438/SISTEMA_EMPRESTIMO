@@ -205,17 +205,26 @@ export default function ParcelasPendentesHoje(props) {
                   {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
                 </Text>
                 <Text style={styles2.totalDueText}>
-                  Valor da Parcela R$ {item.parcelas_vencidas[0].saldo}
+                  Valor da Parcela {item.parcelas_vencidas[0].saldo.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
                 </Text>
                 {item.parcelas_vencidas[0].valor_recebido > 0 && (
                   <Text style={styles2.subTitleValor}>
-                    Valor recebido em dinheiro R$ {item.parcelas_vencidas[0].valor_recebido}
+                    Valor recebido em dinheiro {item.parcelas_vencidas[0].valor_recebido.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
                   </Text>
                 )}
 
                 {item.parcelas_vencidas[0].valor_recebido_pix > 0 && (
                   <Text style={styles2.subTitleValor}>
-                    Valor recebido em Pix R$ {item.parcelas_vencidas[0].valor_recebido_pix}
+                    Valor recebido em Pix {item.parcelas_vencidas[0].valor_recebido_pix.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
                   </Text>
                 )}
 
@@ -226,7 +235,10 @@ export default function ParcelasPendentesHoje(props) {
                     <Text style={styles2.buttonText}>Efetuar Baixa</Text>
                   </TouchableOpacity>
                   <Text style={styles2.valorHoje}>
-                    Valor Hoje R$ {item.saldoatrasado}
+                    Valor Hoje {item.saldoatrasado.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
                   </Text>
                 </View>
               </View>

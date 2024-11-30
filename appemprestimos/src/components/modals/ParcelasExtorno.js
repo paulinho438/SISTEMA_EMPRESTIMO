@@ -244,8 +244,7 @@ export default function parcelasExtorno(props) {
                     {item.nome_cliente} - CPF: {item.cpf}
                   </Text>
                   <Text style={styles2.totalDueText}>
-                    Valor da Parcela R${' '}
-                    {item.saldo.toLocaleString('pt-BR', {
+                    Valor da Parcela {item.saldo.toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}
@@ -253,7 +252,7 @@ export default function parcelasExtorno(props) {
                   
                   {item.valor_recebido > 0 && (
                     <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro R$ {item.valor_recebido?.toLocaleString('pt-BR', {
+                      Valor recebido em dinheiro {item.valor_recebido?.toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}
@@ -262,7 +261,7 @@ export default function parcelasExtorno(props) {
 
                   {item.valor_recebido_pix > 0 && (
                     <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro R$ {item.valor_recebido_pix?.toLocaleString('pt-BR', {
+                      Valor recebido em dinheiro {item.valor_recebido_pix?.toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}
@@ -283,8 +282,7 @@ export default function parcelasExtorno(props) {
         </ScrollView>
         <View style={localStyles.mainContainer}>
           <CText color={colors.black}>
-            Saldo total R${' '}
-            {saldoTotal().toLocaleString('pt-BR', {
+            Saldo total {saldoTotal().toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
             })}

@@ -33,6 +33,14 @@ export default class BancoService {
 		return await axios.post(`${apiPath}/alterarcaixa/${id}`, { saldobanco: saldobanco, saldocaixa: saldocaixa, saldocaixapix: saldocaixapix  });
 	};
 
+	depositar = async (id, valor) => {
+		return await axios.post(`${apiPath}/depositar/${id}`, { valor: valor  });
+	};
+
+	sacar = async (id, valor) => {
+		return await axios.post(`${apiPath}/sacar/${id}`, { valor: valor });
+	};
+
 	saveComCertificado = async (data) => {
 		try {
 			// Objeto contendo todos os dados, incluindo a foto

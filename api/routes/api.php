@@ -104,6 +104,8 @@ Route::middleware('auth:api')->group(function(){
     Route::post('/bancos/{id}', [BancoController::class, 'update']);
     Route::post('/bancos', [BancoController::class, 'insert']);
     Route::post('/alterarcaixa/{id}', [BancoController::class, 'alterarCaixa']);
+    Route::post('/sacar/{id}', [BancoController::class, 'sacar']);
+    Route::post('/depositar/{id}', [BancoController::class, 'depositar']);
     Route::post('/fechamentocaixa/{id}', [BancoController::class, 'fechamentoCaixa']);
 
 

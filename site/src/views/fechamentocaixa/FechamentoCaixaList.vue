@@ -19,8 +19,7 @@ export default {
             emprestimoService: new EmprestimoService(),
             router: useRouter(),
             icons: PrimeIcons,
-            toast: useToast(),
-			
+            toast: useToast()
         };
     },
     data() {
@@ -34,12 +33,24 @@ export default {
             form: ref({}),
             valorRecebido: ref(0),
             valorPago: ref(0),
-			confirmPopup: useConfirm(),
+            confirmPopup: useConfirm(),
             displayFechamento: ref({
                 enabled: false,
                 saldobanco: 0,
                 saldocaixa: 0,
                 saldocaixapix: 0
+            }),
+            displayDepositar: ref({
+                enabled: false,
+                valor: 0
+            }),
+            displaySacar: ref({
+                enabled: false,
+                valor: 0
+            }),
+            displayChavepix: ref({
+                enabled: false,
+                valor: ''
             })
         };
     },
@@ -53,6 +64,44 @@ export default {
             }
         },
         async close() {
+            try {
+                await this.bancoService.alterarcaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix);
+
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Alteração de Caixa Concluido!',
+                    life: 3000
+                });
+
+                setTimeout(() => {
+                    this.banco.saldo = this.displayFechamento.saldobanco;
+                    this.banco.caixa_empresa = this.displayFechamento.saldocaixa;
+                    this.banco.caixa_pix = this.displayFechamento.saldocaixapix;
+                    this.displayFechamento.enabled = false;
+                }, 1200);
+            } catch (e) {
+                console.log(e);
+            }
+
+            this.display = false;
+            this.valorDesconto = 0;
+        },
+        async depositar() {
+            try {
+                let a = await this.bancoService.depositar(this.banco.id, this.displayDepositar.valor);
+
+                console.log('aa', a);
+
+                
+
+            } catch (e) {
+                console.log(e);
+            }
+
+            this.display = false;
+            this.valorDesconto = 0;
+        },
+        async sacar() {
             try {
                 await this.bancoService.alterarcaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix);
 
@@ -114,8 +163,11 @@ export default {
         modalFechamento() {
             this.displayFechamento.enabled = !this.displayFechamento.enabled;
         },
-        modalFechamento() {
-            this.displayFechamento.enabled = !this.displayFechamento.enabled;
+        modalSacar() {
+            this.displaySacar.enabled = !this.displaySacar.enabled;
+        },
+        modalDepositar() {
+            this.displayDepositar.enabled = !this.displayDepositar.enabled;
         },
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
@@ -205,6 +257,16 @@ export default {
             if (undefined === id) this.router.push('/Movimentacaofinanceira/add');
             else this.router.push(`/Movimentacaofinanceira/${id}/edit`);
         },
+        copiarChavePix() {
+            // Cria um elemento de input temporário
+            const input = document.createElement('input');
+            input.value = this.displayChavepix.valor; // Define o valor como a chave Pix
+            document.body.appendChild(input); // Adiciona o input ao DOM
+            input.select(); // Seleciona o texto
+            document.execCommand('copy'); // Copia para a área de transferência
+            document.body.removeChild(input); // Remove o input temporário
+            alert('Chave Pix copiada para a área de transferência!'); // Alerta ao usuário
+        },
         deleteCategory(permissionId) {
             this.loading = true;
 
@@ -267,6 +329,38 @@ export default {
             <Button label="Fechar Caixa" @click="close" icon="pi pi-check" class="p-button-outlined" />
         </template>
     </Dialog>
+
+    <Dialog header="Depositar" v-model:visible="displayDepositar.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
+        <div class="field col-12 md:col-12">
+            <label for="zip">Valor</label>
+            <InputNumber id="inputnumber" :modelValue="displayDepositar?.valor" v-model="displayDepositar.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+        </div>
+        <template #footer>
+            <Button label="Depositar" @click="depositar" icon="pi pi-check" class="p-button-outlined" />
+        </template>
+    </Dialog>
+
+    <Dialog header="Sacar" v-model:visible="displaySacar.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
+        <div class="field col-12 md:col-12">
+            <label for="zip">Valor</label>
+            <InputNumber id="inputnumber" :modelValue="displaySacar?.valor" v-model="displaySacar.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></InputNumber>
+        </div>
+        <template #footer>
+            <Button label="Sacar" @click="sacar" icon="pi pi-check" class="p-button-outlined" />
+        </template>
+    </Dialog>
+
+    <Dialog header="Geração chave pix deposito" v-model:visible="displayChavepix.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw', display: 'flex' }" :modal="true">
+        <div class="chave-pix-container">
+            <button @click="copiarChavePix" class="copiar-botao" style="marginRight: 10px" title="Copiar chave Pix">
+                <i class="pi pi-copy"></i>
+            </button>
+
+            <label for="zip" @click="copiarChavePix" class="chave-pix-text">
+                {{ displayChavepix.valor }}
+            </label>
+        </div>
+    </Dialog>
     <Toast />
     <div class="grid">
         <div class="col-12">
@@ -308,6 +402,16 @@ export default {
                         <div v-if="banco && permissionsService.hasPermissions('view_alterarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Alterar Caixa" @click.prevent="modalFechamento()" class="p-button-primary mr-2 mb-2 mt-4" />
+                            </div>
+                        </div>
+                        <div v-if="banco && permissionsService.hasPermissions('view_alterarfechamentocaixa')" class="col-12 md:col-2">
+                            <div class="flex flex-column gap-2 m-2 mt-1">
+                                <Button label="Sacar" @click.prevent="modalSacar()" class="p-button-primary mr-2 mb-2 mt-4" />
+                            </div>
+                        </div>
+                        <div v-if="banco && permissionsService.hasPermissions('view_alterarfechamentocaixa')" class="col-12 md:col-2">
+                            <div class="flex flex-column gap-2 m-2 mt-1">
+                                <Button label="Depositar" @click.prevent="modalDepositar()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
                         </div>
                     </div>
