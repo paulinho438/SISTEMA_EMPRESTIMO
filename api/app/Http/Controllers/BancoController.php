@@ -521,6 +521,7 @@ class BancoController extends Controller
                 if ($response->successful()) {
                     return response()->json(['message' => 'Pix criado com sucesso!', 'chavepix' =>  $response->json()['pixCopiaECola']]);
                 }
+
             }else{
                 return response()->json([
                     "message" => "Banco não é do tipo wallet.",
@@ -531,6 +532,53 @@ class BancoController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function saqueConsulta(Request $request, $id)
+    {
+
+        try {
+            $array = ['error' => ''];
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' consultou o envio de pix no valor de R$' . $request->valor,
+                'operation' => 'index'
+            ]);
+
+            $user = auth()->user();
+
+
+            $dados = $request->all();
+
+            $banco = Banco::find($id);
+
+            if ($banco->wallet == 1) {
+                if (!$banco->chavepix) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Saque.",
+                        "error" => 'Banco não possui chave pix cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $response = $this->bcodexService->consultarChavePix($dados['valor'], $banco->chavepix, $banco->accountId);
+
+                if ($response->successful()) {
+                    return $response->json();
+                } else {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                "message" => "Erro ao efetuar saque.",
                 "error" => $e->getMessage()
             ], Response::HTTP_FORBIDDEN);
         }

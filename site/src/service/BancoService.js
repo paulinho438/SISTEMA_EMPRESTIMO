@@ -37,8 +37,11 @@ export default class BancoService {
 		return await axios.post(`${apiPath}/depositar/${id}`, { valor: valor  });
 	};
 
-	sacar = async (id, valor) => {
-		return await axios.post(`${apiPath}/sacar/${id}`, { valor: valor });
+	saqueConsulta = async (id, valor) => {
+		return await axios.post(`${apiPath}/saqueconsulta/${id}`, { valor: valor });
+	};
+	efetuarSaque = async (id, valor) => {
+		return await axios.post(`${apiPath}/efetuarsaque/${id}`, { valor: valor });
 	};
 
 	saveComCertificado = async (data) => {
