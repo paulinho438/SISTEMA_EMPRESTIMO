@@ -28,4 +28,9 @@ class Banco extends Model
         return $this->belongsTo(Company::class);
     }
 
+    public function emprestimos()
+    {
+        return $this->hasMany(Emprestimo::class, 'banco_id', 'id');
+    }
+
 }

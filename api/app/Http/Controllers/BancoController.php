@@ -662,7 +662,14 @@ class BancoController extends Controller
         try {
             $permGroup = Banco::findOrFail($id);
 
-            $permGroup->delete();
+            if($permGroup->emprestimos){
+                return response()->json([
+                    "message" => "Banco está relacionado com emprestimo.",
+                    "error" => ''
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // $permGroup->delete();
 
             DB::commit();
 
