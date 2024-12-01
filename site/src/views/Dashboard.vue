@@ -198,6 +198,20 @@ watch(
                             currency: 'BRL',
                           }) }}</span>
                     </div>
+                    <div>
+                        <span class="text-green-500 font-medium">Valores A Receber </span>
+                        <span class="text-500">{{ infoConta?.total_a_receber.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }) }}</span>
+                    </div>
+                    <div>
+                        <span class="text-green-500 font-medium">Lucro Previsto </span>
+                        <span class="text-500">{{ (infoConta?.total_a_receber +  infoConta?.total_ja_recebido - infoConta?.total_ja_investido).toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }) }}</span>
+                    </div>
                 </div>
 
                 
