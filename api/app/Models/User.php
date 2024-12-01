@@ -50,6 +50,8 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsToMany(Company::class);
     }
 
+
+
     public function groups() {
         return $this->belongsToMany(Permgroup::class);
     }
@@ -72,6 +74,10 @@ class User extends Authenticatable implements JWTSubject
         $group = $this->groups()->where('company_id', $empresaId)->first();
 
         return $group ? $group->name : null;
+    }
+    public function emprestimos()
+    {
+        return $this->hasMany(Emprestimo::class, 'user_id', 'id');
     }
 }
 

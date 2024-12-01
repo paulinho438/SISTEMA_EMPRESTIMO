@@ -669,7 +669,7 @@ class BancoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            // $permGroup->delete();
+            $permGroup->delete();
 
             DB::commit();
 

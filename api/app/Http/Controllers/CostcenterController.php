@@ -116,7 +116,13 @@ class CostcenterController extends Controller
         DB::beginTransaction();
 
         try {
-            $costCenter = Costcenter::findOrFail($id);
+            $costCenter = Costcenter::withCount('emprestimos')->findOrFail($id);
+
+            if ($costCenter->emprestimos_count > 0) {
+                return response()->json([
+                    "message" => "Centro de Custo ainda tem empréstimos associados."
+                ], Response::HTTP_FORBIDDEN);
+            }
 
             $costCenter->delete();
 

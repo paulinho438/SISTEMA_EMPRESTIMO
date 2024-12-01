@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import BancoService from '@/service/BancoService';
+import UtilService from '@/service/UtilService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
 
@@ -68,9 +69,10 @@ export default {
 				this.getCostcenter();
 			})
 			.catch((error) => {
+				console.log('error', error)
 				this.toast.add({
 					severity: ToastSeverity.ERROR,
-					detail: error?.data?.message,
+					detail: UtilService.message(error.response.data),
 					life: 3000
 				});
 			})
