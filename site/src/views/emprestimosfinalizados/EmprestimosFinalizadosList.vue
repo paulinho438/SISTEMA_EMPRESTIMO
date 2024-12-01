@@ -100,6 +100,17 @@ export default {
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
         },
+        async handleToggleChange() {
+
+            this.clientService
+                .alterEnvioAutomaticoRenovacao()
+                .then((response) => {
+                    this.toggleValue = response.data.envio_automatico_renovacao;
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_clientes_sensitive') ? dado : '*********';
         },
@@ -109,7 +120,7 @@ export default {
             this.clientService
                 .getEnvioAutomaticoRenovacao()
                 .then((response) => {
-                    console.log('data_envio', response.data);
+                    this.toggleValue = response.data.envio_automatico_renovacao;
                 })
                 .finally(() => {
                     this.loading = false;
@@ -194,11 +205,11 @@ export default {
                     </div>
                 </div>
             </div>
-            <div class="grid flex flex-wrap mb-3 px-4 pt-2" style="align-items: center; justify-content: end;">
+            <div class="grid flex flex-wrap mb-3 px-4 pt-2" style="align-items: center; justify-content: end">
                 <div class="col-4 px-0 py-0 text-right">
                     <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; gap: 10px">
                         <h5>Envio automático ao quitar o empréstimo</h5>
-                        <InputSwitch v-model="toggleValue" />
+                        <InputSwitch v-model="toggleValue" @change="handleToggleChange" />
                     </div>
                 </div>
             </div>
