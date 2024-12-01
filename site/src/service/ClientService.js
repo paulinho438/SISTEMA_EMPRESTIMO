@@ -37,4 +37,12 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/cobranca/buttonpressed`);
 	};
 
+	getEnvioAutomaticoRenovacao = async () => {
+		return await axios.get(`${apiPath}/empresas/getenvioautomaticorenovacao`);
+	};
+
+	alterEnvioAutomaticoRenovacao = async () => {
+		return await axios.get(`${apiPath}/empresas/alterenvioautomaticorenovacao`);
+	};
+
 }

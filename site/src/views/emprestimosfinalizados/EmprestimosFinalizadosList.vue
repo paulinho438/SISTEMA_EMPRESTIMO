@@ -22,36 +22,35 @@ export default {
             Clientes: ref([]),
             loading: ref(false),
             filters: ref(null),
-			display: ref(false),
-			form: ref({})
+            display: ref(false),
+            form: ref({}),
+            toggleValue: ref(false)
         };
     },
     methods: {
-		async close() {
-			try {
-				await this.clientService.mensagemEmMassa(this.form);
+        async close() {
+            try {
+                await this.clientService.mensagemEmMassa(this.form);
 
-				this.toast.add({
-					severity: ToastSeverity.SUCCESS,
-					detail: 'Mensagem enviada com sucesso!',
-					life: 3000
-				});
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Mensagem enviada com sucesso!',
+                    life: 3000
+                });
 
-				setTimeout(() => {
-					this.router.push({ name: 'emprestimosfinalizadosList' })
-				}, 1200)
+                setTimeout(() => {
+                    this.router.push({ name: 'emprestimosfinalizadosList' });
+                }, 1200);
+            } catch (e) {
+                console.log(e);
+            }
 
-			} catch (e) {
-				console.log(e);
-			}
-
-			this.display = false;
-			this.valorDesconto = 0;
-		},
-		open() {
-			this.display.value = true;
-
-		},
+            this.display = false;
+            this.valorDesconto = 0;
+        },
+        open() {
+            this.display.value = true;
+        },
         goToWhatsApp(telefone, data) {
             let mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo.`;
 
@@ -106,6 +105,15 @@ export default {
         },
         getClientes() {
             this.loading = true;
+
+            this.clientService
+                .getEnvioAutomaticoRenovacao()
+                .then((response) => {
+                    console.log('data_envio', response.data);
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
 
             this.clientService
                 .getClientesDisponiveis()
@@ -177,15 +185,24 @@ export default {
         <div class="col-12">
             <div class="grid flex flex-wrap mb-3 px-4 pt-2">
                 <div class="col-8 px-0 py-0">
-                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes Disponíveis </h5>
+                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes Disponíveis</h5>
                 </div>
+
                 <div class="col-4 px-0 py-0 text-right">
-					<div class="col-12 px-0 py-0 text-right">
-						<Button v-if="$store?.getters?.isCompany?.whatsapp && $store.getters.isCompany.whatsapp.trim() !== ''" label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS"
-							@click="display = true" />
-					</div>
+                    <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; align-items: center; gap: 10px">
+                        <Button v-if="$store?.getters?.isCompany?.whatsapp && $store.getters.isCompany.whatsapp.trim() !== ''" label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="display = true" />
+                    </div>
                 </div>
             </div>
+            <div class="grid flex flex-wrap mb-3 px-4 pt-2" style="align-items: center; justify-content: end;">
+                <div class="col-4 px-0 py-0 text-right">
+                    <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; gap: 10px">
+                        <h5>Envio automático ao quitar o empréstimo</h5>
+                        <InputSwitch v-model="toggleValue" />
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="mt-3">
                     <DataTable
@@ -259,7 +276,7 @@ export default {
                             </template>
                         </Column>
 
-						<Column field="data_quitacao" header="Dt. Quitação" :sortable="true" class="w-2">
+                        <Column field="data_quitacao" header="Dt. Quitação" :sortable="true" class="w-2">
                             <template #body="slotProps">
                                 <span class="p-column-title">Dt. Quitação</span>
                                 {{ slotProps.data.emprestimos.data_quitacao }}
@@ -283,35 +300,31 @@ export default {
             </div>
         </div>
         <Dialog header="Mensagem em Massa" v-model:visible="display" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
-			<div class="flex flex-column gap-2 m-2 mt-4">
-				<label for="username">Data Inicio</label>
-				<Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'"
-					v-model="form.dt_inicio" showIcon :showOnFocus="false" class="" />
-			</div>
-			<div class="flex flex-column gap-2 m-2 mt-4">
-				<label for="username">Data Final</label>
-				<Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data Final'"
-					v-model="form.dt_final" showIcon :showOnFocus="false" class="" />
-			</div>
-			<div class="flex flex-column gap-2 m-2 mt-4">
-				<label for="color">Cor do status</label>
-				<Dropdown 
-					v-model="form.status" 
-					:options="[
-						{ label: 'Todos', value: 0 },
-						{ label: 'Verde', value: 1 },
-						{ label: 'Azul', value: 2 },
-						{ label: 'Amarelo', value: 3 },
-					]" 
-					optionLabel="label" 
-					optionValue="value" 
-					placeholder="Selecione o Status" 
-					class="w-full" 
-				/>
-			</div>
-			<p class="line-height-3 mb-4 mt-4">
-				Ao confirmar, todos os clientes com o status na cor selecionada receberão uma mensagem padrão.
-            </p>
+            <div class="flex flex-column gap-2 m-2 mt-4">
+                <label for="username">Data Inicio</label>
+                <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'" v-model="form.dt_inicio" showIcon :showOnFocus="false" class="" />
+            </div>
+            <div class="flex flex-column gap-2 m-2 mt-4">
+                <label for="username">Data Final</label>
+                <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data Final'" v-model="form.dt_final" showIcon :showOnFocus="false" class="" />
+            </div>
+            <div class="flex flex-column gap-2 m-2 mt-4">
+                <label for="color">Cor do status</label>
+                <Dropdown
+                    v-model="form.status"
+                    :options="[
+                        { label: 'Todos', value: 0 },
+                        { label: 'Verde', value: 1 },
+                        { label: 'Azul', value: 2 },
+                        { label: 'Amarelo', value: 3 }
+                    ]"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Selecione o Status"
+                    class="w-full"
+                />
+            </div>
+            <p class="line-height-3 mb-4 mt-4">Ao confirmar, todos os clientes com o status na cor selecionada receberão uma mensagem padrão.</p>
             <Message v-if="error" severity="error">{{ error }}</Message>
             <template #footer>
                 <Button label="Confirmar" @click="close" icon="pi pi-check" class="p-button-outlined" />
