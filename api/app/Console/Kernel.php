@@ -43,6 +43,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('cobranca:AutomaticaBBotao')->everyMinute();
         $schedule->command('cobranca:AutomaticaCBotao')->everyMinute();
 
+        $schedule->command('mensagem:AutomaticaRenovacao')->everyMinute();
+
 
 
         $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
