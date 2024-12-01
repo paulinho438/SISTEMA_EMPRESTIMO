@@ -665,7 +665,7 @@ class BancoController extends Controller
             if($permGroup->emprestimos){
                 return response()->json([
                     "message" => "Banco está relacionado com emprestimo.",
-                    "error" => ''
+                    "error" => "Banco está relacionado com emprestimo."
                 ], Response::HTTP_FORBIDDEN);
             }
 
