@@ -23,7 +23,8 @@ class Company extends Model
         'motivo_inativo',
         'plano_id',
         'login',
-        'numero_contato'
+        'numero_contato',
+        'envio_automatico_renovacao'
 
     ];
 
