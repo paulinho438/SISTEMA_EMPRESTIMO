@@ -228,7 +228,13 @@ class UsuarioController extends Controller
         DB::beginTransaction();
 
         try {
-            $permGroup = User::findOrFail($id);
+            $permGroup = User::withCount('emprestimos')->findOrFail($id);
+
+            if ($permGroup->emprestimos_count > 0) {
+                return response()->json([
+                    "message" => "Usuário ainda tem empréstimos associados."
+                ], Response::HTTP_FORBIDDEN);
+            }
 
             $permGroup->delete();
 

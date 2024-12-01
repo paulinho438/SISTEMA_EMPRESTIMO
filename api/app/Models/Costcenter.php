@@ -18,5 +18,10 @@ class Costcenter extends Model
 
     use HasFactory;
 
+    public function emprestimos()
+    {
+        return $this->hasMany(Emprestimo::class, 'costcenter_id', 'id');
+    }
+
 
 }
