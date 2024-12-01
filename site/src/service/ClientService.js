@@ -42,7 +42,7 @@ export default class ClientService {
 	};
 
 	alterEnvioAutomaticoRenovacao = async () => {
-		return await axios.get(`${apiPath}/empresas/alterenvioautomaticorenovacao`);
+		return await axios.post(`${apiPath}/empresas/alterenvioautomaticorenovacao`);
 	};
 
 }
