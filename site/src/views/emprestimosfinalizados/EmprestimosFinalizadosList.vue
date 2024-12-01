@@ -105,7 +105,7 @@ export default {
             this.clientService
                 .alterEnvioAutomaticoRenovacao()
                 .then((response) => {
-                    this.toggleValue = response.data.envio_automatico_renovacao;
+                    this.toggleValue = response.data;
                 })
                 .finally(() => {
                     this.loading = false;
@@ -120,7 +120,7 @@ export default {
             this.clientService
                 .getEnvioAutomaticoRenovacao()
                 .then((response) => {
-                    this.toggleValue = response.data.envio_automatico_renovacao;
+                    this.toggleValue = response.data;
                 })
                 .finally(() => {
                     this.loading = false;
