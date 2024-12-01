@@ -40,8 +40,10 @@ class DashboardController extends Controller
         $totalEmprestimosMuitoAtrasados = 0;
         $totalJaRecebido = 0;
         $valorInvestido = 0;
+        $valorAReceber = 0;
 
         foreach ($emprestimos as $emprestimo) {
+            $valorAReceber += $emprestimo->parcelas[0]->totalPendente();
             $valorInvestido += $emprestimo->valor;
             $totalJaRecebido += $emprestimo->total_pago;
 
@@ -76,7 +78,8 @@ class DashboardController extends Controller
             'total_emprestimos_em_dias' => $totalEmprestimosEmDias,
             'total_emprestimos_muito_atrasados' => $totalEmprestimosMuitoAtrasados,
             'total_ja_recebido' => $totalJaRecebido,
-            'total_ja_investido' => $valorInvestido
+            'total_ja_investido' => $valorInvestido,
+            'total_a_receber' => $valorAReceber
         ];
     }
 
