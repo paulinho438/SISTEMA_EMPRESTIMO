@@ -571,18 +571,18 @@ class CompanyController extends Controller
         }
     }
 
-    public function getEnvioAutomaticoRenovacao(Request $request) {
+    public function getEnvioAutomaticoRenovacao(Request $request)
+    {
         $company = Company::find($request->header('company-id'));
         return $company->envio_automatico_renovacao;
     }
 
-    public function alterEnvioAutomaticoRenovacao(Request $request) {
+    public function alterEnvioAutomaticoRenovacao(Request $request)
+    {
         $company = Company::find($request->header('company-id'));
         $company->envio_automatico_renovacao = !$company->envio_automatico_renovacao;
         $company->save();
 
-        return $company->envio_automatico_renovacao;
+        return $company;
     }
-
-
 }
