@@ -1556,6 +1556,13 @@ class EmprestimoController extends Controller
         try {
             $permGroup = Emprestimo::findOrFail($id);
 
+            if( $permGroup->contaspagar->status == "Pagamento Efetuado" ) {
+                return response()->json([
+                    "message" => "Erro ao excluir emprestimo, pagamento já foi efetuado",
+                    "error" => "Erro ao excluir emprestimo, pagamento já foi efetuado"
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
             $permGroup->banco->save();
 
