@@ -17,7 +17,7 @@ const model = ref([
         items: [
             {
                 label: 'Cadastros',
-                permission: 'view_menu_cadastro',
+                permission: 'view_dashboard',
                 icon: 'pi pi-fw pi-database',
                 items: [
                     {
@@ -72,7 +72,7 @@ const model = ref([
             },
             {
                 label: 'Movimentações',
-                permission: 'view_menu_cadastro',
+                permission: 'view_dashboard',
                 icon: 'pi pi-fw pi-arrow-right-arrow-left',
                 items: [
                     {
@@ -85,7 +85,7 @@ const model = ref([
             },
             {
                 label: 'Financeiro',
-                permission: 'view_menu_cadastro',
+                permission: 'view_dashboard',
                 icon: 'pi pi-fw pi-chart-line',
                 items: [
                     {
@@ -122,7 +122,7 @@ const model = ref([
             },
             {
                 label: 'Gestão e Cobrança',
-                permission: 'view_menu_cadastro',
+                permission: 'view_dashboard',
                 icon: 'pi pi-fw pi-verified',
                 items: [
                     {
