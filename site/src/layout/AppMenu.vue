@@ -79,7 +79,7 @@ const model = ref([
                         label: 'Emprestimos',
                         icon: 'pi pi-fw pi-arrow-right-arrow-left',
                         to: '/emprestimos',
-                        permission: 'view_permissions'
+                        permission: 'view_emprestimos'
                     }
                 ]
             },
