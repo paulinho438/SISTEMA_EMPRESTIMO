@@ -11,7 +11,7 @@ const model = ref([
     },
     {
         label: '',
-        permission: 'criar_usuarios',
+        permission: 'view_dashboard',
         icon: 'pi pi-fw pi-briefcase',
         to: '/pages',
         items: [
