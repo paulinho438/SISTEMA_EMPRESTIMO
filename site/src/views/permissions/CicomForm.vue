@@ -239,7 +239,7 @@ export default {
                 </div>
             </div>
 
-            <div class="formgrid grid">
+            <!-- <div class="formgrid grid">
                 <div class="field col-12 md:col-12 lg:col-12 xl:col-12">
                     <label for="name">Usuários</label>
                 </div>
@@ -260,7 +260,7 @@ export default {
                         </template>
                     </MultiSelect>
                 </div>
-            </div>
+            </div> -->
 
             <h5>Dashboard</h5>
             <div class="grid">
