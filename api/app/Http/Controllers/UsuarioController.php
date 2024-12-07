@@ -76,9 +76,13 @@ class UsuarioController extends Controller
         } else {
             $companyId = $request->header('company-id');
 
-            return UsuarioResource::collection(User::whereHas('companies', function ($query) use ($companyId) {
-                $query->where('id', $companyId);
-            })->get());
+            return UsuarioResource::collection(
+                User::whereHas('companies', function ($query) use ($companyId) {
+                    $query->where('id', $companyId);
+                })
+                ->where('login', '!=', 'MASTERGERAL') // Excluir o login "MASTERGERAL"
+                ->get()
+            );
         }
     }
 
