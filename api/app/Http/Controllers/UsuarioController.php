@@ -144,8 +144,7 @@ class UsuarioController extends Controller
             if ($dados['permissao']) {
                 // Obter o grupo
                 $group = Permgroup::findOrFail($dados['permissao']['id']);
-
-                $group->users()->syncWithoutDetaching([$newGroup->id]);
+                $group->users()->attach($newGroup->id);
             }
 
 
@@ -190,7 +189,7 @@ class UsuarioController extends Controller
                 if ($dados['password'] != null) {
                     $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
                 } else {
-                    $dados['password'] = $user->password;
+                    $dados['password'] = $EditUser->password;
                 }
 
                 $EditUser->nome_completo = $dados['nome_completo'];
