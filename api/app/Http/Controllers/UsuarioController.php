@@ -8,6 +8,7 @@ use App\Models\Address;
 use App\Models\User;
 use App\Models\Parcela;
 use App\Models\CustomLog;
+use App\Models\Permgroup;
 
 use DateTime;
 use App\Http\Resources\UsuarioResource;
@@ -140,6 +141,13 @@ class UsuarioController extends Controller
                 $newGroup->companies()->sync([$companyId]);
             }
 
+            if ($dados['permissao']) {
+                // Obter o grupo
+                $group = Permgroup::findOrFail($dados['permissao']['id']);
+
+                $group->users()->syncWithoutDetaching([$newGroup->id]);
+            }
+
 
 
             return $array;
@@ -171,15 +179,17 @@ class UsuarioController extends Controller
             ]);
 
             $dados = $request->all();
+
+
             if (!$validator->fails()) {
 
                 $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
 
                 $EditUser = User::find($id);
 
-                if($dados['password'] != null){
+                if ($dados['password'] != null) {
                     $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
-                }else{
+                } else {
                     $dados['password'] = $user->password;
                 }
 
@@ -201,6 +211,14 @@ class UsuarioController extends Controller
                     // Sincronize as empresas com o usuário
                     $EditUser->companies()->sync($companyIds);
                 }
+
+                if ($dados['permissao']) {
+                    // Obter o grupo
+                    $group = Permgroup::findOrFail($dados['permissao']['id']);
+
+                    $group->users()->syncWithoutDetaching([$EditUser->id]);
+                }
+
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
