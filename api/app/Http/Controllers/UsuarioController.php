@@ -198,7 +198,7 @@ class UsuarioController extends Controller
                 $EditUser->data_nascimento = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
                 $EditUser->sexo = $dados['sexo'];
                 $EditUser->telefone_celular = $dados['telefone_celular'];
-                $EditUser->password = $dados['password'];
+                $EditUser->password = isset($dados['password']) ? $dados['password'] : $EditUser->password;
                 $EditUser->save();
 
 
