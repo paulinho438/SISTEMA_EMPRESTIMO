@@ -33,7 +33,20 @@ class PermgroupController extends Controller
             'operation' => 'index'
         ]);
 
-        return GroupResource::collection(Permgroup::withCount('users')->where('company_id', $request->header('Company_id'))->get());
+        $user = auth()->user();
+
+        if ($user->login === 'MASTERGERAL') {
+            return GroupResource::collection(Permgroup::withCount('users')->where('company_id', $request->header('Company_id'))->get());
+        } else {
+            return GroupResource::collection(
+                Permgroup::withCount('users')
+                    ->where('company_id', $request->header('Company_id'))
+                    ->where('name', '!=', 'MASTERGERAL') // Excluir o nome "MASTERGERAL"
+                    ->get()
+            );
+        }
+
+
     }
 
     public function insert(Request $request){
