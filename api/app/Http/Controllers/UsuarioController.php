@@ -186,7 +186,7 @@ class UsuarioController extends Controller
 
                 $EditUser = User::find($id);
 
-                if ($dados['password'] != null) {
+                if (isset($dados['password'])) {
                     $dados['password'] = password_hash($dados['password'], PASSWORD_DEFAULT);
                 } else {
                     $dados['password'] = $EditUser->password;
