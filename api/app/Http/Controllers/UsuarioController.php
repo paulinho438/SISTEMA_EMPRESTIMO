@@ -202,6 +202,10 @@ class UsuarioController extends Controller
                 $EditUser->password = $dados['password'];
                 $EditUser->save();
 
+
+
+
+
                 if ($user->login === 'MASTERGERAL') {
 
                     $companyIds = array_map(function ($company) {
@@ -214,9 +218,12 @@ class UsuarioController extends Controller
 
                 if ($dados['permissao']) {
                     // Obter o grupo
-                    $group = Permgroup::findOrFail($dados['permissao']['id']);
+                    $t = $EditUser->getGroupByEmpresaId($request->header('company-id') );
+                    $t->users()->detach($EditUser->id);
 
-                    $group->users()->syncWithoutDetaching([$EditUser->id]);
+                    $group = Permgroup::findOrFail($dados['permissao']['id']);
+                    $group->users()->attach($EditUser->id);
+
                 }
 
             } else {

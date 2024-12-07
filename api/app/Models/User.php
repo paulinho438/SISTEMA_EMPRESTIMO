@@ -75,6 +75,13 @@ class User extends Authenticatable implements JWTSubject
 
         return $group ? $group->name : null;
     }
+
+    public function getGroupByEmpresaId($empresaId)
+    {
+        $group = $this->groups()->where('company_id', $empresaId)->first();
+
+        return $group ? $group : null;
+    }
     public function emprestimos()
     {
         return $this->hasMany(Emprestimo::class, 'user_id', 'id');
