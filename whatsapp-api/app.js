@@ -11,7 +11,7 @@ const port = 3000;
 // Middleware para analisar o corpo da solicitação como JSON
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = ['https://sistema.rjemprestimos.com.br', 'https://api.rjemprestimos.com.br', 'http://localhost:5173'];
+    const allowedOrigins = ['https://sistema.agecontrole.com.br', 'https://api.agecontrole.com.br', 'http://localhost:5173'];
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -78,7 +78,7 @@ app.get('/logar', (req, res) => {
   res.send(
     { 
       loggedIn: isClientLoggedIn,
-      url:  `https://node1.rjemprestimos.com.br/static/qrcode.png`,
+      url:  `https://node1.agecontrole.com.br/static/qrcode.png`,
     }
     );
 });
