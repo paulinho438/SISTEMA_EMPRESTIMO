@@ -215,7 +215,7 @@ export default {
 			<h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
 		</div>
 		<div class="col-4 px-0 py-0 text-right">
-			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm" :icon="icons.ANGLE_LEFT" @click.prevent="back" />
+			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm mb-2" :icon="icons.ANGLE_LEFT" @click.prevent="back" />
 			<Button label="Salvar" class="p-button p-button-info p-button-sm ml-3" :icon="icons.SAVE" type="button" @click.prevent="save" />
 		</div>
 	</div>
