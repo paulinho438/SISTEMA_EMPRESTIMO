@@ -183,9 +183,9 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
     function obterSaudacao()
     {
         $hora = date('H');
-        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌈 Tenha um excelente dia'];
-        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌈 Espero que sua tarde esteja ótima'];
-        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌈 Espero que sua noite esteja ótima'];
+        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌤️ Tenha um excelente dia'];
+        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌤️ Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌤️ Espero que sua noite esteja ótima'];
 
         if ($hora < 12) {
             return $saudacoesManha[array_rand($saudacoesManha)];
