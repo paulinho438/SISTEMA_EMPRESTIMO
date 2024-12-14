@@ -200,14 +200,15 @@ export default {
                     <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes Disponíveis</h5>
                 </div>
 
-                <div class="col-4 px-0 py-0 text-right">
+                <div class="col-4 px-0 py-0 text-right mb-2">
                     <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; align-items: center; gap: 10px">
                         <Button v-if="$store?.getters?.isCompany?.whatsapp && $store.getters.isCompany.whatsapp.trim() !== ''" label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="display = true" />
                     </div>
                 </div>
             </div>
-            <div class="grid flex flex-wrap mb-3 px-4 pt-2" style="align-items: center; justify-content: end">
-                <div class="col-4 px-0 py-0 text-right">
+            
+            <div class="grid flex flex-wrap mb-3 mt-2 px-4 pt-2" style="align-items: center; justify-content: end">
+                <div class="col-12 px-0 py-0 text-right">
                     <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; gap: 10px">
                         <h5>Envio automático ao quitar o empréstimo</h5>
                         <InputSwitch v-model="toggleValue" @change="handleToggleChange" />
