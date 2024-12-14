@@ -354,7 +354,7 @@ class BancoController extends Controller
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $parcela->saldo - $valor;
+                            $movimentacaoFinanceira['valor'] = $valor;
                             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
                             $parcela->saldo -= $valor;
