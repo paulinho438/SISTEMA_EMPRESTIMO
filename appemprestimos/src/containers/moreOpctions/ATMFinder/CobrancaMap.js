@@ -137,19 +137,17 @@ export default function ATMDetails({navigation, route}) {
 
   const montarStringParcelas = (parcelas) => {
     const fraseInicial = `
-  Relatório de Parcelas:
+Relatório de Parcelas:
   
-  Segue link para acessar todo o histórico de parcelas.
+Segue link para acessar todo o histórico de parcelas.
 
-  https://sistema.agecontrole.com.br/#/parcela/${parcelas[0].id}
+https://sistema.agecontrole.com.br/#/parcela/${parcelas[0].id}
 
-  Beneficiario: ${parcelas[0].beneficiario} pix:${parcelas[0].chave_pix}
+Beneficiario: ${parcelas[0].beneficiario} PIX: ${parcelas[0].chave_pix}
+Saldo para quitação: ${parcelas[0].total_pendente}
+Saldo pendente para hoje: ${parcelas[0].total_pendente_hoje}
 
-  Saldo para quitação: ${parcelas[0].total_pendente}
-
-  Saldo pendente para hoje: ${parcelas[0].total_pendente_hoje}
-
-  Segue abaixo as parcelas pendentes.
+Segue abaixo as parcelas pendentes.
 
   
 `;
