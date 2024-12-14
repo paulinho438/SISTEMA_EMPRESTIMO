@@ -78,7 +78,7 @@ app.get('/logar', (req, res) => {
   res.send(
     { 
       loggedIn: isClientLoggedIn,
-      url:  `https://zap.agecontrole.com.br/static/qrcode.png`,
+      url:  `https://node.agecontrole.com.br/static/qrcode.png`,
     }
     );
 });
