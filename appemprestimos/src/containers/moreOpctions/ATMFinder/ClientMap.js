@@ -259,27 +259,32 @@ export default function ATMDetails({navigation, route}) {
 
   const montarStringParcelas = (parcelas) => {
     const fraseInicial = `
-  Relatório de Parcelas Pendentes:
+  Relatório de Parcelas:
   
   Segue link para acessar todo o histórico de parcelas.
 
   https://sistema.agecontrole.com.br/#/parcela/${parcelas[0].id}
 
+  Beneficiario: ${parcelas[0].beneficiario} pix:${parcelas[0].chave_pix}
+
+  Saldo para quitação: ${parcelas[0].total_pendente}
+
+  Saldo pendente para hoje: ${parcelas[0].total_pendente_hoje}
 
   Segue abaixo as parcelas pendentes.
+
   
 `;
 
     const parcelasString = parcelas
       .filter(item => item.atrasadas > 0 && !item.dt_baixa)
       .map(item => {
-              return `Data: ${formatDate(item.venc)}
+              return `Data: ${item.venc}
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
         Valor: R$ ${item.valor.toFixed(2)}
-        Juros: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
-        Multa: R$ ${(item.multa || 0).toFixed(2)}
-        Pago: R$ ${(item.pago || 0).toFixed(2)}
+        Multa: R$ ${item.multa}
+        Pago: R$ ${item.total_pago_parcela}
         PIX: ${item.chave_pix || 'Não Contém'}
         Status: Pendente
         RESTANTE: R$ ${item.saldo.toFixed(2)}`
