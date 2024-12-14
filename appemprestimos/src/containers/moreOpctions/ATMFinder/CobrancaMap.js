@@ -4,7 +4,7 @@ import {
   TouchableOpacity,
   View,
   Image,
-  Linking
+  Linking,
 } from 'react-native';
 import React, {useRef, useState} from 'react';
 import Material from 'react-native-vector-icons/MaterialIcons';
@@ -24,28 +24,26 @@ import CButton from '../../../components/common/CButton';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import Location from '../../../components/modals/Location';
 import InfoParcelas from '../../../components/modals/InfoParcelas';
-import { useFocusEffect } from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 import api from '../../../services/api';
 
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
 
 export default function ATMDetails({navigation, route}) {
-  const { clientes } = route.params;
-  
+  const {clientes} = route.params;
+
   const [empty, nonEmpty] = useState('');
   const [parcelas, setParcelas] = useState([]);
   useFocusEffect(
     React.useCallback(() => {
       getInfo();
-    }, [])
+    }, []),
   );
 
-  const getInfo =  async (position) => {
-
+  const getInfo = async position => {
     let reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
-    setParcelas(reqClientes.data)
-
-  }
+    setParcelas(reqClientes.data);
+  };
 
   const Search = useRef(null);
   const Info = useRef(null);
@@ -85,37 +83,37 @@ export default function ATMDetails({navigation, route}) {
     alert('Cobranca alterada com sucesso!');
 
     navigation.navigate(StackNav.TabNavigation);
-  }
+  };
 
-  const formatPhoneNumber = (phone) => {
+  const formatPhoneNumber = phone => {
     // Remove todos os caracteres não numéricos
     const cleaned = phone.replace(/[^\d]/g, '');
-  
+
     // Verifica se o número tem 10 dígitos (incluindo o DDD)
     if (cleaned.length === 10) {
       const ddd = cleaned.slice(0, 2); // Extrai o DDD
       const restOfNumber = cleaned.slice(2); // Extrai o restante do número
       return ddd + '9' + restOfNumber; // Adiciona o "9" após o DDD
     }
-  
+
     // Retorna o número como está se já tiver 11 dígitos
     return cleaned;
   };
 
   const openWhatsApp = () => {
+    let telefone = clientes.telefone_celular_1;
 
-    let telefone = cliente.telefone_celular_1;
-
-    if (!/\)\s*9/.test(telefone)) {
+    if (/\)\s*9/.test(telefone)) {
       telefone = telefone.replace(/\)\s*/, ') 9');
-  }
+    }
+
 
     let url = `whatsapp://send?phone=${telefone}`;
 
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
 
     Linking.openURL(url)
-      .then((data) => {
+      .then(data => {
         console.log('WhatsApp abierto:', data);
       })
       .catch(() => {
@@ -127,7 +125,7 @@ export default function ATMDetails({navigation, route}) {
   const openGoogleMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${clientes.latitude},${clientes.longitude}`;
     Linking.openURL(url)
-      .then((data) => {
+      .then(data => {
         console.log('Google Maps abierto:', data);
       })
       .catch(() => {
@@ -135,13 +133,12 @@ export default function ATMDetails({navigation, route}) {
       });
   };
 
-  const formatDate = (dateString) => {
-    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+  const formatDate = dateString => {
+    const options = {day: '2-digit', month: '2-digit', year: 'numeric'};
     return new Date(dateString).toLocaleDateString('pt-BR', options);
   };
-  
 
-  const montarStringParcelas = (parcelas) => {
+  const montarStringParcelas = parcelas => {
     const fraseInicial = `
 Relatório de Parcelas:
   
@@ -161,7 +158,7 @@ Segue abaixo as parcelas pendentes.
     const parcelasString = parcelas
       .filter(item => item.atrasadas > 0 && !item.dt_baixa)
       .map(item => {
-              return `Data: ${item.venc}
+        return `Data: ${item.venc}
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
         Valor: R$ ${item.valor.toFixed(2)}
@@ -169,13 +166,13 @@ Segue abaixo as parcelas pendentes.
         Pago: R$ ${item.total_pago_parcela}
         PIX: ${item.chave_pix || 'Não Contém'}
         Status: Pendente
-        RESTANTE: R$ ${item.saldo.toFixed(2)}`
-            })
-          .join('\n\n');
+        RESTANTE: R$ ${item.saldo.toFixed(2)}`;
+      })
+      .join('\n\n');
 
-        return fraseInicial + parcelasString;
+    return fraseInicial + parcelasString;
   };
-  
+
   return (
     <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
       <SafeAreaView style={localStyles.main}>
@@ -219,11 +216,7 @@ Segue abaixo as parcelas pendentes.
               text={'Abrir no waze'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
-                <Community
-                  size={24}
-                  name={'waze'}
-                  color={colors.white}
-                />
+                <Community size={24} name={'waze'} color={colors.white} />
               )}
             />
 
@@ -232,11 +225,7 @@ Segue abaixo as parcelas pendentes.
               text={'Ir para o Whatsapp'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
-                <Community
-                  size={24}
-                  name={'whatsapp'}
-                  color={colors.white}
-                />
+                <Community size={24} name={'whatsapp'} color={colors.white} />
               )}
             />
 
@@ -254,10 +243,10 @@ Segue abaixo as parcelas pendentes.
             />
 
             <CButton
-            onPress={moveToInfoModel}
-            text={'Informações das Parcelas'}
-            containerStyle={localStyles.buttonContainer}
-            RightIcon={() => (
+              onPress={moveToInfoModel}
+              text={'Informações das Parcelas'}
+              containerStyle={localStyles.buttonContainer}
+              RightIcon={() => (
                 <Community
                   size={24}
                   name={'account-cash-outline'}
@@ -290,16 +279,21 @@ Segue abaixo as parcelas pendentes.
         </View> */}
 
         <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
-        <InfoParcelas sheetRef={Info} parcelas={parcelas} clientes={clientes} getInfo={getInfo} />
+        <InfoParcelas
+          sheetRef={Info}
+          parcelas={parcelas}
+          clientes={clientes}
+          getInfo={getInfo}
+        />
       </SafeAreaView>
-    </KeyBoardAvoidWrapper> 
+    </KeyBoardAvoidWrapper>
   );
 }
 
 const localStyles = StyleSheet.create({
   main: {
     backgroundColor: colors.black,
-    ...styles.flex
+    ...styles.flex,
   },
   parentMaterial: {
     borderWidth: moderateScale(1),
