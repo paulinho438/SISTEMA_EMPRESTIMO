@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
 import PermissionsService from '@/service/PermissionsService';
+import UtilService from '@/service/UtilService';
 import { useToast } from 'primevue/usetoast';
 
 export default {
@@ -80,7 +81,7 @@ export default {
                 .catch((error) => {
                     this.toast.add({
                         severity: ToastSeverity.ERROR,
-                        detail: error?.data?.message,
+                        detail: UtilService.message(error.response.data),
                         life: 3000
                     });
                 })
