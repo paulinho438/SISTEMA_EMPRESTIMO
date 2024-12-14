@@ -263,7 +263,7 @@ export default function ATMDetails({navigation, route}) {
   
   Segue link para acessar todo o histórico de parcelas.
 
-  https://sistema.rjemprestimos.com.br/#/parcela/${parcelas[0].id}
+  https://sistema.agecontrole.com.br/#/parcela/${parcelas[0].id}
 
 
   Segue abaixo as parcelas pendentes.

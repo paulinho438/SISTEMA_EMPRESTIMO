@@ -95,7 +95,7 @@ class CobrancaAutomaticaCBotao extends Command
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
-https://sistema.rjemprestimos.com.br/#/parcela/{$parcela->id}
+https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
  ";
 
