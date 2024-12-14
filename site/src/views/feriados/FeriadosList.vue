@@ -1,7 +1,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
+import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
 import FeriadoService from '@/service/FeriadoService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
@@ -25,6 +25,16 @@ export default {
 		};
 	},
 	methods: {
+		initFilters() {
+            this.filters = {
+                description: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+				
+                data_feriado: {
+                    operator: 'and',
+                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                }
+            };
+        },
 		dadosSensiveis(dado) {
 			return (this.permissionsService.hasPermissions('view_Feriadoes_sensitive') ? dado : '*********')
 		},
@@ -34,6 +44,16 @@ export default {
 			this.feriadoService.getAll()
 				.then((response) => {
 					this.feriados = response.data?.data;
+
+					this.feriados = response.data.data.map((feriados) => {
+
+						if (feriados.data_feriado) {
+							const datePart = feriados.data_feriado.split('/').reverse().join('-');
+                            feriados.data_feriado = new Date(`${datePart}T00:00:00`); // Concatena e cria um objeto Date
+                        }
+
+                        return feriados;
+                    });
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -74,11 +94,6 @@ export default {
 					this.loading = false;
 				});
 		},
-		initFilters() {
-			this.filters = {
-				nome_completo: { value: null, matchMode: FilterMatchMode.CONTAINS }
-			};
-		},
 		clearFilter() {
 			this.initFilters();
 		}
@@ -107,28 +122,31 @@ export default {
 						@click.prevent="editCategory()" />
 				</div>
 			</div>
-			<div class="card">
-				<div class="mt-3">
-					<DataTable dataKey="id" :value="feriados" :paginator="true" :rows="10" :loading="loading"
-						:filters="filters"
-						paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-						:rowsPerPageOptions="[5, 10, 25]"
-						currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} Feriado(s)"
-						responsiveLayout="scroll">
-						<Column field="description" header="Descrição" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Descrição</span>
-								{{ slotProps.data.description }}
-							</template>
-						</Column>
-						<Column field="data_feriado" header="Data" :sortable="true" class="w-1">
-							<template #body="slotProps">
-								<span class="p-column-title">Data</span>
-								{{ slotProps.data.data_feriado }}
-							</template>
-						</Column>
+			<div class="col-12">
+                <div class="card">
+                    <DataTable :value="feriados" :paginator="true" class="p-datatable-gridlines" :rows="10" dataKey="id" :rowHover="true" v-model:filters="filters" filterDisplay="menu" :loading="loading" :filters="filters" responsiveLayout="scroll">
+                        <template #empty> Nenhum Feriado Encontrado. </template>
+                        <template #loading> Carregando os Feriados. Aguarde! </template>
 
-						<Column v-if="permissionsService.hasPermissions('view_clientes_edit')" field="edit" header="Editar"
+                        <Column field="description" header="Descrição" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.description }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Descrição" />
+                            </template>
+                        </Column>
+
+						<Column header="Data do Feriado" filterField="data_feriado" dataType="date" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ data.data_feriado ? data.data_feriado.toLocaleDateString('pt-BR') : '-' }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                            </template>
+                        </Column>
+
+                        <Column v-if="permissionsService.hasPermissions('view_clientes_edit')" field="edit" header="Editar"
 							:sortable="false" class="w-1">
 							<template #body="slotProps">
 								<Button v-if="!slotProps.data.standard"
@@ -146,8 +164,8 @@ export default {
 									@click.prevent="deleteCategory(slotProps.data.id)" />
 							</template>
 						</Column>
-					</DataTable>
-				</div>
-			</div>
+                    </DataTable>
+                </div>
+            </div>
 		</div>
 </div></template>

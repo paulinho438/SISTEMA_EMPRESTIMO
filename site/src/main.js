@@ -114,38 +114,67 @@ import '@/assets/styles.scss';
 
 const app = createApp(App);
 
+
+
+
+
 app.use(router);
 // app.use(PrimeVue, { ripple: true });
 app.use(PrimeVue, {
     ripple: true,
-    // locale: {
-    //     // closeText: 'Fechar', 
-    //     // prevText: 'Anterior', 
-    //     // nextText: 'Próximo', 
-    //     // currentText: 'Começo', 
-    //     // monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'], 
-    //     // monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun', 'Jul','Ago','Set','Out','Nov','Dez'], 
-    //     // dayNames: ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'], 
-    //     // dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], 
-    //     // dayNamesMin: ['D','S','T','Q','Q','S','S'], 
-    //     // weekHeader: 'Semana', 
-    //     // firstDay: 0, 
-    //     // isRTL: false, 
-    //     // showMonthAfterYear: false, 
-    //     // yearSuffix: '', 
-    //     // timeOnlyTitle: 'Só Horas', 
-    //     // timeText: 'Tempo', 
-    //     // hourText: 'Hora', 
-    //     // minuteText: 'Minuto', 
-    //     // secondText: 'Segundo', 
-    //     // ampm: false, 
-    //     // month: 'Mês', 
-    //     // week: 'Semana', 
-    //     // day: 'Dia', 
-    //     // allDayText : 'Todo o Dia',
-    //     // accept: 'Aceitar',
-    //     // reject: 'Rejeitar',
-    // }
+    locale: {
+        closeText: 'Fechar', 
+        prevText: 'Anterior', 
+        nextText: 'Próximo', 
+        currentText: 'Hoje', 
+        monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'], 
+        monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun', 'Jul','Ago','Set','Out','Nov','Dez'], 
+        dayNames: ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'], 
+        dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], 
+        dayNamesMin: ['D','S','T','Q','Q','S','S'], 
+        weekHeader: 'Semana', 
+        firstDay: 0, 
+        isRTL: false, 
+        showMonthAfterYear: false, 
+        yearSuffix: '', 
+        timeOnlyTitle: 'Só Horas', 
+        timeText: 'Tempo', 
+        hourText: 'Hora', 
+        minuteText: 'Minuto', 
+        secondText: 'Segundo', 
+        ampm: false, 
+        month: 'Mês', 
+        week: 'Semana', 
+        day: 'Dia', 
+        allDayText: 'Todo o Dia',
+        accept: 'Aceitar',
+        reject: 'Rejeitar',
+
+        // Propriedades de filtros
+        startsWith: 'Começa com',
+        contains: 'Contém',
+        notContains: 'Não contém',
+        endsWith: 'Termina com',
+        equals: 'Igual a',
+        notEquals: 'Diferente de',
+        noFilter: 'Sem filtro',
+        lt: 'Menor que',
+        lte: 'Menor ou igual a',
+        gt: 'Maior que',
+        gte: 'Maior ou igual a',
+        dateIs: 'Data é',
+        dateIsNot: 'Data não é',
+        dateBefore: 'Data antes',
+        dateAfter: 'Data depois',
+        clear: 'Limpar',
+        apply: 'Aplicar',
+        matchAll: 'Corresponde a todos',
+        matchAny: 'Corresponde a qualquer',
+        addRule: 'Adicionar regra',
+        removeRule: 'Remover regra',
+        emptyMessage: 'Nenhum registro encontrado',
+        emptyFilterMessage: 'Nenhum resultado encontrado'
+    }
 });
 app.use(ToastService);
 app.use(DialogService);

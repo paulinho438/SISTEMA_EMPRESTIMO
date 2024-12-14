@@ -120,8 +120,8 @@ const calculateCustomerTotal = (name) => {
                             </span>
                         </div>
                     </template>
-                    <template #empty> No customers found. </template>
-                    <template #loading> Loading customers data. Please wait. </template>
+                    <template #empty> Nenhum Usuário encontrado. </template>
+                    <template #loading> Carregando Usuários. Aguarde. </template>
                     <Column field="name" header="Name" style="min-width: 12rem">
                         <template #body="{ data }">
                             {{ data.name }}
