@@ -48,7 +48,7 @@ class ParcelaResource extends JsonResource
             "total_pendente_hoje" => $this->totalPendenteHoje(),
             "valor_recebido" => $this->valor_recebido,
             "valor_recebido_pix" => $this->valor_recebido_pix,
-            "beneficiario" => $this->emprestimo->info_recebedor_pix,
+            "beneficiario" => $this->emprestimo->banco->info_recebedor_pix,
         ];
     }
 
