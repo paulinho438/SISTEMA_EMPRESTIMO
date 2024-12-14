@@ -104,7 +104,8 @@ export default function ATMDetails({navigation, route}) {
 
   const openWhatsApp = () => {
 
-    let url = `whatsapp://send?phone=${formatPhoneNumber(clientes.telefone_celular_1)}`;
+    let url = `whatsapp://send?phone=${clientes.telefone_celular_1}`;
+
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
 
     Linking.openURL(url)

@@ -60,10 +60,10 @@ export default function SignIn({navigation}) {
             }else{
               await permissions([]);
             }
-            // navigation.reset({
-            //     index: 0,
-            //     routes: [{name: StackNav.TabNavigation}],
-            //     });
+            navigation.reset({
+                index: 0,
+                routes: [{name: StackNav.TabNavigation}],
+                });
         }else{
             await user(result.user);
             await authToken(result.token);

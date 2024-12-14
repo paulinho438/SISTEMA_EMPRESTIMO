@@ -80,7 +80,7 @@ export default function Location(props) {
 
     telefone = telefone.replace(/\)\s*/, ') 9');
 
-    let url = `whatsapp://send?phone=${telefone}`;
+    let url = `whatsapp://send?phone=${cliente.telefone_celular_1}`;
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
 
     Linking.openURL(url)
