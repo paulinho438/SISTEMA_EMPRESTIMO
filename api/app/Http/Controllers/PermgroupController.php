@@ -163,6 +163,12 @@ class PermgroupController extends Controller
         try {
             $permGroup = PermGroup::withCount('users')->findOrFail($id);
 
+            if($permGroup->name == "Consultor"){
+                return response()->json([
+                    "message" => "Permissão não pode ser excluída."
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             if ($permGroup->users_count > 0) {
                 return response()->json([
                     "message" => "Permissão ainda tem usuários associados."
