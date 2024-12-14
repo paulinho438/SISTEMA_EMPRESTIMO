@@ -90,7 +90,7 @@ export default function ProfileScreen({navigation}) {
         <Image source={images.AGELOGO} style={localStyles.imgSty} />
 
         <View style={localStyles.outerComponent}>
-          <CText color={colors.black} type={'B20'}>
+          <CText color={colors.black} >
             {user?.nome_completo}
           </CText>
           <CText type={'R12'} color={colors.tabColor}>
@@ -179,7 +179,7 @@ const localStyles = StyleSheet.create({
     gap: moderateScale(7),
     position: 'absolute',
     top: moderateScale(165),
-    left: moderateScale(90),
+    width: '100%',
   },
   iconSty: {
     width: moderateScale(40),

@@ -99,9 +99,12 @@ const cobrarTodosClientes = async (event) => {
 		
 		await clientService.cobrarClientes();
 
+        alert('Clientes cobrados com sucesso!');
+
 		toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Clientes cobrados com sucesso!', life: 3000 });
 
 	} catch (e) {
+        alert('Rotina já foi iniciada!');
 		toast.add({ severity: 'error', summary: 'Erro', detail: 'Rotina já foi iniciada!', life: 3000 });
 	}
 
