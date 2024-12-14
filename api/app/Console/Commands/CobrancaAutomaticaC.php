@@ -82,23 +82,52 @@ class CobrancaAutomaticaC extends Command
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-Última chamada, Ainda não identificamos seu pagamento, será aplicado multas e entrará na rota de cobrança!
+🤷‍♂️ Última chamada, Ainda não identificamos seu pagamento, será aplicado multas e entrará na rota de cobrança!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
-
-
 ";
+
+$valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
+if(count($parcela->emprestimo->parcelas) == 1){
+if(!$parcelaPendente->emprestimo->pagamentominimo){
+    $fraseInicial .= "Copie e cole abaixo a chave pix
+
+Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
+Chave pix: {$parcela->emprestimo->banco->chavepix}
+
+📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
+";
+}else{
+    $fraseInicial .= "
+💸 Pagamento Total R$ {$parcelaPendente->saldo}
+
+Pagamento mínimo - Juros R$ {$valorJuros}
+
+Para pagamento de demais valores
+
+
+
+    ";
+}
+
+
+
+}
+
 
 if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
     $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
-";
-}else{
-    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
 
+📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
+";
+}else if(count($parcela->emprestimo->parcelas) > 1){
+    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
+
+Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
 }
@@ -154,9 +183,9 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
     function obterSaudacao()
     {
         $hora = date('H');
-        $saudacoesManha = ['Bom dia', 'Olá, bom dia', 'Tenha um excelente dia'];
-        $saudacoesTarde = ['Boa tarde', 'Olá, boa tarde', 'Espero que sua tarde esteja ótima'];
-        $saudacoesNoite = ['Boa noite', 'Olá, boa noite', 'Espero que sua noite esteja ótima'];
+        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌈 Tenha um excelente dia'];
+        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌈 Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌈 Espero que sua noite esteja ótima'];
 
         if ($hora < 12) {
             return $saudacoesManha[array_rand($saudacoesManha)];
