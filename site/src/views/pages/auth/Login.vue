@@ -9,9 +9,6 @@ import { useRouter } from 'vue-router';
 
 import { useToast } from 'primevue/usetoast';
 
-
-
-
 const { layoutConfig } = useLayout();
 
 const email = ref('');
@@ -22,134 +19,137 @@ const logoUrl = computed(() => {
     return `layout/images/${layoutConfig.darkTheme.value ? 'logo-white' : 'logo-dark'}.svg`;
 });
 export default {
-	name: 'Login',
-	components: {
-		AppConfig
-	},
-	setup() {
-		return {
-			usuario: ref(''),
-			password: ref(''),
-			contextPath: useLayout(),
-			layoutConfig: useLayout(),
-			authService: new AuthService(),
+    name: 'Login',
+    components: {
+        AppConfig
+    },
+    setup() {
+        return {
+            usuario: ref(''),
+            password: ref(''),
+            contextPath: useLayout(),
+            layoutConfig: useLayout(),
+            authService: new AuthService(),
             toast: useToast(),
-			permissions: ref([]),
+            permissions: ref([]),
             companies: ref({}),
-			router: useRouter(),
+            companiesSearch: ref({}),
+            router: useRouter(),
             message: ref([]),
             changed: ref(false),
-			appVersion: ref(import.meta.env.VITE_APP_VERSION),
+            appVersion: ref(import.meta.env.VITE_APP_VERSION),
             selectedTipo: ref(''),
-			intervalId: null,
-			
-		};
-	},
-	data() {
-		return {
-			error: ref(''),
-			loadingLogin: ref(false)
-		};
-	},
-	computed: {
-		logoUrl() {
-			return `${this.contextPath.contextPath}layout/images/${this.layoutConfig.darkTheme ? 'logo' : 'logo'}.png`;
-		},
-		...mapGetters(['isAutenticated', 'usuario'])
-	},
-	methods: {
-		async login() {
+            intervalId: null
+        };
+    },
+    data() {
+        return {
+            error: ref(''),
+            loadingLogin: ref(false)
+        };
+    },
+    computed: {
+        logoUrl() {
+            return `${this.contextPath.contextPath}layout/images/${this.layoutConfig.darkTheme ? 'logo' : 'logo'}.png`;
+        },
+        ...mapGetters(['isAutenticated', 'usuario'])
+    },
+    methods: {
+        async login() {
+            this.loadingLogin = true;
+            this.error = '';
 
-			this.loadingLogin = true;
-			this.error = '';
+            const data = {
+                usuario: this.usuario,
+                password: this.password
+            };
 
-			const data = {
-				usuario: this.usuario,
-				password: this.password
-			};
+            try {
+                const response = await this.authService.login(data);
 
+                localStorage.setItem('app.emp.token', `${response.data.token}`);
+                this.setAuthenticated({ isAuthenticated: true });
+                console.log('user', response.data.user);
+                this.$store.commit('setUsuario', response.data.user);
 
-			try {
-				const response = await this.authService.login(data);
+                if (response.data.user.companies.length == 0) {
+                    this.toast.add({
+                        severity: 'error',
+                        summary: 'Atenção',
+                        detail: 'Você não está cadastrado em nenhuma empresa.',
+                        life: 3000
+                    });
+                } else if (response.data.user.companies.length == 1) {
+                    this.$store.commit('setCompany', response.data.user.companies[0]);
 
-				localStorage.setItem('app.emp.token', `${response.data.token}`);
-				this.setAuthenticated({ isAuthenticated: true });
-				console.log('user', response.data.user);
-				this.$store.commit("setUsuario", response.data.user);
+                    if (response.data.user.permissions.length > 0) {
+                        let res = response.data.user.permissions.filter((item) => item.company_id === response.data.user.companies[0]['id']);
 
-                if(response.data.user.companies.length == 0){
-                    this.toast.add({ 
-                        severity: 'error', 
-                        summary: 'Atenção', 
-                        detail: 'Você não está cadastrado em nenhuma empresa.', 
-                        life: 3000 
-                        });
-                }else if(response.data.user.companies.length == 1){
-                    this.$store.commit("setCompany", response.data.user.companies[0]);
+                        this.$store.commit('setPermissions', res[0]['permissions']);
+                    } else {
+                        this.$store.commit('setPermissions', []);
+                    }
 
-					if(response.data.user.permissions.length > 0){
-						let res = response.data.user.permissions.filter(item => item.company_id === response.data.user.companies[0]['id'])
-
-						this.$store.commit("setPermissions", res[0]['permissions']);
-					}else{
-						this.$store.commit("setPermissions", []);
-					}
-
-					
-
-				    this.router.push({ name: 'dashboard' });
-                }else{
-					this.$store.commit("setPermissions", response.data.user.permissions);
-                    this.changed = true ;
+                    this.router.push({ name: 'dashboard' });
+                } else {
+                    this.$store.commit('setPermissions', response.data.user.permissions);
+                    this.changed = true;
                     this.companies = response.data.user.companies;
-					this.permissions = response.data.user.permissions;
-
+                    this.companiesSearch = response.data.user.companies;
+                    this.permissions = response.data.user.permissions;
                 }
 
-				this.loadingLogin = false;
+                this.loadingLogin = false;
+            } catch (e) {
+                if (e?.response?.data?.message) {
+                    this.toast.add({
+                        severity: 'error',
+                        summary: 'Atenção',
+                        detail: e?.response?.data?.message,
+                        life: 3000
+                    });
+                }
 
-
-			} catch (e) {
-
-				if (e?.response?.data?.message) {
-
-                    this.toast.add({ 
-                        severity: 'error', 
-                        summary: 'Atenção', 
-                        detail: e?.response?.data?.message, 
-                        life: 3000 
-                        });
-					
-				} 
-
-				this.loadingLogin = false;
-			}
-		},
-        async changeCompany() {
-
-            if(this.selectedTipo?.id){
-                this.$store.commit("setCompany", this.selectedTipo);
-
-
-				let res = this.permissions.filter(item => item.company_id === this.selectedTipo?.id)
-
-				this.$store.commit("setPermissions", res[0]['permissions']);
-
-				this.router.push({ name: 'dashboard' });
-
-            }else{
-                this.toast.add({ 
-                        severity: 'error', 
-                        summary: 'Atenção', 
-                        detail: 'Selecione uma empresa!', 
-                        life: 3000 
-                        });
+                this.loadingLogin = false;
             }
-		},
-		...mapMutations(['setAuthenticated', 'setUsuario']),
-        
-	},
-    
+        },
+        async searchCostcenter(event) {
+            try {
+				console.log(event.query.toLowerCase());
+				console.log(this.companiesSearch);
+				console.log(this.companies );
+				
+				if(this.companiesSearch.length == 0){
+					this.companies = this.companiesSearch;
+				}else{
+					this.companies = this.companiesSearch.filter((company) => company.company.toLowerCase().includes(event.query.toLowerCase()));
+
+				}
+				
+            } catch (e) {
+                console.log(e);
+            }
+        },
+        async changeCompany() {
+            if (this.selectedTipo?.id) {
+                this.$store.commit('setCompany', this.selectedTipo);
+
+                let res = this.permissions.filter((item) => item.company_id === this.selectedTipo?.id);
+
+                this.$store.commit('setPermissions', res[0]['permissions']);
+
+                this.router.push({ name: 'dashboard' });
+            } else {
+                this.toast.add({
+                    severity: 'error',
+                    summary: 'Atenção',
+                    detail: 'Selecione uma empresa!',
+                    life: 3000
+                });
+            }
+        },
+        ...mapMutations(['setAuthenticated', 'setUsuario'])
+    }
 };
 </script>
 
@@ -158,24 +158,34 @@ export default {
     <Toast />
 
     <Dialog header="Selecione a Empresa" modal class="w-8 mx-8" v-model:visible="changed" :closable="false">
-		<div class="grid flex align-content-center flex-wrap">
-			<div class="col-12 flex align-content-center flex-wrap md:col-2 lg:col-1 ">
-				<label>Empresa:</label>
-			</div>
-			<div class="col-12 flex align-content-center flex-wrap sm:col-12 md:col-8">
-				<Dropdown v-model="selectedTipo" class="w-full" :options="companies" optionLabel="company" placeholder="Selecione a empresa" />
-			</div>
-			<div class="col-12 flex align-content-center flex-wrap md:col-12 lg:col-3">
-				<Button icon="pi pi-check" label="Entrar" class="p-button-sm p-button-sucess w-full" @click.prevent="changeCompany" />
-			</div>
-		</div>
-	</Dialog>
-    
+        <div class="grid flex align-content-center flex-wrap">
+            <div class="col-12 flex align-content-center flex-wrap md:col-2 lg:col-1">
+                <label>Empresa:</label>
+            </div>
+            <div class="col-12 flex align-content-center flex-wrap sm:col-12 md:col-8">
+                <AutoComplete
+                    :modelValue="selectedTipo"
+                    :dropdown="true"
+                    v-model="selectedTipo"
+                    :suggestions="companies"
+                    placeholder="Informe o nome da Empresa"
+                    class="w-full"
+                    inputClass="w-full p-inputtext-sm"
+                    @complete="searchCostcenter($event)"
+                    optionLabel="company"
+                />
+            </div>
+            <div class="col-12 flex align-content-center flex-wrap md:col-12 lg:col-3">
+                <Button icon="pi pi-check" label="Entrar" class="p-button-sm p-button-sucess w-full" @click.prevent="changeCompany" />
+            </div>
+        </div>
+    </Dialog>
+
     <div class="z-1 surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
         <div class="z-1 flex flex-column align-items-center justify-content-center">
             <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-                <div class=" z-1 w-full surface-card py-8 px-5 sm:px-8" style="border-radius: 53px">
-					<div class="text-center mb-5">
+                <div class="z-1 w-full surface-card py-8 px-5 sm:px-8" style="border-radius: 53px">
+                    <div class="text-center mb-5">
                         <img src="/images/AGELOGO.png" alt="logo" width="50%" />
                     </div>
                     <div class="text-center mb-5">
@@ -184,12 +194,11 @@ export default {
 
                     <div class="z-1">
                         <label for="usuario" class="block text-900 text-xl font-medium mb-2">Usuario</label>
-						<InputText :modelValue="usuario" v-model="usuario" id="usuario" type="text" class="w-full md:w-30rem mb-5" :disabled="loadingLogin" />
+                        <InputText :modelValue="usuario" v-model="usuario" id="usuario" type="text" class="w-full md:w-30rem mb-5" :disabled="loadingLogin" />
 
                         <label for="password1" class="block text-900 font-medium text-xl mb-2">SENHA</label>
                         <Password id="password1" v-model="password" placeholder="Senha" :toggleMask="true" :feedback="false" class="w-full mb-3" inputClass="w-full" :inputStyle="{ padding: '1rem' }"></Password>
 
-                        
                         <Button label="Entrar" class="w-full p-3 text-xl" @click.prevent="login" :loading="loadingLogin"></Button>
                     </div>
                 </div>
@@ -197,7 +206,6 @@ export default {
         </div>
     </div>
     <!-- <AppConfig simple /> -->
-
 </template>
 
 <style scoped>
