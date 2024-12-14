@@ -1,7 +1,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
+import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
 import FornecedorService from '@/service/FornecedorService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
@@ -25,12 +25,40 @@ export default {
 		};
 	},
 	methods: {
+		initFilters() {
+            this.filters = {
+                nome_completo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+				cpfcnpj: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+				telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+				telefone_celular_2: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+				created_at: {
+                    operator: 'and',
+                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                }
+
+				
+            };
+        },
 		getFornecedores() {
 			this.loading = true;
 
 			this.fornecedorService.getAll()
 			.then((response) => {
 				this.fornecedores = response.data.data;
+
+				this.fornecedores = response.data.data.map((fornecedores) => {
+                        if (fornecedores.created_at) {
+                            const parts = fornecedores.created_at.split(' ');
+                            const datePart = parts[0].split('/').reverse().join('-'); // Converte dd/mm/yyyy para yyyy-mm-dd
+                            const timePart = parts[1];
+                            fornecedores.created_at = new Date(`${datePart}T${timePart}`); // Concatena e cria um objeto Date
+                        }
+                        return fornecedores;
+                    });
 			})
 			.catch((error) => {
 				this.toast.add({
@@ -71,11 +99,6 @@ export default {
 				this.loading = false;
 			});
 		},
-		initFilters() {
-			this.filters = {
-				nome_completo: { value: null, matchMode: FilterMatchMode.CONTAINS }
-			};
-		},
 		clearFilter() {
 			this.initFilters();
 		}
@@ -102,64 +125,58 @@ export default {
 					<Button v-if="permissionsService.hasPermissions('view_fornecedores_create')" label="Novo Fornecedor" class="p-button-outlined p-button-secondary p-button-sm" icon="pi pi-plus" @click.prevent="editCategory()" />
 				</div>
 			</div>
-			<div class="card">
-				<div class="mt-3">
-					<DataTable
-						dataKey="id"
-						:value="fornecedores"
-						:paginator="true"
-						:rows="10"
-						:loading="loading"
-						:filters="filters"
-						paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-						:rowsPerPageOptions="[5, 10, 25]"
-						currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} Fornecedor(es)"
-						responsiveLayout="scroll"
-					>
-					<template #header>
-						<div class="flex justify-content-between">
-							<Button type="button" icon="pi pi-filter-slash" label="Limpar Filtros" class="p-button-outlined p-button-sm" @click="clearFilter()" />
-							<span class="p-input-icon-left">
-								<i class="pi pi-search" />
-								<InputText v-model="filters.nome_completo.value" placeholder="Informe o Nome" class="p-inputtext-sm" />
-							</span>
-						</div>
-					</template>
+			<div class="col-12">
+                <div class="card">
+                    <DataTable :value="fornecedores" :paginator="true" class="p-datatable-gridlines" :rows="10" dataKey="id" :rowHover="true" v-model:filters="filters" filterDisplay="menu" :loading="loading" :filters="filters" responsiveLayout="scroll">
+                        <template #empty> Nenhum Fornecedor Encontrado. </template>
+                        <template #loading> Carregando os Fornecedores. Aguarde! </template>
 
-						<Column field="name" header="Nome Completo" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Nome Completo</span>
-								{{ slotProps.data.nome_completo }}
-							</template>
-						</Column>
-						<Column field="name" header="CPF / CNPJ" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">CPF</span>
-								{{ slotProps.data.cpfcnpj }}
-							</template>
-						</Column>
-						
-						<Column field="name" header="Telefone Principal" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Telefone Principal</span>
-								{{ slotProps.data.telefone_celular_1 }}
-							</template>
-						</Column>
-						<Column field="name" header="Telefone Secundário" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Telefone Secundário</span>
-								{{ slotProps.data.telefone_celular_2 }}
-							</template>
-						</Column>
+                        <Column field="nome_completo" header="Nome Completo" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.nome_completo }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar nome" />
+                            </template>
+                        </Column>
 
-						<Column field="created_at" header="Dt. Criação" :sortable="true" class="w-2">
-							<template #body="slotProps">
-								<span class="p-column-title">Dt. Criação</span>
-								{{ slotProps.data.created_at }}
-							</template>
-						</Column>
+                        <Column field="cpfcnpj" header="CPF / CNPJ" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.cpfcnpj }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar CPF / CNPJ" />
+                            </template>
+                        </Column>
 
-						<Column v-if="permissionsService.hasPermissions('view_fornecedores_edit')" field="edit" header="Editar" :sortable="false" class="w-1">
+						<Column field="telefone_celular_1" header="Telefone Principal" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.telefone_celular_1 }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Telefone Principal" />
+                            </template>
+                        </Column>
+
+						<Column field="telefone_celular_2" header="Telefone Secundário" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.telefone_celular_2 }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Telefone Secundário" />
+                            </template>
+                        </Column>
+
+                        <Column header="Dt. Criação" filterField="created_at" dataType="date" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ data.created_at ? data.created_at.toLocaleDateString('pt-BR') : '-' }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                            </template>
+                        </Column>
+
+                        <Column v-if="permissionsService.hasPermissions('view_fornecedores_edit')" field="edit" header="Editar" :sortable="false" class="w-1">
 							<template #body="slotProps">
 								<Button v-if="!slotProps.data.standard" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :icon="icons.FILE_EDIT" v-tooltip.top="'Editar'" @click.prevent="editCategory(slotProps.data.id)" />
 							</template>
@@ -169,9 +186,9 @@ export default {
 								<Button v-if="!slotProps.data.standard" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL" v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />
 							</template>
 						</Column>
-					</DataTable>
-				</div>
-			</div>
+                    </DataTable>
+                </div>
+            </div>
 		</div>
 	</div>
 </template>

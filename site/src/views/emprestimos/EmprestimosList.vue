@@ -1,7 +1,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
+import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
 import EmprestimoService from '@/service/EmprestimoService';
 import PermissionsService from '@/service/PermissionsService';
 import UtilService from '@/service/UtilService';
@@ -56,6 +56,48 @@ export default {
         };
     },
     methods: {
+        initFilters() {
+            this.filters = {
+                status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                nome_cliente: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                nome_consultor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                valor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
+                saldoareceber: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
+                saldo_total_parcelas_pagas: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
+                dt_lancamento: {
+                    operator: 'and',
+                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                },
+
+                porcentagem: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
+
+				// cpf: { 
+                //     operator: FilterOperator.AND, 
+                //     constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] 
+                // },
+                // rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // telefone_celular_2: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // saldo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+                // created_at: {
+                //     operator: 'and',
+                //     constraints: [{ value: null, matchMode: 'dateIs' }]
+                // },
+				// data_nascimento: {
+                //     operator: 'and',
+                //     constraints: [{ value: null, matchMode: 'dateIs' }]
+                // }
+            };
+        },
         getStatusClass(status) {
             // Adicione classes de botões com base no status
             switch (status) {
@@ -102,6 +144,13 @@ export default {
 
             return contextMenuItems;
         },
+        formatValorReal(r) {
+            return r.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 2
+            });
+        },
         toggleMenu(id) {
             const menuRef = this.$refs[`menu_${id}`];
             menuRef.toggle(event);
@@ -120,6 +169,26 @@ export default {
                 .getAll()
                 .then((response) => {
                     this.Emprestimos = response.data.data;
+
+                    this.Emprestimos = response.data.data.map((Emprestimos) => {
+                        if (Emprestimos.created_at) {
+                            const parts = Emprestimos.created_at.split(' ');
+                            const datePart = parts[0].split('/').reverse().join('-'); // Converte dd/mm/yyyy para yyyy-mm-dd
+                            const timePart = parts[1];
+                            Emprestimos.created_at = new Date(`${datePart}T${timePart}`); // Concatena e cria um objeto Date
+                        }
+
+                        if (Emprestimos.dt_lancamento) {
+							const datePart = Emprestimos.dt_lancamento.split('/').reverse().join('-');
+                            Emprestimos.dt_lancamento = new Date(`${datePart}T00:00:00`); // Concatena e cria um objeto Date
+                        }
+
+                        Emprestimos.nome_cliente = Emprestimos.cliente.nome_completo;
+
+                        Emprestimos.nome_consultor = Emprestimos.consultor.nome_completo;
+
+                        return Emprestimos;
+                    });
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -164,11 +233,6 @@ export default {
                     this.loading = false;
                 });
         },
-        initFilters() {
-            this.filters = {
-                nome_completo: { value: null, matchMode: FilterMatchMode.CONTAINS }
-            };
-        },
         clearFilter() {
             this.initFilters();
         }
@@ -196,7 +260,118 @@ export default {
                     <Button v-if="permissionsService.hasPermissions('view_emprestimos_create')" label="Novo Emprestimo" class="p-button-outlined p-button-secondary p-button-sm" icon="pi pi-plus" @click.prevent="editCategory()" />
                 </div>
             </div>
-            <div class="card">
+            <div class="col-12">
+                <div class="card">
+                    <DataTable :value="Emprestimos" :paginator="true" class="p-datatable-gridlines" :rows="10" dataKey="id" :rowHover="true" v-model:filters="filters" filterDisplay="menu" :loading="loading" :filters="filters" responsiveLayout="scroll">
+                        <template #empty> Nenhum Cliente Encontrado. </template>
+                        <template #loading> Carregando os Clientes. Aguarde! </template>
+
+                        <Column field="status" header="Status" style="min-width: 9rem">
+                            <template #body="slotProps">
+                                <Button :label="slotProps.data.status" :class="getStatusClass(slotProps.data.status)" />
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Status" />
+                            </template>
+                        </Column>
+
+                        <Column field="id" header="ID" style="min-width: 5rem">
+                            <template #body="{ data }">
+                                {{ data.id }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar ID" />
+                            </template>
+                        </Column>
+
+                        <Column header="Dt. Lançamento" filterField="dt_lancamento" dataType="date" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ data.dt_lancamento ? data.dt_lancamento.toLocaleDateString('pt-BR') : '-' }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                            </template>
+                        </Column>
+
+                        <Column field="nome_cliente" header="Cliente" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.nome_cliente }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Nome Completo Cliente" />
+                            </template>
+                        </Column>
+
+                        <Column field="nome_consultor" header="Consultor" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.nome_consultor }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Nome do Consultor" />
+                            </template>
+                        </Column>
+
+                        <Column header="Valor" filterField="valor" dataType="numeric" style="min-width: 8rem">
+                            <template #body="{ data }">
+                                {{ formatValorReal(data.valor) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
+                            </template>
+                        </Column>
+
+                        <Column header="Saldo a Receber" filterField="saldoareceber" dataType="numeric" style="min-width: 8rem">
+                            <template #body="{ data }">
+                                {{ formatValorReal(data.saldoareceber) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
+                            </template>
+                        </Column>
+
+                        <Column header="Valor Pago" filterField="saldo_total_parcelas_pagas" dataType="numeric" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ formatValorReal(data.saldo_total_parcelas_pagas) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
+                            </template>
+                        </Column>
+
+                        <Column field="name" header="Parcelas Pagas" :sortable="false" class="w-1">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Parcelas Pagas</span>
+                                {{
+                                    `${slotProps.data.parcelas_pagas.length.toString().padStart(3, '0')} /
+																${slotProps.data.parcelas.length.toString().padStart(3, '0')}`
+                                }}
+                            </template>
+                        </Column>
+
+                        <Column field="porcentagem" header="Progresso" :showFilterMatchModes="false" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.porcentagem }}
+                                <ProgressBar :value="data.porcentagem" :showValue="false" style="height: 0.5rem"></ProgressBar>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Slider v-model="filterModel.value" :range="true" class="m-3"></Slider>
+                                <div class="flex align-items-center justify-content-between px-2">
+                                    <span>{{ filterModel.value ? filterModel.value[0] : 0 }}</span>
+                                    <span>{{ filterModel.value ? filterModel.value[1] : 100 }}</span>
+                                </div>
+                            </template>
+                        </Column>
+
+						<Column v-if="permissionsService.hasPermissions('view_emprestimos_delete')" field="edit" header="Opções" :sortable="false" class="w-1">
+                            <template #body="slotProps">
+                                <Menu :ref="`menu_${slotProps.data.id}`" :model="getOverlayMenuItems(slotProps.data)" :popup="true" />
+                                <Button type="button" label="Opções" icon="pi pi-angle-down" @click="toggleMenu(slotProps.data.id)" style="width: auto" />
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
+            </div>
+            <!-- <div class="card">
                 <div class="mt-3">
                     <DataTable
                         dataKey="id"
@@ -295,7 +470,7 @@ export default {
                         </Column>
                     </DataTable>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>
