@@ -152,13 +152,13 @@ export default function ATMDetails({navigation, route}) {
     const parcelasString = parcelas
       .filter(item => item.atrasadas > 0 && !item.dt_baixa)
       .map(item => {
-              return `Data: ${formatDate(item.venc)}
+              return `Data: ${item.venc}
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
         Valor: R$ ${item.valor}
         Juros: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
         Multa: R$ ${(item.multa || 0).toFixed(2)}
-        Pago: R$ ${(item.pago || 0).toFixed(2)}
+        Pago: R$ ${item.total_pago_parcela}
         PIX: ${item.chave_pix || 'Não Contém'}
         Status: Pendente
         RESTANTE: R$ ${item.saldo.toFixed(2)}`
