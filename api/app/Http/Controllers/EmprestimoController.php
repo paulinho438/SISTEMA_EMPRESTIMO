@@ -1486,30 +1486,34 @@ class EmprestimoController extends Controller
 
                 // Encontrar a parcela correspondente
                 $pagamento = PagamentoPersonalizado::where('identificador', $txId)->first();
-                $pagamento->dt_baixa = $horario;
-                $pagamento->save();
 
-                $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
+                if($pagamento) {
+                    $pagamento->dt_baixa = $horario;
+                    $pagamento->save();
 
-                while ($parcela && $valor > 0) {
-                    if ($valor >= $parcela->saldo) {
-                        // Quitar a parcela atual
-                        $valor -= $parcela->saldo;
-                        $parcela->saldo = 0;
-                        $parcela->dt_baixa = $horario;
-                    } else {
-                        // Reduzir o saldo da parcela atual
-                        $parcela->saldo -= $valor;
-                        $valor = 0;
+                    $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
+
+                    while ($parcela && $valor > 0) {
+                        if ($valor >= $parcela->saldo) {
+                            // Quitar a parcela atual
+                            $valor -= $parcela->saldo;
+                            $parcela->saldo = 0;
+                            $parcela->dt_baixa = $horario;
+                        } else {
+                            // Reduzir o saldo da parcela atual
+                            $parcela->saldo -= $valor;
+                            $valor = 0;
+                        }
+                        $parcela->save();
+
+                        // Encontrar a próxima parcela
+                        $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                            ->where('id', '>', $parcela->id)
+                            ->orderBy('id', 'asc')
+                            ->first();
                     }
-                    $parcela->save();
-
-                    // Encontrar a próxima parcela
-                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                        ->where('id', '>', $parcela->id)
-                        ->orderBy('id', 'asc')
-                        ->first();
                 }
+
             }
         }
 
