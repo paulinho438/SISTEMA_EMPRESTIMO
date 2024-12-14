@@ -121,21 +121,36 @@ const cobrarTodosClientes = async (event) => {
         </button>
 
         <button class="p-link layout-topbar-menu-button layout-topbar-button" @click="onTopBarMenuButton()">
-            <i class="pi pi-ellipsis-v"></i>
-        </button>
-		<ConfirmPopup></ConfirmPopup>
-
-        <div style="display: flex; flex: 1; flex-direction: row; justify-content: end">
-            <button ref="popup" @click="confirm($event)" class="p-link">
-                <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
-                <span>Cobrar Todos Clientes</span>
-            </button>
             <button @click="logout()" class="p-link layout-topbar-button" style="margin-left: 10px">
                 <i class="pi pi-sign-out"></i>
                 <span>Logout</span>
             </button>
+        </button>
+		<ConfirmPopup></ConfirmPopup>
+
+        <div style="display: flex; flex: 1; flex-direction: row; justify-content: end">
+            <button ref="popup" @click="confirm($event)" class="p-link hidden-on-small">
+                <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
+                <span>Cobrar Todos Clientes</span>
+            </button>
+            <div class="hidden-on-small">
+            <button @click="logout()" class="p-link layout-topbar-button hidden-on-small" style="margin-left: 10px">
+                <i class="pi pi-sign-out"></i>
+                <span>Logout</span>
+            </button>
+        </div>
         </div>
     </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.hidden-on-small {
+    display: block;
+}
+
+@media (max-width: 991px) {
+    .hidden-on-small {
+        display: none;
+    }
+}
+</style>
