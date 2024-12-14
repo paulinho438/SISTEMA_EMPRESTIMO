@@ -156,8 +156,7 @@ export default function ATMDetails({navigation, route}) {
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
         Valor: R$ ${item.valor}
-        Juros: R$ ${((item.saldo - item.valor) || 0).toFixed(2)}
-        Multa: R$ ${(item.multa || 0).toFixed(2)}
+        Multa: R$ ${item.multa}
         Pago: R$ ${item.total_pago_parcela}
         PIX: ${item.chave_pix || 'Não Contém'}
         Status: Pendente
