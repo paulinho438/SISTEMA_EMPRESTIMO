@@ -117,14 +117,20 @@ export default function Location(props) {
 
   const montarStringParcelas = (parcelas) => {
     const fraseInicial = `
-  Relatório de Parcelas Pendentes:
+  Relatório de Parcelas:
   
   Segue link para acessar todo o histórico de parcelas.
 
   https://sistema.agecontrole.com.br/#/parcela/${parcelas[0].id}
 
+  Beneficiario: ${cliente.nome_cliente} pix:9994949499
+
+  Saldo para quitação: ${parcelas.reduce((acc, item) => acc + item.saldo, 0).toFixed(2)}
+
+  Saldo pendente para hoje: ${parcelas.reduce((acc, item) => acc + item.saldo, 0).toFixed(2)}
 
   Segue abaixo as parcelas pendentes.
+
   
 `;
 
@@ -145,6 +151,10 @@ export default function Location(props) {
 
         return fraseInicial + parcelasString;
   };
+
+const saldo = `
+
+`;
 
   
 
