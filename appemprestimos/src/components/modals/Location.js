@@ -79,9 +79,10 @@ export default function Location(props) {
 
     let telefone = cliente.telefone_celular_1;
 
-    if (!/\)\s*9/.test(telefone)) {
+    if (/\)\s*9/.test(telefone)) {
       telefone = telefone.replace(/\)\s*/, ') 9');
-  }
+    }
+
 
     let url = `whatsapp://send?phone=${telefone}`;
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
