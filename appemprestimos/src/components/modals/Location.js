@@ -123,11 +123,11 @@ export default function Location(props) {
 
   https://sistema.agecontrole.com.br/#/parcela/${parcelas[0].id}
 
-  Beneficiario: ${cliente.nome_cliente} pix:9994949499
+  Beneficiario: ${parcelas[0].beneficiario} pix:${parcelas[0].chave_pix}
 
-  Saldo para quitação: ${parcelas.reduce((acc, item) => acc + item.saldo, 0).toFixed(2)}
+  Saldo para quitação: ${parcelas[0].total_pendente}
 
-  Saldo pendente para hoje: ${parcelas.reduce((acc, item) => acc + item.saldo, 0).toFixed(2)}
+  Saldo pendente para hoje: ${parcelas[0].total_pendente_hoje}
 
   Segue abaixo as parcelas pendentes.
 
@@ -151,12 +151,6 @@ export default function Location(props) {
 
         return fraseInicial + parcelasString;
   };
-
-const saldo = `
-
-`;
-
-  
 
   const arrowRightTopIcon = () => (
     <Community size={24} name={'arrow-u-right-top'} color={colors.white} />
