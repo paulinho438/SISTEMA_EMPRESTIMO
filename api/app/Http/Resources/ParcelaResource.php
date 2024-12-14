@@ -26,6 +26,7 @@ class ParcelaResource extends JsonResource
             "parcela" => $this->parcela,
             "valor" => $this->formatarMoeda($this->valor),
             "saldo" => $this->saldo,
+            "multa" => $this->formatarMoeda($this->saldo - $this->valor),
             "venc" => (new DateTime($this->venc))->format('d/m/Y'),
             "venc_real" => (new DateTime($this->venc_real))->format('d/m/Y'),
             "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
