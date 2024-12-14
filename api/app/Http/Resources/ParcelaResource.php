@@ -32,7 +32,7 @@ class ParcelaResource extends JsonResource
             "dt_baixa" => ($this->dt_baixa != null) ? Carbon::parse($this->dt_baixa, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y') : '',
             "dt_ult_cobranca" => $this->dt_ult_cobranca,
             "identificador" => $this->identificador,
-            "chave_pix" => ($this->chave_pix != null) ? $this->chave_pix : '',
+            "chave_pix" => ($this->chave_pix != null) ? $this->chave_pix : $this->emprestimo->banco->chavepix,
             "nome_cliente" => $this->emprestimo->client->nome_completo ?? null,
             "cpf" => $this->emprestimo->client->cpf ?? null,
             "telefone_celular_1" => $this->emprestimo->client->telefone_celular_1 ?? null,
