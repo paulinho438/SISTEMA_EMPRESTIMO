@@ -1567,9 +1567,6 @@ class EmprestimoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
-            $permGroup->banco->save();
-
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $permGroup->banco->id;
             $movimentacaoFinanceira['company_id'] = $permGroup->company_id;

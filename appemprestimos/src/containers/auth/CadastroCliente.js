@@ -173,9 +173,7 @@ export default function CadastroCliente({navigation}) {
   };
 
   const nameValidation = itm => {
-    const {msg} = validateName(itm);
     setName(itm);
-    setMessage(msg);
   };
 
   const emailValidation = itm => {
