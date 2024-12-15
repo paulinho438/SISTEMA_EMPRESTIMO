@@ -186,7 +186,6 @@ class ClientController extends Controller
             'telefone_celular_1' => 'required',
             'telefone_celular_2' => 'required',
             'email' => 'required',
-            'password' => 'required',
             'pix_cliente' => 'required'
         ]);
 
