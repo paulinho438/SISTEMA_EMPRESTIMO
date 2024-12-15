@@ -161,7 +161,7 @@ Segue abaixo as parcelas pendentes.
         return `Data: ${item.venc}
         Parcela: ${item.parcela}
         Atrasos: ${item.atrasadas}
-        Valor: R$ ${item.valor.toFixed(2)}
+        Valor: R$ ${item.valor}
         Multa: R$ ${item.multa}
         Pago: R$ ${item.total_pago_parcela}
         PIX: ${item.chave_pix || 'Não Contém'}
