@@ -85,8 +85,10 @@ class CobrancaAutomaticaABotao extends Command
 
                                 $saudacao = self::obterSaudacao();
 
-                                $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                                $fraseInicial = "
+                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
+
+                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                            $fraseInicial = "
 
 Relatório de Parcelas Pendentes:
 
@@ -174,16 +176,17 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
                             ];
 
                             $response = Http::asJson()->post($baseUrl, $data);
-                            sleep(8);
+                                sleep(8);
+                            }
                         }
+                    } catch (\Throwable $th) {
+                        dd($th);
                     }
-                } catch (\Throwable $th) {
-                    dd($th);
                 }
             }
-        }
 
-        exit;
+            exit;
+        }
     }
 
     function obterSaudacao()
