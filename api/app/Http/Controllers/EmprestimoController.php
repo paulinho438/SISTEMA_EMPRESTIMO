@@ -1535,8 +1535,16 @@ class EmprestimoController extends Controller
             $user = auth()->user();
 
             $editParcela = Parcela::find($id);
-            $editParcela->dt_ult_cobranca = $request->dt_ult_cobranca;
-            $editParcela->save();
+
+            $parcelas = Parcela::where('emprestimo_id', $editParcela->emprestimo_id)
+            ->where('dt_baixa', null)
+            ->where('atrasadas', '>', 0)
+            ->get();
+
+            foreach($parcelas as $parcela) {
+                $parcela->dt_ult_cobranca = $request->dt_ult_cobranca;
+                $parcela->save();
+            }
 
             DB::commit();
 
