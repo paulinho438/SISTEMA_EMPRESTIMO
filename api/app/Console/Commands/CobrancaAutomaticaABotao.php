@@ -208,7 +208,7 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
     function encontrarPrimeiraParcelaPendente($parcelas) {
 
         foreach($parcelas as $parcela){
-            if($parcela->dt_baixa === ''){
+            if($parcela->dt_baixa === '' || $parcela->dt_baixa === null){
                 return $parcela;
             }
         }
