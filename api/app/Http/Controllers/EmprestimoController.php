@@ -1567,15 +1567,7 @@ class EmprestimoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $permGroup->banco->id;
-            $movimentacaoFinanceira['company_id'] = $permGroup->company_id;
-            $movimentacaoFinanceira['descricao'] = 'Exclusão Empréstimo Nº ' . $permGroup->id;
-            $movimentacaoFinanceira['tipomov'] = 'E';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $permGroup->valor;
-
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
+            $permGroup->contaspagar->delete();
 
             $permGroup->delete();
 
