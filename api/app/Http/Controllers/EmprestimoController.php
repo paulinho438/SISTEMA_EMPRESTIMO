@@ -796,9 +796,13 @@ class EmprestimoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
+            $parcela->emprestimo->company->caixa_pix -= $parcela->valor_recebido_pix;
+            $parcela->emprestimo->company->caixa -= $parcela->valor_recebido;
+            $parcela->emprestimo->company->save();
+
+
             $parcela->valor_recebido_pix = null;
             $parcela->valor_recebido = null;
-
             $parcela->save();
 
             DB::commit();
