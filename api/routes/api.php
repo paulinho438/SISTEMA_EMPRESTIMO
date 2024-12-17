@@ -134,7 +134,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/cobranca/getbuttonpressed', [BotaoCobrancaController::class, 'getButtonPressed']);
 
 
-    Route::get('/empresas/{id}', [CompanyController::class, 'getId']);
+    Route::get('/empresas/{id}', [CompanyController::class, 'get']);
     Route::get('/empresa', [CompanyController::class, 'get']);
 
     Route::get('/empresas', [CompanyController::class, 'getAll']);
