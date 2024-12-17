@@ -22,9 +22,9 @@ class CompanyController extends Controller
         $companies = Company::all();
         return $companies;
     }
-    public function get(Request $request)
+    public function get(Request $request, $id)
     {
-        $companies = Company::find($request->header('company-id'));
+        $companies = Company::find($id ?? $request->header('company-id'));
         return $companies;
     }
 
