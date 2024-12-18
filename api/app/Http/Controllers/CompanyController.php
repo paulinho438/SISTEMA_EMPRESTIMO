@@ -24,7 +24,7 @@ class CompanyController extends Controller
     }
     public function get(Request $request, $id)
     {
-        $companies = Company::find($id ?? $request->header('company-id'));
+        $companies = Company::find($id != 'undefined' ? $id : $request->header('company-id'));
         return $companies;
     }
 
