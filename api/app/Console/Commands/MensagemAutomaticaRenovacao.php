@@ -46,17 +46,17 @@ class MensagemAutomaticaRenovacao extends Command
         $this->info('Realizando a Mensagem Renovacao Automatica');
 
         // Buscar clientes e seus empréstimos
-        $clients = Client::whereHas('emprestimos', function ($query) {
+        $clients = Client::whereDoesntHave('emprestimos', function ($query) {
             $query->whereHas('parcelas', function ($query) {
-                $query->whereNotNull('dt_baixa');
+                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
             });
         })
-            ->with(['emprestimos' => function ($query) {
-                $query->whereHas('parcelas', function ($query) {
-                    $query->whereNotNull('dt_baixa');
-                });
-            }])
-            ->get();
+        ->with(['emprestimos' => function ($query) {
+            $query->whereDoesntHave('parcelas', function ($query) {
+                $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
+            });
+        }])
+        ->get();
 
         // Filtrar os resultados em PHP
         $filteredClients = $clients->filter(function ($client) {
