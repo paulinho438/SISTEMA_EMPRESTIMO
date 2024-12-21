@@ -591,32 +591,21 @@ class EmprestimoController extends Controller
                         // Verificar se o PNG foi gerado
                         if (file_exists($pngPath)) {
                             try {
+                                $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
                                 // Enviar o PNG gerado para o endpoint
                                 $response = Http::attach(
                                     'arquivo', // Nome do campo no formulário
                                     file_get_contents($pngPath), // Conteúdo do arquivo
                                     'comprovante.png' // Nome do arquivo enviado
-                                )->post('http://node.agecontrole.com.br/enviar-pdf', [
-                                    'numero' => '556193305267',
+                                )->post($emprestimo->company->whatsapp.'/enviar-pdf', [
+                                    'numero' =>  "55" . $telefone,
                                 ]);
 
-                                // Verificar a resposta do endpoint
-                                if ($response->successful()) {
-                                    return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
-                                } else {
-                                    return response()->json([
-                                        'error' => 'Falha ao enviar imagem',
-                                        'details' => $response->body(),
-                                    ], 500);
-                                }
+
                             } catch (\Exception $e) {
-                                return response()->json([
-                                    'error' => 'Erro ao enviar imagem',
-                                    'details' => $e->getMessage(),
-                                ], 500);
+
                             }
                         } else {
-                            return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
                         }
                     }
                 } else {
