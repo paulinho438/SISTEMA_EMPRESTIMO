@@ -33,10 +33,12 @@ use Illuminate\Support\Facades\Route;
 
 use App\Mail\ExampleEmail;
 use Illuminate\Support\Facades\Mail;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 use Illuminate\Support\Facades\Http;
-use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
+use Spatie\PdfToImage\Pdf as SpatiePdf;
+use Spatie\Browsershot\Browsershot;
 
 
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
@@ -249,56 +251,61 @@ Route::middleware('auth:api')->group(function () {
             'origem_cnpj' => '52.196.079/0001-71',
             'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
             'data_hora' => date('d/m/Y H:i:s'),
-            'id_transacao' => '1234567890',
         ];
 
-        // Gerar a imagem do comprovante
-        $imagem = Image::canvas(800, 600, '#ffffff'); // Cria uma imagem branca de 800x600
-        $imagem->text('Comprovante de Transferência', 400, 50, function ($font) {
-            $font->file(public_path('fonts/arial.ttf'));
-            $font->size(24);
-            $font->color('#000000');
-            $font->align('center');
-        });
+        // Renderizar o HTML da view
+        $html = view('comprovante-template', $dados)->render();
 
-        // Adiciona os detalhes do comprovante
-        $imagem->text('Valor: R$ ' . $dados['valor'], 400, 100, function ($font) {
-            $font->file(public_path('fonts/arial.ttf'));
-            $font->size(18);
-            $font->color('#000000');
-            $font->align('center');
-        });
-        $imagem->text('Tipo de Transferência: ' . $dados['tipo_transferencia'], 400, 140, function ($font) {
-            $font->file(public_path('fonts/arial.ttf'));
-            $font->size(18);
-            $font->color('#000000');
-            $font->align('center');
-        });
-        $imagem->text('Descrição: ' . $dados['descricao'], 400, 180, function ($font) {
-            $font->file(public_path('fonts/arial.ttf'));
-            $font->size(18);
-            $font->color('#000000');
-            $font->align('center');
-        });
-
-        // Salvar a imagem temporariamente
+        // Caminho para salvar a imagem
         $imagePath = storage_path('app/public/comprovante.png');
-        $imagem->save($imagePath);
 
-        // Enviar a imagem para o endpoint externo
+        try {
+            // Gerar a imagem a partir do HTML
+            Browsershot::html($html)
+                ->windowSize(800, 600) // Definir tamanho da janela
+                ->setScreenshotType('png') // Tipo de imagem: PNG
+                ->save($imagePath);
+
+            // Retornar a URL da imagem gerada
+            return response()->json([
+                'message' => 'Imagem gerada com sucesso!',
+                'imagem_url' => asset('storage/comprovante.png'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro ao gerar imagem: ' . $e->getMessage()], 500);
+        }
+        // Converter PDF para imagem
+        $pdf = new SpatiePdf($pdfPath);
+        $imagePath = storage_path('app/public/comprovante.png'); // Caminho para salvar a imagem
+
+        try {
+            // Salva a primeira página do PDF como imagem
+            $pdf->saveImage($imagePath);
+
+            // Retorna a URL da imagem convertida
+            return response()->json([
+                'message' => 'PDF convertido com sucesso!',
+                'imagem_url' => Storage::url('comprovante.png')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro ao converter PDF: ' . $e->getMessage()], 500);
+        }
+        $pdf->save($pdfPath);
+
+        // Enviar o PDF gerado para o endpoint externo
         $response = Http::attach(
             'arquivo', // Nome do campo no formulário
-            file_get_contents($imagePath), // Conteúdo do arquivo
-            'comprovante.png' // Nome do arquivo enviado
+            file_get_contents($pdfPath), // Conteúdo do arquivo
+            'comprovante.pdf' // Nome do arquivo enviado
         )->post('http://node2.agecontrole.com.br/enviar-pdf', [
             'numero' => '556193305267',
         ]);
 
         // Verificar a resposta do endpoint
         if ($response->successful()) {
-            return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
+            return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
         } else {
-            return response()->json(['error' => 'Falha ao enviar a imagem', 'details' => $response->body()], 500);
+            return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
         }
     });
 });
