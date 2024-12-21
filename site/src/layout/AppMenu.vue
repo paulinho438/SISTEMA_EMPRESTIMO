@@ -77,7 +77,7 @@ const model = ref([
                         label: 'Usuários',
                         icon: 'pi pi-fw pi-database',
                         to: '/usuarios',
-                        permission: 'edit_empresa'
+                        permission: 'criar_usuarios'
                     }
                 ]
             },
