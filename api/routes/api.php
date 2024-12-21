@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 use Illuminate\Support\Facades\Http;
+use Intervention\Image\Facades\Image;
 
 
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
