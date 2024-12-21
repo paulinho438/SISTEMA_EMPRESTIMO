@@ -120,6 +120,8 @@ Relatório de Parcelas Pendentes:
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
+
+
 ";
 
 $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
@@ -137,7 +139,9 @@ $fraseInicial .= "
 
 Pagamento mínimo - Juros R$ {$valorJuros}
 
-Para pagamento de demais valores
+Ou
+
+Abaixo segue o pix para o pagamento da primeira parcela!
 
 ";
 }
