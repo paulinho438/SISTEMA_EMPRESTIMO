@@ -1871,7 +1871,7 @@ class EmprestimoController extends Controller
     }
 
     public function envioMensagem($parcela){
-        if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+        if (isset($parcela->emprestimo->company->whatsapp)) {
 
             try {
 
@@ -1985,7 +1985,7 @@ Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
     }
 
     public function envioMensagemPix($parcela){
-        if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+        if (isset($parcela->emprestimo->company->whatsapp)) {
 
             try {
 
