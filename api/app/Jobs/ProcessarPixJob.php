@@ -139,58 +139,10 @@ Pagamento mínimo - Juros R$ {$valorJuros}
 
 Para pagamento de demais valores
 
-
-
 ";
 }
 
-
-
 }
-
-
-if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
-$fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
-
-{$parcelaPendente->chave_pix}
-
-📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
-";
-}else if(count($parcela->emprestimo->parcelas) > 1){
-$fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
-
-Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-";
-}
-
-
-
-
-                        // Montagem das parcelas pendentes
-                        //                             $parcelasString = $parcela->emprestimo->parcelas
-                        //                                 ->filter(function ($item) {
-                        //                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                        //                                 })
-                        //                                 ->map(function ($item) {
-                        //                                     return "
-                        // Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-                        // Parcela: {$item->parcela}
-                        // Atrasos: {$item->atrasadas}
-                        // Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-                        // Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-                        // Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-                        // Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-                        // PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-                        // Status: Pendente
-                        // RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                        //                                 })
-                        //                                 ->implode("\n\n");
-
-
-
-                        // Obtenha a saudação baseada na hora atual
-
-                        // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
                         $frase = $saudacaoTexto . $fraseInicial;
 
                         $data = [
@@ -223,7 +175,7 @@ Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 
                         $data = [
                             "numero" => "55" . $telefone,
-                            "mensagem" => $parcela->emprestimo->banco->chavepix
+                            "mensagem" => $parcela->emprestimo->parcela->chave_pix
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
