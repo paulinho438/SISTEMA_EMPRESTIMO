@@ -262,7 +262,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Configurações de tamanho, qualidade e zoom
         $width = 800;    // Largura em pixels
-        $height = 1900;  // Altura em pixels
+        $height = 1600;  // Altura em pixels
         $quality = 100;  // Qualidade máxima
         $zoom = 1.8;     // Zoom de 2x
 
