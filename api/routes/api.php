@@ -284,7 +284,7 @@ Route::middleware('auth:api')->group(function () {
 
                 // Verificar a resposta do endpoint
                 if ($response->successful()) {
-                    return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
+                    return response()->json(['message' => 'Imagem enviada com sucessos!'], 200);
                 } else {
                     return response()->json([
                         'error' => 'Falha ao enviar imagem',
