@@ -128,6 +128,8 @@ Abaixo segue o pix para o pagamento da primeira parcela!
 
 ";
 
+
+
 $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
 if(count($parcela->emprestimo->parcelas) == 1){
 if(!$parcelaPendente->emprestimo->pagamentominimo){
@@ -143,11 +145,20 @@ $fraseInicial .= "
 
 Pagamento mínimo - Juros R$ {$valorJuros}
 
-
-
+Abaixo segue o pix para o pagamento minimo!
 ";
 }
 
+}
+
+if(count($parcela->emprestimo->parcelas) > 1) {
+$fraseInicial .= "
+
+Ou
+
+Abaixo segue o pix para o pagamento da primeira parcela!
+
+    ";
 }
                         $frase = $saudacaoTexto . $fraseInicial;
 
@@ -179,9 +190,15 @@ Pagamento mínimo - Juros R$ {$valorJuros}
                         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                         $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
 
+                        $pix = $parcela->chave_pix;
+
+                        if($parcela->emprestimo->pagamentominimo){
+                            $pix = $parcela->emprestimo->pagamentominimo->chave_pix;
+                        }
+
                         $data = [
                             "numero" => "55" . $telefone,
-                            "mensagem" => $parcela->chave_pix
+                            "mensagem" => $pix
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
