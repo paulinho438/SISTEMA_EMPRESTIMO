@@ -175,7 +175,7 @@ Para pagamento de demais valores
 
                         $data = [
                             "numero" => "55" . $telefone,
-                            "mensagem" => $parcela->emprestimo->parcela->chave_pix
+                            "mensagem" => $parcela->chave_pix
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
