@@ -11,7 +11,7 @@ e criado um pm2 do app
 
 cada modificacao e necessario executar pm2 stop app e pm2 start app
 
-pm2 start app.js --name "app"
+pm2 start app.js --name "node2"
 
 pm2 list
 

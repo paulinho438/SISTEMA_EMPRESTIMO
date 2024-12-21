@@ -278,7 +278,7 @@ Route::middleware('auth:api')->group(function () {
                     'arquivo', // Nome do campo no formulário
                     file_get_contents($pngPath), // Conteúdo do arquivo
                     'comprovante.png' // Nome do arquivo enviado
-                )->post('http://node.agecontrole.com.br/enviar-pdf', [
+                )->post('http://node2.agecontrole.com.br/enviar-pdf', [
                     'numero' => '556193305267',
                 ]);
 
