@@ -13,6 +13,8 @@ cada modificacao e necessario executar pm2 stop app e pm2 start app
 
 pm2 start app.js --name "app"
 
+pm2 list
+
 para uma nova aplicacao e necessario configurar um link na hostgator
 
 na host gator tem o menu 
