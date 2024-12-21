@@ -99,9 +99,6 @@
         <div class="section2">
             <p><strong>Nome:</strong> {{ $destino_nome }}</p>
             <p><strong>CPF:</strong> {{ $destino_cpf }}</p>
-            <p><strong>Instituição:</strong> {{ $destino_instituicao }}</p>
-            <p><strong>Agência:</strong> {{ $destino_agencia }}</p>
-            <p><strong>Conta:</strong> {{ $destino_conta }}</p>
             <p><strong>Chave Pix:</strong> {{ $destino_chave_pix }}</p>
         </div>
 
