@@ -236,7 +236,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/feriado', [FeriadoController::class, 'insert']);
 
     Route::post('/gerar-comprovante', function (Request $request) {
-        // Dados do comprovante
         $dados = [
             'valor' => 100,
             'tipo_transferencia' => 'PIX',
@@ -251,37 +250,25 @@ Route::middleware('auth:api')->group(function () {
             'id_transacao' => '1234567890',
         ];
 
-        // Renderizar a view como HTML
+        // Renderizar o HTML da view
         $html = view('comprovante-template', $dados)->render();
 
-        // Configuração para criar imagem com Imagick
-        $imagick = new \Imagick(storage_path('app/public/comprovante.png'));
-        $imagick->setResolution(300, 300); // Ajustar a resolução se necessário
-        $imagick->readImageBlob('<html>' . $html . '</html>');
-        $imagick->setImageFormat('png');
+        // Salvar o HTML em um arquivo temporário
+        $htmlFilePath = storage_path('app/public/comprovante.html');
+        file_put_contents($htmlFilePath, $html);
 
-        $imagick->setOption('temporary-path', 'app/public/');
-
-        // Salvar o PNG gerado
+        // Caminho para o arquivo PNG de saída
         $pngPath = storage_path('app/public/comprovante.png');
-        $imagick->writeImage($pngPath);
-        $imagick->clear();
-        $imagick->destroy();
 
-        // Enviar o PNG gerado para o endpoint externo
-        $response = Http::attach(
-            'arquivo', // Nome do campo no formulário
-            file_get_contents($pngPath), // Conteúdo do arquivo
-            'comprovante.png' // Nome do arquivo enviado
-        )->post('http://node2.agecontrole.com.br/enviar-pdf', [
-            'numero' => '556193305267',
-        ]);
+        // Executar o comando wkhtmltoimage
+        $command = "wkhtmltoimage {$htmlFilePath} {$pngPath}";
+        shell_exec($command);
 
-        // Verificar a resposta do endpoint
-        if ($response->successful()) {
-            return response()->json(['message' => 'PNG enviado com sucesso!'], 200);
+        // Verificar se o PNG foi gerado
+        if (file_exists($pngPath)) {
+            return response()->json(['message' => 'Imagem gerada com sucesso!', 'path' => $pngPath], 200);
         } else {
-            return response()->json(['error' => 'Falha ao enviar PNG', 'details' => $response->body()], 500);
+            return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
         }
     });
 
