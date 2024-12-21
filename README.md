@@ -40,3 +40,17 @@ precisa adicionar uma linha
  faz o apontamento no nginix 
 
  pronto ssl configurado
+
+
+ screen para laravel queue
+
+ screen -S sistema-agecontrole // criar
+ screen -r sistema-agecontrole // entrar
+
+ cd /path/to/your/project
+php artisan queue:work
+
+
+control + a e d
+
+

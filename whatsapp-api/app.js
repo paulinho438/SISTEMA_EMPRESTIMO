@@ -5,6 +5,8 @@ const qrcode = require('qrcode-terminal');
 const qrcode2 = require('qrcode');
 const fs = require('fs').promises;
 const { Client } = require('whatsapp-web.js');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const app = express();
 const port = 3000;
 
@@ -118,6 +120,34 @@ app.post('/enviar-mensagem', async (req, res) => {
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error.message);
     res.status(500).send('Erro ao enviar mensagem');
+  }
+});
+
+app.post('/enviar-pdf', upload.single('arquivo'), async (req, res) => {
+  const { numero } = req.body;
+
+  try {
+    // Verifica se o arquivo foi enviado
+    if (!req.file) {
+      return res.status(400).send('Nenhum arquivo enviado.');
+    }
+
+    // Caminho do arquivo enviado
+    const caminhoDoArquivo = path.join(__dirname, req.file.path);
+
+    // Envia o arquivo PDF para o número fornecido
+    const chatId = `${numero}@c.us`;
+    const media = MessageMedia.fromFilePath(caminhoDoArquivo);
+
+    await client.sendMessage(chatId, media);
+
+    // Opcional: Remove o arquivo do servidor após o envio
+    await fs.unlink(caminhoDoArquivo);
+
+    res.send('PDF enviado com sucesso!');
+  } catch (error) {
+    console.error('Erro ao enviar PDF:', error.message);
+    res.status(500).send('Erro ao enviar PDF');
   }
 });
 
