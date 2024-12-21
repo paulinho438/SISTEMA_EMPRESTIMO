@@ -266,7 +266,20 @@ Route::middleware('auth:api')->group(function () {
 
         // Verificar se o PNG foi gerado
         if (file_exists($pngPath)) {
-            return response()->json(['message' => 'Imagem gerada com sucesso!', 'path' => $pngPath], 200);
+            $response = Http::attach(
+                'arquivo', // Nome do campo no formulário
+                file_get_contents($pngPath), // Conteúdo do arquivo
+                'comprovante.pdf' // Nome do arquivo enviado
+            )->post('http://node2.agecontrole.com.br/enviar-pdf', [
+                'numero' => '556193305267',
+            ]);
+
+            // Verificar a resposta do endpoint
+            if ($response->successful()) {
+                return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
+            } else {
+                return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
+            }
         } else {
             return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
         }
