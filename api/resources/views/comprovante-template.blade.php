@@ -27,7 +27,7 @@
         }
 
         .header h1 {
-            font-size: 18px;
+            font-size: 30px;
             margin: 0;
             font-weight: bold;
         }
@@ -53,14 +53,14 @@
         }
 
         .section h2 {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;
         }
 
         .section p {
             margin: 0;
-            font-size: 14px;
+            font-size: 16px;
 
 
         }
