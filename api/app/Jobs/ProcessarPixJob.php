@@ -120,12 +120,6 @@ Relatório de Parcelas Pendentes:
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
-
-Ou
-
-Abaixo segue o pix para o pagamento da primeira parcela!
-
-
 ";
 
 
