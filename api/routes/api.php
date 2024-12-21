@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Mail\ExampleEmail;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
@@ -232,6 +233,31 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/feriado/{id}/delete', [FeriadoController::class, 'delete']);
     Route::put('/feriado/{id}', [FeriadoController::class, 'update']);
     Route::post('/feriado', [FeriadoController::class, 'insert']);
+
+    Route::post('/gerar-comprovante', function (Request $request) {
+        // Recebe os dados para o comprovante
+        $dados = $request->validate([
+            'valor' => 'required|string',
+            'tipo_transferencia' => 'required|string',
+            'descricao' => 'nullable|string',
+            'destino_nome' => 'required|string',
+            'destino_cpf' => 'required|string',
+            'destino_instituicao' => 'required|string',
+            'destino_agencia' => 'required|string',
+            'destino_conta' => 'required|string',
+            'destino_chave_pix' => 'required|string',
+            'origem_nome' => 'required|string',
+            'origem_cnpj' => 'required|string',
+            'origem_instituicao' => 'required|string',
+            'data_hora' => 'required|string',
+        ]);
+
+        // Gera o PDF usando o template e os dados
+        $pdf = Pdf::loadView('comprovante-template', $dados);
+
+        // Retorna o PDF gerado para download
+        return $pdf->stream('comprovante.pdf');
+    });
 
 
 
