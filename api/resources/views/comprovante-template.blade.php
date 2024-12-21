@@ -60,7 +60,7 @@
 
         .section p {
             margin: 0;
-            font-size: 16px;
+            font-size: 14px;
 
 
         }
@@ -100,6 +100,7 @@
             <p><strong>Nome:</strong> {{ $destino_nome }}</p>
             <p><strong>CPF:</strong> {{ $destino_cpf }}</p>
             <p><strong>Chave Pix:</strong> {{ $destino_chave_pix }}</p>
+            <p><strong>Id da transação:</strong> {{ $id_transacao }}</p>
         </div>
 
         <div class="section-divider"></div>
