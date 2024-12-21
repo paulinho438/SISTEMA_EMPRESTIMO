@@ -248,6 +248,7 @@ Route::middleware('auth:api')->group(function () {
             'origem_cnpj' => '52.196.079/0001-71',
             'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
             'data_hora' => date('d/m/Y H:i:s'),
+            'id_transacao' => '1234567890',
         ];
 
         // Gerar o PDF usando o template e os dados
