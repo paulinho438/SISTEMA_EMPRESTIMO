@@ -71,9 +71,9 @@ class ProcessarPixJob implements ShouldQueue
             }
         }
 
-        $this->envioMensagem($this->emprestimo->parcelas()->first());
+        $this->envioMensagem($this->emprestimo->parcelas[0]);
 
-        $this->envioMensagemPix($this->emprestimo->parcelas()->first());
+        $this->envioMensagemPix($this->emprestimo->parcelas[0]);
 
 
     }
