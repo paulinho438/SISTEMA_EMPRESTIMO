@@ -9,6 +9,7 @@
         "barryvdh/laravel-dompdf": "^1.0",
         "efipay/sdk-php-apis-efi": "^1.6",
         "guzzlehttp/guzzle": "^7.2",
+        "intervention/image": "*",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7",
