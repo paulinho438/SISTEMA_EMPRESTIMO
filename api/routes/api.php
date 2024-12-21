@@ -236,19 +236,21 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/feriado', [FeriadoController::class, 'insert']);
 
     Route::post('/gerar-comprovante', function (Request $request) {
-        $dados = [
-            'valor' => 100,
-            'tipo_transferencia' => 'PIX',
-            'descricao' => 'Transferência realizada com sucesso',
-            'destino_nome' => 'Ray JR',
-            'destino_cpf' => '055.463.561-54',
-            'destino_chave_pix' => '055.463.561-54',
-            'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
-            'origem_cnpj' => '52.196.079/0001-71',
-            'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
-            'data_hora' => date('d/m/Y H:i:s'),
-            'id_transacao' => '1234567890',
-        ];
+        // $dados = [
+        //     'valor' => 100,
+        //     'tipo_transferencia' => 'PIX',
+        //     'descricao' => 'Transferência realizada com sucesso',
+        //     'destino_nome' => 'Ray JR',
+        //     'destino_cpf' => '055.463.561-54',
+        //     'destino_chave_pix' => '055.463.561-54',
+        //     'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
+        //     'origem_cnpj' => '52.196.079/0001-71',
+        //     'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+        //     'data_hora' => date('d/m/Y H:i:s'),
+        //     'id_transacao' => '1234567890',
+        // ];
+
+        $dados = $request->all();
 
         // Renderizar o HTML da view
         $html = view('comprovante-template', $dados)->render();
