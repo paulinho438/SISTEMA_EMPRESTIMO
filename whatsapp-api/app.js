@@ -151,6 +151,21 @@ app.post('/enviar-pdf', upload.single('arquivo'), async (req, res) => {
   }
 });
 
+app.get('/logout', async (req, res) => {
+  try {
+    // Destroi a sessão do cliente WhatsApp
+    await client.logout();
+
+    isClientLoggedIn = false;
+
+    console.log('Cliente desconectado com sucesso.');
+    res.send({ message: 'Cliente desconectado com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao deslogar cliente:', error.message);
+    res.status(500).send({ error: 'Erro ao deslogar cliente.', details: error.message });
+  }
+});
+
 app.post('/renovar', async (req, res) => {
   // Desestruturação dos dados do corpo da solicitação
   const { numero } = req.body;
