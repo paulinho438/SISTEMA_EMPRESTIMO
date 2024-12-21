@@ -132,17 +132,22 @@ app.post('/enviar-pdf', upload.single('arquivo'), async (req, res) => {
       return res.status(400).send('Nenhum arquivo enviado.');
     }
 
-    // Caminho do arquivo enviado
-    const caminhoDoArquivo = path.join(__dirname, req.file.path);
+    // Garante que o arquivo tenha a extensão correta
+    const extensao = path.extname(req.file.originalname) || '.pdf'; // Supondo PDF como padrão
+    const novoCaminho = path.join(__dirname, 'uploads', `${req.file.filename}${extensao}`);
+
+    // Renomeia o arquivo para garantir a extensão
+    await fs.rename(req.file.path, novoCaminho);
+
+    // Cria a mídia com o MessageMedia
+    const media = MessageMedia.fromFilePath(novoCaminho);
 
     // Envia o arquivo PDF para o número fornecido
     const chatId = `${numero}@c.us`;
-    const media = MessageMedia.fromFilePath(caminhoDoArquivo);
-
     await client.sendMessage(chatId, media);
 
     // Opcional: Remove o arquivo do servidor após o envio
-    await fs.unlink(caminhoDoArquivo);
+    await fs.unlink(novoCaminho);
 
     res.send('PDF enviado com sucesso!');
   } catch (error) {
