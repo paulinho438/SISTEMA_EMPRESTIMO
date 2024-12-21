@@ -260,25 +260,36 @@ Route::middleware('auth:api')->group(function () {
         // Caminho para o arquivo PNG de saída
         $pngPath = storage_path('app/public/comprovante.png');
 
-        // Executar o comando wkhtmltoimage
+        // Executar o comando wkhtmltoimage com xvfb-run
         $command = "xvfb-run wkhtmltoimage {$htmlFilePath} {$pngPath}";
         shell_exec($command);
 
         // Verificar se o PNG foi gerado
         if (file_exists($pngPath)) {
-            $response = Http::attach(
-                'arquivo', // Nome do campo no formulário
-                file_get_contents($pngPath), // Conteúdo do arquivo
-                'comprovante.pdf' // Nome do arquivo enviado
-            )->post('http://node2.agecontrole.com.br/enviar-pdf', [
-                'numero' => '556193305267',
-            ]);
+            try {
+                // Enviar o PNG gerado para o endpoint
+                $response = Http::attach(
+                    'arquivo', // Nome do campo no formulário
+                    file_get_contents($pngPath), // Conteúdo do arquivo
+                    'comprovante.png' // Nome do arquivo enviado
+                )->post('http://node2.agecontrole.com.br/enviar-pdf', [
+                    'numero' => '556193305267',
+                ]);
 
-            // Verificar a resposta do endpoint
-            if ($response->successful()) {
-                return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
-            } else {
-                return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
+                // Verificar a resposta do endpoint
+                if ($response->successful()) {
+                    return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
+                } else {
+                    return response()->json([
+                        'error' => 'Falha ao enviar imagem',
+                        'details' => $response->body(),
+                    ], 500);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erro ao enviar imagem',
+                    'details' => $e->getMessage(),
+                ], 500);
             }
         } else {
             return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
