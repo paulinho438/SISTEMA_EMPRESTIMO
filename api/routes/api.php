@@ -252,9 +252,6 @@ Route::middleware('auth:api')->group(function () {
 
         $dados = $request->all();
 
-        $dados['data_hora'] = date('d/m/Y H:i:s');
-
-        // Renderizar o HTML da view
         $html = view('comprovante-template', $dados)->render();
 
         // Salvar o HTML em um arquivo temporário
