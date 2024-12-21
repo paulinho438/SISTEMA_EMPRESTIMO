@@ -33,12 +33,9 @@ use Illuminate\Support\Facades\Route;
 
 use App\Mail\ExampleEmail;
 use Illuminate\Support\Facades\Mail;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade\Pdf as DomPdf;
-use Spatie\PdfToImage\Pdf as SpatiePdf;
-use Spatie\Browsershot\Browsershot;
 
 
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
@@ -251,45 +248,14 @@ Route::middleware('auth:api')->group(function () {
             'origem_cnpj' => '52.196.079/0001-71',
             'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
             'data_hora' => date('d/m/Y H:i:s'),
+            'id_transacao' => '1234567890',
         ];
 
-        // Renderizar o HTML da view
-        $html = view('comprovante-template', $dados)->render();
+        // Gerar o PDF usando o template e os dados
+        $pdf = Pdf::loadView('comprovante-template', $dados);
 
-        // Caminho para salvar a imagem
-        $imagePath = storage_path('app/public/comprovante.png');
-
-        try {
-            // Gerar a imagem a partir do HTML
-            Browsershot::html($html)
-                ->windowSize(800, 600) // Definir tamanho da janela
-                ->setScreenshotType('png') // Tipo de imagem: PNG
-                ->save($imagePath);
-
-            // Retornar a URL da imagem gerada
-            return response()->json([
-                'message' => 'Imagem gerada com sucesso!',
-                'imagem_url' => asset('storage/comprovante.png'),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Erro ao gerar imagem: ' . $e->getMessage()], 500);
-        }
-        // Converter PDF para imagem
-        $pdf = new SpatiePdf($pdfPath);
-        $imagePath = storage_path('app/public/comprovante.png'); // Caminho para salvar a imagem
-
-        try {
-            // Salva a primeira página do PDF como imagem
-            $pdf->saveImage($imagePath);
-
-            // Retorna a URL da imagem convertida
-            return response()->json([
-                'message' => 'PDF convertido com sucesso!',
-                'imagem_url' => Storage::url('comprovante.png')
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Erro ao converter PDF: ' . $e->getMessage()], 500);
-        }
+        // Salvar o PDF em um arquivo temporário
+        $pdfPath = storage_path('app/public/comprovante.pdf');
         $pdf->save($pdfPath);
 
         // Enviar o PDF gerado para o endpoint externo
