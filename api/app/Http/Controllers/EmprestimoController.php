@@ -551,6 +551,71 @@ class EmprestimoController extends Controller
                         }
 
                         $array['response'] = $response->json();
+
+                        $dados = [
+                            'valor' => $emprestimo->valor,
+                            'tipo_transferencia' => 'PIX',
+                            'descricao' => 'Transferência realizada com sucesso',
+                            'destino_nome' => $array['response']['creditParty']['name'],
+                            'destino_cpf' => self::mascararString($emprestimo->client->cpf),
+                            'destino_chave_pix' => $emprestimo->client->pix_cliente,
+                            'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
+                            'origem_cnpj' => '52.196.079/0001-71',
+                            'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+                            'data_hora' => date('d/m/Y H:i:s'),
+                            'id_transacao' => $array['response']['endToEndId'],
+                        ];
+
+                        // Renderizar o HTML da view
+                        $html = view('comprovante-template', $dados)->render();
+
+                        // Salvar o HTML em um arquivo temporário
+                        $htmlFilePath = storage_path('app/public/comprovante.html');
+                        file_put_contents($htmlFilePath, $html);
+
+                        // Caminho para o arquivo PNG de saída
+                        $pngPath = storage_path('app/public/comprovante.png');
+
+                        // Configurações de tamanho, qualidade e zoom
+                        $width = 800;    // Largura em pixels
+                        $height = 1600;  // Altura em pixels
+                        $quality = 100;  // Qualidade máxima
+                        $zoom = 1.8;     // Zoom de 2x
+
+                        // Executar o comando wkhtmltoimage com ajustes
+                        $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
+                        shell_exec($command);
+
+                        // Verificar se o PNG foi gerado
+                        if (file_exists($pngPath)) {
+                            try {
+                                // Enviar o PNG gerado para o endpoint
+                                $response = Http::attach(
+                                    'arquivo', // Nome do campo no formulário
+                                    file_get_contents($pngPath), // Conteúdo do arquivo
+                                    'comprovante.png' // Nome do arquivo enviado
+                                )->post($emprestimo->company->whatsapp.'/enviar-pdf', [
+                                    'numero' => $emprestimo->client->telefone_celular_1,
+                                ]);
+
+                                // Verificar a resposta do endpoint
+                                if ($response->successful()) {
+                                    return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
+                                } else {
+                                    return response()->json([
+                                        'error' => 'Falha ao enviar imagem',
+                                        'details' => $response->body(),
+                                    ], 500);
+                                }
+                            } catch (\Exception $e) {
+                                return response()->json([
+                                    'error' => 'Erro ao enviar imagem',
+                                    'details' => $e->getMessage(),
+                                ], 500);
+                            }
+                        } else {
+                            return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
+                        }
                     }
                 } else {
                     return response()->json([
@@ -598,6 +663,13 @@ class EmprestimoController extends Controller
                 "error" => $e->getMessage()
             ], Response::HTTP_FORBIDDEN);
         }
+    }
+
+    function mascararString($string) {
+        $primeirosTres = substr($string, 0, 3);
+        $ultimosDois = substr($string, -2);
+        $mascarado = '***' . substr($string, 3, -2) . '**';
+        return $mascarado;
     }
 
     public function pagamentoTransferenciaConsultar(Request $request, $id)
