@@ -568,56 +568,56 @@ class EmprestimoController extends Controller
 
                         $array['dados'] = $dados;
 
-                        // // Renderizar o HTML da view
-                        // $html = view('comprovante-template', $dados)->render();
+                        // Renderizar o HTML da view
+                        $html = view('comprovante-template', $dados)->render();
 
-                        // // Salvar o HTML em um arquivo temporário
-                        // $htmlFilePath = storage_path('app/public/comprovante.html');
-                        // file_put_contents($htmlFilePath, $html);
+                        // Salvar o HTML em um arquivo temporário
+                        $htmlFilePath = storage_path('app/public/comprovante.html');
+                        file_put_contents($htmlFilePath, $html);
 
-                        // // Caminho para o arquivo PNG de saída
-                        // $pngPath = storage_path('app/public/comprovante.png');
+                        // Caminho para o arquivo PNG de saída
+                        $pngPath = storage_path('app/public/comprovante.png');
 
-                        // // Configurações de tamanho, qualidade e zoom
-                        // $width = 800;    // Largura em pixels
-                        // $height = 1600;  // Altura em pixels
-                        // $quality = 100;  // Qualidade máxima
-                        // $zoom = 1.8;     // Zoom de 2x
+                        // Configurações de tamanho, qualidade e zoom
+                        $width = 800;    // Largura em pixels
+                        $height = 1600;  // Altura em pixels
+                        $quality = 100;  // Qualidade máxima
+                        $zoom = 1.8;     // Zoom de 2x
 
-                        // // Executar o comando wkhtmltoimage com ajustes
-                        // $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
-                        // shell_exec($command);
+                        // Executar o comando wkhtmltoimage com ajustes
+                        $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
+                        shell_exec($command);
 
-                        // // Verificar se o PNG foi gerado
-                        // if (file_exists($pngPath)) {
-                        //     try {
-                        //         // Enviar o PNG gerado para o endpoint
-                        //         $response = Http::attach(
-                        //             'arquivo', // Nome do campo no formulário
-                        //             file_get_contents($pngPath), // Conteúdo do arquivo
-                        //             'comprovante.png' // Nome do arquivo enviado
-                        //         )->post('http://node2.agecontrole.com.br/enviar-pdf', [
-                        //             'numero' => '556193305267',
-                        //         ]);
+                        // Verificar se o PNG foi gerado
+                        if (file_exists($pngPath)) {
+                            try {
+                                // Enviar o PNG gerado para o endpoint
+                                $response = Http::attach(
+                                    'arquivo', // Nome do campo no formulário
+                                    file_get_contents($pngPath), // Conteúdo do arquivo
+                                    'comprovante.png' // Nome do arquivo enviado
+                                )->post('http://node.agecontrole.com.br/enviar-pdf', [
+                                    'numero' => '556193305267',
+                                ]);
 
-                        //         // Verificar a resposta do endpoint
-                        //         if ($response->successful()) {
-                        //             return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
-                        //         } else {
-                        //             return response()->json([
-                        //                 'error' => 'Falha ao enviar imagem',
-                        //                 'details' => $response->body(),
-                        //             ], 500);
-                        //         }
-                        //     } catch (\Exception $e) {
-                        //         return response()->json([
-                        //             'error' => 'Erro ao enviar imagem',
-                        //             'details' => $e->getMessage(),
-                        //         ], 500);
-                        //     }
-                        // } else {
-                        //     return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
-                        // }
+                                // Verificar a resposta do endpoint
+                                if ($response->successful()) {
+                                    return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
+                                } else {
+                                    return response()->json([
+                                        'error' => 'Falha ao enviar imagem',
+                                        'details' => $response->body(),
+                                    ], 500);
+                                }
+                            } catch (\Exception $e) {
+                                return response()->json([
+                                    'error' => 'Erro ao enviar imagem',
+                                    'details' => $e->getMessage(),
+                                ], 500);
+                            }
+                        } else {
+                            return response()->json(['error' => 'Falha ao gerar a imagem'], 500);
+                        }
                     }
                 } else {
                     return response()->json([
