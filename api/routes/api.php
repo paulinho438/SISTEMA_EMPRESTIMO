@@ -236,21 +236,18 @@ Route::middleware('auth:api')->group(function(){
 
     Route::post('/gerar-comprovante', function (Request $request) {
         // Recebe os dados para o comprovante
-        $dados = $request->validate([
-            'valor' => 'required|string',
-            'tipo_transferencia' => 'required|string',
-            'descricao' => 'nullable|string',
-            'destino_nome' => 'required|string',
-            'destino_cpf' => 'required|string',
-            'destino_instituicao' => 'required|string',
-            'destino_agencia' => 'required|string',
-            'destino_conta' => 'required|string',
-            'destino_chave_pix' => 'required|string',
-            'origem_nome' => 'required|string',
-            'origem_cnpj' => 'required|string',
-            'origem_instituicao' => 'required|string',
-            'data_hora' => 'required|string',
-        ]);
+        $dados = [
+            'valor' => 100,
+            'tipo_transferencia' => 'PIX',
+            'descricao' => 'Transferência realizada com sucesso',
+            'destino_nome' => 'Ray JR',
+            'destino_cpf' => '055.463.561-54',
+            'destino_chave_pix' => '055.463.561-54',
+            'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
+            'origem_cnpj' => '52.196.079/0001-71',
+            'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+            'data_hora' => date('d/m/Y H:i:s'),
+        ];
 
         // Gera o PDF usando o template e os dados
         $pdf = Pdf::loadView('comprovante-template', $dados);
