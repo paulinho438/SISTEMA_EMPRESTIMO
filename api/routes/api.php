@@ -260,8 +260,12 @@ Route::middleware('auth:api')->group(function () {
         // Caminho para o arquivo PNG de saída
         $pngPath = storage_path('app/public/comprovante.png');
 
-        // Executar o comando wkhtmltoimage com xvfb-run
-        $command = "xvfb-run wkhtmltoimage {$htmlFilePath} {$pngPath}";
+        // Configuração de tamanho
+        $width = 800; // Largura em pixels
+        $height = 1200; // Altura em pixels (opcional)
+
+        // Executar o comando wkhtmltoimage com parâmetros de tamanho
+        $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality 100 {$htmlFilePath} {$pngPath}";
         shell_exec($command);
 
         // Verificar se o PNG foi gerado
