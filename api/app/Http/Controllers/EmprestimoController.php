@@ -549,6 +549,8 @@ class EmprestimoController extends Controller
                                 "error" => "Erro ao efetuar a transferencia do Emprestimo."
                             ], Response::HTTP_FORBIDDEN);
                         }
+
+                        $array['response'] = $response->json();
                     }
                 } else {
                     return response()->json([
