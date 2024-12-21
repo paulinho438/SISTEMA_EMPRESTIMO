@@ -251,27 +251,53 @@ Route::middleware('auth:api')->group(function () {
             'id_transacao' => '1234567890',
         ];
 
-        // Gerar o PDF usando o template e os dados
-        $pdf = Pdf::loadView('comprovante-template', $dados);
+        // Gerar a imagem do comprovante
+        $imagem = Image::canvas(800, 600, '#ffffff'); // Cria uma imagem branca de 800x600
+        $imagem->text('Comprovante de Transferência', 400, 50, function ($font) {
+            $font->file(public_path('fonts/arial.ttf'));
+            $font->size(24);
+            $font->color('#000000');
+            $font->align('center');
+        });
 
-        // Salvar o PDF em um arquivo temporário
-        $pdfPath = storage_path('app/public/comprovante.pdf');
-        $pdf->save($pdfPath);
+        // Adiciona os detalhes do comprovante
+        $imagem->text('Valor: R$ ' . $dados['valor'], 400, 100, function ($font) {
+            $font->file(public_path('fonts/arial.ttf'));
+            $font->size(18);
+            $font->color('#000000');
+            $font->align('center');
+        });
+        $imagem->text('Tipo de Transferência: ' . $dados['tipo_transferencia'], 400, 140, function ($font) {
+            $font->file(public_path('fonts/arial.ttf'));
+            $font->size(18);
+            $font->color('#000000');
+            $font->align('center');
+        });
+        $imagem->text('Descrição: ' . $dados['descricao'], 400, 180, function ($font) {
+            $font->file(public_path('fonts/arial.ttf'));
+            $font->size(18);
+            $font->color('#000000');
+            $font->align('center');
+        });
 
-        // Enviar o PDF gerado para o endpoint externo
+        // Salvar a imagem temporariamente
+        $imagePath = storage_path('app/public/comprovante.png');
+        $imagem->save($imagePath);
+
+        // Enviar a imagem para o endpoint externo
         $response = Http::attach(
             'arquivo', // Nome do campo no formulário
-            file_get_contents($pdfPath), // Conteúdo do arquivo
-            'comprovante.pdf' // Nome do arquivo enviado
+            file_get_contents($imagePath), // Conteúdo do arquivo
+            'comprovante.png' // Nome do arquivo enviado
         )->post('http://node2.agecontrole.com.br/enviar-pdf', [
             'numero' => '556193305267',
         ]);
 
         // Verificar a resposta do endpoint
         if ($response->successful()) {
-            return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
+            return response()->json(['message' => 'Imagem enviada com sucesso!'], 200);
         } else {
-            return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
+            return response()->json(['error' => 'Falha ao enviar a imagem', 'details' => $response->body()], 500);
         }
     });
 });
