@@ -254,13 +254,14 @@ Route::middleware('auth:api')->group(function () {
         // Renderizar a view como HTML
         $html = view('comprovante-template', $dados)->render();
 
-
-
         // Configuração para criar imagem com Imagick
-        $imagick = new \Imagick();
+        $imagick = new \Imagick(storage_path('app/public/comprovante.png'));
         $imagick->setResolution(300, 300); // Ajustar a resolução se necessário
         $imagick->readImageBlob('<html>' . $html . '</html>');
         $imagick->setImageFormat('png');
+
+        $imagick->setOption('temporary-path', 'app/public/');
+
         // Salvar o PNG gerado
         $pngPath = storage_path('app/public/comprovante.png');
         $imagick->writeImage($pngPath);
