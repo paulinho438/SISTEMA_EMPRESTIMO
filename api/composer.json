@@ -5,28 +5,28 @@
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "require": {
-        "php": "^8.0",
-        "barryvdh/laravel-dompdf": "^1.0",
-        "efipay/sdk-php-apis-efi": "^1.6",
-        "guzzlehttp/guzzle": "^7.2",
-        "laravel/framework": "^9.19",
-        "laravel/sanctum": "^2.14",
-        "laravel/tinker": "^2.7",
-        "maatwebsite/excel": "^3.1",
-        "mailersend/laravel-driver": "^2.7",
-        "monolog/monolog": "^2.0",
-        "ramsey/uuid": "^4.3",
-        "simplesoftwareio/simple-qrcode": "^4.2",
-        "tymon/jwt-auth": "^1.0"
+        "php": "^8.0.2",
+        "barryvdh/laravel-dompdf": "1.0",
+        "efipay/sdk-php-apis-efi": "1.6",
+        "guzzlehttp/guzzle": "7.2",
+        "laravel/framework": "9.19",
+        "laravel/sanctum": "3.0",
+        "laravel/tinker": "2.7",
+        "maatwebsite/excel": "3.1",
+        "mailersend/laravel-driver": "2.7",
+        "monolog/monolog": "2.9",
+        "ramsey/uuid": "4.7",
+        "simplesoftwareio/simple-qrcode": "4.2",
+        "tymon/jwt-auth": "2.0"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.9.1",
-        "laravel/pint": "^1.0",
-        "laravel/sail": "^1.0.1",
-        "mockery/mockery": "^1.4.4",
-        "nunomaduro/collision": "^5.0",
-        "phpunit/phpunit": "^9.0",
-        "spatie/laravel-ignition": "^1.0"
+        "fakerphp/faker": "1.9.1",
+        "laravel/pint": "1.0",
+        "laravel/sail": "1.0.1",
+        "mockery/mockery": "1.4.4",
+        "nunomaduro/collision": "6.1",
+        "phpunit/phpunit": "9.5.10",
+        "spatie/laravel-ignition": "1.0"
     },
     "autoload": {
         "psr-4": {
@@ -64,7 +64,6 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
-        "platform-check": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
