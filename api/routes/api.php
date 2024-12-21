@@ -262,9 +262,9 @@ Route::middleware('auth:api')->group(function () {
 
         // Configurações de tamanho, qualidade e zoom
         $width = 800;    // Largura em pixels
-        $height = 1200;  // Altura em pixels
+        $height = 1400;  // Altura em pixels
         $quality = 100;  // Qualidade máxima
-        $zoom = 1.5;     // Zoom de 2x
+        $zoom = 1.8;     // Zoom de 2x
 
         // Executar o comando wkhtmltoimage com ajustes
         $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
