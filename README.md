@@ -56,3 +56,7 @@ php artisan queue:work
 control + a e d
 
 
+possivel problema do zap
+ls -l storage/app/public/comprovante.html
+
+ls -ld storage/app/public
