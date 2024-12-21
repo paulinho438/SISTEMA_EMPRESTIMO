@@ -25,7 +25,6 @@ use App\Http\Controllers\{
     LogController,
     PlanosController,
     LocacaoController
-
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -36,6 +35,8 @@ use App\Mail\ExampleEmail;
 use Illuminate\Support\Facades\Mail;
 use Barryvdh\DomPDF\Facade\Pdf;
 
+use Illuminate\Support\Facades\Http;
+
 
 Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
 
@@ -43,7 +44,7 @@ Route::get('/users', [UserController::class, 'index']);
 
 Route::get('/users/{id}', [UserController::class, 'id']);
 
-Route::get('/setup-teste', function (Request $request){
+Route::get('/setup-teste', function (Request $request) {
     $details = [
         'title' => 'Relatório de Emprestimos',
         'body' => 'This is a test email using MailerSend in Laravel.'
@@ -68,7 +69,7 @@ Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, '
 Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class, 'personalizarPagamento']);
 
 
-Route::middleware('auth:api')->group(function(){
+Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/info-conta', [DashboardController::class, 'infoConta']);
 
 
@@ -249,13 +250,27 @@ Route::middleware('auth:api')->group(function(){
             'data_hora' => date('d/m/Y H:i:s'),
         ];
 
-        // Gera o PDF usando o template e os dados
+        // Gerar o PDF usando o template e os dados
         $pdf = Pdf::loadView('comprovante-template', $dados);
 
-        // Retorna o PDF gerado para download
-        return $pdf->stream('comprovante.pdf');
+        // Salvar o PDF em um arquivo temporário
+        $pdfPath = storage_path('app/public/comprovante.pdf');
+        $pdf->save($pdfPath);
+
+        // Enviar o PDF gerado para o endpoint externo
+        $response = Http::attach(
+            'arquivo', // Nome do campo no formulário
+            file_get_contents($pdfPath), // Conteúdo do arquivo
+            'comprovante.pdf' // Nome do arquivo enviado
+        )->post('http://node2.agecontrole.com.br/enviar-pdf', [
+            'numero' => '556193305267',
+        ]);
+
+        // Verificar a resposta do endpoint
+        if ($response->successful()) {
+            return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
+        } else {
+            return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
+        }
     });
-
-
-
 });
