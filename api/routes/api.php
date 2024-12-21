@@ -236,7 +236,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/feriado', [FeriadoController::class, 'insert']);
 
     Route::post('/gerar-comprovante', function (Request $request) {
-        // Recebe os dados para o comprovante
+        // Dados do comprovante
         $dados = [
             'valor' => 100,
             'tipo_transferencia' => 'PIX',
@@ -251,27 +251,75 @@ Route::middleware('auth:api')->group(function () {
             'id_transacao' => '1234567890',
         ];
 
-        // Gerar o PDF usando o template e os dados
-        $pdf = Pdf::loadView('comprovante-template', $dados);
+        // Renderizar a view como HTML
+        $html = view('comprovante-template', $dados)->render();
 
-        // Salvar o PDF em um arquivo temporário
-        $pdfPath = storage_path('app/public/comprovante.pdf');
-        $pdf->save($pdfPath);
+        // Configuração para criar imagem com Imagick
+        $imagick = new \Imagick();
+        $imagick->setResolution(300, 300); // Ajustar a resolução se necessário
+        $imagick->readImageBlob('<html>' . $html . '</html>');
+        $imagick->setImageFormat('png');
 
-        // Enviar o PDF gerado para o endpoint externo
+        // Salvar o PNG gerado
+        $pngPath = storage_path('app/public/comprovante.png');
+        $imagick->writeImage($pngPath);
+        $imagick->clear();
+        $imagick->destroy();
+
+        // Enviar o PNG gerado para o endpoint externo
         $response = Http::attach(
             'arquivo', // Nome do campo no formulário
-            file_get_contents($pdfPath), // Conteúdo do arquivo
-            'comprovante.pdf' // Nome do arquivo enviado
+            file_get_contents($pngPath), // Conteúdo do arquivo
+            'comprovante.png' // Nome do arquivo enviado
         )->post('http://node2.agecontrole.com.br/enviar-pdf', [
             'numero' => '556193305267',
         ]);
 
         // Verificar a resposta do endpoint
         if ($response->successful()) {
-            return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
+            return response()->json(['message' => 'PNG enviado com sucesso!'], 200);
         } else {
-            return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
+            return response()->json(['error' => 'Falha ao enviar PNG', 'details' => $response->body()], 500);
         }
     });
+
+    // Route::post('/gerar-comprovante', function (Request $request) {
+    //     // Recebe os dados para o comprovante
+    //     $dados = [
+    //         'valor' => 100,
+    //         'tipo_transferencia' => 'PIX',
+    //         'descricao' => 'Transferência realizada com sucesso',
+    //         'destino_nome' => 'Ray JR',
+    //         'destino_cpf' => '055.463.561-54',
+    //         'destino_chave_pix' => '055.463.561-54',
+    //         'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
+    //         'origem_cnpj' => '52.196.079/0001-71',
+    //         'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+    //         'data_hora' => date('d/m/Y H:i:s'),
+    //         'id_transacao' => '1234567890',
+    //     ];
+
+    //     // Gerar o PDF usando o template e os dados
+    //     $pdf = Pdf::loadView('comprovante-template', $dados);
+
+    //     // Salvar o PDF em um arquivo temporário
+    //     $pdfPath = storage_path('app/public/comprovante.pdf');
+    //     $pdf->save($pdfPath);
+
+    //     // Enviar o PDF gerado para o endpoint externo
+    //     $response = Http::attach(
+    //         'arquivo', // Nome do campo no formulário
+    //         file_get_contents($pdfPath), // Conteúdo do arquivo
+    //         'comprovante.pdf' // Nome do arquivo enviado
+    //     )->post('http://node2.agecontrole.com.br/enviar-pdf', [
+    //         'numero' => '556193305267',
+    //     ]);
+
+    //     // Verificar a resposta do endpoint
+    //     if ($response->successful()) {
+    //         return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
+    //     } else {
+    //         return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);
+    //     }
+    // });
 });
