@@ -261,7 +261,7 @@ Route::middleware('auth:api')->group(function () {
         $pngPath = storage_path('app/public/comprovante.png');
 
         // Executar o comando wkhtmltoimage
-        $command = "wkhtmltoimage {$htmlFilePath} {$pngPath}";
+        $command = "xvfb-run wkhtmltoimage {$htmlFilePath} {$pngPath}";
         shell_exec($command);
 
         // Verificar se o PNG foi gerado
