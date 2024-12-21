@@ -80,7 +80,7 @@
 
         <div class="section">
             <h2>Valor</h2>
-            <p>{{ $valor }}</p>
+            <p>R$ {{ number_format($valor, 2, ',', '.') }}</p>
         </div>
 
         <div class="section">
