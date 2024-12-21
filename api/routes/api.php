@@ -237,7 +237,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('/gerar-comprovante', function (Request $request) {
         $dados = [
-            'valor' => 100,
+            'valor' => (100 / 100),
             'tipo_transferencia' => 'PIX',
             'descricao' => 'Transferência realizada com sucesso',
             'destino_nome' => 'Ray JR',
