@@ -121,6 +121,10 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
+Ou
+
+Abaixo segue o pix para o pagamento da primeira parcela!
+
 
 ";
 
@@ -139,9 +143,7 @@ $fraseInicial .= "
 
 Pagamento mínimo - Juros R$ {$valorJuros}
 
-Ou
 
-Abaixo segue o pix para o pagamento da primeira parcela!
 
 ";
 }
