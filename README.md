@@ -49,6 +49,8 @@ precisa adicionar uma linha
  screen -S sistema-agecontrole // criar
  screen -r sistema-agecontrole // entrar
 
+ screen -ls // listar todas as screen
+
  cd /path/to/your/project
 php artisan queue:work
 
