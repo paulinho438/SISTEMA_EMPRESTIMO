@@ -42,15 +42,14 @@ console.log("passou");
 // });
 
 const client = new Client({
-  webVersion: "2.2412.54v2",
+  puppeteer: { args: ["--no-sandbox"] },
+  authStrategy: new LocalAuth({
+    dataPath: "sessions",
+  }),
   webVersionCache: {
     type: "remote",
     remotePath:
       "https://raw.githubusercontent.com/guigo613/alternative-wa-version/main/html/2.2412.54v2.html",
-  },
-  puppeteer: {
-    headless: false,
-    executablePath: "C:\\Program Files\\Opera\\109.0.5097.68\\opera.exe",
   },
 });
 
