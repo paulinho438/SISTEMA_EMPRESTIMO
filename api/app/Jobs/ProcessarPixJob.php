@@ -37,12 +37,7 @@ class ProcessarPixJob implements ShouldQueue
      */
     public function handle()
     {
-        $videoPath = storage_path('app/public/app/public/video.mp4');
-
-        if (file_exists($videoPath)) {
-
-            $this->envioMensagemVideo($this->emprestimo->parcelas[0], $videoPath);
-        }
+        $this->envioMensagemPix($this->emprestimo->parcelas[0]);
 
         foreach ($this->emprestimo->parcelas as $parcela) {
             $response = $this->bcodexService->criarCobranca($parcela['valor'], $this->emprestimo->banco->document);
@@ -167,7 +162,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $data = [
                             "numero" => "55" . $telefone,
-                            "mensagem" => $pix
+                            "mensagem" => 'https://www.youtube.com/watch?v=OEMsSFINpBk'
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
