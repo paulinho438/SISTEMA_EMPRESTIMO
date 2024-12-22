@@ -25,7 +25,6 @@ export default {
             permissionsService: new PermissionsService(),
             icons: PrimeIcons,
             toast: useToast(),
-            confirmPopup: confirmPopup
         };
     },
     components: {
@@ -110,7 +109,7 @@ export default {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
-                            this.confirmPopup.require({
+                            confirmPopup.require({
                                 target: event.target,
                                 message: `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
                                 icon: 'pi pi-exclamation-triangle',
