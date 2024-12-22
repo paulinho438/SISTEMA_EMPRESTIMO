@@ -158,7 +158,7 @@ app.post('/enviar-pdf', upload.single('arquivo'), async (req, res) => {
 
     res.send(`${extensao.toUpperCase()} enviado com sucesso!`);
   } catch (error) {
-    console.error('Erro ao enviar arquivo:', error.message);
+    console.error('Erro ao enviar arquivos:', error.message);
     res.status(500).send('Erro ao enviar arquivo');
   }
 });
