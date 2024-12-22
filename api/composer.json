@@ -6,18 +6,18 @@
     "license": "MIT",
     "require": {
         "php": "^8.0.2",
-        "barryvdh/laravel-dompdf": "1.0",
-        "efipay/sdk-php-apis-efi": "1.6",
-        "guzzlehttp/guzzle": "7.2",
+        "barryvdh/laravel-dompdf": "^1.0",
+        "efipay/sdk-php-apis-efi": "^1.6",
+        "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
-        "laravel/tinker": "2.7",
+        "laravel/tinker": "^2.7",
         "maatwebsite/excel": "^3.1",
-        "mailersend/laravel-driver": "2.7",
-        "monolog/monolog": "2.9",
-        "ramsey/uuid": "4.7",
-        "simplesoftwareio/simple-qrcode": "4.2",
-        "tymon/jwt-auth": "2.0"
+        "mailersend/laravel-driver": "^2.7",
+        "monolog/monolog": "^2.9",
+        "ramsey/uuid": "^4.7",
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "tymon/jwt-auth": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

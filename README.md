@@ -62,3 +62,6 @@ possivel problema do zap
 ls -l storage/app/public/comprovante.html
 
 ls -ld storage/app/public
+
+
+source ~/.bashrc 
