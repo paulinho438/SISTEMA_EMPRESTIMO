@@ -37,7 +37,7 @@ class ProcessarPixJob implements ShouldQueue
      */
     public function handle()
     {
-        $this->envioMensagemPix($this->emprestimo->parcelas[0]);
+        // $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
 
         foreach ($this->emprestimo->parcelas as $parcela) {
             $response = $this->bcodexService->criarCobranca($parcela['valor'], $this->emprestimo->banco->document);
@@ -139,7 +139,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
         }
     }
-    public function envioMensagemPix($parcela)
+    public function envioMensagemVideoYoutube($parcela)
     {
         if (isset($parcela->emprestimo->company->whatsapp)) {
 
