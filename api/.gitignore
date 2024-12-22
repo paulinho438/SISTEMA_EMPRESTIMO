@@ -22,3 +22,9 @@ yarn-error.log
 
 # Ignore all files in storage/app/public
 /storage/app/public/*
+
+# Ignore all files in storage/app/public
+/storage/app/public/*
+
+# Allow specific video file
+!storage/app/public/video.mp4
