@@ -35,22 +35,10 @@ let isClientLoggedIn = false;
 console.log("passou");
 
 // Configurações do cliente do WhatsApp
-// const client = new Client({
-//   puppeteer: { args: ["--no-sandbox"] },
-//   webVersionCache: { type: "none" },
-//   authStrategy: new LocalAuth(),
-// });
-
 const client = new Client({
   puppeteer: { args: ["--no-sandbox"] },
-  authStrategy: new LocalAuth({
-    dataPath: "sessions",
-  }),
-  webVersionCache: {
-    type: "remote",
-    remotePath:
-      "https://raw.githubusercontent.com/guigo613/alternative-wa-version/main/html/2.2412.54v2.html",
-  },
+  webVersionCache: { type: "none" },
+  authStrategy: new LocalAuth(),
 });
 
 const minhaString =
