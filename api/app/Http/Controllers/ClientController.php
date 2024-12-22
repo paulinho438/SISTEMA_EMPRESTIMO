@@ -58,8 +58,8 @@ class ClientController extends Controller
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
                     $today = Carbon::now()->toDateString();
-                $query->whereNull('dt_ult_cobranca')
-                    ->orWhereDate('dt_ult_cobranca', '!=', $today);
+                    $query->whereNull('dt_ult_cobranca')
+                        ->orWhereDate('dt_ult_cobranca', '!=', $today);
                 }
             })
             ->whereHas('emprestimo', function ($query) use ($request) {
@@ -181,7 +181,19 @@ class ClientController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nome_completo' => 'required',
-            'cpf' => 'required',
+            'cpf' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    $exists = DB::table('clients')
+                        ->where('cpf', $value)
+                        ->where('company_id', $request->header('company-id'))
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('O CPF já está em uso para esta empresa.');
+                    }
+                },
+            ],
             'rg' => 'required',
             'data_nascimento' => 'required',
             'sexo' => 'required',

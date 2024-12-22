@@ -3,20 +3,10 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-
 use Illuminate\Support\Facades\Http;
-
 use App\Models\Juros;
 use App\Models\Parcela;
 use App\Models\Feriado;
-
-use Efi\Exception\EfiException;
-use Efi\EfiPay;
-
-use Illuminate\Support\Facades\DB;
-
-use Illuminate\Support\Str;
-
 use Carbon\Carbon;
 
 class CobrancaAutomaticaA extends Command
@@ -42,48 +32,76 @@ class CobrancaAutomaticaA extends Command
      */
     public function handle()
     {
-
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
-        // Obtendo a data de hoje no formato YYYY-MM-DD
         $today = Carbon::today()->toDateString();
-
-        // Verificando se hoje é um feriado
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
 
-        $parcelas = collect(); // Coleção vazia se hoje for um feriado
-
-        if (!$isHoliday) {
-            $parcelas = Parcela::where('dt_baixa', null)
-                ->whereNull('valor_recebido_pix')
-                ->whereNull('valor_recebido')
-                ->whereDate('venc_real', $today)
-                ->get()
-                ->unique('emprestimo_id');
+        if ($isHoliday) {
+            return 0;
         }
 
+        $parcelas = Parcela::whereNull('dt_baixa')
+            ->whereNull('valor_recebido_pix')
+            ->whereNull('valor_recebido')
+            ->whereDate('venc_real', $today)
+            ->get()
+            ->unique('emprestimo_id');
 
-        $r = [];
         foreach ($parcelas as $parcela) {
-            if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+            $this->processarParcela($parcela);
+        }
 
-                try {
+        return 0;
+    }
 
-                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+    private function processarParcela($parcela)
+    {
+        if (!$this->deveProcessarParcela($parcela)) {
+            return;
+        }
 
-                    if ($response->successful()) {
-                        $r = $response->json();
-                        if ($r['loggedIn']) {
+        try {
+            $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+            if ($response->successful() && $response->json()['loggedIn']) {
+                $this->enviarMensagem($parcela);
+            }
+        } catch (\Throwable $th) {
+            dd($th);
+        }
+    }
 
-                            $saudacao = self::obterSaudacao();
+    private function deveProcessarParcela($parcela)
+    {
+        return isset($parcela->emprestimo->company->whatsapp) &&
+            $parcela->emprestimo->contaspagar &&
+            $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado";
+    }
 
-                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
+    private function enviarMensagem($parcela)
+    {
+        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
 
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                            $fraseInicial = "
+        $saudacao = $this->obterSaudacao();
+        $parcelaPendente = $this->encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
+
+        $mensagem = $this->montarMensagem($parcela, $parcelaPendente, $saudacao);
+
+        $data = [
+            "numero" => "55" . $telefone,
+            "mensagem" => $mensagem
+        ];
+
+        Http::asJson()->post($baseUrl, $data);
+        sleep(8);
+    }
+
+    private function montarMensagem($parcela, $parcelaPendente, $saudacao)
+    {
+        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+        $fraseInicial = "
 
 Relatório de Parcelas Pendentes:
 
@@ -92,98 +110,47 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 ";
 
-$valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
-if(count($parcela->emprestimo->parcelas) == 1){
-if(!$parcelaPendente->emprestimo->pagamentominimo){
-    $fraseInicial .= "Copie e cole abaixo a chave pix
+        $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
+
+        if (count($parcela->emprestimo->parcelas) == 1) {
+            if (!$parcelaPendente->emprestimo->pagamentominimo) {
+                $fraseInicial .= "Copie e cole abaixo a chave pix
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
 
 📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
-}else{
-    $fraseInicial .= "
+            } else {
+                $fraseInicial .= "
 💸 Pagamento Total R$ {$parcelaPendente->saldo}
 
 Pagamento mínimo - Juros R$ {$valorJuros}
 
 Para pagamento de demais valores
+";
+            }
+        }
 
-
-
-    ";
-}
-
-
-
-}
-
-
-if($parcelaPendente !=  null && $parcelaPendente->chave_pix != ''){
-    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ ".$parcelaPendente->saldo." referente a parcela do dia:
+        if ($parcelaPendente != null && $parcelaPendente->chave_pix != '') {
+            $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ {$parcelaPendente->saldo} referente a parcela do dia:
 
 {$parcelaPendente->chave_pix}
 
 📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
 ";
-}else if(count($parcela->emprestimo->parcelas) > 1){
-    $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ ".$parcelaPendente->totalPendenteHoje()."
+        } else if (count($parcela->emprestimo->parcelas) > 1) {
+            $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ {$parcelaPendente->totalPendenteHoje()}:
 
 Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
 Chave pix: {$parcela->emprestimo->banco->chavepix}
 ";
-}
-
-
-
-
-                            // Montagem das parcelas pendentes
-                            //                             $parcelasString = $parcela->emprestimo->parcelas
-                            //                                 ->filter(function ($item) {
-                            //                                     return $item->atrasadas > 0 && is_null($item->dt_baixa);
-                            //                                 })
-                            //                                 ->map(function ($item) {
-                            //                                     return "
-                            // Data: " . Carbon::parse($item->venc)->format('d/m/Y') . "
-                            // Parcela: {$item->parcela}
-                            // Atrasos: {$item->atrasadas}
-                            // Valor: R$ " . number_format($item->valor, 2, ',', '.') . "
-                            // Multa: R$ " . number_format(($item->saldo - $item->valor) ?? 0, 2, ',', '.') . "
-                            // Juros: R$ " . number_format($item->multa ?? 0, 2, ',', '.') . "
-                            // Pago: R$ " . number_format($item->pago ?? 0, 2, ',', '.') . "
-                            // PIX: " . ($item->chave_pix ?? 'Não Contém') . "
-                            // Status: Pendente
-                            // RESTANTE: R$ " . number_format($item->saldo, 2, ',', '.');
-                            //                                 })
-                            //                                 ->implode("\n\n");
-
-
-
-                            // Obtenha a saudação baseada na hora atual
-
-                            // $frase = $saudacaoTexto . $fraseInicial . $parcelasString;
-                            $frase = $saudacaoTexto . $fraseInicial;
-
-                            $data = [
-                                "numero" => "55" . $telefone,
-                                "mensagem" => $frase
-                            ];
-
-                            $response = Http::asJson()->post($baseUrl, $data);
-                            sleep(8);
-                        }
-                    }
-                } catch (\Throwable $th) {
-                    dd($th);
-                }
-            }
         }
 
-        exit;
+        return $saudacaoTexto . $fraseInicial;
     }
 
-    function obterSaudacao()
+    private function obterSaudacao()
     {
         $hora = date('H');
         $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌤️ Tenha um excelente dia'];
@@ -199,15 +166,14 @@ Chave pix: {$parcela->emprestimo->banco->chavepix}
         }
     }
 
-    function encontrarPrimeiraParcelaPendente($parcelas) {
-
-        foreach($parcelas as $parcela){
-            if($parcela->dt_baixa === '' || $parcela->dt_baixa === null){
+    private function encontrarPrimeiraParcelaPendente($parcelas)
+    {
+        foreach ($parcelas as $parcela) {
+            if (is_null($parcela->dt_baixa)) {
                 return $parcela;
             }
         }
 
         return null;
     }
-
 }
