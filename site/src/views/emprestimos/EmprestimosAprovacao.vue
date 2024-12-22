@@ -56,6 +56,7 @@ export default {
                 geolocalizacao: '17.23213, 12.455345'
             }),
             loading: ref(true),
+            loadingFullScreen: ref(false),
             selectedTipoSexo: ref(''),
             sexo: ref([
                 { name: 'Masculino', value: 'M' },
@@ -108,13 +109,13 @@ export default {
             this.client.juros = emprestimo.juros;
         },
         realizarTransferencia(event) {
-            this.loading = true;
+            this.loadingFullScreen = true;
             if (this.route.params?.id) {
                 if (this.banco.wallet) {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
-                            this.loading = false;
+                            this.loadingFullScreen = false;
                             this.confirmPopup.require({
                                 target: event.target,
                                 message: `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
@@ -122,7 +123,7 @@ export default {
                                 acceptLabel: 'Sim',
                                 rejectLabel: 'Não',
                                 accept: () => {
-                                    this.loading = true;
+                                    this.loadingFullScreen = true;
                                     if (this.route.params?.id) {
                                         this.emprestimoService
                                             .efetuarPagamentoEmprestimo(this.route.params.id)
@@ -148,12 +149,12 @@ export default {
                                                 }
                                             })
                                             .finally(() => {
-                                                this.loading = false;
+                                                this.loadingFullScreen = false;
                                             });
                                     }
                                 },
                                 reject: () => {
-                                    this.loading = false;
+                                    this.loadingFullScreen = false;
                                     this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
                                 }
                             });
@@ -168,7 +169,7 @@ export default {
                             }
                         })
                         .finally(() => {
-                            this.loading = false;
+                            this.loadingFullScreen = false;
                         });
                 } else {
                     this.emprestimoService
@@ -195,11 +196,11 @@ export default {
                             }
                         })
                         .finally(() => {
-                            this.loading = false;
+                            this.loadingFullScreen = false;
                         });
                 }
             }
-            this.loading = false;
+            this.loadingFullScreen = false;
         },
         reprovarEmprestimo() {
             this.loading = true;
@@ -343,7 +344,7 @@ export default {
 </script>
 
 <template>
-    <FullScreenLoading :isLoading="loading" />
+    <FullScreenLoading :isLoading="loadingFullScreen" />
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">
         <div class="col-8 px-0 py-0">
             <h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
