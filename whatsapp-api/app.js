@@ -176,15 +176,12 @@ app.post("/enviar-video", upload.single("arquivo"), async (req, res) => {
     const media = MessageMedia.fromFilePath(videoPath);
 
     console.log("Passou pelo video");
-    
+
     // Envia o arquivo para o número fornecido
     const chatId = `${numero}@c.us`;
     await client.sendMessage(chatId, media);
 
-    // Opcional: Remove o arquivo do servidor após o envio
-    await fs.unlink(novoCaminho);
-
-    res.send(`${extensao.toUpperCase()} enviado com sucesso!`);
+    res.send(`enviado com sucesso!`);
   } catch (error) {
     console.error("Erro ao enviar arquivos:", error.message);
     res.status(500).send("Erro ao enviar arquivo");
