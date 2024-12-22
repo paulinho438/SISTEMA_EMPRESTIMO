@@ -132,27 +132,34 @@ app.post('/enviar-pdf', upload.single('arquivo'), async (req, res) => {
       return res.status(400).send('Nenhum arquivo enviado.');
     }
 
-    // Garante que o arquivo tenha a extensão correta
-    const extensao = path.extname(req.file.originalname) || '.pdf'; // Supondo PDF como padrão
-    const novoCaminho = path.join(__dirname, 'uploads', `${req.file.filename}${extensao}`);
+    // Obtém a extensão do arquivo original
+    const extensao = path.extname(req.file.originalname);
 
-    // Renomeia o arquivo para garantir a extensão
+    // Lista de extensões permitidas
+    const extensoesPermitidas = ['.pdf', '.mp4', '.jpg', '.png'];
+
+    if (!extensoesPermitidas.includes(extensao.toLowerCase())) {
+      return res.status(400).send('Tipo de arquivo não suportado.');
+    }
+
+    // Renomeia o arquivo com a extensão correta
+    const novoCaminho = path.join(__dirname, 'uploads', `${req.file.filename}${extensao}`);
     await fs.rename(req.file.path, novoCaminho);
 
     // Cria a mídia com o MessageMedia
     const media = MessageMedia.fromFilePath(novoCaminho);
 
-    // Envia o arquivo PDF para o número fornecido
+    // Envia o arquivo para o número fornecido
     const chatId = `${numero}@c.us`;
     await client.sendMessage(chatId, media);
 
     // Opcional: Remove o arquivo do servidor após o envio
     await fs.unlink(novoCaminho);
 
-    res.send('PDF enviado com sucesso!');
+    res.send(`${extensao.toUpperCase()} enviado com sucesso!`);
   } catch (error) {
-    console.error('Erro ao enviar PDF:', error.message);
-    res.status(500).send('Erro ao enviar PDF');
+    console.error('Erro ao enviar arquivo:', error.message);
+    res.status(500).send('Erro ao enviar arquivo');
   }
 });
 
