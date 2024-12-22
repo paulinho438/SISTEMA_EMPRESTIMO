@@ -170,7 +170,7 @@ export default {
                             }
                         })
                         .finally(() => {
-                            this.changeLoading();
+                            this.loading = false;
                         });
                 } else {
                     this.emprestimoService
