@@ -172,6 +172,8 @@ app.post("/enviar-video", upload.single("arquivo"), async (req, res) => {
   try {
     const videoPath = path.join(__dirname, "uploads", "output.mp4");
 
+    console.log(videoPath);
+
     console.log("Preparando o vídeo para envio...");
     const media = MessageMedia.fromFilePath(videoPath);
 
