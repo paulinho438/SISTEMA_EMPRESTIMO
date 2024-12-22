@@ -13,13 +13,9 @@ import { useConfirm } from 'primevue/useconfirm';
 
 import LoadingComponent from '../../components/Loading.vue';
 import { useToast } from 'primevue/usetoast';
-import FullScreenLoading from '@/components/FullScreenLoading.vue'; 
 
 export default {
     name: 'cicomForm',
-    components: {
-        FullScreenLoading, // Registra o componente
-    },
     setup() {
         return {
             route: useRoute(),
@@ -56,7 +52,6 @@ export default {
                 geolocalizacao: '17.23213, 12.455345'
             }),
             loading: ref(true),
-            loadingFullScreen: ref(false),
             selectedTipoSexo: ref(''),
             sexo: ref([
                 { name: 'Masculino', value: 'M' },
@@ -109,21 +104,20 @@ export default {
             this.client.juros = emprestimo.juros;
         },
         realizarTransferencia(event) {
-            this.loadingFullScreen = true;
             if (this.route.params?.id) {
                 if (this.banco.wallet) {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
-                            this.loadingFullScreen = false;
+                            console.log('response', response.data);
+
                             this.confirmPopup.require({
                                 target: event.target,
-                                message: `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
+                                message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
                                 icon: 'pi pi-exclamation-triangle',
                                 acceptLabel: 'Sim',
                                 rejectLabel: 'Não',
                                 accept: () => {
-                                    this.loadingFullScreen = true;
                                     if (this.route.params?.id) {
                                         this.emprestimoService
                                             .efetuarPagamentoEmprestimo(this.route.params.id)
@@ -148,13 +142,10 @@ export default {
                                                     });
                                                 }
                                             })
-                                            .finally(() => {
-                                                this.loadingFullScreen = false;
-                                            });
+                                            .finally(() => {});
                                     }
                                 },
                                 reject: () => {
-                                    this.loadingFullScreen = false;
                                     this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
                                 }
                             });
@@ -168,9 +159,7 @@ export default {
                                 });
                             }
                         })
-                        .finally(() => {
-                            this.loadingFullScreen = false;
-                        });
+                        .finally(() => {});
                 } else {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimo(this.route.params.id)
@@ -195,15 +184,11 @@ export default {
                                 });
                             }
                         })
-                        .finally(() => {
-                            this.loadingFullScreen = false;
-                        });
+                        .finally(() => {});
                 }
             }
-            this.loadingFullScreen = false;
         },
         reprovarEmprestimo() {
-            this.loading = true;
             if (this.route.params?.id) {
                 this.emprestimoService
                     .reprovarEmprestimo(this.route.params.id)
@@ -231,12 +216,11 @@ export default {
                     })
                     .finally(() => {});
             }
-            this.loading = false;
         },
         getemprestimo() {
-            this.loading = true;
             if (this.route.params?.id) {
                 this.client = ref(null);
+                this.loading = true;
                 this.emprestimoService
                     .get(this.route.params.id)
                     .then((response) => {
@@ -261,7 +245,6 @@ export default {
                 this.client = ref({});
                 this.client.address = [];
             }
-            this.loading = false;
         },
         back() {
             this.router.push(`/aprovacao`);
@@ -322,7 +305,7 @@ export default {
         },
 
         clearclient() {
-            this.loading = false;
+            this.loading = true;
         },
         addCityBeforeSave(city) {
             // this.client.cities.push(city);
@@ -344,7 +327,6 @@ export default {
 </script>
 
 <template>
-    <FullScreenLoading :isLoading="loadingFullScreen" />
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">
         <div class="col-8 px-0 py-0">
             <h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
