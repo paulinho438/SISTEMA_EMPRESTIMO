@@ -109,6 +109,7 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
+📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
 ";
 return $saudacaoTexto . $fraseInicial;
     }

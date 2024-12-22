@@ -93,6 +93,8 @@ class CobrancaAutomaticaB extends Command
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
+
+📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
 ";
 
                             $frase = $saudacaoTexto . $fraseInicial;
