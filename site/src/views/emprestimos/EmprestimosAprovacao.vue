@@ -114,12 +114,10 @@ export default {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
-                            console.log('response', response.data);
                             this.loading = false;
-
                             this.confirmPopup.require({
                                 target: event.target,
-                                message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
+                                message: `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
                                 icon: 'pi pi-exclamation-triangle',
                                 acceptLabel: 'Sim',
                                 rejectLabel: 'Não',
@@ -197,7 +195,7 @@ export default {
                             }
                         })
                         .finally(() => {
-                            this.changeLoading();
+                            this.loading = false;
                         });
                 }
             }
@@ -235,9 +233,9 @@ export default {
             this.loading = false;
         },
         getemprestimo() {
+            this.loading = true;
             if (this.route.params?.id) {
                 this.client = ref(null);
-                this.loading = true;
                 this.emprestimoService
                     .get(this.route.params.id)
                     .then((response) => {
@@ -262,6 +260,7 @@ export default {
                 this.client = ref({});
                 this.client.address = [];
             }
+            this.loading = false;
         },
         back() {
             this.router.push(`/aprovacao`);
@@ -322,7 +321,7 @@ export default {
         },
 
         clearclient() {
-            this.loading = true;
+            this.loading = false;
         },
         addCityBeforeSave(city) {
             // this.client.cities.push(city);
