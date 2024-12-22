@@ -9,7 +9,8 @@ import skeletonEmprestimos from '../skeleton/SkeletonEmprestimos.vue';
 import EmprestimoAdd from '../emprestimos/EmprestimosAdd.vue';
 import PermissionsService from '@/service/PermissionsService';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
-import { useConfirm } from 'primevue/useconfirm';
+import confirmPopup from 'primevue/confirmpopup';
+
 
 import LoadingComponent from '../../components/Loading.vue';
 import { useToast } from 'primevue/usetoast';
@@ -24,7 +25,7 @@ export default {
             permissionsService: new PermissionsService(),
             icons: PrimeIcons,
             toast: useToast(),
-            confirmPopup: useConfirm()
+            confirmPopup: confirmPopup
         };
     },
     components: {
@@ -109,11 +110,9 @@ export default {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
-                            console.log('response', response.data);
-
                             this.confirmPopup.require({
                                 target: event.target,
-                                message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
+                                message: `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
                                 icon: 'pi pi-exclamation-triangle',
                                 acceptLabel: 'Sim',
                                 rejectLabel: 'Não',
