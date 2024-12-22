@@ -162,10 +162,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $link = '';
 
-                        if(count($parcela->emprestimo->parcelas) == 1){
-                           $link = 'https://www.youtube.com/watch?v=AZrN_-fDU2Y'; // video sobre 1 parcela
+                        if (count($parcela->emprestimo->parcelas) == 1) {
+                            $link = 'https://www.youtube.com/watch?v=AZrN_-fDU2Y'; // video sobre 1 parcela
                         } else {
-                            $link = 'https://www.youtube.com/watch?v=AZrN_-fDU2Y'; // video sobre mais de 1 parcela
+                            $link = 'https://www.youtube.com/watch?v=_DU0IvNHe2Q'; // video sobre mais de 1 parcela
                         }
 
 
