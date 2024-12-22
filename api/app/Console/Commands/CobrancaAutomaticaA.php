@@ -87,7 +87,7 @@ class CobrancaAutomaticaA extends Command
         $saudacao = $this->obterSaudacao();
         $parcelaPendente = $this->encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-        $mensagem = $this->montarMensagem($parcela, $parcelaPendente, $saudacao);
+        $mensagem = $this->montarMensagem($parcela, $saudacao);
 
         $data = [
             "numero" => "55" . $telefone,
@@ -98,7 +98,7 @@ class CobrancaAutomaticaA extends Command
         sleep(8);
     }
 
-    private function montarMensagem($parcela, $parcelaPendente, $saudacao)
+    private function montarMensagem($parcela, $saudacao)
     {
         $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
         $fraseInicial = "
@@ -109,46 +109,9 @@ Segue abaixo link para pagamento parcela diária e acesso todo o histórico de p
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 ";
-
-        $valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
-
-        if (count($parcela->emprestimo->parcelas) == 1) {
-            if (!$parcelaPendente->emprestimo->pagamentominimo) {
-                $fraseInicial .= "Copie e cole abaixo a chave pix
-
-Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-Chave pix: {$parcela->emprestimo->banco->chavepix}
-
-📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
-";
-            } else {
-                $fraseInicial .= "
-💸 Pagamento Total R$ {$parcelaPendente->saldo}
-
-Pagamento mínimo - Juros R$ {$valorJuros}
-
-Para pagamento de demais valores
-";
-            }
-        }
-
-        if ($parcelaPendente != null && $parcelaPendente->chave_pix != '') {
-            $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento de R$ {$parcelaPendente->saldo} referente a parcela do dia:
-
-{$parcelaPendente->chave_pix}
-
-📲 Para mais informações WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
-";
-        } else if (count($parcela->emprestimo->parcelas) > 1) {
-            $fraseInicial .= "Copie e cole abaixo a chave pix e faça o pagamento referente ao saldo pendente de R$ {$parcelaPendente->totalPendenteHoje()}:
-
-Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-Chave pix: {$parcela->emprestimo->banco->chavepix}
-";
-        }
-
-        return $saudacaoTexto . $fraseInicial;
+return $saudacaoTexto . $fraseInicial;
     }
+
 
     private function obterSaudacao()
     {

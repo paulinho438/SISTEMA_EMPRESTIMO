@@ -16,3 +16,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Ignore storage public files
+/storage/app/public/video.mp4
+
+# Ignore all files in storage/app/public
+/storage/app/public/*
