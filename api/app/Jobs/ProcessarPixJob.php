@@ -37,7 +37,7 @@ class ProcessarPixJob implements ShouldQueue
      */
     public function handle()
     {
-        $videoPath = storage_path('app/public/video.mp4');
+        $videoPath = storage_path('app/public/app/public/video.mp4');
 
         if (file_exists($videoPath)) {
 
