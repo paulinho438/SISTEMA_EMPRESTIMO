@@ -115,6 +115,7 @@ export default {
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
                             console.log('response', response.data);
+                            this.loading = false;
 
                             this.confirmPopup.require({
                                 target: event.target,
