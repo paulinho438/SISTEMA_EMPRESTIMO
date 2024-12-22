@@ -10,12 +10,14 @@ import EmprestimoAdd from '../emprestimos/EmprestimosAdd.vue';
 import PermissionsService from '@/service/PermissionsService';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
+import FullScreenLoading from '@/components/FullScreenLoading.vue'; 
 
 import LoadingComponent from '../../components/Loading.vue';
 import { useToast } from 'primevue/usetoast';
 
 export default {
     name: 'cicomForm',
+   
     setup() {
         return {
             route: useRoute(),
@@ -30,7 +32,8 @@ export default {
     components: {
         EmprestimoParcelas,
         skeletonEmprestimos,
-        EmprestimoAdd
+        EmprestimoAdd,
+        FullScreenLoading
     },
     data() {
         return {
@@ -56,7 +59,10 @@ export default {
             sexo: ref([
                 { name: 'Masculino', value: 'M' },
                 { name: 'Feminino', value: 'F' }
-            ])
+            ]),
+            displayConfirmation: ref(false),
+            displayConfirmationMessage: ref(''),
+            loadingFullScreen: ref(false)
         };
     },
     methods: {
@@ -103,52 +109,56 @@ export default {
             this.client.lucro = emprestimo.lucro;
             this.client.juros = emprestimo.juros;
         },
-        realizarTransferencia(event) {
+        realizarTransferencia() {
+            this.loadingFullScreen = true;
             if (this.route.params?.id) {
                 if (this.banco.wallet) {
+                    console.log('chamou');
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
-                            console.log('response', response.data);
+                            this.loadingFullScreen = false;
+                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
+                            this.displayConfirmation = true;
 
-                            this.confirmPopup.require({
-                                target: event.target,
-                                message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
-                                icon: 'pi pi-exclamation-triangle',
-                                acceptLabel: 'Sim',
-                                rejectLabel: 'Não',
-                                accept: () => {
-                                    if (this.route.params?.id) {
-                                        this.emprestimoService
-                                            .efetuarPagamentoEmprestimo(this.route.params.id)
-                                            .then((response) => {
-                                                if (response) {
-                                                    this.toast.add({
-                                                        severity: ToastSeverity.SUCCESS,
-                                                        detail: 'Pagamento Efetuado',
-                                                        life: 3000
-                                                    });
-                                                    setTimeout(() => {
-                                                        this.router.push(`/aprovacao`);
-                                                    }, 1200);
-                                                }
-                                            })
-                                            .catch((error) => {
-                                                if (error?.response?.status != 422) {
-                                                    this.toast.add({
-                                                        severity: ToastSeverity.ERROR,
-                                                        detail: UtilService.message(error.response.data),
-                                                        life: 3000
-                                                    });
-                                                }
-                                            })
-                                            .finally(() => {});
-                                    }
-                                },
-                                reject: () => {
-                                    this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
-                                }
-                            });
+                            // this.confirmPopup.require({
+                            //     target: event.target,
+                            //     message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
+                            //     icon: 'pi pi-exclamation-triangle',
+                            //     acceptLabel: 'Sim',
+                            //     rejectLabel: 'Não',
+                            //     accept: () => {
+                            //         if (this.route.params?.id) {
+                            //             this.emprestimoService
+                            //                 .efetuarPagamentoEmprestimo(this.route.params.id)
+                            //                 .then((response) => {
+                            //                     if (response) {
+                            //                         this.toast.add({
+                            //                             severity: ToastSeverity.SUCCESS,
+                            //                             detail: 'Pagamento Efetuado',
+                            //                             life: 3000
+                            //                         });
+                            //                         setTimeout(() => {
+                            //                             this.router.push(`/aprovacao`);
+                            //                         }, 1200);
+                            //                     }
+                            //                 })
+                            //                 .catch((error) => {
+                            //                     if (error?.response?.status != 422) {
+                            //                         this.toast.add({
+                            //                             severity: ToastSeverity.ERROR,
+                            //                             detail: UtilService.message(error.response.data),
+                            //                             life: 3000
+                            //                         });
+                            //                     }
+                            //                 })
+                            //                 .finally(() => {});
+                            //         }
+                            //     },
+                            //     reject: () => {
+                            //         this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
+                            //     }
+                            // });
                         })
                         .catch((error) => {
                             if (error?.response?.status != 422) {
@@ -159,7 +169,9 @@ export default {
                                 });
                             }
                         })
-                        .finally(() => {});
+                        .finally(() => {
+                            this.loadingFullScreen = false;
+                        });
                 } else {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimo(this.route.params.id)
@@ -184,9 +196,14 @@ export default {
                                 });
                             }
                         })
-                        .finally(() => {});
+                        .finally(() => {
+                            this.loadingFullScreen = false;
+                        });
                 }
+
+                
             }
+
         },
         reprovarEmprestimo() {
             if (this.route.params?.id) {
@@ -313,6 +330,45 @@ export default {
         },
         clearCicom() {
             this.getemprestimo();
+        },
+        openConfirmation() {
+            this.displayConfirmation = true;
+        },
+
+        closeConfirmation() {
+            this.displayConfirmation = false;
+            this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
+        },
+
+        closeConfirmationPagamento() {
+            this.displayConfirmation = false;
+            this.loadingFullScreen = true;
+            this.emprestimoService
+                .efetuarPagamentoEmprestimo(this.route.params.id)
+                .then((response) => {
+                    if (response) {
+                        this.toast.add({
+                            severity: ToastSeverity.SUCCESS,
+                            detail: 'Pagamento Efetuado',
+                            life: 3000
+                        });
+                        setTimeout(() => {
+                            this.router.push(`/aprovacao`);
+                        }, 1200);
+                    }
+                })
+                .catch((error) => {
+                    if (error?.response?.status != 422) {
+                        this.toast.add({
+                            severity: ToastSeverity.ERROR,
+                            detail: UtilService.message(error.response.data),
+                            life: 3000
+                        });
+                    }
+                })
+                .finally(() => {
+                    this.loadingFullScreen = false;
+                });
         }
     },
     computed: {
@@ -327,6 +383,18 @@ export default {
 </script>
 
 <template>
+    <FullScreenLoading :isLoading="loadingFullScreen" />
+
+    <Dialog header="Confirmation" v-model:visible="displayConfirmation" :style="{ width: '350px' }" :modal="true">
+        <div class="flex align-items-center justify-content-center">
+            <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
+            <span>{{ displayConfirmationMessage }}</span>
+        </div>
+        <template #footer>
+            <Button label="Não" icon="pi pi-times" @click="closeConfirmation" class="p-button-text" />
+            <Button label="Sim" icon="pi pi-check" @click="closeConfirmationPagamento" class="p-button-text" autofocus />
+        </template>
+    </Dialog>
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">
         <div class="col-8 px-0 py-0">
             <h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
@@ -382,7 +450,7 @@ export default {
                             label="Realizar Transferência"
                             class="p-button p-button-success p-button-sm"
                             :icon="icons.CHECK"
-                            @click="realizarTransferencia($event)"
+                            @click.prevent="realizarTransferencia()"
                         />
                         <Button label="Reprovar Empréstimo" class="p-button p-button-danger p-button-sm ml-3" :icon="icons.TIMES" type="button" @click.prevent="reprovarEmprestimo" />
                     </div>

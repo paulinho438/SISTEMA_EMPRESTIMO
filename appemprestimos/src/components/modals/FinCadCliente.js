@@ -1,4 +1,12 @@
-import {StyleSheet, View, Image, Text, Linking, Alert, ScrollView} from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  Linking,
+  Alert,
+  ScrollView,
+} from 'react-native';
 import React, {useState} from 'react';
 import ActionSheet, {FlatList} from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
@@ -16,6 +24,7 @@ import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {StackNav, TabNav} from '../../navigation/navigationKeys';
 import CTextInput from '../../components/common/CTextInput';
+import FullScreenLoader from '../../components/FullScreenLoader';
 import api from '../../services/api';
 import Saldo from './Saldo';
 import margin from '../../themes/margin';
@@ -24,6 +33,7 @@ export default function InfoParcelas(props) {
   let {sheetRef, parcelas, clientes, localizacao} = props;
 
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
 
@@ -48,18 +58,30 @@ export default function InfoParcelas(props) {
     const ano = data.getFullYear();
     let mes = data.getMonth() + 1; // Os meses vão de 0 a 11 em JavaScript, então adicionamos 1
     let dia = data.getDate();
-  
+
     // Adicionar um zero à esquerda se o mês ou o dia for menor que 10
     mes = mes < 10 ? '0' + mes : mes;
     dia = dia < 10 ? '0' + dia : dia;
-  
+
     return `${ano}-${mes}-${dia}`;
   };
 
   const onPressCadastroCliente = async () => {
+    setLoading(true);
+    let req = await api.cadastroCliente(
+      clientes.name,
+      clientes.email,
+      clientes.cellphone,
+      clientes.cellphone2,
+      clientes.cpf,
+      clientes.rg,
+      clientes.nascimento,
+      clientes.sexo,
+      localizacao,
+      clientes.pix,
+    );
 
-    let req = await api.cadastroCliente(clientes.name, clientes.email, clientes.cellphone, clientes.cellphone2, clientes.cpf, clientes.rg, clientes.nascimento, clientes.sexo,  localizacao, clientes.pix);
-
+    setLoading(false);
     Alert.alert('Cliente Cadastrado com Sucesso!');
 
     navigation.navigate(StackNav.Clientes);
@@ -93,62 +115,52 @@ export default function InfoParcelas(props) {
     <Community size={24} name={'timer-sand-empty'} color={colors.white} />
   );
 
-  const onPressClose = (item) => {
-    if(item?.id){
-      setCliente(item)
+  const onPressClose = item => {
+    if (item?.id) {
+      setCliente(item);
     }
     setVisible(!visible);
   };
 
   return (
     <View>
+      <FullScreenLoader visible={loading} />
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef}>
-      <TouchableOpacity style={localStyles.parentDepEnd}  onPress={cancelModel}>
-        <Community size={40} name={'close'} color={colors.black} />
-      </TouchableOpacity>
-      <ScrollView showsVerticalScrollIndicator={false}>
-      <View style={localStyles.mainContainer}>
-      
-      
-      <View style={localStyles.outerComponent}>
-        <View style={{gap: moderateScale(20)}}>
-          <CText
-            color={colors.black}
-            type={'B24'}>
-            Informe o endereço do cliente
-          </CText>
-          <CTextInput
-                value={endereco}
-                onChangeText={setEndereco}
-                mainTxtInp={[localStyles.border]}
-                text={'Endereço Completo'}
-              />
-              <CTextInput
-                value={complemento}
-                onChangeText={setComplemento}
-                mainTxtInp={[localStyles.border]}
-                text={'Complemento'}
-              />
-              <CButton
-          onPress={() => onPressCadastroCliente()}
-          text={`Cadastrar`}
-          containerStyle={localStyles.buttonContainerGreen
-          }
-          RightIcon={check
-          }
-        />
-
-          
-        </View>
-      </View>
-      
-      
-      </View>
-       
-      </ScrollView>
-        
+        <TouchableOpacity
+          style={localStyles.parentDepEnd}
+          onPress={cancelModel}>
+          <Community size={40} name={'close'} color={colors.black} />
+        </TouchableOpacity>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={localStyles.mainContainer}>
+            <View style={localStyles.outerComponent}>
+              <View style={{gap: moderateScale(20)}}>
+                <CText color={colors.black} type={'B24'}>
+                  Informe o endereço do cliente
+                </CText>
+                <CTextInput
+                  value={endereco}
+                  onChangeText={setEndereco}
+                  mainTxtInp={[localStyles.border]}
+                  text={'Endereço Completo'}
+                />
+                <CTextInput
+                  value={complemento}
+                  onChangeText={setComplemento}
+                  mainTxtInp={[localStyles.border]}
+                  text={'Complemento'}
+                />
+                <CButton
+                  onPress={() => onPressCadastroCliente()}
+                  text={`Cadastrar`}
+                  containerStyle={localStyles.buttonContainerGreen}
+                  RightIcon={check}
+                />
+              </View>
+            </View>
+          </View>
+        </ScrollView>
       </ActionSheet>
-         
     </View>
   );
 }
@@ -176,7 +188,7 @@ const localStyles = StyleSheet.create({
     ...styles.flexRow,
     ...styles.alignCenter,
     ...styles.justifyBetween,
-    ...styles.mt10
+    ...styles.mt10,
   },
   imageStyle: {
     width: moderateScale(40),
@@ -225,12 +237,10 @@ const localStyles = StyleSheet.create({
     ...styles.alignEnd,
     ...styles.mr25,
     ...styles.mt30,
-    ...styles.mb20
+    ...styles.mb20,
   },
   border: {
     backgroundColor: colors.GreyScale,
     borderWidth: moderateScale(1),
   },
 });
-
-

@@ -6,7 +6,7 @@ import {
   ImageBackground,
   Platform,
 } from 'react-native';
-import React from 'react';
+import React, {useState} from 'react';
 import {useNavigation} from '@react-navigation/native';
 
 // Local imports
@@ -17,6 +17,8 @@ import CButton from '../common/CButton';
 import images from '../../assets/images/index';
 import {StackNav} from '../../navigation/navigationKeys';
 import CText from '../common/CText';
+
+import FullScreenLoader from '../FullScreenLoader';
 import strings from '../../i18n/strings';
 
 import api from '../../services/api';
@@ -26,15 +28,18 @@ export default function TransferPopUp(props) {
 
   const navigation = useNavigation();
 
+  const [loading, setLoading] = useState(false);
+
   const moveToHome = () => {
-    navigation.navigate(StackNav.TransferProof, {valores: valores, feriados: feriados});
+    navigation.navigate(StackNav.TransferProof, {
+      valores: valores,
+      feriados: feriados,
+    });
     gerarParcelas();
   };
 
-  
-
   const gerarParcelas = async () => {
-
+    setLoading(true);
     let newParcelas = [];
     // Defina a data inicial
     const dataLanc = new Date();
@@ -48,21 +53,24 @@ export default function TransferPopUp(props) {
     for (let i = 0; i < valores?.parcela; i++) {
       parcela = {};
       parcela.parcela = 1 + i;
-      parcela.parcela = parcela.parcela.toString().padStart(3, '0')
-      parcela.valor = parseFloat(valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'));
-      parcela.saldo = parseFloat(valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'));
+      parcela.parcela = parcela.parcela.toString().padStart(3, '0');
+      parcela.valor = parseFloat(
+        valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
+      );
+      parcela.saldo = parseFloat(
+        valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
+      );
       parcela.dt_lancamento = formatarDataParaString(new Date(dataLanc));
-
 
       dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
 
       // Verifica se o dia da semana é sábado (6) ou domingo (0)
       // Se for, adiciona mais um dia até encontrar um dia útil (segunda a sexta)
-      if(valores?.cobranca == '1'){
+      if (valores?.cobranca == '1') {
         while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
           dataInicial.setDate(dataInicial.getDate() + 1);
         }
-      }else if(valores?.cobranca == '2'  ){
+      } else if (valores?.cobranca == '2') {
         while (dataInicial.getDay() === 0) {
           dataInicial.setDate(dataInicial.getDate() + 1);
         }
@@ -70,8 +78,7 @@ export default function TransferPopUp(props) {
 
       parcela.venc = formatarDataParaString(new Date(dataInicial));
 
-
-      if(isFeriado(dataInicial)){
+      if (isFeriado(dataInicial)) {
         dataInicial.setDate(dataInicial.getDate() + 1);
       }
 
@@ -80,97 +87,108 @@ export default function TransferPopUp(props) {
       parcelas.push(formatarDataParaString(new Date(dataInicial)));
 
       newParcelas.push(parcela);
-
     }
 
     const client = {};
 
     client.dt_lancamento = valores?.dt_lancamento;
-    client.valor = parseFloat(valores?.valor.replace(/[^\d,-]/g, '').replace(',', '.'));
-		client.lucro = parseFloat(valores?.lucro.replace(/[^\d,-]/g, '').replace(',', '.'));
-		client.juros = parseFloat(valores?.juros.replace(/[^\d,-]/g, '').replace(',', '.'));
-    client.cliente = {id: valores?.cliente.id, nome_completo: valores?.cliente.nome_completo, cpf: valores?.cliente.cpf}
-    client.banco = {id: valores?.banco.id, certificado: valores?.banco.certificado, clienteid: valores?.banco.clienteid, clientesecret: valores?.banco.clientesecret, chavepix: valores?.banco.chavepix, wallet: valores?.banco.wallet}
-    client.costcenter = {id: valores?.costcenter.id}
-    client.consultor = {id: valores?.consultor.id}
+    client.valor = parseFloat(
+      valores?.valor.replace(/[^\d,-]/g, '').replace(',', '.'),
+    );
+    client.lucro = parseFloat(
+      valores?.lucro.replace(/[^\d,-]/g, '').replace(',', '.'),
+    );
+    client.juros = parseFloat(
+      valores?.juros.replace(/[^\d,-]/g, '').replace(',', '.'),
+    );
+    client.cliente = {
+      id: valores?.cliente.id,
+      nome_completo: valores?.cliente.nome_completo,
+      cpf: valores?.cliente.cpf,
+    };
+    client.banco = {
+      id: valores?.banco.id,
+      certificado: valores?.banco.certificado,
+      clienteid: valores?.banco.clienteid,
+      clientesecret: valores?.banco.clientesecret,
+      chavepix: valores?.banco.chavepix,
+      wallet: valores?.banco.wallet,
+    };
+    client.costcenter = {id: valores?.costcenter.id};
+    client.consultor = {id: valores?.consultor.id};
     client.parcelas = newParcelas;
 
     onPressClose();
     const res = await api.saveEmprestimo(client);
+    setLoading(true);
+  };
 
-
-
-
-
-  }
-
-  const save = async () =>  {
+  const save = async () => {
     this.changeLoading();
     this.errors = [];
 
     const client = {};
 
-    
     client.cliente = valores?.cliente;
-    client.banco = {id: valores?.banco}
-    client.costcenter = {id: valores?.costcenter}
+    client.banco = {id: valores?.banco};
+    client.costcenter = {id: valores?.costcenter};
     client.consultor = valores?.consultor;
     client.parcelas = newParcelas;
 
-    if(res?.data){
+    if (res?.data) {
       setFeriados(res.data);
     }
 
-    this.emprestimoService.save(this.client)
-    .then((response) => {
-      if (undefined != response.data.data) {
-        this.client = response.data.data;
-        
-      }
+    this.emprestimoService
+      .save(this.client)
+      .then(response => {
+        if (undefined != response.data.data) {
+          this.client = response.data.data;
+        }
 
-      this.toast.add({
-        severity: ToastSeverity.SUCCESS,
-        detail: this.client?.id ? 'Dados alterados com sucesso!' : 'Dados inseridos com sucesso!',
-        life: 3000
-      });
-
-      setTimeout(() => {
-        this.router.push({ name: 'emprestimosList'})
-      }, 1200)
-
-    })
-    .catch((error) => {
-      this.changeLoading();
-      this.errors = error?.response?.data?.errors;
-
-      if (error?.response?.status != 422) {
         this.toast.add({
-          severity: ToastSeverity.ERROR,
-          detail: UtilService.message(error.response.data),
-          life: 3000
+          severity: ToastSeverity.SUCCESS,
+          detail: this.client?.id
+            ? 'Dados alterados com sucesso!'
+            : 'Dados inseridos com sucesso!',
+          life: 3000,
         });
-      }
 
-      this.changeLoading();
-    })
-    .finally(() => {
-      this.changeLoading();
-    });
-  }
+        setTimeout(() => {
+          this.router.push({name: 'emprestimosList'});
+        }, 1200);
+      })
+      .catch(error => {
+        this.changeLoading();
+        this.errors = error?.response?.data?.errors;
 
+        if (error?.response?.status != 422) {
+          this.toast.add({
+            severity: ToastSeverity.ERROR,
+            detail: UtilService.message(error.response.data),
+            life: 3000,
+          });
+        }
 
-  const formatarDataParaString = (data) => {
+        this.changeLoading();
+      })
+      .finally(() => {
+        this.changeLoading();
+      });
+  };
+
+  const formatarDataParaString = data => {
     const dia = String(data.getDate()).padStart(2, '0');
     const mes = String(data.getMonth() + 1).padStart(2, '0');
     const ano = data.getFullYear();
     return `${dia}/${mes}/${ano}`;
-  }
+  };
 
-  const isFeriado = (data) => {
+  const isFeriado = data => {
     const dataFormatada = formatarDataParaString(data);
-    
+
     return feriados.some(feriado => feriado.data_feriado === dataFormatada);
-  }
+  };
 
   const Detail = ({
     header,
@@ -218,6 +236,7 @@ export default function TransferPopUp(props) {
 
   return (
     <View style={localStyles.flex}>
+      <FullScreenLoader visible={loading} />
       <Modal animationType={'fade'} transparent={true} visible={visible}>
         <TouchableOpacity
           style={localStyles.modalMainContainer}
@@ -255,7 +274,6 @@ export default function TransferPopUp(props) {
                     name={valores?.lucro}
                     cardNumber={valores?.valortotal}
                   />
-
                 </View>
                 <CButton
                   text={'Aprovar'}
