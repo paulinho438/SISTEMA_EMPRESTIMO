@@ -581,12 +581,10 @@ class EmprestimoController extends Controller
                                     'arquivo', // Nome do campo no formulário
                                     file_get_contents($pngPath), // Conteúdo do arquivo
                                     'comprovante.png' // Nome do arquivo enviado
-                                )->post($emprestimo->company->whatsapp.'/enviar-pdf', [
+                                )->post($emprestimo->company->whatsapp . '/enviar-pdf', [
                                     'numero' =>  "55" . $telefone,
                                 ]);
-
                             } catch (\Exception $e) {
-
                             }
                         } else {
                         }
@@ -639,7 +637,8 @@ class EmprestimoController extends Controller
         }
     }
 
-    function mascararString($string) {
+    function mascararString($string)
+    {
         $primeirosTres = substr($string, 0, 3);
         $ultimosDois = substr($string, -2);
         $mascarado = '***' . substr($string, 3, -2) . '**';
@@ -732,22 +731,28 @@ class EmprestimoController extends Controller
         try {
             $array = ['error' => ''];
 
-            $user = auth()->user();
 
-            $emprestimo = Emprestimo::find($id);
+            $permGroup = Emprestimo::findOrFail($id);
 
-            if ($emprestimo) {
-                $emprestimo->contaspagar->status = 'Empréstimo Reprovado';
-                $emprestimo->contaspagar->save();
+            if ($permGroup->contaspagar->status == "Pagamento Efetuado") {
+                return response()->json([
+                    "message" => "Erro ao excluir emprestimo, pagamento já foi efetuado",
+                    "error" => "Erro ao excluir emprestimo, pagamento já foi efetuado"
+                ], Response::HTTP_FORBIDDEN);
             }
 
+            $permGroup->contaspagar->delete();
+
+            $permGroup->delete();
 
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' reprovou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $emprestimo->valor . ' para o cliente ' . $emprestimo->client->nome_completo,
-                'operation' => 'edit'
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' reprovou e deletou o Emprestimo: ' . $id,
+                'operation' => 'destroy'
             ]);
+
+
 
             DB::commit();
 
@@ -832,7 +837,7 @@ class EmprestimoController extends Controller
             $user = auth()->user();
 
             // Obter a primeira parcela de extorno correspondente ao ID fornecido
-            $parcela = Parcela::find( $id);
+            $parcela = Parcela::find($id);
 
 
 
@@ -1277,7 +1282,6 @@ class EmprestimoController extends Controller
                     "error" => $response->json()
                 ], Response::HTTP_FORBIDDEN);
             }
-
         } else {
             return response()->json([
                 "message" => "Erro ao gerar pagamento personalizado",
@@ -1539,7 +1543,7 @@ class EmprestimoController extends Controller
                 // Encontrar a parcela correspondente
                 $pagamento = PagamentoPersonalizado::where('identificador', $txId)->first();
 
-                if($pagamento) {
+                if ($pagamento) {
                     $pagamento->dt_baixa = $horario;
                     $pagamento->save();
 
@@ -1565,7 +1569,6 @@ class EmprestimoController extends Controller
                             ->first();
                     }
                 }
-
             }
         }
 
@@ -1585,11 +1588,11 @@ class EmprestimoController extends Controller
             $editParcela = Parcela::find($id);
 
             $parcelas = Parcela::where('emprestimo_id', $editParcela->emprestimo_id)
-            ->where('dt_baixa', null)
-            ->where('atrasadas', '>', 0)
-            ->get();
+                ->where('dt_baixa', null)
+                ->where('atrasadas', '>', 0)
+                ->get();
 
-            foreach($parcelas as $parcela) {
+            foreach ($parcelas as $parcela) {
                 $parcela->dt_ult_cobranca = $request->dt_ult_cobranca;
                 $parcela->save();
             }
@@ -1620,7 +1623,7 @@ class EmprestimoController extends Controller
         try {
             $permGroup = Emprestimo::findOrFail($id);
 
-            if( $permGroup->contaspagar->status == "Pagamento Efetuado" ) {
+            if ($permGroup->contaspagar->status == "Pagamento Efetuado") {
                 return response()->json([
                     "message" => "Erro ao excluir emprestimo, pagamento já foi efetuado",
                     "error" => "Erro ao excluir emprestimo, pagamento já foi efetuado"
@@ -1848,5 +1851,4 @@ class EmprestimoController extends Controller
 
         return true;
     }
-
 }
