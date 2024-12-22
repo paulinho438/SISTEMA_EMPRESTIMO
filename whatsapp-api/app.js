@@ -179,8 +179,6 @@ app.post("/enviar-video", upload.single("arquivo"), async (req, res) => {
 
     console.log("Passou pelo video");
 
-    console.log(media);
-
     // Envia o arquivo para o número fornecido
     const chatId = `${numero}@c.us`;
     await client.sendMessage(chatId, media);
