@@ -108,7 +108,7 @@ export default {
             this.client.juros = emprestimo.juros;
         },
         realizarTransferencia(event) {
-            this.changeLoading();
+            this.loading = true;
             if (this.route.params?.id) {
                 if (this.banco.wallet) {
                     this.emprestimoService
@@ -123,6 +123,7 @@ export default {
                                 acceptLabel: 'Sim',
                                 rejectLabel: 'Não',
                                 accept: () => {
+                                    this.loading = true;
                                     if (this.route.params?.id) {
                                         this.emprestimoService
                                             .efetuarPagamentoEmprestimo(this.route.params.id)
@@ -147,10 +148,13 @@ export default {
                                                     });
                                                 }
                                             })
-                                            .finally(() => {});
+                                            .finally(() => {
+                                                this.loading = false;
+                                            });
                                     }
                                 },
                                 reject: () => {
+                                    this.loading = false;
                                     this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
                                 }
                             });
