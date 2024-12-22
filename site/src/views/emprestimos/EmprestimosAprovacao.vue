@@ -13,9 +13,13 @@ import { useConfirm } from 'primevue/useconfirm';
 
 import LoadingComponent from '../../components/Loading.vue';
 import { useToast } from 'primevue/usetoast';
+import FullScreenLoading from '@/components/FullScreenLoading.vue'; 
 
 export default {
     name: 'cicomForm',
+    components: {
+        FullScreenLoading, // Registra o componente
+    },
     setup() {
         return {
             route: useRoute(),
@@ -104,6 +108,7 @@ export default {
             this.client.juros = emprestimo.juros;
         },
         realizarTransferencia(event) {
+            this.changeLoading();
             if (this.route.params?.id) {
                 if (this.banco.wallet) {
                     this.emprestimoService
@@ -159,7 +164,9 @@ export default {
                                 });
                             }
                         })
-                        .finally(() => {});
+                        .finally(() => {
+                            this.changeLoading();
+                        });
                 } else {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimo(this.route.params.id)
@@ -184,11 +191,15 @@ export default {
                                 });
                             }
                         })
-                        .finally(() => {});
+                        .finally(() => {
+                            this.changeLoading();
+                        });
                 }
             }
+            this.loading = false;
         },
         reprovarEmprestimo() {
+            this.loading = true;
             if (this.route.params?.id) {
                 this.emprestimoService
                     .reprovarEmprestimo(this.route.params.id)
@@ -216,6 +227,7 @@ export default {
                     })
                     .finally(() => {});
             }
+            this.loading = false;
         },
         getemprestimo() {
             if (this.route.params?.id) {
@@ -327,6 +339,7 @@ export default {
 </script>
 
 <template>
+    <FullScreenLoading :isLoading="loading" />
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">
         <div class="col-8 px-0 py-0">
             <h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
