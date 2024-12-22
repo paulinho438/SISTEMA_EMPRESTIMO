@@ -160,9 +160,19 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $pix = $parcela->emprestimo->pagamentominimo->chave_pix;
                         }
 
+                        $link = '';
+
+                        if(count($parcela->emprestimo->parcelas) == 1){
+                           $link = 'https://www.youtube.com/watch?v=AZrN_-fDU2Y'; // video sobre 1 parcela
+                        } else {
+                            $link = 'https://www.youtube.com/watch?v=AZrN_-fDU2Y'; // video sobre mais de 1 parcela
+                        }
+
+
+
                         $data = [
                             "numero" => "55" . $telefone,
-                            "mensagem" => 'https://www.youtube.com/watch?v=OEMsSFINpBk'
+                            "mensagem" => $link
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
