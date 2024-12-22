@@ -37,6 +37,12 @@ class ProcessarPixJob implements ShouldQueue
      */
     public function handle()
     {
+        $videoPath = storage_path('app/public/video.mp4');
+
+        if (file_exists($videoPath)) {
+
+            $this->envioMensagemVideo($this->emprestimo->parcelas[0], $videoPath);
+        }
 
         foreach ($this->emprestimo->parcelas as $parcela) {
             $response = $this->bcodexService->criarCobranca($parcela['valor'], $this->emprestimo->banco->document);
@@ -73,7 +79,7 @@ class ProcessarPixJob implements ShouldQueue
 
         $this->envioMensagem($this->emprestimo->parcelas[0]);
 
-        $this->envioMensagemPix($this->emprestimo->parcelas[0]);
+        // $this->envioMensagemPix($this->emprestimo->parcelas[0]);
 
 
     }
@@ -94,11 +100,10 @@ class ProcessarPixJob implements ShouldQueue
         }
     }
 
-    public function envioMensagem($parcela){
+    public function envioMensagem($parcela)
+    {
         if (isset($parcela->emprestimo->company->whatsapp)) {
-
             try {
-
                 $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
                 if ($response->successful()) {
@@ -123,37 +128,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 ";
 
 
-
-$valorJuros = $parcelaPendente->saldo - $parcelaPendente->emprestimo->valor;
-if(count($parcela->emprestimo->parcelas) == 1){
-if(!$parcelaPendente->emprestimo->pagamentominimo){
-$fraseInicial .= "Copie e cole abaixo a chave pix
-
-Beneficiário: {$parcelaPendente->emprestimo->banco->info_recebedor_pix}
-
-📲 Entre em contato pelo WhatsApp {$parcelaPendente->emprestimo->company->numero_contato}
-";
-}else{
-$fraseInicial .= "
-💸 Pagamento Total R$ {$parcelaPendente->saldo}
-
-Pagamento mínimo - Juros R$ {$valorJuros}
-
-Abaixo segue o pix para o pagamento minimo!
-";
-}
-
-}
-
-if(count($parcela->emprestimo->parcelas) > 1) {
-$fraseInicial .= "
-
-Ou
-
-Abaixo segue o pix para o pagamento da primeira parcela!
-
-    ";
-}
                         $frase = $saudacaoTexto . $fraseInicial;
 
                         $data = [
@@ -170,7 +144,8 @@ Abaixo segue o pix para o pagamento da primeira parcela!
             }
         }
     }
-    public function envioMensagemPix($parcela){
+    public function envioMensagemPix($parcela)
+    {
         if (isset($parcela->emprestimo->company->whatsapp)) {
 
             try {
@@ -186,7 +161,7 @@ Abaixo segue o pix para o pagamento da primeira parcela!
 
                         $pix = $parcela->chave_pix;
 
-                        if($parcela->emprestimo->pagamentominimo){
+                        if ($parcela->emprestimo->pagamentominimo) {
                             $pix = $parcela->emprestimo->pagamentominimo->chave_pix;
                         }
 
@@ -205,10 +180,41 @@ Abaixo segue o pix para o pagamento da primeira parcela!
         }
     }
 
-    function encontrarPrimeiraParcelaPendente($parcelas) {
+    public function envioMensagemVideo($parcela, $videoPath)
+    {
+        if (isset($parcela->emprestimo->company->whatsapp)) {
 
-        foreach($parcelas as $parcela){
-            if($parcela->dt_baixa === '' || $parcela->dt_baixa === null){
+            try {
+
+                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+
+                if ($response->successful()) {
+                    $r = $response->json();
+                    if ($r['loggedIn']) {
+
+                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                        // Enviar o vídeo MP4 para o endpoint
+                        $response = Http::attach(
+                            'arquivo', // Nome do campo no formulário
+                            file_get_contents($videoPath), // Conteúdo do arquivo
+                            'video.mp4' // Nome do arquivo enviado
+                        )->post($parcela->emprestimo->company->whatsapp . '/enviar-pdf', [
+                            'numero' => "55" . $telefone,
+                        ]);
+                        sleep(8);
+                    }
+                }
+            } catch (\Throwable $th) {
+                dd($th);
+            }
+        }
+    }
+
+    function encontrarPrimeiraParcelaPendente($parcelas)
+    {
+
+        foreach ($parcelas as $parcela) {
+            if ($parcela->dt_baixa === '' || $parcela->dt_baixa === null) {
                 return $parcela;
             }
         }
