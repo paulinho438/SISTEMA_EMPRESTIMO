@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import MovimentacaofinanceiraService from '@/service/MovimentacaofinanceiraService';
+import FullScreenLoading from '@/components/FullScreenLoading.vue'; 
 import BancoService from '@/service/BancoService';
 import PermissionsService from '@/service/PermissionsService';
 import EmprestimoService from '@/service/EmprestimoService';
@@ -13,6 +14,9 @@ import UtilService from '@/service/UtilService';
 
 export default {
     name: 'CicomList',
+    components: {
+        FullScreenLoading, // Registra o componente
+    },
     setup() {
         return {
             movimentacaofinanceiraService: new MovimentacaofinanceiraService(),
@@ -26,6 +30,7 @@ export default {
     },
     data() {
         return {
+            loading: ref(false), 
             MovimentacaofinanceiraReal: ref([]),
             Movimentacaofinanceira: ref([]),
             loading: ref(false),
@@ -357,6 +362,7 @@ export default {
 </script>
 
 <template>
+    <FullScreenLoading :isLoading="loading" />
     <Dialog header="Encerramento de Caixa" v-model:visible="displayFechamento.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
         <div class="field col-12 md:col-12">
             <label for="zip">Saldo no Banco</label>
