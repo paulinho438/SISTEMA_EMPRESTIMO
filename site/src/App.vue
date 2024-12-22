@@ -27,17 +27,12 @@ const onChangeTheme = (theme, mode) => {
 
 // Controla o carregamento e tema ao montar o componente
 onMounted(() => {
-    loading.value = true; // Ativa o loading
-    setTimeout(() => {
-        document.documentElement.style.fontSize = 12 + 'px';
-        onChangeTheme('bootstrap4-light-blue', 'light');
-        loading.value = false; // Desativa o loading após a operação
-    }, 2000); // Simula um carregamento com timeout
+    document.documentElement.style.fontSize = 12 + 'px';
+    onChangeTheme('bootstrap4-light-blue', 'light');
 });
 </script>
 
 <template>
-    <FullScreenLoading :isLoading="loading" />
     <router-view />
 </template>
 
