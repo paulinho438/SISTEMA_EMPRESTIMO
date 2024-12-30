@@ -224,6 +224,12 @@ class BancoController extends Controller
                             $parcela->emprestimo->quitacao->save();
                         }
                     }
+
+                    // Encontrar a próxima parcela
+                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                        ->where('id', '>', $parcela->id)
+                        ->orderBy('id', 'asc')
+                        ->first();
                 }
 
 
@@ -521,14 +527,12 @@ class BancoController extends Controller
                 if ($response->successful()) {
                     return response()->json(['message' => 'Pix criado com sucesso!', 'chavepix' =>  $response->json()['pixCopiaECola']]);
                 }
-
-            }else{
+            } else {
                 return response()->json([
                     "message" => "Banco não é do tipo wallet.",
                     "error" => "Banco não é do tipo wallet."
                 ], Response::HTTP_FORBIDDEN);
             }
-
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
@@ -575,7 +579,6 @@ class BancoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
             }
-
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao efetuar saque.",
@@ -638,13 +641,12 @@ class BancoController extends Controller
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $banco->id;
             $movimentacaoFinanceira['company_id'] = $request->header('company-id');
-            $movimentacaoFinanceira['descricao'] = 'Saque realizado para '. $response->json()['creditParty']['name'];
+            $movimentacaoFinanceira['descricao'] = 'Saque realizado para ' . $response->json()['creditParty']['name'];
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
             $movimentacaoFinanceira['valor'] = $dados['valor'];
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
-
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao efetuar saque.",
@@ -662,7 +664,7 @@ class BancoController extends Controller
         try {
             $permGroup = Banco::findOrFail($id);
 
-            if($permGroup->emprestimos){
+            if ($permGroup->emprestimos) {
                 return response()->json([
                     "message" => "Banco está relacionado com emprestimo.",
                     "error" => "Banco está relacionado com emprestimo."
