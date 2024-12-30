@@ -117,6 +117,21 @@ class RecalcularParcelas extends Command
                         $parcela->emprestimo->pagamentominimo->save();
                     }
                 }
+
+                if ($parcela->emprestimo->pagamentosaldopendente && $parcela->emprestimo->pagamentosaldopendente->chave_pix) {
+
+                    $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
+
+                    $parcela->emprestimo->pagamentosaldopendente->save();
+
+                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
+
+                    if ($response->successful()) {
+                        $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                        $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->emprestimo->pagamentosaldopendente->save();
+                    }
+                }
             }
         }
 

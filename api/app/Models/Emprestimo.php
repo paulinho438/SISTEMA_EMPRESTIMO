@@ -74,6 +74,11 @@ class Emprestimo extends Model
         return $this->belongsTo(PagamentoMinimo::class, 'id', 'emprestimo_id');
     }
 
+    public function pagamentosaldopendente()
+    {
+        return $this->belongsTo(PagamentoSaldoPendente::class, 'id', 'emprestimo_id');
+    }
+
     public function getCountLateParcelsAttribute()
     {
         return $this->parcelas()->where('atrasadas', '>', 0)->count();
