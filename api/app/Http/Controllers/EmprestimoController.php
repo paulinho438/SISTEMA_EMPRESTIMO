@@ -53,6 +53,7 @@ use App\Http\Resources\FornecedorResource;
 
 use App\Jobs\gerarPixParcelas;
 use App\Models\ParcelaExtorno;
+use App\Models\PagamentoSaldoPendente;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
@@ -353,6 +354,11 @@ class EmprestimoController extends Controller
 
             PagamentoMinimo::create($pagamentoMinimo);
         }
+
+        $pagamentoSaldoPendente = [];
+        $pagamentoSaldoPendente['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+        $pagamentoSaldoPendente['valor'] = ($emprestimoAdd->parcelas[0]->saldo);
+        PagamentoSaldoPendente::create($pagamentoSaldoPendente);
 
         return $emprestimoAdd;
     }
