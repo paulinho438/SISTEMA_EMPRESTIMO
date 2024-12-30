@@ -100,6 +100,10 @@
             <p><strong>Nome:</strong> {{ $destino_nome }}</p>
             <p><strong>CPF:</strong> {{ $destino_cpf }}</p>
             <p><strong>Chave Pix:</strong> {{ $destino_chave_pix }}</p>
+            <p><strong>Instituição:</strong> {{ $destino_instituicao }}</p>
+            <p><strong>Banco:</strong> {{ $destino_banco }}</p>
+            <p><strong>Agencia:</strong> {{ $destino_agencia }}</p>
+            <p><strong>Conta:</strong> {{ $destino_conta }}</p>
             <p><strong>Id da transação:</strong> {{ $id_transacao }}</p>
         </div>
 
