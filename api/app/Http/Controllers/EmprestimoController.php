@@ -1085,13 +1085,13 @@ class EmprestimoController extends Controller
 
                 foreach ($emprestimo->parcelas as $parcela) {
                     if (!$parcela->dt_baixa) {
-                        $parcela->dt_baixa = $dataHoje;
+                        $parcela->dt_baixa = date('Y-m-d');
                         $parcela->saldo = 0;
                         $parcela->save();
 
                         if ($parcela->contasreceber) {
                             $parcela->contasreceber->status = 'Pago';
-                            $parcela->contasreceber->dt_baixa = $dataHoje;
+                            $parcela->contasreceber->dt_baixa = date('Y-m-d');
                             $parcela->contasreceber->forma_recebto = 'BAIXA COM DESCONTO';
                             $parcela->contasreceber->save();
                         }
