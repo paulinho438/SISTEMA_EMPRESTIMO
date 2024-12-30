@@ -60,6 +60,7 @@ class EmprestimoResource extends JsonResource
             "parcelas"          => ParcelaResource::collection($this->parcelas),
             "quitacao"          => new QuitacaoResource($this->quitacao),
             "pagamentominimo"   => new PagamentoMinimoResource($this->pagamentominimo),
+            "pagamentosaldopendente"   => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
             "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
             "status"            => $this->getStatus(),
             "telefone_empresa"  => $this->company->numero_contato,
