@@ -108,15 +108,6 @@ export default {
                                 ...parcela,
                                 status: parcela.dt_baixa ? 'Pago' : 'Pendente'
                             };
-                        })
-                        .sort((a, b) => {
-                            if (a.status === 'Pendente' && b.status === 'Pago') {
-                                return -1;
-                            }
-                            if (a.status === 'Pago' && b.status === 'Pendente') {
-                                return 1;
-                            }
-                            return 0;
                         });
                 }
                 this.products = response.data;
