@@ -82,7 +82,6 @@ export default {
 		getInfoZap(){
 			this.empresaService.zap(this.empresa.whatsapp)
 				.then((response) => {
-					
 					this.zap = response;
 				})
 				.catch((error) => {
@@ -125,6 +124,22 @@ export default {
 			} catch (e) {
 				console.log(e);
 			}
+		},
+		desconectarZap(){
+			this.empresaService.desconectarZap(this.empresa.whatsapp)
+				.then((response) => {
+					window.location.reload();
+				})
+				.catch((error) => {
+					this.toast.add({
+						severity: ToastSeverity.ERROR,
+						detail: UtilService.message(e),
+						life: 3000
+					});
+				})
+				.finally(() => {
+					this.loading = false;
+				});
 		},
 		save() {
 			this.changeLoading();
@@ -240,6 +255,7 @@ export default {
 					<div v-if="empresa?.whatsapp != null" class="field col-12 md:col-12">
 						<h5>Integração whatsapp</h5>
 						<Button v-if="zap?.loggedIn" label="Conectado" class="p-button-rounded p-button-success mr-2 mb-2" />
+						<Button v-if="zap?.loggedIn" @click.prevent="desconectarZap" label="Clique para desconectar" class="p-button-rounded p-button-danger mr-2 mb-2" />
 						<Button v-if="!zap?.loggedIn" label="Aguardando Conexão" class="p-button-rounded p-button-danger mr-2 mb-2" />
                     </div>
 					<div v-if="empresa?.whatsapp != null && !zap?.loggedIn" class="field col-12 md:col-12">
