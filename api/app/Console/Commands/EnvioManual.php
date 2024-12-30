@@ -93,7 +93,6 @@ class EnvioManual extends Command
                 })->orderBy('venc', 'desc')->first();
 
                 $caminhoAbsoluto = storage_path('app/public/documentos/' . $banco['certificado']);
-                $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
                 $options = [
                     'clientId' => $banco['clienteid'],
                     'clientSecret' => $banco['clientesecret'],
@@ -226,7 +225,7 @@ class EnvioManual extends Command
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     DB::rollBack();
                     print_r($e->getMessage());
                 }
@@ -256,7 +255,6 @@ class EnvioManual extends Command
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
@@ -317,7 +315,7 @@ class EnvioManual extends Command
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     print_r($e->getMessage());
                 }
             } else {
@@ -327,7 +325,7 @@ class EnvioManual extends Command
             print_r($e->code . "<br>");
             print_r($e->error . "<br>");
             print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             print_r($e->getMessage());
         }
     }

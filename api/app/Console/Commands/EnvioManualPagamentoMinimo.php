@@ -92,7 +92,6 @@ class EnvioManualPagamentoMinimo extends Command
                 })->orderBy('venc', 'desc')->first();
 
                 $caminhoAbsoluto = storage_path('app/public/documentos/' . $banco['certificado']);
-                $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
                 $options = [
                     'clientId' => $banco['clienteid'],
                     'clientSecret' => $banco['clientesecret'],
@@ -202,7 +201,7 @@ class EnvioManualPagamentoMinimo extends Command
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     print_r($e->getMessage());
                 }
 

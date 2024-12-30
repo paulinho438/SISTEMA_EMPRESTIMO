@@ -144,7 +144,6 @@ class RecalcularParcelas extends Command
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
@@ -208,7 +207,7 @@ class RecalcularParcelas extends Command
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     print_r($e->getMessage());
                 }
             } else {
@@ -218,7 +217,7 @@ class RecalcularParcelas extends Command
             print_r($e->code . "<br>");
             print_r($e->error . "<br>");
             print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             print_r($e->getMessage());
         }
     }
@@ -229,7 +228,6 @@ class RecalcularParcelas extends Command
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
@@ -289,7 +287,7 @@ class RecalcularParcelas extends Command
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     print_r($e->getMessage());
                 }
             } else {
@@ -299,7 +297,7 @@ class RecalcularParcelas extends Command
             print_r($e->code . "<br>");
             print_r($e->error . "<br>");
             print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             print_r($e->getMessage());
         }
     }
