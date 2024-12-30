@@ -39,6 +39,20 @@ export default class EmpresasService {
 		
 	};
 
+	desconectarZap = async (zap) => {
+
+		try {
+			const response = await fetch(`${zap}/logout`);
+			return await response.json();
+		  } catch (error) {
+			console.log(error);
+			this.errored = true;
+		  } finally {
+			this.loading = false;
+		  }
+		
+	};
+
 	
 
 }
