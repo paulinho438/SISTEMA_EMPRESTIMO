@@ -50,8 +50,6 @@ class RecalcularParcelas extends Command
 
         $this->info('Recalculando as Parcelas em Atrasos');
 
-        $juros = Juros::value('juros');
-
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
 
         $bcodexService = new BcodexService();
@@ -66,7 +64,9 @@ class RecalcularParcelas extends Command
 
                 echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
 
-                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
+                $juros = $parcela->emprestimo->company->juros ?? 1;
+
+                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros  / 100), 2, '.', '');
 
                 $novoValor = $valorJuros + $parcela->saldo;
 

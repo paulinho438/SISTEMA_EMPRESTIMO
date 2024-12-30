@@ -240,29 +240,29 @@ client.on("message", async (message) => {
   // Exibe a mensagem recebida
 
   // Verifica a resposta do cliente
-  switch (message.body.toLowerCase()) {
-    case "1":
-      await client.sendMessage(
-        message.from,
-        "Você escolheu a opção 1. Pronto agora no aplicativo já está disponivel no home a opção para renovação."
-      );
-      break;
-    case "2":
-      await client.sendMessage(
-        message.from,
-        "Você escolheu a opção 2. Ok, iremos aguardar."
-      );
-      break;
-    case "3":
-      await client.sendMessage(
-        message.from,
-        "Você escolheu a opção 3. Muito Obrigado pelo retorno."
-      );
-      break;
-    default:
-      // await client.sendMessage(message.from, 'Opção inválida. Por favor, digite uma opção válida.');
-      break;
-  }
+  // switch (message.body.toLowerCase()) {
+  //   case "1":
+  //     await client.sendMessage(
+  //       message.from,
+  //       "Você escolheu a opção 1. Pronto agora no aplicativo já está disponivel no home a opção para renovação."
+  //     );
+  //     break;
+  //   case "2":
+  //     await client.sendMessage(
+  //       message.from,
+  //       "Você escolheu a opção 2. Ok, iremos aguardar."
+  //     );
+  //     break;
+  //   case "3":
+  //     await client.sendMessage(
+  //       message.from,
+  //       "Você escolheu a opção 3. Muito Obrigado pelo retorno."
+  //     );
+  //     break;
+  //   default:
+  //     // await client.sendMessage(message.from, 'Opção inválida. Por favor, digite uma opção válida.');
+  //     break;
+  // }
 });
 
 client.on("message", (message) => {

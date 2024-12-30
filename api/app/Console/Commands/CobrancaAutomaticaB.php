@@ -88,7 +88,7 @@ class CobrancaAutomaticaB extends Command
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-🤷‍♂️ Não identificamos seu pagamento, evite multas!
+🤷‍♂️ Não identificamos seu pagamento na data de hoje, evite multas!
 
 Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
 
