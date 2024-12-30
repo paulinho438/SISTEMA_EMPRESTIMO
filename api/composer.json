@@ -12,6 +12,7 @@
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7",
+        "league/csv": "^9.20",
         "maatwebsite/excel": "^3.1",
         "mailersend/laravel-driver": "^2.7",
         "monolog/monolog": "^2.9",
