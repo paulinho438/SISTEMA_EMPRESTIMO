@@ -146,7 +146,7 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Parcela do Dia  <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
             <!-- Quitar Empréstimo -->
