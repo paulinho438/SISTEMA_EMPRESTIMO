@@ -206,7 +206,7 @@ export default {
             <DataTable :value="this.products?.data?.emprestimo?.parcelas">
                 <Column field="venc_real" header="Venc.">
                     <template #body="slotProps">
-                        <span :style="{ color: isToday(slotProps.data?.venc) ? 'red' : 'black' }">
+                        <span>
                             {{ slotProps.data?.venc }}
                         </span>
                     </template>
