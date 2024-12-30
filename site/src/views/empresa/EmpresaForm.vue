@@ -204,12 +204,13 @@ export default {
 <template>
 	<Toast />
 	<!-- <LoadingComponent :loading="loading" /> -->
+	
 	<div class="grid flex flex-wrap mb-3 px-4 pt-2">
 		<div class="col-8 px-0 py-0">
 			<h5 class="px-0 py-0 align-self-center m-2"><i :class="icons.BUILDING"></i> {{ title }}</h5>
 		</div>
 		<div class="col-4 px-0 py-0 text-right">
-			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm mb-2" :icon="icons.ANGLE_LEFT" @click.prevent="back" />
+			<Button label="Voltar" class="p-button-outlined p-button-secondary p-button-sm" :icon="icons.ANGLE_LEFT" @click.prevent="back" />
 			<Button label="Salvar" class="p-button p-button-info p-button-sm ml-3" :icon="icons.SAVE" type="button" @click.prevent="save" />
 		</div>
 	</div>
@@ -225,11 +226,10 @@ export default {
                         <label for="firstname2">Juros</label>
                         <InputText id="firstname2" :modelValue="empresa?.juros" v-model="empresa.juros" type="text" />
                     </div>
-					<div class="field col-12 md:col-4">
+					<!-- <div class="field col-12 md:col-4">
                         <label for="firstname2">Caixa</label>
 						<InputNumber id="inputnumber" :modelValue="empresa?.caixa" v-model="empresa.caixa" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" ></InputNumber>
-                    </div>
-					
+                    </div> -->
 					<div class="field col-12 md:col-3">
                         <label for="state">Número para Contato</label>
                         <InputMask id="inputmask" :modelValue="empresa?.numero_contato" v-model="empresa.numero_contato" mask="(99) 9999-9999" ></InputMask>
