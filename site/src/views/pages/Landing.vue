@@ -149,13 +149,13 @@ export default {
 
         <main>
             <!-- Parcela do Dia -->
-            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length > 1" class="payment-section">
-                <h2>Parcela do Dia</h2>
+            <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente" class="payment-section">
+                <h2>Valor Pendente do Dia {{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
-                <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p>
-                <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
-                <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p>
-                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)">Copiar Chave Pix - Parcela do Dia</button>
+                <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
+                <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
+                <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Parcela do Dia  <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
             <!-- Quitar Empréstimo -->
