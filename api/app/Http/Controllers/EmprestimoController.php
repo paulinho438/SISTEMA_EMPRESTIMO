@@ -1578,6 +1578,58 @@ class EmprestimoController extends Controller
             }
         }
 
+        //REFERENTE A PAGAMENTO SALDO PENDENTE
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $pagamento = PagamentoSaldoPendente::where('identificador', $txId)->first();
+
+                if ($pagamento) {
+
+                    $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
+
+                    while ($parcela && $valor > 0) {
+                        if ($valor >= $parcela->saldo) {
+                            // Quitar a parcela atual
+                            $valor -= $parcela->saldo;
+                            $parcela->saldo = 0;
+                            $parcela->dt_baixa = $horario;
+                        } else {
+                            // Reduzir o saldo da parcela atual
+                            $parcela->saldo -= $valor;
+                            $valor = 0;
+                        }
+                        $parcela->save();
+
+                        // Encontrar a próxima parcela
+                        $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
+                            ->where('id', '>', $parcela->id)
+                            ->orderBy('id', 'asc')
+                            ->first();
+                    }
+
+                    $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
+
+                    if ($proximaParcela) {
+                        $pagamento->valor = $proximaParcela->saldo;
+                        $pagamento->save();
+
+                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $pagamento->identificador = $response->json()['txid'];
+                            $pagamento->chave_pix = $response->json()['pixCopiaECola'];
+                            $pagamento->save();
+                        }
+                    }
+                }
+            }
+        }
+
         return response()->json(['message' => 'Baixas realizadas com sucesso.']);
     }
 
@@ -1670,7 +1722,6 @@ class EmprestimoController extends Controller
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
@@ -1730,7 +1781,7 @@ class EmprestimoController extends Controller
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     print_r($e->getMessage());
                 }
             } else {
@@ -1740,7 +1791,7 @@ class EmprestimoController extends Controller
             print_r($e->code . "<br>");
             print_r($e->error . "<br>");
             print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             print_r($e->getMessage());
         }
     }
@@ -1751,7 +1802,6 @@ class EmprestimoController extends Controller
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
@@ -1815,7 +1865,7 @@ class EmprestimoController extends Controller
                     print_r($e->code . "<br>");
                     print_r($e->error . "<br>");
                     print_r($e->errorDescription) . "<br>";
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     print_r($e->getMessage());
                 }
             } else {
@@ -1825,7 +1875,7 @@ class EmprestimoController extends Controller
             print_r($e->code . "<br>");
             print_r($e->error . "<br>");
             print_r($e->errorDescription) . "<br>";
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             print_r($e->getMessage());
         }
     }

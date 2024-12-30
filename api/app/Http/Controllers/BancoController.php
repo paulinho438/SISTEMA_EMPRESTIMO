@@ -702,7 +702,6 @@ class BancoController extends Controller
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
@@ -783,7 +782,6 @@ class BancoController extends Controller
         $return = [];
 
         $caminhoAbsoluto = storage_path('app/public/documentos/' . $dados['banco']['certificado']);
-        $conteudoDoCertificado = file_get_contents($caminhoAbsoluto);
         $options = [
             'clientId' => $dados['banco']['client_id'],
             'clientSecret' => $dados['banco']['client_secret'],
