@@ -1626,6 +1626,21 @@ class EmprestimoController extends Controller
                             $pagamento->save();
                         }
                     }
+
+                    if ($parcela->emprestimo->quitacao->chave_pix) {
+
+                        $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                        $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
+                        $parcela->emprestimo->quitacao->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->quitacao->save();
+                        }
+                    }
                 }
             }
         }
