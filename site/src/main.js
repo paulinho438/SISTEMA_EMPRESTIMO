@@ -115,7 +115,12 @@ import '@/assets/styles.scss';
 const app = createApp(App);
 
 
-
+app.config.globalProperties.$filters = {
+    percentage(value) {
+        if (!value) return '0%';
+        return `${Math.round(value)}%`;
+    }
+};
 
 
 app.use(router);
