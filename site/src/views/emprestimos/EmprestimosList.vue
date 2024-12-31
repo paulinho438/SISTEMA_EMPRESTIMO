@@ -350,7 +350,7 @@ export default {
 
                         <Column field="porcentagem" header="Progresso" :showFilterMatchModes="false" style="min-width: 12rem">
                             <template #body="{ data }">
-                                {{ data.porcentagem }}
+                                {{ $filters.percentage(data.porcentagem) }}
                                 <ProgressBar :value="data.porcentagem" :showValue="false" style="height: 0.5rem"></ProgressBar>
                             </template>
                             <template #filter="{ filterModel }">
