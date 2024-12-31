@@ -44,9 +44,9 @@ class EmprestimoResource extends JsonResource
                     return $parcela->saldo;
                 }),
             "porcentagem"       => $this->porcent($this->parcelas->sum(function ($parcela) {
-                return $parcela->saldo;
+                return $parcela->valor;
             }), $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
-                return $parcela->saldo;
+                return $parcela->valor;
             })),
             "saldo_total_parcelas_pagas" => $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
                 return $parcela->valor;
