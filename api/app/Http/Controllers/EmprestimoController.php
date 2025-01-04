@@ -1698,12 +1698,22 @@ class EmprestimoController extends Controller
 
     public function corrigirPix()
     {
-        $parcelas = Parcela::whereNull('identificador')
+        $dados = [];
+
+        $dados['Parcela'] = Parcela::whereNull('identificador')
             ->whereHas('emprestimo.banco', function ($query) {
                 $query->where('wallet', true);
             })
             ->get();
-        return $parcelas;
+
+        $dados['PagamentoSaldoPendente'] = PagamentoSaldoPendente::whereNull('identificador')
+            ->whereHas('emprestimo.banco', function ($query) {
+                $query->where('wallet', true);
+            })
+            ->get();
+
+
+        return $dados;
     }
 
     public function cobrarAmanha(Request $request, $id)
