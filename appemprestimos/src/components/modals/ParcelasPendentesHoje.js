@@ -25,6 +25,8 @@ import { StackNav } from '../../navigation/navigationKeys';
 import api from '../../services/api';
 import Saldo from '../modals/Saldo';
 
+import FullScreenLoader from '../../components/FullScreenLoader';
+
 export default function ParcelasPendentesHoje(props) {
   let { sheetRef, parcelas, clientes, parcelasPendentes, onAtualizarClientes } = props;
   const navigation = useNavigation();
@@ -166,6 +168,7 @@ export default function ParcelasPendentesHoje(props) {
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
           textInputRef.current?.focus();
         }}>
+        <FullScreenLoader visible={filteredParcelasPendentes.length == 0} />
         <View
           style={{
             flexDirection: 'row',
@@ -199,7 +202,7 @@ export default function ParcelasPendentesHoje(props) {
               </View>
             </View>
 
-            {sortedParcelasPendentes.map(item => (
+            {filteredParcelasPendentes.map(item => (
               <View key={item.id} style={styles2.container}>
                 <Text style={styles2.title}>
                   Empréstimo N°{item.id}
