@@ -30,10 +30,12 @@ export default {
         },
         initFilters() {
             this.filters = {
+                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
                 nome_completo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-				cpf: { 
-                    operator: FilterOperator.AND, 
-                    constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] 
+                cpf: {
+                    operator: FilterOperator.AND,
+                    constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
                 },
                 rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
                 telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
@@ -44,7 +46,7 @@ export default {
                     operator: 'and',
                     constraints: [{ value: null, matchMode: 'dateIs' }]
                 },
-				data_nascimento: {
+                data_nascimento: {
                     operator: 'and',
                     constraints: [{ value: null, matchMode: 'dateIs' }]
                 }
@@ -66,8 +68,8 @@ export default {
                             Clientes.created_at = new Date(`${datePart}T${timePart}`); // Concatena e cria um objeto Date
                         }
 
-						if (Clientes.data_nascimento) {
-							const datePart = Clientes.data_nascimento.split('/').reverse().join('-');
+                        if (Clientes.data_nascimento) {
+                            const datePart = Clientes.data_nascimento.split('/').reverse().join('-');
                             Clientes.data_nascimento = new Date(`${datePart}T00:00:00`); // Concatena e cria um objeto Date
                         }
 
@@ -142,7 +144,29 @@ export default {
             </div>
             <div class="col-12">
                 <div class="card">
-                    <DataTable :value="Clientes" :paginator="true" class="p-datatable-gridlines" :rows="10" dataKey="id" :rowHover="true" v-model:filters="filters" filterDisplay="menu" :loading="loading" :filters="filters" responsiveLayout="scroll">
+                    <DataTable
+                        :value="Clientes"
+                        :paginator="true"
+                        class="p-datatable-gridlines"
+                        :rows="10"
+                        dataKey="id"
+                        :rowHover="true"
+                        v-model:filters="filters"
+                        filterDisplay="menu"
+                        :loading="loading"
+                        :filters="filters"
+                        responsiveLayout="scroll"
+                        :globalFilterFields="['nome_completo', 'cpf', 'rg', 'telefone_celular_1', 'telefone_celular_2']"
+                    >
+                        <template #header>
+                            <div class="flex justify-content-between flex-column sm:flex-row">
+                                <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
+                                <span class="p-input-icon-left mb-2">
+                                    <i class="pi pi-search" />
+                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" />
+                                </span>
+                            </div>
+                        </template>
                         <template #empty> Nenhum Cliente Encontrado. </template>
                         <template #loading> Carregando os Clientes. Aguarde! </template>
 
@@ -173,7 +197,7 @@ export default {
                             </template>
                         </Column>
 
-						<Column field="telefone_celular_1" header="Telefone Principal" style="min-width: 12rem">
+                        <Column field="telefone_celular_1" header="Telefone Principal" style="min-width: 12rem">
                             <template #body="{ data }">
                                 {{ data.telefone_celular_1 }}
                             </template>
@@ -182,7 +206,7 @@ export default {
                             </template>
                         </Column>
 
-						<Column field="telefone_celular_2" header="Telefone Secundário" style="min-width: 12rem">
+                        <Column field="telefone_celular_2" header="Telefone Secundário" style="min-width: 12rem">
                             <template #body="{ data }">
                                 {{ data.telefone_celular_2 }}
                             </template>
@@ -191,7 +215,7 @@ export default {
                             </template>
                         </Column>
 
-						<Column header="Dt. Nascimento" filterField="data_nascimento" dataType="date" style="min-width: 10rem">
+                        <Column header="Dt. Nascimento" filterField="data_nascimento" dataType="date" style="min-width: 10rem">
                             <template #body="{ data }">
                                 {{ data.data_nascimento ? data.data_nascimento.toLocaleDateString('pt-BR') : '-' }}
                             </template>
