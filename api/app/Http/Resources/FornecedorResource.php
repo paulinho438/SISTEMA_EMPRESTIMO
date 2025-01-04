@@ -32,6 +32,7 @@ class FornecedorResource extends JsonResource
             "city"                  => $this->city,
             "observation"           => $this->observation,
             "created_at"            => $this->created_at->format('d/m/Y H:i:s'),
+            "pix_fornecedor"        => $this->pix_fornecedor
 
         ];
     }
