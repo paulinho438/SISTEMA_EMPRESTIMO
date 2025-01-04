@@ -11,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\BcodexService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ProcessarPixJob implements ShouldQueue
 {
@@ -37,57 +38,79 @@ class ProcessarPixJob implements ShouldQueue
      */
     public function handle()
     {
-        $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
+        try {
+            $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
 
-        foreach ($this->emprestimo->parcelas as $parcela) {
-            $response = $this->bcodexService->criarCobranca($parcela['valor'], $this->emprestimo->banco->document);
-
-            if ($response->successful()) {
-                $parcela['identificador'] = $response->json()['txid'];
-                $parcela['chave_pix'] = $response->json()['pixCopiaECola'];
+            foreach ($this->emprestimo->parcelas as $parcela) {
+                $this->processarCobrancaComTentativas($parcela, $parcela['valor']);
             }
 
-            $parcela->save();
+            if ($this->emprestimo->pagamentominimo) {
+                $this->processarCobrancaComTentativas($this->emprestimo->pagamentominimo, $this->emprestimo->pagamentominimo->valor);
+            }
+
+            if ($this->emprestimo->quitacao) {
+                $this->processarCobrancaComTentativas($this->emprestimo->quitacao, $this->emprestimo->quitacao->saldo);
+            }
+
+            if ($this->emprestimo->pagamentosaldopendente) {
+                $this->processarCobrancaComTentativas($this->emprestimo->pagamentosaldopendente, $this->emprestimo->pagamentosaldopendente->valor);
+            }
+
+            $this->envioMensagem($this->emprestimo->parcelas[0]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao processar PIX: ' . $e->getMessage());
+            throw $e;
         }
+    }
 
-        if ($this->emprestimo->pagamentominimo) {
+    /**
+     * Processar cobrança com tentativas
+     *
+     * @param $entidade
+     * @param $valor
+     */
+    private function processarCobrancaComTentativas($entidade, $valor)
+    {
+        $tentativas = 0;
+        $maxTentativas = 5;
+        $sucesso = false;
 
-            $response = $this->bcodexService->criarCobranca($this->emprestimo->pagamentominimo->valor, $this->emprestimo->banco->document);
+        while ($tentativas < $maxTentativas && !$sucesso) {
+            try {
+                $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
 
-            if ($response->successful()) {
-                $this->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                $this->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                $this->emprestimo->pagamentominimo->save();
+                if ($response->successful()) {
+                    $entidade->identificador = $response->json()['txid'];
+                    $entidade->chave_pix = $response->json()['pixCopiaECola'];
+                    $entidade->save();
+                    $sucesso = true;
+                } else {
+                    $tentativas++;
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+                $tentativas++;
+            }
+
+            if (!$sucesso && $tentativas >= $maxTentativas) {
+                // Armazenar que não deu certo após 5 tentativas
+                Log::error('Falha ao processar cobrança após 5 tentativas.');
+                // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
             }
         }
+    }
 
-        if ($this->emprestimo->quitacao) {
-
-            $response = $this->bcodexService->criarCobranca($this->emprestimo->quitacao->saldo, $this->emprestimo->banco->document);
-
-            if ($response->successful()) {
-                $this->emprestimo->quitacao->identificador = $response->json()['txid'];
-                $this->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                $this->emprestimo->quitacao->save();
-            }
-        }
-
-        if ($this->emprestimo->pagamentosaldopendente) {
-
-            $response = $this->bcodexService->criarCobranca($this->emprestimo->pagamentosaldopendente->valor, $this->emprestimo->banco->document);
-
-            if ($response->successful()) {
-                $this->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                $this->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                $this->emprestimo->pagamentosaldopendente->save();
-            }
-        }
-
-        $this->envioMensagem($this->emprestimo->parcelas[0]);
-
-        // $this->envioMensagemPix($this->emprestimo->parcelas[0]);
-
-
+    /**
+     * Handle a job failure.
+     *
+     * @return void
+     */
+    public function failed(\Exception $exception)
+    {
+        // Registrar informações adicionais quando o job falha
+        Log::error('Job ProcessarPixJob falhou: ' . $exception->getMessage());
     }
 
     function obterSaudacao()
@@ -152,6 +175,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
         }
     }
+
     public function envioMensagemVideoYoutube($parcela)
     {
         if (isset($parcela->emprestimo->company->whatsapp)) {
@@ -230,7 +254,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     function encontrarPrimeiraParcelaPendente($parcelas)
     {
-
         foreach ($parcelas as $parcela) {
             if ($parcela->dt_baixa === '' || $parcela->dt_baixa === null) {
                 return $parcela;
