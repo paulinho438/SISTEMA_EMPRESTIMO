@@ -1712,6 +1712,18 @@ class EmprestimoController extends Controller
             })
             ->get();
 
+        $dados['PagamentoMinimo'] = PagamentoMinimo::whereNull('identificador')
+            ->whereHas('emprestimo.banco', function ($query) {
+                $query->where('wallet', true);
+            })
+            ->get();
+
+        $dados['Quitacao'] = Quitacao::whereNull('identificador')
+            ->whereHas('emprestimo.banco', function ($query) {
+                $query->where('wallet', true);
+            })
+            ->get();
+
 
         return $dados;
     }
