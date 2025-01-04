@@ -102,6 +102,7 @@ export default {
         },
         initFilters1() {
             this.filters1 = {
+                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 				login: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 				name: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 				nome_completo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
@@ -166,9 +167,17 @@ export default {
                         :loading="loading1"
                         :filters="filters1"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['login']"
+                        :globalFilterFields="['login', 'nome_completo', 'email', 'cpf', 'rg', 'telefone_celular', 'companies']"
                     >
-                        
+                        <template #header>
+                            <div class="flex justify-content-between flex-column sm:flex-row">
+                                <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
+                                <span class="p-input-icon-left mb-2">
+                                    <i class="pi pi-search" />
+                                    <InputText v-if="filters1 && filters1.global" v-model="filters1.global.value" placeholder="Pesquisar ..." style="width: 100%" />
+                                </span>
+                            </div>
+                        </template>
                         <template #empty> Nenhum Usuário Encontrado. </template>
                         <template #loading> Carregando Usuários. Aguarde! </template>
                         <Column field="login" header="Login" style="min-width: 12rem">

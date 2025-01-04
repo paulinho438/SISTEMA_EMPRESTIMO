@@ -276,17 +276,17 @@ export default {
                         :loading="loading"
                         :filters="filters"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['nome_cliente']"
+                        :globalFilterFields="['status', 'nome_cliente', 'nome_consultor', 'valor', 'saldoareceber', 'saldo_total_parcelas_pagas', 'dt_lancamento']"
                     >
-                        <!-- <template #header>
+                        <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">
                                 <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search" />
-                                    <InputText v-model="filters['global'].value" placeholder="Keyword Search" style="width: 100%" />
+                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" />
                                 </span>
                             </div>
-                        </template> -->
+                        </template>
                         <template #empty> Nenhum Cliente Encontrado. </template>
                         <template #loading> Carregando os Clientes. Aguarde! </template>
 
