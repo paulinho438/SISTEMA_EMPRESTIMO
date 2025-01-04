@@ -107,14 +107,18 @@ class EmprestimoController extends Controller
 
     public function all(Request $request)
     {
-
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Emprestimos',
             'operation' => 'index'
         ]);
 
-        return EmprestimoResource::collection(Emprestimo::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
+        $emprestimos = Emprestimo::with(['parcelas', 'banco', 'client', 'user', 'costcenter', 'quitacao', 'pagamentominimo', 'pagamentosaldopendente'])
+            ->where('company_id', $request->header('company-id'))
+            ->orderBy('id', 'desc')
+            ->paginate(10); // Adicionando paginação
+
+        return EmprestimoResource::collection($emprestimos);
     }
 
     public function cobrancaAutomatica()
@@ -2179,7 +2183,8 @@ class EmprestimoController extends Controller
         return $dados;
     }
 
-    public function aplicarMultaParcela(Request $request, $id) {
+    public function aplicarMultaParcela(Request $request, $id)
+    {
         $parcela = Parcela::find($id);
 
         if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
@@ -2254,7 +2259,6 @@ class EmprestimoController extends Controller
                 }
             }
         }
-
     }
 
     public function cobrarAmanha(Request $request, $id)
