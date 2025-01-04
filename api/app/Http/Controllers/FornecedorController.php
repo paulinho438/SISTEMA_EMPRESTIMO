@@ -110,6 +110,7 @@ class FornecedorController extends Controller
                 $EditFornecedor->neighborhood = $dados['neighborhood'];
                 $EditFornecedor->city = $dados['city'];
                 $EditFornecedor->observation = $dados['observation'];
+                $EditFornecedor->pix_fornecedor = $dados['pix_fornecedor'];
                 $EditFornecedor->save();
 
             } else {

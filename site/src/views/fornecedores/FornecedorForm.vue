@@ -203,6 +203,10 @@ export default {
                         <InputText id="firstname2" :modelValue="fornecedor?.nome_completo" v-model="fornecedor.nome_completo" type="text" />
                     </div>
 					<div class="field col-12 md:col-3">
+                        <label for="firstname2">PIX</label>
+                        <InputText id="firstname2" :modelValue="fornecedor?.pix_fornecedor" v-model="fornecedor.pix_fornecedor" type="text" />
+                    </div>
+					<div class="field col-12 md:col-3">
                         <label for="state">Telefone Principal</label>
                         <InputMask id="inputmask" :modelValue="fornecedor?.telefone_celular_1" v-model="fornecedor.telefone_celular_1" mask="(99) 9999-9999" ></InputMask>
                     </div>

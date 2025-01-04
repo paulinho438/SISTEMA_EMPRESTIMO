@@ -26,7 +26,8 @@ class Fornecedor extends Model
         'neighborhood',
         'city',
         'observation',
-        'company_id'
+        'company_id',
+        'pix_fornecedor'
     ];
 
     public function company()

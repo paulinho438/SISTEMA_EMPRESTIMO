@@ -51,12 +51,23 @@ export default {
                 { name: 'Promissória', value: 'Promissória' },
                 { name: 'Retirada', value: 'Retirada' },
                 { name: 'Outros', value: 'Outros' }
-            ])
+            ]),
+            displayConfirmation: ref(false),
+            displayConfirmationMessage: ref(''),
+            loadingFullScreen: ref(false)
         };
     },
     methods: {
         changeLoading() {
             this.loading = !this.loading;
+        },
+        openConfirmation() {
+            this.displayConfirmation = true;
+        },
+
+        closeConfirmation() {
+            this.displayConfirmation = false;
+            this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
         },
         getcontaspagar() {
             if (this.route.params?.id) {
@@ -119,33 +130,61 @@ export default {
             }
         },
         realizarTransferencia() {
-            alert(this.route.params.id);
-            // this.changeLoading();
-            // if (this.route.params?.id) {
-            //     this.emprestimoService
-            //         .efetuarPagamentoEmprestimo(this.route.params.id)
-            //         .then((response) => {
-            //             if (response) {
-            //                 this.toast.add({
-            //                     severity: ToastSeverity.SUCCESS,
-            //                     detail: 'Pagamento Efetuado',
-            //                     life: 3000
-            //                 });
-            //             }
-            //         })
-            //         .catch((error) => {
-            //             if (error?.response?.status != 422) {
-            //                 this.toast.add({
-            //                     severity: ToastSeverity.ERROR,
-            //                     detail: UtilService.message(error.response.data),
-            //                     life: 3000
-            //                 });
-            //             }
-            //         })
-            //         .finally(() => {
-            //             this.changeLoading();
-            //         });
-            // }
+            this.loadingFullScreen = true;
+            if (this.route.params?.id) {
+                if (this.banco.wallet) {
+                    console.log('chamou');
+                    this.emprestimoService
+                        .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
+                        .then((response) => {
+                            this.loadingFullScreen = false;
+                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
+                            this.displayConfirmation = true;
+                        })
+                        .catch((error) => {
+                            if (error?.response?.status != 422) {
+                                this.toast.add({
+                                    severity: ToastSeverity.ERROR,
+                                    detail: UtilService.message(error.response.data),
+                                    life: 3000
+                                });
+                            }
+                        })
+                        .finally(() => {
+                            this.loadingFullScreen = false;
+                        });
+                } else {
+                    this.emprestimoService
+                        .efetuarPagamentoEmprestimo(this.route.params.id)
+                        .then((response) => {
+                            if (response) {
+                                this.toast.add({
+                                    severity: ToastSeverity.SUCCESS,
+                                    detail: 'Pagamento Efetuado',
+                                    life: 3000
+                                });
+                                setTimeout(() => {
+                                    this.router.push(`/aprovacao`);
+                                }, 1200);
+                            }
+                        })
+                        .catch((error) => {
+                            if (error?.response?.status != 422) {
+                                this.toast.add({
+                                    severity: ToastSeverity.ERROR,
+                                    detail: UtilService.message(error.response.data),
+                                    life: 3000
+                                });
+                            }
+                        })
+                        .finally(() => {
+                            this.loadingFullScreen = false;
+                        });
+                }
+
+                
+            }
+
         },
         reprovarEmprestimo() {
 			this.changeLoading();
@@ -233,6 +272,36 @@ export default {
                     this.changeLoading();
                 });
         },
+        closeConfirmationPagamento() {
+            this.displayConfirmation = false;
+            this.loadingFullScreen = true;
+            this.emprestimoService
+                .efetuarPagamentoTitulo(this.route.params.id)
+                .then((response) => {
+                    if (response) {
+                        this.toast.add({
+                            severity: ToastSeverity.SUCCESS,
+                            detail: 'Pagamento Efetuado',
+                            life: 3000
+                        });
+                        setTimeout(() => {
+                            this.router.push(`/aprovacao`);
+                        }, 1200);
+                    }
+                })
+                .catch((error) => {
+                    if (error?.response?.status != 422) {
+                        this.toast.add({
+                            severity: ToastSeverity.ERROR,
+                            detail: UtilService.message(error.response.data),
+                            life: 3000
+                        });
+                    }
+                })
+                .finally(() => {
+                    this.loadingFullScreen = false;
+                });
+        },
 
         clearcontaspagar() {
             this.loading = true;
@@ -257,7 +326,18 @@ export default {
 </script>
 
 <template>
-    <FullScreenLoading :isLoading="loading" />
+    <FullScreenLoading :isLoading="loadingFullScreen" />
+
+    <Dialog header="Confirmation" v-model:visible="displayConfirmation" :style="{ width: '350px' }" :modal="true">
+        <div class="flex align-items-center justify-content-center">
+            <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
+            <span>{{ displayConfirmationMessage }}</span>
+        </div>
+        <template #footer>
+            <Button label="Não" icon="pi pi-times" @click="closeConfirmation" class="p-button-text" />
+            <Button label="Sim" icon="pi pi-check" @click="closeConfirmationPagamento" class="p-button-text" autofocus />
+        </template>
+    </Dialog>
     <Toast />
     <!-- <LoadingComponent :loading="loading" /> -->
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">

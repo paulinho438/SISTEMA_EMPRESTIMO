@@ -169,6 +169,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/contaspagar/pagamentos/transferenciaconsultar/{id}', [EmprestimoController::class, 'pagamentoTransferenciaConsultar']);
     Route::post('/contaspagar/pagamentos/transferencia/{id}', [EmprestimoController::class, 'pagamentoTransferencia']);
 
+    Route::post('/contaspagar/pagamentos/transferenciatituloconsultar/{id}', [EmprestimoController::class, 'pagamentoTransferenciaTituloAPagarConsultar']);
+    Route::post('/contaspagar/pagamentos/transferenciatitulo/{id}', [EmprestimoController::class, 'pagamentoTransferenciaTituloAPagar']);
+
     Route::post('/contaspagar/pagamentos/reprovaremprestimo/{id}', [EmprestimoController::class, 'reprovarEmprestimo']);
     Route::post('/contaspagar/pagamentos/reprovarcontasapagar/{id}', [EmprestimoController::class, 'reprovarContasAPagar']);
 
