@@ -274,7 +274,7 @@ export default {
 
                         <Column v-if="permissionsService.hasPermissions('view_contaspagar_delete')" field="edit" header="Excluir" :sortable="false" class="w-1">
 							<template #body="slotProps">
-								<Button v-if="!slotProps.data.standard && slotProps.data.tipodoc != 'Empréstimo'" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL" v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />
+								<Button v-if="!slotProps.data.standard && slotProps.data.tipodoc != 'Empréstimo' && slotProps.data.status != 'Pagamento Efetuado'" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL" v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />
 							</template>
 						</Column>
                     </DataTable>
