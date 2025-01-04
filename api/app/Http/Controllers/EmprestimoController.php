@@ -1312,6 +1312,23 @@ class EmprestimoController extends Controller
     {
         $data = $request->json()->all();
 
+        // Nome do arquivo
+        $file = 'webhookcobranca.txt';
+
+        // Verifica se o arquivo existe, se não, cria-o
+        if (!Storage::exists($file)) {
+            Storage::put($file, '');
+        }
+
+        // Lê o conteúdo atual do arquivo
+        $current = Storage::get($file);
+
+        // Adiciona os novos dados ao conteúdo atual
+        $current .= json_encode($data) . PHP_EOL;
+
+        // Salva o conteúdo atualizado no arquivo
+        Storage::put($file, $current);
+
         //REFERENTE A PARCELAS
         if (isset($data['pix']) && is_array($data['pix'])) {
             foreach ($data['pix'] as $pix) {
