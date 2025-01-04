@@ -58,6 +58,8 @@ export default {
     methods: {
         initFilters() {
             this.filters = {
+                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
                 status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 
                 id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
@@ -77,11 +79,11 @@ export default {
                     constraints: [{ value: null, matchMode: 'dateIs' }]
                 },
 
-                porcentagem: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN },
+                porcentagem: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN }
 
-				// cpf: { 
-                //     operator: FilterOperator.AND, 
-                //     constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] 
+                // cpf: {
+                //     operator: FilterOperator.AND,
+                //     constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
                 // },
                 // rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
                 // telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
@@ -92,7 +94,7 @@ export default {
                 //     operator: 'and',
                 //     constraints: [{ value: null, matchMode: 'dateIs' }]
                 // },
-				// data_nascimento: {
+                // data_nascimento: {
                 //     operator: 'and',
                 //     constraints: [{ value: null, matchMode: 'dateIs' }]
                 // }
@@ -179,7 +181,7 @@ export default {
                         }
 
                         if (Emprestimos.dt_lancamento) {
-							const datePart = Emprestimos.dt_lancamento.split('/').reverse().join('-');
+                            const datePart = Emprestimos.dt_lancamento.split('/').reverse().join('-');
                             Emprestimos.dt_lancamento = new Date(`${datePart}T00:00:00`); // Concatena e cria um objeto Date
                         }
 
@@ -262,7 +264,29 @@ export default {
             </div>
             <div class="col-12">
                 <div class="card">
-                    <DataTable :value="Emprestimos" :paginator="true" class="p-datatable-gridlines" :rows="10" dataKey="id" :rowHover="true" v-model:filters="filters" filterDisplay="menu" :loading="loading" :filters="filters" responsiveLayout="scroll">
+                    <DataTable
+                        :value="Emprestimos"
+                        :paginator="true"
+                        class="p-datatable-gridlines"
+                        :rows="10"
+                        dataKey="id"
+                        :rowHover="true"
+                        v-model:filters="filters"
+                        filterDisplay="menu"
+                        :loading="loading"
+                        :filters="filters"
+                        responsiveLayout="scroll"
+                        :globalFilterFields="['nome_cliente']"
+                    >
+                        <!-- <template #header>
+                            <div class="flex justify-content-between flex-column sm:flex-row">
+                                <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
+                                <span class="p-input-icon-left mb-2">
+                                    <i class="pi pi-search" />
+                                    <InputText v-model="filters['global'].value" placeholder="Keyword Search" style="width: 100%" />
+                                </span>
+                            </div>
+                        </template> -->
                         <template #empty> Nenhum Cliente Encontrado. </template>
                         <template #loading> Carregando os Clientes. Aguarde! </template>
 
@@ -362,7 +386,7 @@ export default {
                             </template>
                         </Column>
 
-						<Column v-if="permissionsService.hasPermissions('view_emprestimos_delete')" field="edit" header="Opções" :sortable="false" class="w-1">
+                        <Column v-if="permissionsService.hasPermissions('view_emprestimos_delete')" field="edit" header="Opções" :sortable="false" class="w-1">
                             <template #body="slotProps">
                                 <Menu :ref="`menu_${slotProps.data.id}`" :model="getOverlayMenuItems(slotProps.data)" :popup="true" />
                                 <Button type="button" label="Opções" icon="pi pi-angle-down" @click="toggleMenu(slotProps.data.id)" style="width: auto" />
