@@ -425,7 +425,7 @@ export default {
                 </div>
                 <div class="col-12 px-0 py-0 text-right">
                     <Button label="Realizar Pagamento" class="p-button p-button-success p-button-sm" :icon="icons.CHECK" @click.prevent="realizarTransferencia" />
-                    <Button label="Reprovar Pagamento" class="p-button p-button-danger p-button-sm ml-3" :icon="icons.TIMES" type="button" @click.prevent="reprovarEmprestimo" />
+                    <Button v-if="!contaspagar?.status == 'Pagamento Efetuado'" label="Reprovar Pagamento" class="p-button p-button-danger p-button-sm ml-3" :icon="icons.TIMES" type="button" @click.prevent="reprovarEmprestimo" />
                 </div>
             </div>
         </template>
