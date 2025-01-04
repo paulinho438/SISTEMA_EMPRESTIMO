@@ -1736,7 +1736,6 @@ class EmprestimoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
     }
-
     public function delete(Request $r, $id)
     {
         DB::beginTransaction();
