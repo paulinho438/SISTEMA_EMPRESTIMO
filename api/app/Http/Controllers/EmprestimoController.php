@@ -748,7 +748,7 @@ class EmprestimoController extends Controller
 
             $contaspagar = Contaspagar::find($id);
 
-            if ($contaspagar->contaspagar->status == 'Pagamento Efetuado') {
+            if ($contaspagar->status == 'Pagamento Efetuado') {
                 return response()->json([
                     "message" => "Pagamento já efetuado.",
                     "error" => ""
@@ -756,14 +756,14 @@ class EmprestimoController extends Controller
             }
 
             if ($contaspagar->banco->wallet == 1) {
-                if (!$contaspagar->client->pix_cliente) {
+                if (!$contaspagar->fornecedor->pix_fornecedor) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                        "error" => 'Cliente não possui chave pix cadastrada'
+                        "error" => 'Fornecedor não possui chave pix cadastrada'
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->client->pix_cliente, $contaspagar->banco->accountId);
+                $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $contaspagar->banco->accountId);
 
                 if ($response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
@@ -772,8 +772,8 @@ class EmprestimoController extends Controller
 
                         if (!$response->successful()) {
                             return response()->json([
-                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                                "error" => "Erro ao efetuar a transferencia do Emprestimo."
+                                "message" => "Erro ao efetuar a transferencia do Titulo.",
+                                "error" => "Erro ao efetuar a transferencia do Titulo."
                             ], Response::HTTP_FORBIDDEN);
                         }
 
@@ -786,8 +786,8 @@ class EmprestimoController extends Controller
                             'tipo_transferencia' => 'PIX',
                             'descricao' => 'Transferência realizada com sucesso',
                             'destino_nome' => $array['response']['creditParty']['name'],
-                            'destino_cpf' => self::mascararString($contaspagar->client->cpf),
-                            'destino_chave_pix' => $contaspagar->client->pix_cliente,
+                            'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
+                            'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
                             'destino_instituicao' => $bank->short_name ?? 'Unknown',
                             'destino_banco' => $bank->code_number ?? '000',
                             'destino_agencia' => str_pad($array['response']['creditParty']['branch'], 4, '0', STR_PAD_LEFT),
@@ -824,7 +824,7 @@ class EmprestimoController extends Controller
                         // Verificar se o PNG foi gerado
                         if (file_exists($pngPath)) {
                             try {
-                                $telefone = preg_replace('/\D/', '', $contaspagar->client->telefone_celular_1);
+                                $telefone = preg_replace('/\D/', '', $contaspagar->fornecedor->telefone_celular_1);
                                 // Enviar o PNG gerado para o endpoint
                                 $response = Http::attach(
                                     'arquivo', // Nome do campo no formulário
@@ -840,7 +840,7 @@ class EmprestimoController extends Controller
                     }
                 } else {
                     return response()->json([
-                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "message" => "Erro ao efetuar a transferencia do Titulo.",
                         "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
                     ], Response::HTTP_FORBIDDEN);
                 }
@@ -856,7 +856,7 @@ class EmprestimoController extends Controller
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $contaspagar->banco->id;
             $movimentacaoFinanceira['company_id'] = $request->header('company-id');
-            $movimentacaoFinanceira['descricao'] = 'Título a pagar Nº ' . $contaspagar->id . ' para ' . $contaspagar->client->nome_completo;
+            $movimentacaoFinanceira['descricao'] = 'Título a pagar Nº ' . $contaspagar->id . ' para ' . $contaspagar->fornecedor->nome_completo;
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
             $movimentacaoFinanceira['valor'] = $contaspagar->valor;
@@ -868,7 +868,7 @@ class EmprestimoController extends Controller
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $contaspagar->valor . ' para o cliente ' . $contaspagar->client->nome_completo,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do titulo ' . $id . 'no valor de R$ ' . $contaspagar->valor . ' para o fornecedor ' . $contaspagar->fornecedor->nome_completo,
                 'operation' => 'edit'
             ]);
 
