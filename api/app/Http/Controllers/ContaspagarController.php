@@ -99,6 +99,13 @@ class ContaspagarController extends Controller
         try {
             $permGroup = Contaspagar::findOrFail($id);
 
+            if ($permGroup->status == "Pagamento Efetuado") {
+                return response()->json([
+                    "message" => "Erro ao excluir o contas a pagar, pagamento já foi efetuado",
+                    "error" => "Erro ao excluir contas a pagar, pagamento já foi efetuado"
+                ], Response::HTTP_FORBIDDEN);
+            }
+
             $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
             $permGroup->banco->save();
             $permGroup->delete();
