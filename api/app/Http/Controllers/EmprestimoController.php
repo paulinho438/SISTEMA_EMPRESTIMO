@@ -151,10 +151,8 @@ class EmprestimoController extends Controller
     {
         $parcelas = collect();
 
-        $today = Carbon::today()->toDateString();
-
         return EmprestimoResource::collection(
-            Emprestimo::whereHas('parcelas', function ($query) use ($today, $request) {
+            Emprestimo::whereHas('parcelas', function ($query) use ($request) {
                 $query->where('dt_baixa', null)
                     ->where('valor_recebido_pix', null)
                     ->whereHas('emprestimo', function ($query) use ($request) {
