@@ -70,6 +70,8 @@ export default {
                         this.costcenter = response.data?.data.costcenter;
                         this.fornecedor = response.data?.data.fornecedor;
                         this.banco = response.data?.data.banco;
+
+                        console.log(response.data);
                     })
                     .catch((error) => {
                         this.toast.add({
@@ -117,43 +119,44 @@ export default {
             }
         },
         realizarTransferencia() {
-            this.changeLoading();
-            if (this.route.params?.id) {
-                this.emprestimoService
-                    .efetuarPagamentoEmprestimo(this.route.params.id)
-                    .then((response) => {
-                        if (response) {
-                            this.toast.add({
-                                severity: ToastSeverity.SUCCESS,
-                                detail: 'Pagamento Efetuado',
-                                life: 3000
-                            });
-                        }
-                    })
-                    .catch((error) => {
-                        if (error?.response?.status != 422) {
-                            this.toast.add({
-                                severity: ToastSeverity.ERROR,
-                                detail: UtilService.message(error.response.data),
-                                life: 3000
-                            });
-                        }
-                    })
-                    .finally(() => {
-                        this.changeLoading();
-                    });
-            }
+            alert(this.route.params.id);
+            // this.changeLoading();
+            // if (this.route.params?.id) {
+            //     this.emprestimoService
+            //         .efetuarPagamentoEmprestimo(this.route.params.id)
+            //         .then((response) => {
+            //             if (response) {
+            //                 this.toast.add({
+            //                     severity: ToastSeverity.SUCCESS,
+            //                     detail: 'Pagamento Efetuado',
+            //                     life: 3000
+            //                 });
+            //             }
+            //         })
+            //         .catch((error) => {
+            //             if (error?.response?.status != 422) {
+            //                 this.toast.add({
+            //                     severity: ToastSeverity.ERROR,
+            //                     detail: UtilService.message(error.response.data),
+            //                     life: 3000
+            //                 });
+            //             }
+            //         })
+            //         .finally(() => {
+            //             this.changeLoading();
+            //         });
+            // }
         },
         reprovarEmprestimo() {
 			this.changeLoading();
             if (this.route.params?.id) {
                 this.emprestimoService
-                    .reprovarEmprestimo(this.route.params.id)
+                    .reprovarPagamentoContasAPagar(this.route.params.id)
                     .then((response) => {
                         if (response) {
                             this.toast.add({
                                 severity: ToastSeverity.SUCCESS,
-                                detail: 'Empréstimo Reprovado!',
+                                detail: 'Pagamento Reprovado!',
                                 life: 3000
                             });
 

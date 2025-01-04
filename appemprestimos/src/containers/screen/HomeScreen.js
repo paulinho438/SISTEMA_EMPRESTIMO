@@ -9,6 +9,7 @@ import {
   ScrollView,
   Platform,
   PermissionsAndroid,
+  RefreshControl,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 
@@ -49,11 +50,66 @@ export default function HomeScreen({navigation}) {
   const [tipoCliente, setTipoCliente] = useState('');
   const [search, setSearch] = useState('');
   const [permissoesHoje, setPermissoesHoje] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState({
     verde: 0,
     amarelo: 0,
     vermelho: 0,
   });
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+
+    try {
+      async function fetchData() {
+        let a = await getPermissions();
+        setPermissoesHoje(a);
+      }
+      fetchData();
+
+      const requestLocationPermission = async () => {
+        setTipoCliente('');
+        if (Platform.OS === 'ios') {
+          Geolocation.requestAuthorization('whenInUse');
+          getLocation();
+        } else {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: 'Location Access Permission',
+              message: 'We need access to your location',
+              buttonNeutral: 'Ask Me Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'OK',
+            },
+          );
+
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            getLocation();
+          } else {
+            console.log('Location permission denied');
+          }
+        }
+      };
+
+      const getLocation = () => {
+        Geolocation.getCurrentPosition(
+          position => {
+            setLocation(position);
+            getInfo(position);
+          },
+          error => {
+            console.log(error.code, error.message);
+          },
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+        );
+      };
+
+      requestLocationPermission();
+    } catch (error) {
+      console.error('Erro ao atualizar clientes:', error);
+    } 
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -61,11 +117,11 @@ export default function HomeScreen({navigation}) {
       let verde = 0;
       let amarelo = 0;
       let vermelho = 0;
-  
+
       // Processa os dados de atraso das parcelas
       clientes.forEach(clientes => {
         const diasAtraso = clientes.atrasadas;
-  
+
         if (diasAtraso == 0) {
           azul += 1; // Sem atraso
         } else if (diasAtraso >= 1 && diasAtraso <= 2) {
@@ -76,8 +132,8 @@ export default function HomeScreen({navigation}) {
           vermelho += 1; // Mais de 5 dias de atraso
         }
       });
-  
-      setData({ azul, verde, amarelo, vermelho });
+
+      setData({azul, verde, amarelo, vermelho});
     }, [clientes]),
   );
 
@@ -163,7 +219,6 @@ export default function HomeScreen({navigation}) {
 
       setClientes(filteredData);
     }
-
   }, [tipoCliente]);
 
   const pieData = [
@@ -240,6 +295,7 @@ export default function HomeScreen({navigation}) {
 
     setClientes(sortedArray);
     setClientesOrig(sortedArray);
+    setRefreshing(false);
   };
 
   const haversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -457,22 +513,18 @@ export default function HomeScreen({navigation}) {
   };
 
   const ChartExample = () => {
-  
     // Dados para o PieChart com valores dinâmicos
     const pieData = [
-      { key: 1, value: data.azul, svg: { fill: '#194ADFFF' } },  // Verde
-      { key: 2, value: data.verde, svg: { fill: '#4CAF50' } },  // Verde
-      { key: 3, value: data.amarelo, svg: { fill: '#FFC107' } }, // Amarelo
-      { key: 4, value: data.vermelho, svg: { fill: '#F34646' } }, // Vermelho
+      {key: 1, value: data.azul, svg: {fill: '#194ADFFF'}}, // Verde
+      {key: 2, value: data.verde, svg: {fill: '#4CAF50'}}, // Verde
+      {key: 3, value: data.amarelo, svg: {fill: '#FFC107'}}, // Amarelo
+      {key: 4, value: data.vermelho, svg: {fill: '#F34646'}}, // Vermelho
     ].filter(item => item.value !== 0);
 
-
-    
-  
     // Função para adicionar labels de valor no PieChart
-    const Labels = ({ slices }) => {
+    const Labels = ({slices}) => {
       return slices.map((slice, index) => {
-        const { labelCentroid, data } = slice;
+        const {labelCentroid, data} = slice;
         return (
           <SVGText
             key={index}
@@ -482,42 +534,40 @@ export default function HomeScreen({navigation}) {
             fontSize={14}
             fontWeight="bold"
             textAnchor="middle"
-            alignmentBaseline="middle"
-          >
+            alignmentBaseline="middle">
             {data.value}
           </SVGText>
         );
       });
     };
-  
+
     return (
       <View style={styles2.container}>
         {/* Título */}
         <Text style={styles2.title}>Status de Atrasos 📆</Text>
-  
+
         {/* Legenda */}
         <View style={styles2.legend}>
-          <Text style={[styles2.legendItem, { color: '#194ADFFF' }]}>
+          <Text style={[styles2.legendItem, {color: '#194ADFFF'}]}>
             ● Azul: Sem atrasos
           </Text>
-          <Text style={[styles2.legendItem, { color: '#4CAF50' }]}>
+          <Text style={[styles2.legendItem, {color: '#4CAF50'}]}>
             ● Verde: entre 1 e 2 dias de atraso
           </Text>
-          <Text style={[styles2.legendItem, { color: '#FFC107' }]}>
+          <Text style={[styles2.legendItem, {color: '#FFC107'}]}>
             ● Amarelo: entre 3 e 10 dias de atraso
           </Text>
-          <Text style={[styles2.legendItem, { color: '#F34646' }]}>
+          <Text style={[styles2.legendItem, {color: '#F34646'}]}>
             ● Vermelho: mais de 10 dias de atraso
           </Text>
         </View>
-  
+
         {/* Gráfico de Anel (PieChart) */}
         <PieChart
-          style={{ height: 150, width: 200, marginBottom: 16 }}
+          style={{height: 150, width: 200, marginBottom: 16}}
           data={pieData}
           innerRadius="70%"
-          outerRadius="100%"
-        >
+          outerRadius="100%">
           <Labels />
         </PieChart>
       </View>
@@ -569,21 +619,25 @@ export default function HomeScreen({navigation}) {
 
   return (
     <SafeAreaView style={[styles2.mainContainerSurface]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh} // Atualiza toda a tela
+          />
+        }
+        showsVerticalScrollIndicator={false}>
         {ListHeaderComponent()}
         <FlatList
           keyExtractor={(item, index) => index.toString()}
           data={clientes}
           renderItem={renderHomeData}
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
+          scrollEnabled={false} // FlatList é fixa dentro do ScrollView
         />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-
 
 const styles2 = StyleSheet.create({
   container: {

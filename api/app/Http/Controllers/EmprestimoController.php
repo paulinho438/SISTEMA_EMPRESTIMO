@@ -723,6 +723,58 @@ class EmprestimoController extends Controller
         }
     }
 
+    public function reprovarContasAPagar(Request $request, $id)
+    {
+
+        if (!$this->contem($request->header('Company_id'), auth()->user(), 'view_emprestimos_autorizar_pagamentos')) {
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' não tem permissão para autorizar o pagamento do emprestimo ' . $id,
+                'operation' => 'error'
+            ]);
+
+            return response()->json([
+                "message" => "Sem permissão para reprovar o pagamento.",
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+
+            $permGroup = Contaspagar::findOrFail($id);
+
+            if ($permGroup->status == "Pagamento Efetuado") {
+                return response()->json([
+                    "message" => "Erro ao excluir título, pagamento já foi efetuado",
+                    "error" => "Erro ao excluir título, pagamento já foi efetuado"
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $permGroup->delete();
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' excluiu o contas a pagar: ' . $id,
+                'operation' => 'destroy'
+            ]);
+
+            DB::commit();
+
+            return $array;
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao efetuar a exclusão do titulo a pagar.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
     public function reprovarEmprestimo(Request $request, $id)
     {
 

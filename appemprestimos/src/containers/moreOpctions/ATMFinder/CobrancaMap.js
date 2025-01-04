@@ -26,6 +26,7 @@ import Location from '../../../components/modals/Location';
 import InfoParcelas from '../../../components/modals/InfoParcelas';
 import {useFocusEffect} from '@react-navigation/native';
 import api from '../../../services/api';
+import FullScreenLoader from '../../../components/FullScreenLoader';
 
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
 
@@ -34,6 +35,7 @@ export default function ATMDetails({navigation, route}) {
 
   const [empty, nonEmpty] = useState('');
   const [parcelas, setParcelas] = useState([]);
+  const [loading, setLoading] = useState(false);
   useFocusEffect(
     React.useCallback(() => {
       getInfo();
@@ -41,8 +43,10 @@ export default function ATMDetails({navigation, route}) {
   );
 
   const getInfo = async position => {
+    setLoading(true);
     let reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
     setParcelas(reqClientes.data);
+    setLoading(false);
   };
 
   const Search = useRef(null);
@@ -102,23 +106,31 @@ export default function ATMDetails({navigation, route}) {
 
   const openWhatsApp = () => {
     let telefone = clientes.telefone_celular_1;
-
-    if (/\)\s*9/.test(telefone)) {
-      telefone = telefone.replace(/\)\s*/, ') 9');
+  
+    // Remove todos os caracteres não numéricos
+    telefone = telefone.replace(/\D/g, '');
+  
+    // Adiciona o código do país, se necessário
+    if (!telefone.startsWith('55')) {
+      telefone = `55${telefone}`;
     }
-
-
+  
+    // Verifica se o número tem pelo menos 11 dígitos (código de área + número)
+    if (telefone.length < 12) {
+      Alert.alert('Número de telefone inválido', 'Verifique o formato do número.');
+      return;
+    }
+  
     let url = `whatsapp://send?phone=${telefone}`;
-
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
-
+  
     Linking.openURL(url)
-      .then(data => {
-        console.log('WhatsApp abierto:', data);
+      .then((data) => {
+        console.log('WhatsApp aberto:', data);
       })
       .catch(() => {
-        console.log('Error al abrir WhatsApp');
-        Alert.alert('Error ao abrir WhatsApp');
+        console.log('Erro ao abrir WhatsApp');
+        Alert.alert('Erro ao abrir WhatsApp');
       });
   };
 
@@ -175,6 +187,7 @@ Segue abaixo as parcelas pendentes.
 
   return (
     <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+      <FullScreenLoader visible={loading} />
       <SafeAreaView style={localStyles.main}>
         <View style={styles.ph20}>
           <View style={localStyles.parentComponent}>
