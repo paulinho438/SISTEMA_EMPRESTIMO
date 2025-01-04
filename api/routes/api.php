@@ -58,6 +58,9 @@ Route::get('/setup-teste', function (Request $request) {
 
 Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookRetornoCobranca']);
 Route::post('/webhook/retorno_pagamento', [EmprestimoController::class, 'webhookPagamento']);
+Route::post('/manutencao/corrigir_pix', [EmprestimoController::class, 'corrigirPix']);
+
+
 Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataCorte']);
 
 
