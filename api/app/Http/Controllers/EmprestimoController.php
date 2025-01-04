@@ -1696,6 +1696,16 @@ class EmprestimoController extends Controller
         return response()->json(['message' => 'sucesso']);
     }
 
+    public function corrigirPix()
+    {
+        $parcelas = Parcela::whereNull('identificador')
+            ->whereHas('emprestimo.banco', function ($query) {
+                $query->where('wallet', true);
+            })
+            ->get();
+        return $parcelas;
+    }
+
     public function cobrarAmanha(Request $request, $id)
     {
 
