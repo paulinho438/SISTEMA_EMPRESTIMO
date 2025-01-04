@@ -31,7 +31,7 @@ class EmprestimoResource extends JsonResource
         $saldoatrasado = $parcelas->where('dt_baixa', null)->where('venc_real', now()->toDateString())->sum('saldo');
         $porcentagem = $this->porcent($parcelas->sum('valor'), $parcelas->where('dt_baixa', '<>', null)->sum('valor'));
         $saldo_total_parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->sum('valor');
-        $parcelas_vencidas = ParcelaResource::collection($parcelas->where('dt_baixa', null)->where('venc_real', now()->toDateString()));
+        $parcelas_vencidas = ParcelaResource::collection($parcelas->where('dt_baixa', null));
         $parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->values()->all();
 
         return [
