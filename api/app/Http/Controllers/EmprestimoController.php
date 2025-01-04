@@ -1721,6 +1721,7 @@ class EmprestimoController extends Controller
                         $entidade->save();
                         $sucesso = true;
                     } else {
+                        Log::error('Falha ao processar cobrança'. $response->json());
                         $tentativas++;
                     }
                 } catch (\Exception $e) {
