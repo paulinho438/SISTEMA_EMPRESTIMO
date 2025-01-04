@@ -3,14 +3,11 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-
 use App\Models\Emprestimo;
-
 use DateTime;
 
 class EmprestimoResource extends JsonResource
 {
-
     public function porcent($vl1, $vl2)
     {
         if ($vl1 != 0) {
@@ -28,44 +25,37 @@ class EmprestimoResource extends JsonResource
      */
     public function toArray($request)
     {
+        $parcelas = $this->parcelas;
+
+        $saldoareceber = $parcelas->where('dt_baixa', null)->sum('saldo');
+        $saldoatrasado = $parcelas->where('dt_baixa', null)->where('venc_real', now()->toDateString())->sum('saldo');
+        $porcentagem = $this->porcent($parcelas->sum('valor'), $parcelas->where('dt_baixa', '<>', null)->sum('valor'));
+        $saldo_total_parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->sum('valor');
+        $parcelas_vencidas = ParcelaResource::collection($parcelas->where('dt_baixa', null)->where('venc_real', now()->toDateString()));
+        $parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->values()->all();
+
         return [
-            "id"                => $this->id,
-            "dt_lancamento"     => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
-            "valor"             => $this->valor,
-            "lucro"             => $this->lucro,
-            "juros"             => $this->juros,
-            "saldoareceber" => $this->parcelas->where('dt_baixa', null)->sum(function ($parcela) {
-                return $parcela->saldo;
-            }),
-            "saldoatrasado" => $this->parcelas
-                ->where('dt_baixa', null)
-                ->where('venc_real', now()->toDateString())
-                ->sum(function ($parcela) {
-                    return $parcela->saldo;
-                }),
-            "porcentagem"       => $this->porcent($this->parcelas->sum(function ($parcela) {
-                return $parcela->valor;
-            }), $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
-                return $parcela->valor;
-            })),
-            "saldo_total_parcelas_pagas" => $this->parcelas->where('dt_baixa', '<>', null)->sum(function ($parcela) {
-                return $parcela->valor;
-            }),
-            "costcenter"        => $this->costcenter,
-            "banco"             => new BancosResource($this->banco),
-            "cliente"           => new ClientResource($this->client),
-            "consultor"         => $this->user,
-            "parcelas_vencidas" => ParcelaResource::collection($this->parcelas->where('dt_baixa', null)
-            ->where('venc_real', now()->toDateString())),
-            "parcelas"          => ParcelaResource::collection($this->parcelas),
-            "quitacao"          => new QuitacaoResource($this->quitacao),
-            "pagamentominimo"   => new PagamentoMinimoResource($this->pagamentominimo),
-            "pagamentosaldopendente"   => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
-            "parcelas_pagas"    => $this->parcelas->where('dt_baixa', '<>', null)->values()->all(),
-            "status"            => $this->getStatus(),
-            "telefone_empresa"  => $this->company->numero_contato,
-
-
+            "id" => $this->id,
+            "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
+            "valor" => $this->valor,
+            "lucro" => $this->lucro,
+            "juros" => $this->juros,
+            "saldoareceber" => $saldoareceber,
+            "saldoatrasado" => $saldoatrasado,
+            "porcentagem" => $porcentagem,
+            "saldo_total_parcelas_pagas" => $saldo_total_parcelas_pagas,
+            "costcenter" => $this->costcenter,
+            "banco" => new BancosResource($this->banco),
+            "cliente" => new ClientResource($this->client),
+            "consultor" => $this->user,
+            "parcelas_vencidas" => $parcelas_vencidas,
+            "parcelas" => ParcelaResource::collection($parcelas),
+            "quitacao" => new QuitacaoResource($this->quitacao),
+            "pagamentominimo" => new PagamentoMinimoResource($this->pagamentominimo),
+            "pagamentosaldopendente" => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
+            "parcelas_pagas" => $parcelas_pagas,
+            "status" => $this->getStatus(),
+            "telefone_empresa" => $this->company->numero_contato,
         ];
     }
 
@@ -104,8 +94,6 @@ class EmprestimoResource extends JsonResource
         if ($qtParcelas == $qtPagas) {
             $status = 'Pago';
         }
-
-
 
         return $status;
     }
