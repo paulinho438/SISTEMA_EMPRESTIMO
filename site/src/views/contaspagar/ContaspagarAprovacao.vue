@@ -138,7 +138,7 @@ export default {
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
                             this.loadingFullScreen = false;
-                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o pagamento de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
+                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o pagamento de ${this.contaspagar?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
                             this.displayConfirmation = true;
                         })
                         .catch((error) => {
