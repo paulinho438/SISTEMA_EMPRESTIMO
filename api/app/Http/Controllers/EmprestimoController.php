@@ -1634,7 +1634,7 @@ class EmprestimoController extends Controller
                         $movimentacaoFinanceira = [];
                         $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                         $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id . 'Pagador ' .$pix['pagador']['nome'];
+                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id . ' do cliente '. $parcela->emprestimo->cliente->nome_completo .' pagador ' .$pix['pagador']['nome'];
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -1930,18 +1930,54 @@ class EmprestimoController extends Controller
                         }
                     }
 
-                    if ($parcela->emprestimo->quitacao->chave_pix) {
+                    if ($parcela->contasreceber) {
+                        $parcela->contasreceber->status = 'Pago';
+                        $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                        $parcela->contasreceber->forma_recebto = 'PIX';
+                        $parcela->contasreceber->save();
 
-                        $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                        $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                        $parcela->emprestimo->quitacao->save();
+                        # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
 
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id . ' do cliente '. $parcela->emprestimo->cliente->nome_completo .' pagador ' .$pix['pagador']['nome'];
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
 
-                        if ($response->successful()) {
-                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                        $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
+                        $parcela->emprestimo->banco->save();
+
+                        // $movimentacaoFinanceira = [];
+                        // $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        // $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $parcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        // $movimentacaoFinanceira['tipomov'] = 'S';
+                        // $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        // $movimentacaoFinanceira['valor'] = $juros;
+
+                        // Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        if ($parcela->emprestimo->quitacao->chave_pix) {
+
+                            $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                            $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                             $parcela->emprestimo->quitacao->save();
+
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+
+                            if ($response->successful()) {
+                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->quitacao->save();
+                            }
                         }
                     }
                 }
