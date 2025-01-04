@@ -149,10 +149,13 @@ export default function ParcelasPendentesHoje(props) {
 
   // Ordenar os itens para que aqueles com valor_recebido_pix igual a null venham primeiro
   const sortedParcelasPendentes = filteredParcelasPendentes.sort((a, b) => {
-    if (a.parcelas_vencidas[0].valor_recebido_pix === null && b.parcelas_vencidas[0].valor_recebido_pix !== null) {
+    const aValorRecebidoPix = a.parcelas_vencidas[0]?.valor_recebido_pix;
+    const bValorRecebidoPix = b.parcelas_vencidas[0]?.valor_recebido_pix;
+  
+    if (aValorRecebidoPix === null && bValorRecebidoPix !== null) {
       return -1;
     }
-    if (a.parcelas_vencidas[0].valor_recebido_pix !== null && b.parcelas_vencidas[0].valor_recebido_pix === null) {
+    if (aValorRecebidoPix !== null && bValorRecebidoPix === null) {
       return 1;
     }
     return 0;
@@ -205,23 +208,23 @@ export default function ParcelasPendentesHoje(props) {
                   {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
                 </Text>
                 <Text style={styles2.totalDueText}>
-                  Valor da Parcela {item.parcelas_vencidas[0].saldo.toLocaleString('pt-BR', {
+                  Valor da Parcela {item.parcelas_vencidas[0]?.saldo.toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
             })}
                 </Text>
-                {item.parcelas_vencidas[0].valor_recebido > 0 && (
+                {item.parcelas_vencidas[0]?.valor_recebido > 0 && (
                   <Text style={styles2.subTitleValor}>
-                    Valor recebido em dinheiro {item.parcelas_vencidas[0].valor_recebido.toLocaleString('pt-BR', {
+                    Valor recebido em dinheiro {item.parcelas_vencidas[0]?.valor_recebido.toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
             })}
                   </Text>
                 )}
 
-                {item.parcelas_vencidas[0].valor_recebido_pix > 0 && (
+                {item.parcelas_vencidas[0]?.valor_recebido_pix > 0 && (
                   <Text style={styles2.subTitleValor}>
-                    Valor recebido em Pix {item.parcelas_vencidas[0].valor_recebido_pix.toLocaleString('pt-BR', {
+                    Valor recebido em Pix {item.parcelas_vencidas[0]?.valor_recebido_pix.toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
             })}
