@@ -168,6 +168,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/contaspagar/pagamentos/transferenciaconsultar/{id}', [EmprestimoController::class, 'pagamentoTransferenciaConsultar']);
     Route::post('/contaspagar/pagamentos/transferencia/{id}', [EmprestimoController::class, 'pagamentoTransferencia']);
     Route::post('/contaspagar/pagamentos/reprovaremprestimo/{id}', [EmprestimoController::class, 'reprovarEmprestimo']);
+    Route::post('/contaspagar/pagamentos/reprovaremprestimo/{id}', [EmprestimoController::class, 'reprovarContasAPagar']);
 
     Route::get('/contasreceber', [ContasreceberController::class, 'all']);
     Route::get('/contasreceber/{id}', [ContasreceberController::class, 'id']);

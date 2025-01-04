@@ -74,26 +74,32 @@ export default function Location(props) {
   }
 
   const openWhatsApp = () => {
-
-
-
     let telefone = cliente.telefone_celular_1;
-
-    if (/\)\s*9/.test(telefone)) {
-      telefone = telefone.replace(/\)\s*/, ') 9');
+  
+    // Remove todos os caracteres não numéricos
+    telefone = telefone.replace(/\D/g, '');
+  
+    // Adiciona o código do país, se necessário
+    if (!telefone.startsWith('55')) {
+      telefone = `55${telefone}`;
     }
-
-
+  
+    // Verifica se o número tem pelo menos 11 dígitos (código de área + número)
+    if (telefone.length < 12) {
+      Alert.alert('Número de telefone inválido', 'Verifique o formato do número.');
+      return;
+    }
+  
     let url = `whatsapp://send?phone=${telefone}`;
     url += `&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
-
+  
     Linking.openURL(url)
       .then((data) => {
-        console.log('WhatsApp abierto:', data);
+        console.log('WhatsApp aberto:', data);
       })
       .catch(() => {
-        console.log('Error al abrir WhatsApp');
-        Alert.alert('Error ao abrir WhatsApp');
+        console.log('Erro ao abrir WhatsApp');
+        Alert.alert('Erro ao abrir WhatsApp');
       });
   };
 
