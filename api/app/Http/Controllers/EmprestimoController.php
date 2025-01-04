@@ -1852,6 +1852,84 @@ class EmprestimoController extends Controller
         return $dados;
     }
 
+    public function aplicarMultaParcela(Request $request, $id) {
+        $parcela = Parcela::find($id);
+
+        if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+            $valorJuros = 0;
+
+            $juros = $parcela->emprestimo->company->juros ?? 1;
+
+            $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros  / 100), 2, '.', '');
+
+            $novoValor = $valorJuros + $parcela->saldo;
+
+            if (count($parcela->emprestimo->parcelas) == 1) {
+                $novoValor = $parcela->saldo + (1 * $parcela->saldo / 100);
+                $valorJuros = (1 * $parcela->saldo / 100);
+            }
+
+            $parcela->saldo = $novoValor;
+            $parcela->venc_real = date('Y-m-d');
+            $parcela->atrasadas = $parcela->atrasadas + 1;
+
+            if ($parcela->emprestimo->banco->wallet) {
+                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    $parcela->identificador = $response->json()['txid'];
+                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->save();
+                }
+            }
+
+            $parcela->save();
+
+            if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
+
+                $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                    $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                    $parcela->emprestimo->quitacao->save();
+                }
+            }
+
+            if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix) {
+
+                $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
+
+                $parcela->emprestimo->pagamentominimo->save();
+
+                $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                    $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->emprestimo->pagamentominimo->save();
+                }
+            }
+
+            if ($parcela->emprestimo->pagamentosaldopendente && $parcela->emprestimo->pagamentosaldopendente->chave_pix) {
+
+                $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
+
+                $parcela->emprestimo->pagamentosaldopendente->save();
+
+                $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                    $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->emprestimo->pagamentosaldopendente->save();
+                }
+            }
+        }
+
+    }
+
     public function cobrarAmanha(Request $request, $id)
     {
 
