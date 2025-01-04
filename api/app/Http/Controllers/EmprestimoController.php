@@ -156,7 +156,6 @@ class EmprestimoController extends Controller
         return EmprestimoResource::collection(
             Emprestimo::whereHas('parcelas', function ($query) use ($today, $request) {
                 $query->where('dt_baixa', null)
-                    ->where('venc_real', $today)
                     ->where('valor_recebido_pix', null)
                     ->whereHas('emprestimo', function ($query) use ($request) {
                         $query->where('company_id', $request->header('company-id'));
