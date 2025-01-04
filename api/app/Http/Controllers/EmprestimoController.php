@@ -1701,6 +1701,7 @@ class EmprestimoController extends Controller
         $dados = [];
 
         $dados['Parcela'] = Parcela::whereNull('identificador')
+            ->where('saldo', '>', 0)
             ->whereHas('emprestimo.banco', function ($query) {
                 $query->where('wallet', true);
             })
@@ -1721,7 +1722,6 @@ class EmprestimoController extends Controller
                         $entidade->save();
                         $sucesso = true;
                     } else {
-                        Log::error('Falha ao processar cobrança'. $response->json());
                         $tentativas++;
                     }
                 } catch (\Exception $e) {
@@ -1738,6 +1738,7 @@ class EmprestimoController extends Controller
         }
 
         $dados['PagamentoSaldoPendente'] = PagamentoSaldoPendente::whereNull('identificador')
+            ->where('valor', '>', 0)
             ->whereHas('emprestimo.banco', function ($query) {
                 $query->where('wallet', true);
             })
@@ -1774,6 +1775,7 @@ class EmprestimoController extends Controller
         }
 
         $dados['PagamentoMinimo'] = PagamentoMinimo::whereNull('identificador')
+            ->where('valor', '>', 0)
             ->whereHas('emprestimo.banco', function ($query) {
                 $query->where('wallet', true);
             })
@@ -1810,6 +1812,7 @@ class EmprestimoController extends Controller
         }
 
         $dados['Quitacao'] = Quitacao::whereNull('identificador')
+            ->where('saldo', '>', 0)
             ->whereHas('emprestimo.banco', function ($query) {
                 $query->where('wallet', true);
             })
