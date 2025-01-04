@@ -1930,20 +1930,20 @@ class EmprestimoController extends Controller
                         }
                     }
 
-                    if ($parcela->contasreceber) {
-                        $parcela->contasreceber->status = 'Pago';
-                        $parcela->contasreceber->dt_baixa = date('Y-m-d');
-                        $parcela->contasreceber->forma_recebto = 'PIX';
-                        $parcela->contasreceber->save();
+                    if ($proximaParcela->contasreceber) {
+                        $proximaParcela->contasreceber->status = 'Pago';
+                        $proximaParcela->contasreceber->dt_baixa = date('Y-m-d');
+                        $proximaParcela->contasreceber->forma_recebto = 'PIX';
+                        $proximaParcela->contasreceber->save();
 
                         # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
 
                         $movimentacaoFinanceira = [];
-                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id . ' do cliente '. $parcela->emprestimo->cliente->nome_completo .' pagador ' .$pix['pagador']['nome'];
+                        $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id . ' do cliente '. $proximaParcela->emprestimo->cliente->nome_completo .' pagador ' .$pix['pagador']['nome'];
                         $movimentacaoFinanceira['tipomov'] = 'E';
-                        $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        $movimentacaoFinanceira['parcela_id'] = $proximaParcela->id;
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                         $movimentacaoFinanceira['valor'] = $valor;
 
@@ -1951,32 +1951,32 @@ class EmprestimoController extends Controller
 
                         # ADICIONANDO O VALOR NO SALDO DO BANCO
 
-                        $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
-                        $parcela->emprestimo->banco->save();
+                        $proximaParcela->emprestimo->banco->saldo = $proximaParcela->emprestimo->banco->saldo + $valor;
+                        $proximaParcela->emprestimo->banco->save();
 
                         // $movimentacaoFinanceira = [];
-                        // $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                        // $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $parcela->emprestimo->banco->juros . '% referente a baixa automática via pix da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                        // $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
+                        // $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
+                        // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $proximaParcela->emprestimo->banco->juros . '% referente a baixa automática via pix da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id;
                         // $movimentacaoFinanceira['tipomov'] = 'S';
-                        // $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                        // $movimentacaoFinanceira['proximaParcela_id'] = $proximaParcela->id;
                         // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                         // $movimentacaoFinanceira['valor'] = $juros;
 
                         // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        if ($parcela->emprestimo->quitacao->chave_pix) {
+                        if ($proximaParcela->emprestimo->quitacao->chave_pix) {
 
-                            $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                            $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                            $parcela->emprestimo->quitacao->save();
+                            $proximaParcela->emprestimo->quitacao->valor = $proximaParcela->emprestimo->proximaParcelas[0]->totalPendente();
+                            $proximaParcela->emprestimo->quitacao->saldo = $proximaParcela->emprestimo->proximaParcelas[0]->totalPendente();
+                            $proximaParcela->emprestimo->quitacao->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->proximaParcelas[0]->totalPendente(), $proximaParcela->emprestimo->banco->document);
 
                             if ($response->successful()) {
-                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                $parcela->emprestimo->quitacao->save();
+                                $proximaParcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $proximaParcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $proximaParcela->emprestimo->quitacao->save();
                             }
                         }
                     }
