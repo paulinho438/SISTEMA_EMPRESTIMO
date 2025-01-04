@@ -1634,7 +1634,7 @@ class EmprestimoController extends Controller
                         $movimentacaoFinanceira = [];
                         $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                         $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id . ' do cliente '. $parcela->emprestimo->cliente->nome_completo .' pagador ' .$pix['pagador']['nome'];
+                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id . ' do cliente '. $parcela->emprestimo->client->nome_completo .' pagador ' .$pix['pagador']['nome'];
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -1941,7 +1941,7 @@ class EmprestimoController extends Controller
                         $movimentacaoFinanceira = [];
                         $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
                         $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id . ' do cliente '. $proximaParcela->emprestimo->cliente->nome_completo .' pagador ' .$pix['pagador']['nome'];
+                        $movimentacaoFinanceira['descricao'] = 'Baixa automática da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id . ' do cliente '. $proximaParcela->emprestimo->client->nome_completo .' pagador ' .$pix['pagador']['nome'];
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['parcela_id'] = $proximaParcela->id;
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
