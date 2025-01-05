@@ -53,7 +53,7 @@ class EmprestimoAllResource extends JsonResource
             // "quitacao" => new QuitacaoResource($this->quitacao),
             // "pagamentominimo" => new PagamentoMinimoResource($this->pagamentominimo),
             // "pagamentosaldopendente" => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
-            // "parcelas_pagas" => $parcelas_pagas,
+            "parcelas_pagas" => $parcelas_pagas,
             "status" => $this->getStatus(),
             "telefone_empresa" => $this->company->numero_contato,
         ];
