@@ -73,9 +73,7 @@ export default function Aprovacao({navigation, route}) {
   };
 
   const getPendentesParaHoje = async () => {
-    console.log('aqui');
     let req = await api.emprestimosPendentesParaHoje();
-    console.log('aqui', req);
     setParcelasPendentes(req.data);
     
   };

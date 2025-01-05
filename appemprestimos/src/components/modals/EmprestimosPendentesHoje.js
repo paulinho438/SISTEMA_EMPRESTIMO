@@ -8,27 +8,28 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import React, { useRef, useEffect, useState } from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import ActionSheet from 'react-native-actions-sheet';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
 
 // Local imports
 import images from '../../assets/images/index';
-import { moderateScale } from '../../common/constant';
-import { styles } from '../../themes/index';
+import {moderateScale} from '../../common/constant';
+import {styles} from '../../themes/index';
 import CText from '../common/CText';
-import { colors } from '../../themes/colors';
+import {colors} from '../../themes/colors';
 import CButton from '../common/CButton';
-import { TouchableOpacity } from 'react-native-gesture-handler';
-import { useNavigation } from '@react-navigation/native';
-import { StackNav } from '../../navigation/navigationKeys';
+import {TouchableOpacity} from 'react-native-gesture-handler';
+import {useNavigation} from '@react-navigation/native';
+import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
-import Saldo from './Saldo';
+import TelaAprovacaoTitulo from './TelaAprovacaoTitulo';
 
 import FullScreenLoader from '../FullScreenLoader';
 
 export default function EmprestimosPendentesHoje(props) {
-  let { sheetRef, parcelas, clientes, titulosPendentes, onAtualizarClientes } = props;
+  let {sheetRef, parcelas, clientes, titulosPendentes, onAtualizarClientes} =
+    props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
@@ -97,26 +98,29 @@ export default function EmprestimosPendentesHoje(props) {
 
   // Filtrar parcelas com base no texto de pesquisa
   const filteredtitulosPendentes = titulosPendentes.filter(item =>
-    item.cliente.nome_completo.toLowerCase().includes(searchText.toLowerCase())
+    item.cliente.nome_completo.toLowerCase().includes(searchText.toLowerCase()),
   );
 
   // Ordenar os itens para que aqueles com valor_recebido_pix igual a null venham primeiro
-  const sortedtitulosPendentes = filteredtitulosPendentes.sort((a, b) => {
-    const aValorRecebidoPix = a.parcelas_vencidas[0]?.valor_recebido_pix;
-    const bValorRecebidoPix = b.parcelas_vencidas[0]?.valor_recebido_pix;
-  
-    if (aValorRecebidoPix === null && bValorRecebidoPix !== null) {
-      return -1;
-    }
-    if (aValorRecebidoPix !== null && bValorRecebidoPix === null) {
-      return 1;
-    }
-    return 0;
-  });
+  // const sortedtitulosPendentes = filteredtitulosPendentes.sort((a, b) => {
+  //   const aValorRecebidoPix = a.parcelas_vencidas[0]?.valor_recebido_pix;
+  //   const bValorRecebidoPix = b.parcelas_vencidas[0]?.valor_recebido_pix;
+
+  //   if (aValorRecebidoPix === null && bValorRecebidoPix !== null) {
+  //     return -1;
+  //   }
+  //   if (aValorRecebidoPix !== null && bValorRecebidoPix === null) {
+  //     return 1;
+  //   }
+  //   return 0;
+  // });
 
   return (
     <View>
-      <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
+      <ActionSheet
+        containerStyle={localStyles.actionSheet}
+        ref={sheetRef}
+        onOpen={() => {
           textInputRef.current?.focus();
         }}>
         {/* <FullScreenLoader visible={filteredtitulosPendentes.length == 0} /> */}
@@ -143,58 +147,67 @@ export default function EmprestimosPendentesHoje(props) {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={localStyles.mainContainer}>
             <View style={localStyles.outerComponent}>
-              <View style={{ gap: moderateScale(7) }}>
+              <View style={{gap: moderateScale(7)}}>
                 <CText color={colors.black} type={'B24'}>
-                  Parcelas Pendentes para Hoje
-                </CText>
-                <CText color={colors.black} type={'M16'}>
-                  Clique na parcela para efetuar a baixa!
+                  Títulos Pendentes para Hoje
                 </CText>
               </View>
             </View>
 
             {filteredtitulosPendentes.map(item => (
               <View key={item.id} style={styles2.container}>
-                <Text style={styles2.title}>
-                  Empréstimo N°{item.id}
+                <Text style={styles2.title}>{item.descricao}</Text>
+                <Text style={styles2.subTitle}>
+                  <Text style={{fontWeight: 'bold'}}>Valor a Pagar: </Text>
+                  {item.valor.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
                 </Text>
                 <Text style={styles2.subTitle}>
-                  {item.cliente.nome_completo} - CPF: {item.cliente.cpf}
+                  <Text style={{fontWeight: 'bold'}}>Valor a Receber: </Text>
+                  {((item.emprestimo.parcelas[0].valor * item.emprestimo.parcelas.length )).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
                 </Text>
-                {/* <Text style={styles2.totalDueText}>
-                  Valor da Parcela {item.parcelas_vencidas[0]?.saldo.toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            })} */}
-                {/* </Text>
-                {item.parcelas_vencidas[0]?.valor_recebido > 0 && (
-                  <Text style={styles2.subTitleValor}>
-                    Valor recebido em dinheiro {item.parcelas_vencidas[0]?.valor_recebido.toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            })}
+                <Text style={styles2.subTitle}>
+                  <Text style={{fontWeight: 'bold'}}>Lucro: </Text>
+                  {item.emprestimo.lucro.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </Text>
+                <Text style={styles2.subTitle}>
+                  <Text style={{fontWeight: 'bold'}}>Juros: </Text>
+                  {item.emprestimo.juros}%
+                </Text>
+                <Text style={styles2.subTitle}>
+                  <Text style={{fontWeight: 'bold'}}>
+                    Quantidade de parcelas:{' '}
                   </Text>
-                )} */}
-
-                {/* {item.parcelas_vencidas[0]?.valor_recebido_pix > 0 && (
-                  <Text style={styles2.subTitleValor}>
-                    Valor recebido em Pix {item.parcelas_vencidas[0]?.valor_recebido_pix.toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            })}
-                  </Text>
-                )} */}
+                  {item.qt_parcelas}
+                </Text>
+                <Text style={styles2.subTitle}>
+                  <Text style={{fontWeight: 'bold'}}>Valor da parcela: </Text>
+                  {item.emprestimo.parcelas[0].valor.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </Text>
 
                 <View style={styles2.buttonContainer}>
                   <TouchableOpacity
                     onPress={() => onPressClose({})}
                     style={styles2.actionButton}>
-                    <Text style={styles2.buttonText}>Cancelar</Text>
+                    <Text style={styles2.buttonText}>Excluir</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => onPressClose({})}
-                    style={styles2.actionButton}>
-                    <Text style={styles2.buttonText}>Pagar</Text>
+                    onPress={() => onPressClose(item)}
+                    style={styles2.actionButtonSuccess}>
+                    <Text style={styles2.buttonTextSuccess}>
+                      Efetuar Pagamento
+                    </Text>
                   </TouchableOpacity>
                   {/* <Text style={styles2.valorHoje}>
                     Valor Hoje {item.saldoatrasado.toLocaleString('pt-BR', {
@@ -206,7 +219,7 @@ export default function EmprestimosPendentesHoje(props) {
               </View>
             ))}
           </View>
-          <Saldo
+          <TelaAprovacaoTitulo
             visible={visible}
             onPressClose={onPressClose}
             cliente={cliente}
@@ -275,7 +288,13 @@ const styles2 = StyleSheet.create({
     justifyContent: 'space-between',
   },
   actionButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#ececec',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  actionButtonSuccess: {
+    backgroundColor: '#17a2b8',
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 5,
@@ -283,11 +302,15 @@ const styles2 = StyleSheet.create({
   buttonText: {
     fontSize: 14,
   },
+  buttonTextSuccess: {
+    fontSize: 14,
+    color: '#fff',
+  },
   valorHoje: {
     fontSize: 14,
     color: '#666',
     marginTop: 15,
-  }
+  },
 });
 
 const localStyles = StyleSheet.create({
