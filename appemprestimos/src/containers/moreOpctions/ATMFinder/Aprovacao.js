@@ -34,7 +34,6 @@ import {StackNav, TabNav} from '../../../navigation/navigationKeys';
 export default function Aprovacao({navigation, route}) {
   // const { clientes } = route.params;
 
-  const [empty, nonEmpty] = useState('');
   const [parcelas, setParcelas] = useState([]);
 
   const [parcelasPendentes, setParcelasPendentes] = useState([]);
@@ -45,27 +44,13 @@ export default function Aprovacao({navigation, route}) {
     }, []),
   );
 
-  const Search = useRef(null);
   const Info = useRef(null);
-  const Extorno = useRef(null);
 
   const moveToInfoModel = () => {
-    Info.current.show();
-  };
-
-  const moveToExtornoModel = () => {
-    if (parcelasExtorno.length == 0) {
-      return Alert.alert('Não existem parcelas para extorno');
+    if (parcelasPendentes.length == 0) {
+      return Alert.alert('Não existem empréstimos para aprovação');
     }
-    Extorno.current.show();
-  };
-
-  const onPress = () => {
-    nonEmpty('');
-  };
-
-  const moveToModel = () => {
-    Search.current.show();
+    Info.current.show();
   };
 
   const backToMore = () => {
@@ -117,27 +102,6 @@ export default function Aprovacao({navigation, route}) {
             />
           </View>
         </View>
-
-        {/* <View style={localStyles.mainContainer}>
-          <CTextInput
-            value={empty}
-            onChangeText={nonEmpty}
-            LeftIcon={() => (
-              <Ionicons
-                color={colors.black}
-                name={'search-outline'}
-                size={24}
-              />
-            )}
-            RightIcon={() => (
-              <TouchableOpacity onPress={onPress}>
-                <AntDesign name={'close'} size={24} color={colors.SignUpTxt} />
-              </TouchableOpacity>
-            )}
-            text={'Enter the name of ATM'}
-            mainTxtInp={localStyles.TxtInpSty}
-          />
-        </View> */}
 
         <EmprestimosPendentesHoje
           sheetRef={Info}
