@@ -28,6 +28,7 @@ export const StackNav = {
   ATMDetails: 'ATMDetails',
   CobrancaMap: 'CobrancaMap',
   BaixaMap: 'BaixaMap',
+  Aprovacao: 'Aprovacao',
   ClientMap: 'ClientMap',
   SelectProvider: 'SelectProvider',
   TopUpModal: 'TopUpModal',

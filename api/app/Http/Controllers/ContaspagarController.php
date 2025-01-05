@@ -12,6 +12,7 @@ use App\Models\Banco;
 
 use DateTime;
 use App\Http\Resources\ContaspagarResource;
+use App\Http\Resources\ContaspagarAprovacaoResource;
 
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
@@ -50,6 +51,17 @@ class ContaspagarController extends Controller
         ]);
 
         return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->orderBy('id', 'desc')->get());
+    }
+
+    public function pagamentoPendentesAplicativo(Request $request){
+
+        $this->custom_log->create([
+            'user_id' => auth()->user()->id,
+            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Emprestimos Pendentes Aplicativo',
+            'operation' => 'index'
+        ]);
+
+        return ContaspagarAprovacaoResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->orderBy('id', 'desc')->get());
     }
 
     public function insert(Request $request){

@@ -165,6 +165,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/contaspagar', [ContaspagarController::class, 'insert']);
 
     Route::get('/contaspagar/pagamentos/pendentes', [ContaspagarController::class, 'pagamentoPendentes']);
+    Route::get('/contaspagar/pagamentos/pendentesaplicativo', [ContaspagarController::class, 'pagamentoPendentesAplicativo']);
 
     Route::post('/contaspagar/pagamentos/transferenciaconsultar/{id}', [EmprestimoController::class, 'pagamentoTransferenciaConsultar']);
     Route::post('/contaspagar/pagamentos/transferencia/{id}', [EmprestimoController::class, 'pagamentoTransferencia']);
