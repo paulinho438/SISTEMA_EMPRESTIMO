@@ -41,7 +41,7 @@ class EmprestimoPendentesResource extends JsonResource
             "lucro" => $this->lucro,
             "juros" => $this->juros,
             // "saldoareceber" => $saldoareceber,
-            // "saldoatrasado" => $saldoatrasado,
+            "saldoatrasado" => $saldoatrasado,
             // "porcentagem" => $porcentagem,
             // "saldo_total_parcelas_pagas" => $saldo_total_parcelas_pagas,
             // "costcenter" => $this->costcenter,
