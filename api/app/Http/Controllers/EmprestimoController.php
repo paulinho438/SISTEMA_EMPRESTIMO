@@ -166,7 +166,7 @@ class EmprestimoController extends Controller
     {
         $today = Carbon::today()->toDateString();
 
-        $extorno = ParcelaExtorno::where('venc_real', $today)->get()->unique('hash_extorno');
+        $extorno = ParcelaExtorno::get()->unique('hash_extorno');
 
         $parcelas = [];
 
