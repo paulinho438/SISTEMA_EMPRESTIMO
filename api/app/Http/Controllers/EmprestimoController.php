@@ -164,16 +164,19 @@ class EmprestimoController extends Controller
 
     public function parcelasParaExtorno(Request $request)
     {
-        $extorno = ParcelaExtorno::where('saldo', '>', 0)->get()->unique('hash_extorno');
+
+        $extorno = ParcelaExtorno::get()->unique('hash_extorno');
 
         $parcelas = [];
 
         foreach ($extorno as $ext) {
-            $parcelaResource = new ParcelaResource($ext->parcela_associada);
-            $parcelaArray = $parcelaResource->resolve(); // Converte para array usando resolve
-            $parcelaArray['saldo_correto'] = $ext->saldo - $ext->parcela_associada->saldo; // Adiciona o campo saldo_correto
-            $parcelaArray['updated_at'] = $ext->parcela_associada->updated_at; // Adiciona o campo updated_at
-            $parcelas[] = $parcelaArray;
+            if ($ext->parcela_associada->saldo > 0) {
+                $parcelaResource = new ParcelaResource($ext->parcela_associada);
+                $parcelaArray = $parcelaResource->resolve(); // Converte para array usando resolve
+                $parcelaArray['saldo_correto'] = $ext->saldo - $ext->parcela_associada->saldo; // Adiciona o campo saldo_correto
+                $parcelaArray['updated_at'] = $ext->parcela_associada->updated_at; // Adiciona o campo updated_at
+                $parcelas[] = $parcelaArray;
+            }
         }
 
         // Ordenar as parcelas pelo campo updated_at do mais atual para o menos atual
@@ -2174,7 +2177,8 @@ class EmprestimoController extends Controller
         return $dados;
     }
 
-    public function aplicarMultaParcela(Request $request, $id) {
+    public function aplicarMultaParcela(Request $request, $id)
+    {
         $parcela = Parcela::find($id);
 
         if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
@@ -2249,7 +2253,6 @@ class EmprestimoController extends Controller
                 }
             }
         }
-
     }
 
     public function cobrarAmanha(Request $request, $id)
