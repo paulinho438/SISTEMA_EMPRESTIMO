@@ -1150,6 +1150,9 @@ class EmprestimoController extends Controller
             $parcela->valor_recebido = null;
             $parcela->save();
 
+            $parcelaExtorno = ParcelaExtorno::where('parcela_id', $id)->first();
+            $parcelaExtorno->delete();
+
             DB::commit();
 
             $this->custom_log->create([
