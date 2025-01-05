@@ -28,7 +28,7 @@ class ContaspagarResource extends JsonResource
             "dt_baixa"              => $this->dt_baixa?(new DateTime($this->dt_baixa))->format('d/m/Y'):null,
             "valor"                 => $this->valor,
             "banco"                 => new BancosResource($this->banco),
-            "emprestimo"            => new EmprestimoResource($this->emprestimo),
+            "emprestimo"            => $this->emprestimo,
             "fornecedor"            => new FornecedorResource($this->fornecedor),
             "costcenter"            => $this->costcenter,
 
