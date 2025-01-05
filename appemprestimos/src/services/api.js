@@ -208,7 +208,26 @@ export default {
         let json = await request('post', `/contaspagar/pagamentos/transferencia/${id}`, {}, token);
         return json;
     },
-    
+    transferenciaTituloConsultar: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/contaspagar/pagamentos/transferenciatituloconsultar/${id}`, {}, token);
+        return json;
+    },
+    reprovarPagamentoContasAPagar: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/contaspagar/pagamentos/reprovarcontasapagar/${id}`, {}, token);
+        return json;
+    },
+    reprovarEmprestimo: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/contaspagar/pagamentos/reprovaremprestimo/${id}`, {}, token);
+        return json;
+    },
+    transferenciaTituloEfetivar: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/contaspagar/pagamentos/transferenciatitulo/${id}`, {}, token);
+        return json;
+    },
     emprestimosPendentesParaHoje: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/contaspagar/pagamentos/pendentesaplicativo', {}, token);

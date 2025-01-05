@@ -43,17 +43,29 @@ export default function TelaAprovacaoTitulo(props) {
       if (visible) {
         setRes(null);
         setLoading(true);
+        if (cliente?.emprestimo) {
+          let req = await api.transferenciaConsultar(cliente.emprestimo.id);
+          if (req?.error) {
+            alert(req.error);
+            onPressClose();
+            setLoading(false);
 
-        let req = await api.transferenciaConsultar(cliente.emprestimo.id);
-        if (req?.error) {
-          alert(req.error);
-          onPressClose();
+            return;
+          }
+          setRes(req);
           setLoading(false);
+        } else {
+          let req = await api.transferenciaTituloConsultar(cliente.id);
+          if (req?.error) {
+            alert(req.error);
+            onPressClose();
+            setLoading(false);
 
-          return;
+            return;
+          }
+          setRes(req);
+          setLoading(false);
         }
-        setRes(req);
-        setLoading(false);
       }
     };
 
@@ -81,18 +93,34 @@ export default function TelaAprovacaoTitulo(props) {
 
   const moveToHome = async () => {
     setLoading(true);
-    let req = await api.transferenciaEfetivar(cliente.emprestimo.id);
-    if (req?.error) {
-      alert(req.error);
+    if(cliente.emprestimo) {
+      let req = await api.transferenciaEfetivar(cliente.emprestimo.id);
+      if (req?.error) {
+        alert(req.error);
+        onPressClose();
+        setLoading(false);
+        return;
+      }
+  
+      Alert.alert('Pagamento realizado com sucesso!');
+  
       onPressClose();
       setLoading(false);
-      return;
+    }else {
+      let req = await api.transferenciaTituloEfetivar(cliente.id);
+      if (req?.error) {
+        alert(req.error);
+        onPressClose();
+        setLoading(false);
+        return;
+      }
+  
+      Alert.alert('Pagamento realizado com sucesso!');
+  
+      onPressClose();
+      setLoading(false);
     }
-
-    Alert.alert('Pagamento realizado com sucesso!');
-
-    onPressClose();
-    setLoading(false);
+    
   };
 
   const cancelarBaixaManual = async () => {
@@ -200,6 +228,16 @@ export default function TelaAprovacaoTitulo(props) {
                     </CText>
                   </View>
                 </View>
+                {cliente.fornecedor && (
+                  <View>
+                    <View style={localStyles.parentTxtInp}>
+                      <CText type={'M20'} color={colors.black}>
+                        Nome Fornecedor: {cliente?.fornecedor.nome_completo}
+                      </CText>
+                    </View>
+                  </View>
+                )}
+
                 <View>
                   {res && (
                     <View style={localStyles.parentTxtInp}>
