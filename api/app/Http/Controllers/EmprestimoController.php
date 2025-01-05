@@ -45,6 +45,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 use App\Http\Resources\EmprestimoResource;
+use App\Http\Resources\EmprestimoPendentesResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ParcelaResource;
 use App\Http\Resources\BancosComSaldoResource;
@@ -149,20 +150,16 @@ class EmprestimoController extends Controller
 
     public function parcelasPendentesParaHoje(Request $request)
     {
-        $emprestimos = Emprestimo::whereHas('parcelas', function ($query) use ($request) {
-            $query->where('dt_baixa', null)
-                ->where('valor_recebido_pix', null)
-                ->whereHas('emprestimo', function ($query) use ($request) {
-                    $query->where('company_id', $request->header('company-id'));
-                });
-        })
-            ->with(['parcelas' => function ($query) {
-                $query->where('dt_baixa', null)
-                    ->where('valor_recebido_pix', null);
-            }])
-            ->paginate(10); // Utilize paginação para melhorar o desempenho
 
-        return EmprestimoResource::collection($emprestimos);
+        return EmprestimoPendentesResource::collection(
+            Emprestimo::whereHas('parcelas', function ($query) use ($request) {
+                $query->where('dt_baixa', null)
+                    ->where('valor_recebido_pix', null)
+                    ->whereHas('emprestimo', function ($query) use ($request) {
+                        $query->where('company_id', $request->header('company-id'));
+                    });
+            })->get()
+        );
     }
 
     public function parcelasParaExtorno(Request $request)
@@ -2179,8 +2176,7 @@ class EmprestimoController extends Controller
         return $dados;
     }
 
-    public function aplicarMultaParcela(Request $request, $id)
-    {
+    public function aplicarMultaParcela(Request $request, $id) {
         $parcela = Parcela::find($id);
 
         if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
@@ -2255,6 +2251,7 @@ class EmprestimoController extends Controller
                 }
             }
         }
+
     }
 
     public function cobrarAmanha(Request $request, $id)
