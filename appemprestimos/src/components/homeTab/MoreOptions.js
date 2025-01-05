@@ -221,7 +221,8 @@ const localStyles = StyleSheet.create({
     ...styles.mr10,
   },
   menuRowStyle: {
-    ...styles.rowSpaceBetween,
+    ...styles.rowCenter,
+    gap: moderateScale(30),
   },
   menuRowStyle2: {
     ...styles.flexRow,

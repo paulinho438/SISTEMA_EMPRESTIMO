@@ -87,6 +87,18 @@ export default function EmprestimosPendentesHoje(props) {
     setVisible(!visible);
   };
 
+  const onPressCloseExcluir = async item => {
+    if (item?.fornecedor) {
+      let req = await api.reprovarPagamentoContasAPagar(item.id);
+      alert('Pagamento reprovado com sucesso!');
+      onAtualizarClientes();
+    } else {
+      let req = await api.reprovarEmprestimo(item.emprestimo.id);
+      alert('Pagamento reprovado com sucesso!');
+      onAtualizarClientes();
+    }
+  };
+
   const formatDate = dateStr => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('pt-BR', {
@@ -97,9 +109,16 @@ export default function EmprestimosPendentesHoje(props) {
   };
 
   // Filtrar parcelas com base no texto de pesquisa
-  const filteredtitulosPendentes = titulosPendentes.filter(item =>
-    item.cliente.nome_completo.toLowerCase().includes(searchText.toLowerCase()),
-  );
+  const filteredtitulosPendentes = titulosPendentes.filter(item => {
+    const clienteNome = item.cliente?.nome_completo?.toLowerCase() || '';
+    const fornecedorNome = item.fornecedor?.nome_completo?.toLowerCase() || '';
+    const searchTextLower = searchText.toLowerCase();
+
+    return (
+      clienteNome.includes(searchTextLower) ||
+      fornecedorNome.includes(searchTextLower)
+    );
+  });
 
   // Ordenar os itens para que aqueles com valor_recebido_pix igual a null venham primeiro
   // const sortedtitulosPendentes = filteredtitulosPendentes.sort((a, b) => {
@@ -156,66 +175,120 @@ export default function EmprestimosPendentesHoje(props) {
 
             {filteredtitulosPendentes.map(item => (
               <View key={item.id} style={styles2.container}>
-                <Text style={styles2.title}>{item.descricao}</Text>
-                <Text style={styles2.subTitle}>
-                  <Text style={{fontWeight: 'bold'}}>Valor a Pagar: </Text>
-                  {item.valor.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })}
-                </Text>
-                <Text style={styles2.subTitle}>
-                  <Text style={{fontWeight: 'bold'}}>Valor a Receber: </Text>
-                  {((item.emprestimo.parcelas[0].valor * item.emprestimo.parcelas.length )).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })}
-                </Text>
-                <Text style={styles2.subTitle}>
-                  <Text style={{fontWeight: 'bold'}}>Lucro: </Text>
-                  {item.emprestimo.lucro.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })}
-                </Text>
-                <Text style={styles2.subTitle}>
-                  <Text style={{fontWeight: 'bold'}}>Juros: </Text>
-                  {item.emprestimo.juros}%
-                </Text>
-                <Text style={styles2.subTitle}>
-                  <Text style={{fontWeight: 'bold'}}>
-                    Quantidade de parcelas:{' '}
-                  </Text>
-                  {item.qt_parcelas}
-                </Text>
-                <Text style={styles2.subTitle}>
-                  <Text style={{fontWeight: 'bold'}}>Valor da parcela: </Text>
-                  {item.emprestimo.parcelas[0].valor.toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                  })}
-                </Text>
-
-                <View style={styles2.buttonContainer}>
-                  <TouchableOpacity
-                    onPress={() => onPressClose({})}
-                    style={styles2.actionButton}>
-                    <Text style={styles2.buttonText}>Excluir</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => onPressClose(item)}
-                    style={styles2.actionButtonSuccess}>
-                    <Text style={styles2.buttonTextSuccess}>
-                      Efetuar Pagamento
+                {item?.fornecedor && (
+                  <>
+                    <Text style={styles2.title}>{item.descricao}</Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>Valor a Pagar: </Text>
+                      {item.valor.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
                     </Text>
-                  </TouchableOpacity>
-                  {/* <Text style={styles2.valorHoje}>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>
+                        Nome Fornecedor:{' '}
+                      </Text>
+                      {item.fornecedor.nome_completo}
+                    </Text>
+
+                    <View style={styles2.buttonContainer}>
+                      <TouchableOpacity
+                        onPress={() => onPressCloseExcluir(item)}
+                        style={styles2.actionButton}>
+                        <Text style={styles2.buttonText}>Reprovar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => onPressClose(item)}
+                        style={styles2.actionButtonSuccess}>
+                        <Text style={styles2.buttonTextSuccess}>
+                          Efetuar Pagamento
+                        </Text>
+                      </TouchableOpacity>
+                      {/* <Text style={styles2.valorHoje}>
                     Valor Hoje {item.saldoatrasado.toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
             })}
                   </Text> */}
-                </View>
+                    </View>
+                  </>
+                )}
+
+                {item?.emprestimo && (
+                  <>
+                    <Text style={styles2.title}>{item.descricao}</Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>Valor a Pagar: </Text>
+                      {item.valor.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>
+                        Valor a Receber:{' '}
+                      </Text>
+                      {(
+                        item.emprestimo.parcelas[0].valor *
+                        item.emprestimo.parcelas.length
+                      ).toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>Lucro: </Text>
+                      {item.emprestimo.lucro.toLocaleString('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      })}
+                    </Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>Juros: </Text>
+                      {item.emprestimo.juros}%
+                    </Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>
+                        Quantidade de parcelas:{' '}
+                      </Text>
+                      {item.qt_parcelas}
+                    </Text>
+                    <Text style={styles2.subTitle}>
+                      <Text style={{fontWeight: 'bold'}}>
+                        Valor da parcela:{' '}
+                      </Text>
+                      {item.emprestimo.parcelas[0].valor.toLocaleString(
+                        'pt-BR',
+                        {
+                          style: 'currency',
+                          currency: 'BRL',
+                        },
+                      )}
+                    </Text>
+
+                    <View style={styles2.buttonContainer}>
+                      <TouchableOpacity
+                        onPress={() => onPressCloseExcluir(item)}
+                        style={styles2.actionButton}>
+                        <Text style={styles2.buttonText}>Reprovar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => onPressClose(item)}
+                        style={styles2.actionButtonSuccess}>
+                        <Text style={styles2.buttonTextSuccess}>
+                          Efetuar Pagamento
+                        </Text>
+                      </TouchableOpacity>
+                      {/* <Text style={styles2.valorHoje}>
+                    Valor Hoje {item.saldoatrasado.toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            })}
+                  </Text> */}
+                    </View>
+                  </>
+                )}
               </View>
             ))}
           </View>
