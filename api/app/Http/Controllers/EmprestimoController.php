@@ -46,6 +46,7 @@ use Carbon\Carbon;
 
 use App\Http\Resources\EmprestimoResource;
 use App\Http\Resources\EmprestimoPendentesResource;
+use App\Http\Resources\EmprestimoAllResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ParcelaResource;
 use App\Http\Resources\BancosComSaldoResource;
@@ -115,7 +116,7 @@ class EmprestimoController extends Controller
             'operation' => 'index'
         ]);
 
-        return EmprestimoResource::collection(Emprestimo::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
+        return EmprestimoAllResource::collection(Emprestimo::where('company_id', $request->header('company-id'))->orderBy('id', direction: 'desc')->get());
     }
 
     public function cobrancaAutomatica()
