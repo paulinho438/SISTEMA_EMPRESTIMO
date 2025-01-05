@@ -198,6 +198,17 @@ export default {
         let json = await request('get', '/baixa/pendentesparahoje', {}, token);
         return json;
     },
+    transferenciaConsultar: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/contaspagar/pagamentos/transferenciaconsultar/${id}`, {}, token);
+        return json;
+    },
+    transferenciaEfetivar: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/contaspagar/pagamentos/transferencia/${id}`, {}, token);
+        return json;
+    },
+    
     emprestimosPendentesParaHoje: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/contaspagar/pagamentos/pendentesaplicativo', {}, token);

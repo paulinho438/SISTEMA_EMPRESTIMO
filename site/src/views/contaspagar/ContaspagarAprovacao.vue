@@ -135,7 +135,7 @@ export default {
                 if (this.banco.wallet) {
                     console.log('chamou');
                     this.emprestimoService
-                        .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
+                        .efetuarPagamentoTituloConsulta(this.route.params.id)
                         .then((response) => {
                             this.loadingFullScreen = false;
                             this.displayConfirmationMessage = `Tem certeza que deseja realizar o pagamento de ${this.contaspagar?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
