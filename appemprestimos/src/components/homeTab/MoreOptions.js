@@ -7,8 +7,9 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
+import {useFocusEffect} from '@react-navigation/native';
 // Local imports
 import images from '../../assets/images/index';
 import {styles} from '../../themes';
@@ -19,13 +20,40 @@ import {StackNav} from '../../navigation/navigationKeys';
 import {HomeData} from '../../api/constants';
 import CHeader from '../common/CHeader';
 
+import {
+  getAuthCompany,
+  getUser,
+  getPermissions,
+} from '../../utils/asyncStorage';
+
 export default function MoreOptions({navigation}) {
+  const [permissoesHoje, setPermissoesHoje] = useState([]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      async function fetchData() {
+        let a = await getPermissions();
+        setPermissoesHoje(a);
+      }
+      fetchData();
+      return () => {};
+    }, []),
+  );
+
+  const moveToEmprestimos = () => {
+    navigation.navigate(StackNav.Clientes);
+  };
+
   const moveToTrans = () => {
     navigation.navigate(StackNav.TransferMoney);
   };
 
   const moveToDeposit = () => {
     navigation.navigate(StackNav.TopUpScreen);
+  };
+
+  const moveToAprovacao = () => {
+    navigation.navigate(StackNav.Aprovacao);
   };
 
   const moveToWith = () => {
@@ -57,7 +85,9 @@ export default function MoreOptions({navigation}) {
             <CText color={colors.black} type={'B16'} style={localStyles.name}>
               {item.name}
             </CText>
-            <CText type={'M12'} color={colors.tabColor}>{item.subName}</CText>
+            <CText type={'M12'} color={colors.tabColor}>
+              {item.subName}
+            </CText>
           </View>
         </View>
 
@@ -80,42 +110,65 @@ export default function MoreOptions({navigation}) {
       </TouchableOpacity>
     );
   };
+
+  const baixaMap = item => {
+    navigation.navigate(StackNav.BaixaMap, {
+      clientes: [],
+    });
+  };
+
+  const havePermissionsFunction = permission => {
+    if (permissoesHoje.includes(permission)) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
   return (
     <SafeAreaView style={localStyles.main}>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.mh20}>
         <CHeader />
         <View style={localStyles.mainImg}>
           <View style={localStyles.menuRowStyle}>
+            {havePermissionsFunction(
+              'view_emprestimos_autorizar_pagamentos',
+            ) && (
+              <FirstImage
+                style={localStyles.parentDep}
+                image={images.Deposit}
+                text="Aprovação"
+                onPress={moveToAprovacao}
+              />
+            )}
+            
+            {havePermissionsFunction('aplicativo_baixas') && (
+              <FirstImage
+              style={localStyles.parentDep}
+              image={images.Deposit}
+                text="Baixas"
+                onPress={baixaMap}
+              />
+            )}
             <FirstImage
               style={localStyles.parentDep}
               image={images.Deposit}
-              text='Clientes'
-              onPress={moveToDeposit}
-            />
-            <FirstImage
-              style={localStyles.parentDep}
-              image={images.Transfer}
-              text='Criar Emprestimo'
-              onPress={moveToTrans}
-            />
-            <FirstImage
-              style={localStyles.parentDep}
-              image={images.Withdraw}
-              text='Pendentes'
-              onPress={moveToWith}
+              text="Emprestimo"
+              onPress={moveToEmprestimos}
             />
           </View>
-          <View style={localStyles.menuRowStyle2}>
+          <View style={localStyles.menuRowStyle}>
             <FirstImage
-              style={localStyles.parentDep2}
+              style={localStyles.parentDep}
               image={images.Deposit}
-              text='Efetuar baixa'
+              text="Fechamento de caixa"
               onPress={moveToAtm}
             />
-            <FirstImage
+            
+            {/* <FirstImage
               style={localStyles.parentDep2}
               image={images.Deposit}
-              text='Outros'
+              text="Outros"
               onPress={moveToMobile}
             />
             <FirstImage
@@ -123,7 +176,7 @@ export default function MoreOptions({navigation}) {
               image={images.Transfer}
               text={strings.Help}
               onPress={moveToHelp}
-            />
+            /> */}
           </View>
         </View>
 

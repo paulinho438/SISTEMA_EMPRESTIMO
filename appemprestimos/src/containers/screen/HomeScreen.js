@@ -108,7 +108,7 @@ export default function HomeScreen({navigation}) {
       requestLocationPermission();
     } catch (error) {
       console.error('Erro ao atualizar clientes:', error);
-    } 
+    }
   };
 
   useFocusEffect(
@@ -426,11 +426,13 @@ export default function HomeScreen({navigation}) {
           </View> */}
 
         <View style={localStyles.mainImg}>
-          {/* <FirstImage 
-            image={images.Deposit}
-            text='Clientes'
-            onPress={moveToDeposit}
-          /> */}
+          {/* {havePermissionsFunction('view_emprestimos_autorizar_pagamentos') && (
+            <FirstImage
+              image={images.Deposit}
+              text="Aprovação"
+              onPress={moveToDeposit}
+            />
+          )} */}
           <FirstImage
             image={images.Withdraw}
             text="Emprestimo"
@@ -444,11 +446,11 @@ export default function HomeScreen({navigation}) {
             />
           )}
 
-          {/* <FirstImage
+          <FirstImage
             image={images.More}
             text={strings.More}
             onPress={moveToOpt}
-          /> */}
+          />
         </View>
 
         {BotaoComponent()}

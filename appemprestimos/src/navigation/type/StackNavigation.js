@@ -156,6 +156,11 @@ const StackNavigation = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
+        name={StackNav.Aprovacao}
+        component={StackRoute.Aprovacao}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
         name={StackNav.ClientMap}
         component={StackRoute.ClientMap}
         options={{headerShown: false}}
