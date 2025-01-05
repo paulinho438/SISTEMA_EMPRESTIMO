@@ -165,7 +165,9 @@ class EmprestimoController extends Controller
     public function parcelasParaExtorno(Request $request)
     {
 
-        $extorno = ParcelaExtorno::get()->unique('hash_extorno');
+        $extorno = ParcelaExtorno::whereHas('emprestimo', function ($query) use ($request) {
+            $query->where('company_id', $request->header('company-id'));
+        })->get()->unique('hash_extorno');
 
         $parcelas = [];
 
