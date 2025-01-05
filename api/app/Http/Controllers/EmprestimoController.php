@@ -164,9 +164,7 @@ class EmprestimoController extends Controller
 
     public function parcelasParaExtorno(Request $request)
     {
-        $today = Carbon::today()->toDateString();
-
-        $extorno = ParcelaExtorno::get()->unique('hash_extorno');
+        $extorno = ParcelaExtorno::where('saldo', '>', 0)->get()->unique('hash_extorno');
 
         $parcelas = [];
 
