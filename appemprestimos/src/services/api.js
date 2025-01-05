@@ -128,6 +128,36 @@ export default {
         return json;
     },
 
+    fechamentoCaixa: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/fechamentocaixa/${id}`, {}, token);
+        return json;
+    },
+
+    alterarCaixa: async (id, dados) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/alterarcaixa/${id}`, dados, token);
+        return json;
+    },
+
+    saqueConsulta: async (id, dados) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/saqueconsulta/${id}`, dados, token);
+        return json;
+    },
+
+    efetuarSaque: async (id, dados) => {
+        let token = await getAuthToken();
+        await request('post', `/efetuarsaque/${id}`, dados, token);
+        return true;
+    },
+
+    depositar: async (id, dados) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/depositar/${id}`, dados, token);
+        return json;
+    },
+    
     baixaManual: async (id, dt, valor) => {
         let token = await getAuthToken();
         let json = await request('post', `/parcela/${id}/baixamanual`, { dt_baixa:  dt, valor: valor}, token);

@@ -65,7 +65,19 @@ export default function MoreOptions({navigation}) {
   };
 
   const moveToAtm = () => {
-    navigation.navigate(StackNav.ATMDetails);
+    navigation.navigate(StackNav.FechamentoCaixaScreen);
+  };
+
+  const moveToConfiguracoesCaixa = () => {
+    navigation.navigate(StackNav.ConfiguracoesCaixaScreen);
+  };
+
+  const moveToSacarCaixa = () => {
+    navigation.navigate(StackNav.SacarCaixaScreen);
+  };
+
+  const moveToDepositarCaixa = () => {
+    navigation.navigate(StackNav.DepositarCaixaScreen);
   };
 
   const moveToMobile = () => {
@@ -141,11 +153,11 @@ export default function MoreOptions({navigation}) {
                 onPress={moveToAprovacao}
               />
             )}
-            
+
             {havePermissionsFunction('aplicativo_baixas') && (
               <FirstImage
-              style={localStyles.parentDep}
-              image={images.Deposit}
+                style={localStyles.parentDep}
+                image={images.Deposit}
                 text="Baixas"
                 onPress={baixaMap}
               />
@@ -158,19 +170,49 @@ export default function MoreOptions({navigation}) {
             />
           </View>
           <View style={localStyles.menuRowStyle}>
-            <FirstImage
-              style={localStyles.parentDep}
-              image={images.Deposit}
-              text="Fechamento de caixa"
-              onPress={moveToAtm}
-            />
-            
+            {havePermissionsFunction('view_encerrarfechamentocaixa') && (
+              <FirstImage
+                style={localStyles.parentDep}
+                image={images.Deposit}
+                text="Fechamento de caixa"
+                onPress={moveToAtm}
+              />
+            )}
+
+            {havePermissionsFunction('view_alterarfechamentocaixa') && (
+              <FirstImage
+                style={localStyles.parentDep}
+                image={images.Deposit}
+                text="Alterar Caixa"
+                onPress={moveToConfiguracoesCaixa}
+              />
+            )}
+          </View>
+          <View style={localStyles.menuRowStyle}>
+            {havePermissionsFunction('view_sacarfechamentocaixa') && (
+              <FirstImage
+                style={localStyles.parentDep}
+                image={images.Deposit}
+                text="Realizar Saque"
+                onPress={moveToSacarCaixa}
+              />
+            )}
+
+            {havePermissionsFunction('view_depositarfechamentocaixa') && (
+              <FirstImage
+                style={localStyles.parentDep}
+                image={images.Deposit}
+                text="Depositar na Wallet"
+                onPress={moveToDepositarCaixa}
+              />
+            )}
+
             {/* <FirstImage
               style={localStyles.parentDep2}
               image={images.Deposit}
               text="Outros"
               onPress={moveToMobile}
-            />
+            />s
             <FirstImage
               style={localStyles.parentDep2}
               image={images.Transfer}

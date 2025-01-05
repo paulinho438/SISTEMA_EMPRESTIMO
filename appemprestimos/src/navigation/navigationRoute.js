@@ -26,6 +26,10 @@ import Clientes from '../components/homeTab/Clientes';
 import SendMoney from '../components/homeTab/SendMoney';
 import TransferProof from '../components/homeTab/TransferProof';
 import TopUpScreen from '../components/homeTab/TopUpScreen';
+import FechamentoCaixaScreen from '../components/homeTab/FechamentoCaixaScreen';
+import ConfiguracoesCaixaScreen from '../components/homeTab/ConfiguracoesCaixaScreen';
+import SacarCaixaScreen from '../components/homeTab/SacarCaixaScreen';
+import DepositarCaixaScreen from '../components/homeTab/DepositarCaixaScreen';
 import Confirmation from '../components/homeTab/Confirmation';
 import WithDrawBalance from '../components/homeTab/WithDrawBalance';
 import HistoryTrans from '../components/homeTab/HistoryTrans';
@@ -65,6 +69,10 @@ export const StackRoute = {
   SendMoney,
   TransferProof,
   TopUpScreen,
+  FechamentoCaixaScreen,
+  ConfiguracoesCaixaScreen,
+  SacarCaixaScreen,
+  DepositarCaixaScreen,
   Confirmation,
   WithDrawBalance,
   HistoryTrans,

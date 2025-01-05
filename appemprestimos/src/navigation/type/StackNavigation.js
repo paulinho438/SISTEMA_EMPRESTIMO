@@ -56,6 +56,26 @@ const StackNavigation = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
+        name={StackNav.FechamentoCaixaScreen}
+        component={StackRoute.FechamentoCaixaScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.ConfiguracoesCaixaScreen}
+        component={StackRoute.ConfiguracoesCaixaScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.SacarCaixaScreen}
+        component={StackRoute.SacarCaixaScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={StackNav.DepositarCaixaScreen}
+        component={StackRoute.DepositarCaixaScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
         name={StackNav.Confirmation}
         component={StackRoute.Confirmation}
         options={{headerShown: false}}
