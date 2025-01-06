@@ -89,9 +89,9 @@ export default function TopUpAlterarCaixa(props) {
     if (isVisible) {
       console.log('ActionSheet aberto', dados);
       // Ação a ser executada quando o ActionSheet for aberto
-      setSaldoBanco(null);
-      setSaldoCaixa(null);
-      setSaldoCaixaPix(null);
+      setSaldoBanco(0);
+      setSaldoCaixa(0);
+      setSaldoCaixaPix(0);
     }
   }, [isVisible]);
 
