@@ -1949,6 +1949,7 @@ class EmprestimoController extends Controller
             foreach ($data['pix'] as $pix) {
                 $txId = $pix['txId'];
                 $valor = $pix['valor'];
+                $valorInsert = $pix['valor'];
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
@@ -2014,7 +2015,7 @@ class EmprestimoController extends Controller
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['parcela_id'] = $proximaParcela->id;
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        $movimentacaoFinanceira['valor'] = $valor;
+                        $movimentacaoFinanceira['valor'] = $valorInsert;
 
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
