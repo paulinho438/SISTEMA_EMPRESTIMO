@@ -1688,24 +1688,24 @@ class EmprestimoController extends Controller
                             }
                         }
                     }
-                }
-                $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
 
-                if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
+                    $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
 
-                    $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
+                    if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
 
-                    $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                        $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
 
-                    $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document);
-
-                    if ($response->successful()) {
-                        $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                        $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                         $proximaParcela->emprestimo->pagamentosaldopendente->save();
+
+                        $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                        }
                     }
                 }
-
             }
         }
 
@@ -1884,7 +1884,6 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $parcela->saldo;
                             $parcela->emprestimo->banco->save();
                         }
-
                     }
                 }
             }
