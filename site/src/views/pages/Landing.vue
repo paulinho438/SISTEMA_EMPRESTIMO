@@ -149,6 +149,15 @@ export default {
                 <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
+            <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente" class="payment-section">
+                <h2>Valor Pendente do Dia {{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
+                <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
+                <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
+                <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
+                <button class="btn-secondary" @click="copyToClipboard(copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix))">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+            </section>
+
             <!-- Quitar Empréstimo -->
             <section v-if="this.products?.data?.emprestimo?.quitacao?.saldo" class="payment-section">
                 <h2>Quitar Empréstimo</h2>
