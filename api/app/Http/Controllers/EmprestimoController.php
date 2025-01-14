@@ -2020,7 +2020,7 @@ class EmprestimoController extends Controller
 
                         # ADICIONANDO O VALOR NO SALDO DO BANCO
 
-                        $proximaParcela->emprestimo->banco->saldo = $proximaParcela->emprestimo->banco->saldo + $valor;
+                        $proximaParcela->emprestimo->banco->saldo = $proximaParcela->emprestimo->banco->saldo + $valorInsert;
                         $proximaParcela->emprestimo->banco->save();
 
                         // $movimentacaoFinanceira = [];
