@@ -585,6 +585,29 @@ export default {
                             </div>
                         </div>
                     </div>
+
+                    <div class="col-12 md:col-3">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <div class="surface-card shadow-2 p-3 border-round">
+                                <div class="flex justify-content-between mb-3">
+                                    <div>
+                                        <span class="block text-500 font-medium mb-3">Saldo Banco Sistema + Saldo Caixa Pix</span>
+                                        <div class="text-900 font-medium text-xl">
+                                            {{
+                                                (banco?.saldo + banco?.caixa_pix).toLocaleString('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                }) ?? 'R$ 0,00'
+                                            }}
+                                        </div>
+                                    </div>
+                                    <div class="flex align-items-center justify-content-center bg-green-100 border-round" style="width: 2.5rem; height: 2.5rem">
+                                        <i class="pi pi-money-bill text-green-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="mt-3">
                     <DataTable
