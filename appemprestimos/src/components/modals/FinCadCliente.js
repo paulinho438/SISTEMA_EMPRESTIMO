@@ -68,6 +68,9 @@ export default function InfoParcelas(props) {
 
   const onPressCadastroCliente = async () => {
     setLoading(true);
+    
+    localizacao.complement = complemento;
+
     let req = await api.cadastroCliente(
       clientes.name,
       clientes.email,

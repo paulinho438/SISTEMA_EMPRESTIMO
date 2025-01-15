@@ -86,7 +86,7 @@ class ParcelaResource extends JsonResource
     protected function getEnderecoFromAddress()
     {
         if (isset($this->emprestimo->client->address[0]->address)) {
-            return $this->emprestimo->client->address[0]->neighborhood . ' ' . $this->emprestimo->client->address[0]->address . ' ' . $this->emprestimo->client->address[0]->number;
+            return $this->emprestimo->client->address[0]->neighborhood . ' ' . $this->emprestimo->client->address[0]->address . ' ' . $this->emprestimo->client->address[0]->number. ' ' . $this->emprestimo->client->address[0]->complement;
         }
         return null;
     }
