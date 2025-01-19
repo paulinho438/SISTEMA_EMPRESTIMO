@@ -178,12 +178,12 @@ export default function EmprestimosPendentesHoje(props) {
                 {item?.fornecedor && (
                   <>
                     <Text style={styles2.title}>{item.descricao}</Text>
-                    {item.wallet && (
+                    {item.banco?.wallet && (
                       <Text style={styles2.subTitleRed}>
                         <Text style={{fontWeight: 'bold'}}>
                           Saldo no banco wallet:{' '}
                         </Text>
-                        {item.saldo.toLocaleString('pt-BR', {
+                        {item.banco?.saldo.toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
                         })}
