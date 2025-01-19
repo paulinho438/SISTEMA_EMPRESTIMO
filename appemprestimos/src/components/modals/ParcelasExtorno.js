@@ -9,7 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import React, {useRef, useState} from 'react';
-import ActionSheet, {FlatList} from 'react-native-actions-sheet';
+import ActionSheet from 'react-native-actions-sheet';
 import Fonisto from 'react-native-vector-icons/Fontisto';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -19,36 +19,19 @@ import {moderateScale} from '../../common/constant';
 import {styles} from '../../themes/index';
 import CText from '../common/CText';
 import {colors} from '../../themes/colors';
-import {LocationData} from '../../api/constants';
 import CButton from '../common/CButton';
 import {TouchableOpacity} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
-import {StackNav, TabNav} from '../../navigation/navigationKeys';
+import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
-import Saldo from './Saldo';
-import margin from '../../themes/margin';
 
-export default function parcelasExtorno(props) {
-  let {sheetRef, parcelas, clientes, parcelasExtorno, onAtualizarClientes} =
-    props;
+export default function ParcelasExtorno(props) {
+  let {sheetRef, parcelas, clientes, parcelasExtorno, onAtualizarClientes} = props;
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
   const [searchText, setSearchText] = useState('');
   const textInputRef = useRef(null);
-
-  const renderData = ({item}) => {
-    return (
-      <TouchableOpacity>
-        <View style={localStyles.mainComponent}>
-          <Image style={localStyles.imageStyle} source={item.image} />
-          <CText align={'center'} type={'M12'} color={colors.black}>
-            {item.reviews}
-          </CText>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
   const obterDataAtual = () => {
     const data = new Date();
@@ -65,7 +48,7 @@ export default function parcelasExtorno(props) {
 
   const saldoTotal = () => {
     let total = 0;
-    parcelasExtorno.map(item => {
+    parcelasExtorno.forEach(item => {
       total += item.valor_recebido_pix;
     });
     return total;
@@ -82,7 +65,7 @@ export default function parcelasExtorno(props) {
   const cobrarAmanha = async () => {
     let req = await api.cobrarAmanha(parcelas.id, obterDataAtual());
 
-    Alert.alert('Cobranca alterada com sucesso!');
+    Alert.alert('Cobrança alterada com sucesso!');
 
     navigation.navigate(StackNav.TabNavigation);
   };
@@ -90,7 +73,7 @@ export default function parcelasExtorno(props) {
   const infoParcelas = async () => {
     let req = await api.cobrarAmanha(parcelas.id, obterDataAtual());
 
-    Alert.alert('Cobranca alterada com sucesso!');
+    Alert.alert('Cobrança alterada com sucesso!');
 
     navigation.navigate(StackNav.TabNavigation);
   };
@@ -101,11 +84,11 @@ export default function parcelasExtorno(props) {
 
     Linking.openURL(url)
       .then(data => {
-        console.log('WhatsApp abierto:', data);
+        console.log('WhatsApp aberto:', data);
       })
       .catch(() => {
-        console.log('Error al abrir WhatsApp');
-        Alert.alert('Error ao abrir WhatsApp');
+        console.log('Erro ao abrir WhatsApp');
+        Alert.alert('Erro ao abrir WhatsApp');
       });
   };
 
@@ -113,10 +96,10 @@ export default function parcelasExtorno(props) {
     const url = `https://www.google.com/maps/search/?api=1&query=${parcelas.latitude},${parcelas.longitude}`;
     Linking.openURL(url)
       .then(data => {
-        console.log('Google Maps abierto:', data);
+        console.log('Google Maps aberto:', data);
       })
       .catch(() => {
-        console.log('Error al abrir Google Maps');
+        console.log('Erro ao abrir Google Maps');
       });
   };
 
@@ -229,65 +212,65 @@ export default function parcelasExtorno(props) {
                   Extorno de Parcelas
                 </CText>
                 <CText color={colors.black} type={'M16'}>
+                  Saldo total{' '}
+                  {saldoTotal().toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </CText>
+                <CText color={colors.black} type={'M16'}>
                   Clique na parcela para efetuar o extorno!
                 </CText>
               </View>
             </View>
 
             {filteredParcelasExtorno.map(item => (
-              <>
-                <View style={styles2.container}>
-                  <Text style={styles2.title}>
-                    Empréstimo N°{item.emprestimo_id}
-                  </Text>
-                  <Text style={styles2.subTitle}>
-                    {item.nome_cliente} - CPF: {item.cpf}
-                  </Text>
-                  <Text style={styles2.totalDueText}>
-                    Valor da Parcela {item.saldo.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </Text>
-                  
-                  {item.valor_recebido > 0 && (
-                    <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro {item.valor_recebido?.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                    </Text>
-                  )}
+              <View key={item.id} style={styles2.container}>
+                <Text style={styles2.title}>
+                  Empréstimo N°{item.emprestimo_id}
+                </Text>
+                <Text style={styles2.subTitle}>
+                  {item.nome_cliente} - CPF: {item.cpf}
+                </Text>
+                <Text style={styles2.totalDueText}>
+                  Valor da Parcela{' '}
+                  {item.saldo.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </Text>
 
-                  {item.valor_recebido_pix > 0 && (
-                    <Text style={styles2.subTitleValor}>
-                      Valor recebido em dinheiro {item.valor_recebido_pix?.toLocaleString('pt-BR', {
+                {item.valor_recebido > 0 && (
+                  <Text style={styles2.subTitleValor}>
+                    Valor recebido em dinheiro{' '}
+                    {item.valor_recebido?.toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}
-                    </Text>
-                  )}
+                  </Text>
+                )}
 
-                  <View style={styles2.buttonContainer}>
-                    <TouchableOpacity
-                      onPress={() => extornarParcela(item)}
-                      style={styles2.actionButton}>
-                      <Text style={styles2.buttonText}>Extornar Baixa</Text>
-                    </TouchableOpacity>
-                  </View>
+                {item.valor_recebido_pix > 0 && (
+                  <Text style={styles2.subTitleValor}>
+                    Valor recebido em dinheiro{' '}
+                    {item.valor_recebido_pix?.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </Text>
+                )}
+
+                <View style={styles2.buttonContainer}>
+                  <TouchableOpacity
+                    onPress={() => extornarParcela(item)}
+                    style={styles2.actionButton}>
+                    <Text style={styles2.buttonText}>Extornar Baixa</Text>
+                  </TouchableOpacity>
                 </View>
-              </>
+              </View>
             ))}
           </View>
         </ScrollView>
-        <View style={localStyles.mainContainer}>
-          <CText color={colors.black}>
-            Saldo total {saldoTotal().toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            })}
-          </CText>
-        </View>
       </ActionSheet>
     </View>
   );
@@ -312,7 +295,6 @@ const styles2 = StyleSheet.create({
     color: '#888',
     marginBottom: 10,
   },
-
   subTitleValor: {
     fontSize: 14,
     color: '#3CA454FF',
@@ -378,7 +360,6 @@ const localStyles = StyleSheet.create({
     ...styles.ml20,
     ...styles.mr20,
   },
-
   outerComponent: {
     ...styles.flexRow,
     ...styles.alignCenter,
