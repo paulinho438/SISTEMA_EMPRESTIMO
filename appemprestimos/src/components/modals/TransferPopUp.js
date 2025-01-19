@@ -42,9 +42,11 @@ export default function TransferPopUp(props) {
     setLoading(true);
     let newParcelas = [];
     // Defina a data inicial
-    const dataLanc = new Date();
+    const dataLanc = valores?.dt_lancamento ? new Date(valores.dt_lancamento.split('/').reverse().join('-')) : new Date();
 
-    const dataInicial = new Date();
+    const dataInicial = valores?.dt_lancamento ? new Date(valores.dt_lancamento.split('/').reverse().join('-')) : new Date();
+
+    dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
 
     // Array para armazenar as parcelas
     const parcelas = [];
@@ -60,7 +62,7 @@ export default function TransferPopUp(props) {
       parcela.saldo = parseFloat(
         valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
       );
-      parcela.dt_lancamento = formatarDataParaString(new Date(dataLanc));
+      parcela.dt_lancamento = valores?.dt_lancamento;
 
       dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
 
@@ -76,13 +78,13 @@ export default function TransferPopUp(props) {
         }
       }
 
-      parcela.venc = formatarDataParaString(new Date(dataInicial));
+      parcela.venc = formatarDataParaString(dataInicial);
 
       if (isFeriado(dataInicial)) {
         dataInicial.setDate(dataInicial.getDate() + 1);
       }
 
-      parcela.venc_real = formatarDataParaString(new Date(dataInicial));
+      parcela.venc_real = formatarDataParaString(dataInicial);
 
       parcelas.push(formatarDataParaString(new Date(dataInicial)));
 
@@ -118,9 +120,10 @@ export default function TransferPopUp(props) {
     client.consultor = {id: valores?.consultor.id};
     client.parcelas = newParcelas;
 
+
     onPressClose();
     const res = await api.saveEmprestimo(client);
-    setLoading(true);
+    setLoading(false);
   };
 
   const save = async () => {
