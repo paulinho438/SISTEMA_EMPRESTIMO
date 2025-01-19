@@ -248,6 +248,15 @@ export default {
                             </template>
                         </Column>
 
+                        <Column header="Saldo no Banco" filterField="valor" dataType="numeric" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ formatValorReal(data.banco.saldo) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
+                            </template>
+                        </Column>
+
 						<Column header="Valor R$" filterField="valor" dataType="numeric" style="min-width: 10rem">
                             <template #body="{ data }">
                                 {{ formatValorReal(data.valor) }}
@@ -257,14 +266,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column header="Saldo no Banco" filterField="valor" dataType="numeric" style="min-width: 10rem">
-                            <template #body="{ data }">
-                                {{ formatValorReal(data.banco.saldo) }}
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
-                            </template>
-                        </Column>
+                        
 
                         <Column field="nome_banco" header="Conta util" style="min-width: 5rem">
                             <template #body="{ data }">
