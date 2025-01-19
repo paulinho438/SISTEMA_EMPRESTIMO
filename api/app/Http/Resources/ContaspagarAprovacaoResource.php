@@ -27,7 +27,7 @@ class ContaspagarAprovacaoResource extends JsonResource
             "venc"                  => (new DateTime($this->venc))->format('d/m/Y'),
             "dt_baixa"              => $this->dt_baixa ? (new DateTime($this->dt_baixa))->format('d/m/Y') : null,
             "valor"                 => $this->valor,
-            // "banco"                 => new BancosResource($this->banco),
+            "banco"                 => new BancosResource($this->banco),
             "emprestimo"            => $this->emprestimo,
             "cliente"               => $this->emprestimo->client ?? null,
             "fornecedor"            => new FornecedorResource($this->fornecedor),
