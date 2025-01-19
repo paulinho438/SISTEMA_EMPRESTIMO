@@ -178,6 +178,17 @@ export default function EmprestimosPendentesHoje(props) {
                 {item?.fornecedor && (
                   <>
                     <Text style={styles2.title}>{item.descricao}</Text>
+                    {item.wallet && (
+                      <Text style={styles2.subTitleRed}>
+                        <Text style={{fontWeight: 'bold'}}>
+                          Saldo no banco wallet:{' '}
+                        </Text>
+                        {item.saldo.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </Text>
+                    )}
                     <Text style={styles2.subTitle}>
                       <Text style={{fontWeight: 'bold'}}>Valor a Pagar: </Text>
                       {item.valor.toLocaleString('pt-BR', {
@@ -185,6 +196,7 @@ export default function EmprestimosPendentesHoje(props) {
                         currency: 'BRL',
                       })}
                     </Text>
+
                     <Text style={styles2.subTitle}>
                       <Text style={{fontWeight: 'bold'}}>
                         Nome Fornecedor:{' '}
@@ -218,6 +230,17 @@ export default function EmprestimosPendentesHoje(props) {
                 {item?.emprestimo && (
                   <>
                     <Text style={styles2.title}>{item.descricao}</Text>
+                    {item.banco?.wallet && (
+                      <Text style={styles2.subTitleRed}>
+                        <Text style={{fontWeight: 'bold'}}>
+                          Saldo no banco wallet:{' '}
+                        </Text>
+                        {item.banco?.saldo.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}
+                      </Text>
+                    )}
                     <Text style={styles2.subTitle}>
                       <Text style={{fontWeight: 'bold'}}>Valor a Pagar: </Text>
                       {item.valor.toLocaleString('pt-BR', {
@@ -323,6 +346,11 @@ const styles2 = StyleSheet.create({
   subTitle: {
     fontSize: 14,
     color: '#888',
+    marginBottom: 10,
+  },
+  subTitleRed: {
+    fontSize: 14,
+    color: '#F00',
     marginBottom: 10,
   },
   subTitleValor: {

@@ -28,6 +28,7 @@ import ParcelasPendentesHoje from '../../../components/modals/ParcelasPendentesH
 import ParcelasExtorno from '../../../components/modals/ParcelasExtorno';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../../services/api';
+import FullScreenLoader from '../../../components/FullScreenLoader';
 
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
 
@@ -35,6 +36,7 @@ export default function ATMDetails({navigation, route}) {
   const { clientes } = route.params;
   
   const [empty, nonEmpty] = useState('');
+  const [loading, setLoading] = useState(false);
   const [parcelas, setParcelas] = useState([]);
 
   const [parcelasPendentes, setParcelasPendentes] = useState([]);
@@ -49,9 +51,10 @@ export default function ATMDetails({navigation, route}) {
   );
 
   const getInfo =  async (position) => {
-
+    setLoading(true);
     let reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
-    setParcelas(reqClientes.data)
+    setParcelas(reqClientes.data);
+    setLoading(false);
 
   }
 
@@ -83,11 +86,13 @@ export default function ATMDetails({navigation, route}) {
   };
 
   const getPendentesParaHoje = async () => {
+    setLoading(true);
     let req = await api.pendentesParaHoje();
     setParcelasPendentes(req.data);
 
     let req2 = await api.parcelasParaExtorno();
     setParcelasParaExtorno(req2);
+    setLoading(false);
 
   }
 
@@ -169,6 +174,7 @@ Segue abaixo as parcelas pendentes.
   
   return (
     <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
+      <FullScreenLoader visible={loading} />
       <SafeAreaView style={localStyles.main}>
         <View style={styles.ph20}>
           <View style={localStyles.parentComponent}>
