@@ -138,6 +138,8 @@ export default {
         getFeriados() {
             this.emprestimo.valor = this.convertStringToFloat(this.parcela?.total_pendente);
 
+			this.emprestimo.dt_lancamento = new Date(new Date());
+
             this.feriados = ref(null);
             this.emprestimoService
                 .feriados()
