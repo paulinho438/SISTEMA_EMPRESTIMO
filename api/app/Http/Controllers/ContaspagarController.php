@@ -18,53 +18,60 @@ use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 class ContaspagarController extends Controller
 {
 
     protected $custom_log;
 
-    public function __construct(Customlog $custom_log){
+    public function __construct(Customlog $custom_log)
+    {
         $this->custom_log = $custom_log;
     }
 
-    public function id(Request $r, $id){
+    public function id(Request $r, $id)
+    {
         return new ContaspagarResource(Contaspagar::find($id));
     }
 
-    public function all(Request $request){
+    public function all(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Contas a Pagar',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Contas a Pagar',
             'operation' => 'index'
         ]);
 
         return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->get());
     }
 
-    public function pagamentoPendentes(Request $request){
+    public function pagamentoPendentes(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Emprestimos Pendentes',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Emprestimos Pendentes',
             'operation' => 'index'
         ]);
 
         return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->orderBy('id', 'desc')->get());
     }
 
-    public function pagamentoPendentesAplicativo(Request $request){
+    public function pagamentoPendentesAplicativo(Request $request)
+    {
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Emprestimos Pendentes Aplicativo',
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Emprestimos Pendentes Aplicativo',
             'operation' => 'index'
         ]);
 
         return ContaspagarAprovacaoResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->orderBy('id', 'desc')->get());
     }
 
-    public function insert(Request $request){
+    public function insert(Request $request)
+    {
         $array = ['error' => ''];
 
         $validator = Validator::make($request->all(), [
@@ -75,14 +82,7 @@ class ContaspagarController extends Controller
 
         $dados = $request->all();
 
-        $banco = Banco::find($dados['banco']['id']);
-
-        if($banco){
-           $banco->saldo = $banco->saldo - $dados['valor'];
-           $banco->save();
-        }
-
-        if(!$validator->fails()){
+        if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
             $dados['lanc'] = date('Y-m-d');
@@ -93,8 +93,15 @@ class ContaspagarController extends Controller
             $dados['status'] = 'Aguardando Pagamento';
             $newGroup = Contaspagar::create($dados);
 
-            return $newGroup;
+            //conferir depois se vai ser necessário
+            // $banco = Banco::find($dados['banco']['id']);
 
+            // if ($banco) {
+            //     $banco->saldo = $banco->saldo - $dados['valor'];
+            //     $banco->save();
+            // }
+
+            return $newGroup;
         } else {
             return response()->json([
                 "message" => $validator->errors()->first(),
@@ -120,26 +127,26 @@ class ContaspagarController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
-            $permGroup->banco->save();
+            //conferir depois, se vai ser necessário
+            // $permGroup->banco->saldo = $permGroup->banco->saldo + $permGroup->valor;
+            // $permGroup->banco->save();
             $permGroup->delete();
 
             DB::commit();
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' deletou o Contas a Pagar: '.$id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' deletou o Contas a Pagar: ' . $id,
                 'operation' => 'destroy'
             ]);
 
             return response()->json(['message' => 'Contaspagar excluída com sucesso.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
-                'content' => 'O usuário: '.auth()->user()->nome_completo.' tentou deletar o Contas a Pagar: '.$id.' ERROR: '.$e->getMessage(),
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' tentou deletar o Contas a Pagar: ' . $id . ' ERROR: ' . $e->getMessage(),
                 'operation' => 'error'
             ]);
 
