@@ -174,7 +174,6 @@ Segue abaixo as parcelas pendentes.
   
   return (
     <KeyBoardAvoidWrapper contentContainerStyle={styles.flexGrow1}>
-      <FullScreenLoader visible={loading} />
       <SafeAreaView style={localStyles.main}>
         <View style={styles.ph20}>
           <View style={localStyles.parentComponent}>
@@ -239,7 +238,8 @@ Segue abaixo as parcelas pendentes.
 
             <CButton
               onPress={moveToExtornoModel}
-              text={'Baixas Efetuadas'}
+              disabled={loading}
+              text={loading ? 'Carregando ...' : 'Baixas Efetuadas'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
                 <Community
@@ -252,7 +252,8 @@ Segue abaixo as parcelas pendentes.
 
             <CButton
             onPress={moveToInfoModel}
-            text={'Baixas Pendentes para Hoje'}
+            disabled={loading}
+            text={loading ? 'Carregando ...' : 'Baixas Pendentes para Hoje'}
             containerStyle={localStyles.buttonContainer}
             RightIcon={() => (
                 <Community

@@ -1137,8 +1137,6 @@ class EmprestimoController extends Controller
             // Obter a primeira parcela de extorno correspondente ao ID fornecido
             $parcela = Parcela::find($id);
 
-
-
             // Verificar se a parcela de extorno foi encontrada
             if (!$parcela) {
                 return response()->json([
@@ -1157,7 +1155,10 @@ class EmprestimoController extends Controller
             $parcela->save();
 
             $parcelaExtorno = ParcelaExtorno::where('parcela_id', $id)->first();
-            $parcelaExtorno->delete();
+
+            if($parcelaExtorno) {
+                $parcelaExtorno->delete();
+            }
 
             DB::commit();
 
