@@ -247,10 +247,7 @@ export default function TelaAprovacaoTitulo(props) {
                           style: 'currency',
                           currency: 'BRL',
                         })}{' '}
-                        para {res?.creditParty?.name}? Você tem um saldo de{' '} {cliente?.banco.saldo?.toLocaleString('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        })}{' '}reais na sua wallet.
+                        para {res?.creditParty?.name}?
                       </CText>
                     </View>
                   )}
