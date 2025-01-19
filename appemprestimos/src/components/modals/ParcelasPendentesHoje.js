@@ -168,7 +168,7 @@ export default function ParcelasPendentesHoje(props) {
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef} onOpen={() => {
           textInputRef.current?.focus();
         }}>
-        <FullScreenLoader visible={filteredParcelasPendentes.length == 0} />
+        <FullScreenLoader visible={filteredParcelasPendentes.length == 0 && searchText == ''} />
         <View
           style={{
             flexDirection: 'row',
