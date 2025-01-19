@@ -250,7 +250,7 @@ export default {
 
                         <Column header="Saldo no Banco" filterField="valor" dataType="numeric" style="min-width: 10rem">
                             <template #body="{ data }">
-                                {{ formatValorReal(data.banco.saldo) }}
+                                {{ formatValorReal(data.banco.saldo_banco) }}
                             </template>
                             <template #filter="{ filterModel }">
                                 <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
