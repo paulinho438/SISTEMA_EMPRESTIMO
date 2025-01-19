@@ -1860,6 +1860,7 @@ class EmprestimoController extends Controller
                     $parcelas = Parcela::where('emprestimo_id', $quitacao->emprestimo_id)->get();
 
                     foreach ($parcelas as $parcela) {
+                        $valorParcela = $parcela->saldo;
                         $parcela->saldo = 0;
                         $parcela->dt_baixa = Carbon::parse($pix['horario'])->toDateTimeString();
                         $parcela->save();
@@ -1875,13 +1876,13 @@ class EmprestimoController extends Controller
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $parcela->saldo;
+                            $movimentacaoFinanceira['valor'] = $valorParcela;
 
                             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
                             # ADICIONANDO O VALOR NO SALDO DO BANCO
 
-                            $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $parcela->saldo;
+                            $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valorParcela;
                             $parcela->emprestimo->banco->save();
                         }
                     }

@@ -185,6 +185,20 @@ export default function ConfiguracoesCaixaScreen({navigation}) {
                   })}
                 </CText>
               </View>
+
+              <View style={localStyles.parentAmt}>
+                <CText type={'M14'} color={colors.tabColor}>
+                  Saldo Banco Sistema + Saldo Caixa Pix
+                </CText>
+                <CText type={'M14'} color={colors.tabColor}>
+                  {(
+                    valores.banco.saldo + valores.banco.caixa_pix
+                  ).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </CText>
+              </View>
               {valores.banco.wallet && (
                 <View style={localStyles.parentAmt}>
                   <CText type={'M14'} color={colors.tabColor}>
