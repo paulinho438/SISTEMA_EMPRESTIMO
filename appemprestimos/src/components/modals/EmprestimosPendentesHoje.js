@@ -183,7 +183,7 @@ export default function EmprestimosPendentesHoje(props) {
                         <Text style={{fontWeight: 'bold'}}>
                           Saldo no banco wallet:{' '}
                         </Text>
-                        {item.banco?.saldo.toLocaleString('pt-BR', {
+                        {item.banco?.saldo_banco.toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
                         })}
