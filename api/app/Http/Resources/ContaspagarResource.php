@@ -27,7 +27,7 @@ class ContaspagarResource extends JsonResource
             "venc"                  => (new DateTime($this->venc))->format('d/m/Y'),
             "dt_baixa"              => $this->dt_baixa?(new DateTime($this->dt_baixa))->format('d/m/Y'):null,
             "valor"                 => $this->valor,
-            "banco"                 => new BancosResource($this->banco),
+            "banco"                 => new BancosComSaldoResource($this->banco),
             "emprestimo"            => $this->emprestimo,
             "fornecedor"            => new FornecedorResource($this->fornecedor),
             "costcenter"            => $this->costcenter,
