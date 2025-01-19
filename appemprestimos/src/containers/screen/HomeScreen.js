@@ -406,9 +406,15 @@ export default function HomeScreen({navigation}) {
                 style={localStyles.AnnaTxt}>
                 {user?.nome_completo}
               </CText>
+              <CText
+                color={colors.white}
+                type={'B18'}
+                style={localStyles.AnnaTxt}>
+                {company?.company}
+              </CText>
             </View>
 
-            <CNotification onPress={moveToNot} />
+            {/* <CNotification onPress={moveToNot} /> */}
           </View>
         </View>
         <ChartExample parcelas={clientes} />
