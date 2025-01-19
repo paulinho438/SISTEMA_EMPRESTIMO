@@ -334,7 +334,12 @@ export default {
 
                         <Column field="descricao" header="Transação realizada" style="min-width: 12rem">
                             <template #body="{ data }">
-                                <span :class="{ 'text-red': data.descricao.includes('Baixa com desconto no') }">
+                                <span
+                                    :class="{
+                                        'text-red': data.descricao.includes('Baixa com desconto no'),
+                                        'text-green-500': data.descricao.includes('Refinanciamento')
+                                    }"
+                                >
                                     {{ data.descricao }}
                                 </span>
                             </template>
@@ -354,7 +359,7 @@ export default {
                             </template>
                         </Column>
 
-						<Column field="tipomov" header="Tipo Mov." style="min-width: 12rem">
+                        <Column field="tipomov" header="Tipo Mov." style="min-width: 12rem">
                             <template #body="{ data }">
                                 <span class="p-column-title">Valor R$</span>
                                 <a v-if="data.tipomov == 'S'" class="text-red-500"> {{ data.tipomov }}</a>
@@ -372,6 +377,10 @@ export default {
 </template>
 
 <style>
+.text-red {
+    color: red;
+}
+
 .text-red {
     color: red;
 }
