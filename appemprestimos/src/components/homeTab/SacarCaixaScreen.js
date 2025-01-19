@@ -48,7 +48,7 @@ export default function SacarCaixaScreen({navigation}) {
 
   let successRef = useRef(null);
   const moveToConfirm = async () => {
-    if(!valores.banco.wallet){
+    if (!valores.banco.wallet) {
       alert('Banco selecionado não é uma wallet');
       return;
     }
@@ -189,6 +189,7 @@ export default function SacarCaixaScreen({navigation}) {
                   })}
                 </CText>
               </View>
+
               {valores.banco.wallet && (
                 <View style={localStyles.parentAmt}>
                   <CText type={'M14'} color={colors.tabColor}>
@@ -223,6 +224,20 @@ export default function SacarCaixaScreen({navigation}) {
                 </CText>
                 <CText type={'M14'} color={colors.tabColor}>
                   {valores.banco.caixa_pix.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </CText>
+              </View>
+
+              <View style={localStyles.parentAmt}>
+                <CText type={'M14'} color={colors.tabColor}>
+                  Saldo Banco Sistema +{'\n'}Saldo Caixa Pix
+                </CText>
+                <CText type={'M14'} color={colors.tabColor}>
+                  {(
+                    valores.banco.saldo + valores.banco.caixa_pix
+                  ).toLocaleString('pt-BR', {
                     style: 'currency',
                     currency: 'BRL',
                   })}
