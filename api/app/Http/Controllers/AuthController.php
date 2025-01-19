@@ -124,8 +124,10 @@ class AuthController extends Controller
             \Illuminate\Support\Facades\Mail::send(new \App\Mail\newLaravelTips($dados));
 
         } else {
-            $array['error'] = $validator->errors()->first();
-            return $array;
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
         }
 
         return $array;

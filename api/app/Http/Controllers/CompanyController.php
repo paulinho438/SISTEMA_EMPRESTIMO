@@ -9,6 +9,8 @@ use App\Models\User;
 use Carbon\Carbon;
 
 use App\Models\Company;
+
+use Symfony\Component\HttpFoundation\Response;
 use App\Http\Resources\EmpresaResource;
 
 use Illuminate\Support\Facades\DB;
@@ -540,8 +542,10 @@ class CompanyController extends Controller
 
             return $array;
         } else {
-            $array['error'] = $validator->errors()->first();
-            return $array;
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
         }
     }
 
