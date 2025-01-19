@@ -174,7 +174,7 @@ export default {
 
                         <Column header="Saldo" filterField="saldo" dataType="numeric" style="min-width: 10rem">
                             <template #body="{ data }">
-                                {{ formatValorReal(data.saldo) }}
+                                {{ data.wallet ? formatValorReal(data.saldo_banco) : formatValorReal(data.saldo) }}
                             </template>
                             <template #filter="{ filterModel }">
                                 <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
