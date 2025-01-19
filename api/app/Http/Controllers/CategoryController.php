@@ -56,8 +56,10 @@ class CategoryController extends Controller
             return $array;
 
         } else {
-            $array['error'] = $validator->errors()->first();
-            return $array;
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
         }
 
         return $array;
