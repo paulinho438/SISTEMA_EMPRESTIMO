@@ -39,13 +39,16 @@ class ClientController extends Controller
 
     public function parcelasAtrasadas(Request $request)
     {
+
+        // return auth()->user()->hasPermission('criar_usuarios');
+
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes Pendentes no APLICATIVO',
             'operation' => 'index'
         ]);
 
-        $parcelas = Parcela::where('dt_baixa', null)
+        return Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
@@ -62,9 +65,26 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
-            ->paginate(10); // Adiciona paginação com 10 itens por página
+            ->get()->unique('emprestimo_id');
 
-        return ParcelaResource::collection($parcelas);
+        // return ParcelaResource::collection(Parcela::where('dt_baixa', null)
+        //     ->where('valor_recebido', null)
+        //     ->where(function ($query) use ($request) {
+        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+        //             $query->where('atrasadas', '>', 0);
+        //         }
+        //     })
+        //     ->where(function ($query) use ($request) {
+        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+        //             $today = Carbon::now()->toDateString();
+        //             $query->whereNull('dt_ult_cobranca')
+        //                 ->orWhereDate('dt_ult_cobranca', '!=', $today);
+        //         }
+        //     })
+        //     ->whereHas('emprestimo', function ($query) use ($request) {
+        //         $query->where('company_id', $request->header('company-id'));
+        //     })
+        //     ->get()->unique('emprestimo_id'));
     }
 
     public function all(Request $request)
