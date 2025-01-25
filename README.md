@@ -30,7 +30,7 @@ e criado um pm2 do app
 
 cada modificacao e necessario executar pm2 stop app e pm2 start app
 
-pm2 start app.js --name "node2"
+pm2 start app.js --name "node5"
 
 pm2 list
 
@@ -84,3 +84,8 @@ ls -ld storage/app/public
 
 
 source ~/.bashrc 
+
+
+
+/home/agecontrole/node2.agecontrole.com.br/whatsapp-api
+cp -R node_modules/* /home/agecontrolecom/SISTEMA_EMPRESTIMO/whatsapp-api-node3/
