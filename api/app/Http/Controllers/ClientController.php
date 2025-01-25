@@ -39,16 +39,13 @@ class ClientController extends Controller
 
     public function parcelasAtrasadas(Request $request)
     {
-
-        // return auth()->user()->hasPermission('criar_usuarios');
-
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes Pendentes no APLICATIVO',
             'operation' => 'index'
         ]);
 
-        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
+        $parcelas = Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
@@ -65,7 +62,9 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
-            ->get()->unique('emprestimo_id'));
+            ->paginate(10); // Adiciona paginação com 10 itens por página
+
+        return ParcelaResource::collection($parcelas);
     }
 
     public function all(Request $request)
