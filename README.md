@@ -5,6 +5,25 @@ d8db4747-c909-4e8f-8b63-d12d0aad5d39
 
 CONFIGURAR NODE WHATSZAPP
 
+CRIAR SUBDOMINIO
+
+WHM
+    - Listar Contas
+    - cPanel
+    - dominios
+    - Create a new domain
+
+
+CRIAR SUBDOMINIO DNS
+
+https://cliente.hostgator.com.br/dominios
+
+    - Configurar Dominio
+    - Editar zona avançada dominios 
+    - Adicionar Registro
+
+
+
 no projeto do whatzap tem o app.js
 
 e criado um pm2 do app
