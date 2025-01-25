@@ -84,9 +84,9 @@ class ClientController extends Controller
                     "telefone_celular_1" => $parcela->emprestimo->client->telefone_celular_1 ?? null,
                     "telefone_celular_2" => $parcela->emprestimo->client->telefone_celular_2 ?? null,
                     "atrasadas" => $parcela->atrasadas,
-                    "latitude" => $parcela->getLatitudeFromAddress(),
-                    "longitude" => $parcela->getLongitudeFromAddress(),
-                    "endereco" => $parcela->getEnderecoFromAddress(),
+                    "latitude" => $this->getLatitudeFromAddress($parcela),
+                    "longitude" => $this->getLongitudeFromAddress($parcela),
+                    "endereco" => $this->getEnderecoFromAddress($parcela),
                     "total_pago_emprestimo" => $this->formatarMoeda($parcela->totalPagoEmprestimo()),
                     "total_pago_parcela" => $this->formatarMoeda($parcela->totalPagoParcela()),
                     "total_pendente" => $this->formatarMoeda($parcela->totalPendente()),
@@ -102,7 +102,31 @@ class ClientController extends Controller
 
     private function formatarMoeda($valor)
     {
-        return number_format($valor, 2, ',', '.');
+        return 'R$ ' . number_format($valor, 2, ',', '.');
+    }
+
+    private function getLatitudeFromAddress($parcela)
+    {
+        if (isset($parcela->emprestimo->client->address[0]->latitude)) {
+            return $parcela->emprestimo->client->address[0]->latitude;
+        }
+        return null;
+    }
+
+    private function getLongitudeFromAddress($parcela)
+    {
+        if (isset($parcela->emprestimo->client->address[0]->longitude)) {
+            return $parcela->emprestimo->client->address[0]->longitude;
+        }
+        return null;
+    }
+
+    private function getEnderecoFromAddress($parcela)
+    {
+        if (isset($parcela->emprestimo->client->address[0]->address)) {
+            return $parcela->emprestimo->client->address[0]->neighborhood . ' ' . $parcela->emprestimo->client->address[0]->address . ' ' . $parcela->emprestimo->client->address[0]->number . ' ' . $parcela->emprestimo->client->address[0]->complement;
+        }
+        return null;
     }
 
     public function all(Request $request)
