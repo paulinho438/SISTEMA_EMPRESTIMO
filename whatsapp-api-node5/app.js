@@ -64,6 +64,7 @@ const gerarESalvarQRCode = async (qr) => {
 let qr;
 
 client.on("qr", (qrCode) => {
+  console.log("comecou qr");
   qr = qrCode;
 
   gerarESalvarQRCode(qrCode);
