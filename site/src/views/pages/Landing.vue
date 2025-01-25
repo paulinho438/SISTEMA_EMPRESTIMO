@@ -159,7 +159,7 @@ export default {
             </section>
 
             <!-- Quitar Empréstimo -->
-            <section v-if="this.products?.data?.emprestimo?.quitacao?.saldo" class="payment-section">
+            <section v-if="this.products?.data?.emprestimo?.quitacao?.saldo && this.products?.data?.emprestimo?.quitacao?.saldo != this.encontrarPrimeiraParcelaPendente().saldo" class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
