@@ -39,16 +39,13 @@ class ClientController extends Controller
 
     public function parcelasAtrasadas(Request $request)
     {
-
-        // return auth()->user()->hasPermission('criar_usuarios');
-
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes Pendentes no APLICATIVO',
             'operation' => 'index'
         ]);
 
-        return Parcela::where('dt_baixa', null)
+        $parcelas = Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
@@ -65,26 +62,47 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
-            ->get()->unique('emprestimo_id');
+            ->get()
+            ->unique('emprestimo_id')
+            ->map(function ($parcela) {
+                return [
+                    "id" => $parcela->id,
+                    "emprestimo_id" => $parcela->emprestimo_id,
+                    "parcela" => $parcela->parcela,
+                    "valor" => $this->formatarMoeda($parcela->valor),
+                    "saldo" => $parcela->saldo,
+                    "multa" => $this->formatarMoeda(($parcela->saldo + $parcela->totalPagoParcela()) - $parcela->valor),
+                    "venc" => (new DateTime($parcela->venc))->format('d/m/Y'),
+                    "venc_real" => (new DateTime($parcela->venc_real))->format('d/m/Y'),
+                    "dt_lancamento" => (new DateTime($parcela->dt_lancamento))->format('d/m/Y'),
+                    "dt_baixa" => ($parcela->dt_baixa != null) ? Carbon::parse($parcela->dt_baixa, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y') : '',
+                    "dt_ult_cobranca" => $parcela->dt_ult_cobranca,
+                    "identificador" => $parcela->identificador,
+                    "chave_pix" => ($parcela->chave_pix != null) ? $parcela->chave_pix : $parcela->emprestimo->banco->chavepix,
+                    "nome_cliente" => $parcela->emprestimo->client->nome_completo ?? null,
+                    "cpf" => $parcela->emprestimo->client->cpf ?? null,
+                    "telefone_celular_1" => $parcela->emprestimo->client->telefone_celular_1 ?? null,
+                    "telefone_celular_2" => $parcela->emprestimo->client->telefone_celular_2 ?? null,
+                    "atrasadas" => $parcela->atrasadas,
+                    "latitude" => $parcela->getLatitudeFromAddress(),
+                    "longitude" => $parcela->getLongitudeFromAddress(),
+                    "endereco" => $parcela->getEnderecoFromAddress(),
+                    "total_pago_emprestimo" => $this->formatarMoeda($parcela->totalPagoEmprestimo()),
+                    "total_pago_parcela" => $this->formatarMoeda($parcela->totalPagoParcela()),
+                    "total_pendente" => $this->formatarMoeda($parcela->totalPendente()),
+                    "total_pendente_hoje" => $parcela->totalPendenteHoje(),
+                    "valor_recebido" => $parcela->valor_recebido,
+                    "valor_recebido_pix" => $parcela->valor_recebido_pix,
+                    "beneficiario" => $parcela->emprestimo->banco->info_recebedor_pix,
+                ];
+            });
 
-        // return ParcelaResource::collection(Parcela::where('dt_baixa', null)
-        //     ->where('valor_recebido', null)
-        //     ->where(function ($query) use ($request) {
-        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
-        //             $query->where('atrasadas', '>', 0);
-        //         }
-        //     })
-        //     ->where(function ($query) use ($request) {
-        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
-        //             $today = Carbon::now()->toDateString();
-        //             $query->whereNull('dt_ult_cobranca')
-        //                 ->orWhereDate('dt_ult_cobranca', '!=', $today);
-        //         }
-        //     })
-        //     ->whereHas('emprestimo', function ($query) use ($request) {
-        //         $query->where('company_id', $request->header('company-id'));
-        //     })
-        //     ->get()->unique('emprestimo_id'));
+        return response()->json($parcelas);
+    }
+
+    private function formatarMoeda($valor)
+    {
+        return number_format($valor, 2, ',', '.');
     }
 
     public function all(Request $request)
