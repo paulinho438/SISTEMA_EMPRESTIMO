@@ -97,7 +97,9 @@ class ClientController extends Controller
                 ];
             })->values();
 
-        return response()->json($parcelas);
+        return [
+            'dados' => response()->json($parcelas)
+        ];
     }
 
     private function formatarMoeda($valor)
