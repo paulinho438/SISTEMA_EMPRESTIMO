@@ -98,7 +98,7 @@ class ClientController extends Controller
             })->values();
 
         return [
-            'dados' => response()->json($parcelas)
+            'dados' => $parcelas
         ];
     }
 
