@@ -95,7 +95,7 @@ class ClientController extends Controller
                     "valor_recebido_pix" => $parcela->valor_recebido_pix,
                     "beneficiario" => $parcela->emprestimo->banco->info_recebedor_pix,
                 ];
-            });
+            })->values();
 
         return response()->json($parcelas);
     }
