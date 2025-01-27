@@ -39,13 +39,16 @@ class ClientController extends Controller
 
     public function parcelasAtrasadas(Request $request)
     {
+
+        // return auth()->user()->hasPermission('criar_usuarios');
+
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes Pendentes no APLICATIVO',
             'operation' => 'index'
         ]);
 
-        $parcelas = Parcela::where('dt_baixa', null)
+        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
@@ -62,73 +65,7 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
-            ->get()
-            ->unique('emprestimo_id')
-            ->map(function ($parcela) {
-                return [
-                    "id" => $parcela->id,
-                    "emprestimo_id" => $parcela->emprestimo_id,
-                    "parcela" => $parcela->parcela,
-                    "valor" => $this->formatarMoeda($parcela->valor),
-                    "saldo" => $parcela->saldo,
-                    "multa" => $this->formatarMoeda(($parcela->saldo + $parcela->totalPagoParcela()) - $parcela->valor),
-                    "venc" => (new DateTime($parcela->venc))->format('d/m/Y'),
-                    "venc_real" => (new DateTime($parcela->venc_real))->format('d/m/Y'),
-                    "dt_lancamento" => (new DateTime($parcela->dt_lancamento))->format('d/m/Y'),
-                    "dt_baixa" => ($parcela->dt_baixa != null) ? Carbon::parse($parcela->dt_baixa, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y') : '',
-                    "dt_ult_cobranca" => $parcela->dt_ult_cobranca,
-                    "identificador" => $parcela->identificador,
-                    "chave_pix" => ($parcela->chave_pix != null) ? $parcela->chave_pix : $parcela->emprestimo->banco->chavepix,
-                    "nome_cliente" => $parcela->emprestimo->client->nome_completo ?? null,
-                    "cpf" => $parcela->emprestimo->client->cpf ?? null,
-                    "telefone_celular_1" => $parcela->emprestimo->client->telefone_celular_1 ?? null,
-                    "telefone_celular_2" => $parcela->emprestimo->client->telefone_celular_2 ?? null,
-                    "atrasadas" => $parcela->atrasadas,
-                    "latitude" => $this->getLatitudeFromAddress($parcela),
-                    "longitude" => $this->getLongitudeFromAddress($parcela),
-                    "endereco" => $this->getEnderecoFromAddress($parcela),
-                    "total_pago_emprestimo" => $this->formatarMoeda($parcela->totalPagoEmprestimo()),
-                    "total_pago_parcela" => $this->formatarMoeda($parcela->totalPagoParcela()),
-                    "total_pendente" => $this->formatarMoeda($parcela->totalPendente()),
-                    "total_pendente_hoje" => $parcela->totalPendenteHoje(),
-                    "valor_recebido" => $parcela->valor_recebido,
-                    "valor_recebido_pix" => $parcela->valor_recebido_pix,
-                    "beneficiario" => $parcela->emprestimo->banco->info_recebedor_pix,
-                ];
-            })->values();
-
-        return [
-            'dados' => $parcelas
-        ];
-    }
-
-    private function formatarMoeda($valor)
-    {
-        return 'R$ ' . number_format($valor, 2, ',', '.');
-    }
-
-    private function getLatitudeFromAddress($parcela)
-    {
-        if (isset($parcela->emprestimo->client->address[0]->latitude)) {
-            return $parcela->emprestimo->client->address[0]->latitude;
-        }
-        return null;
-    }
-
-    private function getLongitudeFromAddress($parcela)
-    {
-        if (isset($parcela->emprestimo->client->address[0]->longitude)) {
-            return $parcela->emprestimo->client->address[0]->longitude;
-        }
-        return null;
-    }
-
-    private function getEnderecoFromAddress($parcela)
-    {
-        if (isset($parcela->emprestimo->client->address[0]->address)) {
-            return $parcela->emprestimo->client->address[0]->neighborhood . ' ' . $parcela->emprestimo->client->address[0]->address . ' ' . $parcela->emprestimo->client->address[0]->number . ' ' . $parcela->emprestimo->client->address[0]->complement;
-        }
-        return null;
+            ->get()->unique('emprestimo_id'));
     }
 
     public function all(Request $request)
