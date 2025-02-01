@@ -201,25 +201,18 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        // Busque os dados do banco de dados
-        $clients = Client::where('clients.company_id', $request->header('company-id')) // Especifica a tabela 'clients'
+        $clients = Client::where('company_id', $request->header('company-id'))
             ->whereDoesntHave('emprestimos', function ($query) {
                 $query->whereHas('parcelas', function ($query) {
                     $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
                 });
             })
-            ->with(['emprestimos.parcelas' => function ($query) {
-                $query->orderBy('dt_baixa', 'desc'); // Ordena as parcelas pela data de baixa
+            ->with(['emprestimos' => function ($query) {
+                $query->whereDoesntHave('parcelas', function ($query) {
+                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
+                });
             }])
             ->get();
-
-        // Calcule a data de quitação dinamicamente e ordene os resultados
-        $clients = $clients->sortByDesc(function ($client) {
-            return $client->emprestimos->max(function ($emprestimo) {
-                $ultimaParcela = $emprestimo->parcelas->first();
-                return $ultimaParcela ? $ultimaParcela->dt_baixa : '0000-00-00';
-            });
-        });
 
         return response()->json($clients);
     }
