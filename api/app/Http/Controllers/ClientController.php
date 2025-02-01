@@ -212,6 +212,7 @@ class ClientController extends Controller
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
+            ->orderBy('dt_baixa', 'asc') // Ordena pela data mais próxima
             ->get();
 
         return response()->json($clients);
