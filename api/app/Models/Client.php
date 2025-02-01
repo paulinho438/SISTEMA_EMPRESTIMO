@@ -46,7 +46,7 @@ class Client extends Model
     }
 
     public function emprestimos() {
-        return $this->hasMany(Emprestimo::class, 'client_id', 'id');
+        return $this->belongsTo(Emprestimo::class, 'id', 'client_id');
     }
 
 }
