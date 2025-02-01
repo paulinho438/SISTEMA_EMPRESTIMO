@@ -46,7 +46,7 @@ class EmprestimoPendentesResource extends JsonResource
             // "saldo_total_parcelas_pagas" => $saldo_total_parcelas_pagas,
             // "costcenter" => $this->costcenter,
             // "banco" => new BancosResource($this->banco),
-            "cliente" => new ClientPendenteResource($this->client),
+            // "cliente" => new ClientPendenteResource($this->client),
             "consultor" => $this->user,
             // "parcelas_vencidas" => $parcelas_vencidas,
             "parcelas_vencidas" => ParcelaResource::collection($parcelas->where('dt_baixa', null)->take(1)),
