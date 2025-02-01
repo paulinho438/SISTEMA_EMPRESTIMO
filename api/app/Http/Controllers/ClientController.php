@@ -212,10 +212,14 @@ class ClientController extends Controller
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
-            ->get()
-            ->sortByDesc(function ($client) {
-                return $client->emprestimos->max('data_quitacao');
+            ->get();
+
+        // Calcule a data de quitação dinamicamente e ordene os resultados
+        $clients = $clients->sortByDesc(function ($client) {
+            return $client->emprestimos->max(function ($emprestimo) {
+                return $emprestimo->data_quitacao;
             });
+        });
 
         return response()->json($clients);
     }
