@@ -148,7 +148,6 @@ class ClientController extends Controller
             })
             ->get();
 
-        return response()->json($clients);
 
         // Filtrar os resultados em PHP
         $filteredClients = $clients->filter(function ($client) use ($dtInicio, $dtFinal) {
@@ -157,6 +156,7 @@ class ClientController extends Controller
         });
 
 
+        return response()->json($filteredClients);
 
         foreach ($filteredClients as $client) {
             if ($dados['status'] == 0) {
