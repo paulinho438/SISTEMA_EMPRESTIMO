@@ -201,7 +201,7 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        $clients = Client::where('company_id', $request->header('company-id'))
+        $clients = Client::where('clients.company_id', $request->header('company-id')) // Especifica a tabela 'clients'
             ->whereDoesntHave('emprestimos', function ($query) {
                 $query->whereHas('parcelas', function ($query) {
                     $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
