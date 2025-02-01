@@ -143,7 +143,12 @@ class ClientController extends Controller
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
+            ->whereHas('emprestimo', function ($query) use ($request) {
+                $query->where('company_id', $request->header('company-id'));
+            })
             ->get();
+
+        return response()->json($clients);
 
         // Filtrar os resultados em PHP
         $filteredClients = $clients->filter(function ($client) use ($dtInicio, $dtFinal) {
@@ -213,9 +218,9 @@ class ClientController extends Controller
             }])
             ->get();
 
-            $clients = $clients->sortByDesc(function ($client) {
-                return optional($client->emprestimos)->data_quitacao;
-            });
+        $clients = $clients->sortByDesc(function ($client) {
+            return optional($client->emprestimos)->data_quitacao;
+        });
 
         return response()->json($clients->values());
     }
