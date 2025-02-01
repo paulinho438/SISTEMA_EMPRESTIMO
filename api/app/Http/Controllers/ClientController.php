@@ -214,7 +214,7 @@ class ClientController extends Controller
             }])
             ->join('emprestimos', 'clients.id', '=', 'emprestimos.client_id')
             ->orderBy('emprestimos.data_quitacao', 'desc') // Ordena pela data mais recente de data_quitacao dos empréstimos
-            ->select('clients.*') // Seleciona apenas os campos da tabela clients
+            ->select('clients.*', 'emprestimos.data_quitacao') // Seleciona os campos da tabela clients e a data_quitacao dos empréstimos
             ->get();
 
         return response()->json($clients);
