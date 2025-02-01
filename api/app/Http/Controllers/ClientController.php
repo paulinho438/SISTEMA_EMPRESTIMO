@@ -70,18 +70,18 @@ class ClientController extends Controller
             })
             ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
             ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
-            ->join('addresses', function ($join) {
-                $join->on('clients.id', '=', 'addresses.client_id')
-                    ->whereRaw('addresses.id = (SELECT MIN(id) FROM addresses WHERE addresses.client_id = clients.id)');
+            ->join('address', function ($join) {
+                $join->on('clients.id', '=', 'address.client_id')
+                    ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
             })
             ->selectRaw("
             parcelas.*,
-            addresses.latitude,
-            addresses.longitude,
+            address.latitude,
+            address.longitude,
             (6371 * acos(
-                cos(radians(?)) * cos(radians(addresses.latitude))
-                * cos(radians(addresses.longitude) - radians(?))
-                + sin(radians(?)) * sin(radians(addresses.latitude))
+                cos(radians(?)) * cos(radians(address.latitude))
+                * cos(radians(address.longitude) - radians(?))
+                + sin(radians(?)) * sin(radians(address.latitude))
             )) AS distance
         ", [$latitude, $longitude, $latitude])
             ->orderBy('distance', 'asc')
