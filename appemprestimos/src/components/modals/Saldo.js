@@ -26,7 +26,7 @@ import CTextInput from '../common/CTextInput';
 import api from '../../services/api';
 
 export default function Saldo(props) {
-  let {visible, onPressClose, cliente, feriados, tela} = props;
+  let {visible, onPressClose, cliente, pendenteHoje, feriados, tela} = props;
 
   const navigation = useNavigation();
 
@@ -35,11 +35,12 @@ export default function Saldo(props) {
   useEffect(() => {
     console.log(tela);
     if (typeof cliente.saldo !== 'string') {
-      handleSaldoNovo(cliente.total_pendente_hoje);
+      handleSaldoNovo(pendenteHoje.saldoatrasado > 0 ? pendenteHoje.saldoatrasado : cliente.saldo);
     }
 
     function handleSaldoNovo() {
-      let number = parseFloat(cliente.total_pendente_hoje); // Divide por 100 para obter o decimal correto
+      let number = parseFloat(pendenteHoje.saldoatrasado > 0 ? pendenteHoje.saldoatrasado : cliente.saldo); // Divide por 100 para obter o decimal correto
+      console.log('cliente', cliente)
 
       let currency = number.toLocaleString('pt-BR', {
         style: 'currency',

@@ -310,6 +310,7 @@ export default function HomeScreen({navigation}) {
   };
 
   const cobrancaMap = item => {
+    console.log('item', item);
     navigation.navigate(StackNav.CobrancaMap, {
       clientes: item,
     });

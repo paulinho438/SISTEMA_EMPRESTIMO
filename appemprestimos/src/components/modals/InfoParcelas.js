@@ -221,6 +221,7 @@ Baixa Manual ${item.valor_recebido.toLocaleString('pt-BR', {
             visible={visible}
             onPressClose={onPressClose}
             cliente={cliente}
+            pendenteHoje={cliente}
             //valores={valores}
             //feriados={feriados}
           />
