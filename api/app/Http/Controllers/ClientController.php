@@ -201,6 +201,7 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
+        // Busque os dados do banco de dados
         $clients = Client::where('clients.company_id', $request->header('company-id')) // Especifica a tabela 'clients'
             ->whereDoesntHave('emprestimos', function ($query) {
                 $query->whereHas('parcelas', function ($query) {
@@ -216,9 +217,7 @@ class ClientController extends Controller
 
         // Calcule a data de quitação dinamicamente e ordene os resultados
         $clients = $clients->sortByDesc(function ($client) {
-            return $client->emprestimos->max(function ($emprestimo) {
-                return $emprestimo->data_quitacao;
-            });
+            return $client->emprestimos->max('data_quitacao');
         });
 
         return response()->json($clients);
