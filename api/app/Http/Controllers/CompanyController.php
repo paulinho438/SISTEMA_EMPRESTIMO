@@ -9,6 +9,8 @@ use App\Models\User;
 use Carbon\Carbon;
 
 use App\Models\Company;
+use App\Models\Client;
+
 
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Resources\EmpresaResource;
@@ -598,5 +600,41 @@ class CompanyController extends Controller
         $company->save();
 
         return $company;
+    }
+
+    public function testarAutomacaoRenovacao() {
+        // Buscar clientes e seus empréstimos
+        $clients = Client::whereDoesntHave('emprestimos', function ($query) {
+            $query->whereHas('parcelas', function ($query) {
+                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
+            });
+        })
+            ->with(['emprestimos' => function ($query) {
+                $query->whereDoesntHave('parcelas', function ($query) {
+                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
+                });
+            }])
+            ->get();
+
+
+
+        foreach ($clients as $client) {
+            if($client->emprestimos){
+                foreach ($client->emprestimos as $emprestimo) {
+                    if ($client->company->envio_automatico_renovacao == 1 && $emprestimo->mensagem_renovacao == 0) {
+                        if ($emprestimo->count_late_parcels <= 2) {
+                            // $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor + 100) . ' Gostaria de contratar?');
+                        } elseif ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5) {
+                            // $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor) . ' Gostaria de contratar?');
+                        } elseif ($emprestimo->count_late_parcels >= 6) {
+                            // $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor - 100) . ' Gostaria de contratar?');
+                        }
+
+
+                    }
+                }
+            }
+
+        }
     }
 }

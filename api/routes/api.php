@@ -43,6 +43,9 @@ Route::get('/401', [AuthController::class, 'unauthorized'])->name('login');
 Route::get('/users', [UserController::class, 'index']);
 
 Route::get('/users/{id}', [UserController::class, 'id']);
+Route::get('/testarAutomacaoRenovacao', [CompanyController::class, 'testarAutomacaoRenovacao']);
+
+
 
 Route::get('/setup-teste', function (Request $request) {
     $details = [
