@@ -214,6 +214,10 @@ class ClientController extends Controller
             }])
             ->get();
 
+            $clients = $clients->sortByDesc(function ($client) {
+                return optional($client->emprestimos)->data_quitacao;
+            });
+
         return response()->json($clients);
     }
 
