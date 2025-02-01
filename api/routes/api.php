@@ -148,7 +148,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/empresas', [CompanyController::class, 'insert']);
     Route::put('/empresas/{id}', [CompanyController::class, 'update']);
 
-    // Route::get('/empresas/getenvioautomaticorenovacao', [CompanyController::class, 'getEnvioAutomaticoRenovacao']);
+    Route::get('/empresas/getenvioautomaticorenovacao', [CompanyController::class, 'getEnvioAutomaticoRenovacao']);
 
     Route::post('/empresas/alterenvioautomaticorenovacao', [CompanyController::class, 'alterEnvioAutomaticoRenovacao']);
 
