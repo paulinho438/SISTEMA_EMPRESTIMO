@@ -226,9 +226,6 @@ export default function ParcelasExtorno(props) {
 
             {filteredParcelasExtorno.map(item => (
               <View key={item.id} style={styles2.container}>
-                <Text style={styles2.title}>
-                  Empréstimo N°{item.emprestimo_id}
-                </Text>
                 <Text style={styles2.subTitle}>
                   {item.nome_cliente} - CPF: {item.cpf}
                 </Text>
