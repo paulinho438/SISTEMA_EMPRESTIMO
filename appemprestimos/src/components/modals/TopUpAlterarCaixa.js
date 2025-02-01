@@ -21,9 +21,9 @@ export default function TopUpAlterarCaixa(props) {
   let {sheetRef, dados} = props;
 
   const navigation = useNavigation();
-  const [saldoBanco, setSaldoBanco] = useState(0);
-  const [saldoCaixa, setSaldoCaixa] = useState(0);
-  const [saldoCaixaPix, setSaldoCaixaPix] = useState(0);
+  const [saldoBanco, setSaldoBanco] = useState('R$ 0,00');
+  const [saldoCaixa, setSaldoCaixa] = useState('R$ 0,00');
+  const [saldoCaixaPix, setSaldoCaixaPix] = useState('R$ 0,00');
   const [isVisible, setIsVisible] = useState(false);
 
   const backToHome = () => {
@@ -73,10 +73,27 @@ export default function TopUpAlterarCaixa(props) {
 
   const alterarCaixa = async () => {
     try {
+
+      let saldobanco = 0;
+      let saldocaixa = 0;
+      let saldocaixapix = 0;
+
+      if(saldoBanco){
+        saldobanco = parseFloat(saldoBanco.replace(/\D/g, '')) / 100;
+      }
+
+      if(saldoCaixa){
+        saldocaixa = parseFloat(saldoCaixa?.replace(/\D/g, '')) / 100;
+      }
+
+      if(saldoCaixaPix){
+        saldocaixapix = parseFloat(saldoCaixaPix?.replace(/\D/g, '')) / 100;
+      }
+
       let response = await api.alterarCaixa(dados.id, {
-        saldobanco: parseFloat(saldoBanco.replace(/\D/g, '')) / 100,
-        saldocaixa: parseFloat(saldoCaixa.replace(/\D/g, '')) / 100,
-        saldocaixapix: parseFloat(saldoCaixaPix.replace(/\D/g, '')) / 100
+        saldobanco: saldobanco,
+        saldocaixa: saldocaixa,
+        saldocaixapix: saldocaixapix
       });
       alert('Caixa alterado com sucesso!');
       navigation.navigate(StackNav.TabNavigation);

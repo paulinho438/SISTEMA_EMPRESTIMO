@@ -44,6 +44,7 @@ export default function ATMDetails({navigation, route}) {
 
   const getInfo = async position => {
     setLoading(true);
+    console.log('aquiclientte', clientes)
     let reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
     setParcelas(reqClientes.data);
     setLoading(false);
@@ -105,6 +106,7 @@ export default function ATMDetails({navigation, route}) {
   };
 
   const openWhatsApp = () => {
+    console.log('clientes', clientes);
     let telefone = clientes.telefone_celular_1;
   
     // Remove todos os caracteres não numéricos
