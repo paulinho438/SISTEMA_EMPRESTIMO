@@ -129,6 +129,13 @@ export default function InfoParcelas(props) {
     <Community size={24} name={'timer-sand-empty'} color={colors.white} />
   );
 
+  const formatCurrency = value => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   const onPressClose = (item) => {
     if(item?.id){
       setCliente(item)
@@ -169,10 +176,10 @@ export default function InfoParcelas(props) {
       <View style={localStyles.outerComponent2}>
         <View style={{gap: moderateScale(7)}}>
           <CText color={colors.Green} type={'M16'}>
-            Total Pago {clientes.total_pago_emprestimo}
+            Total Pago {formatCurrency(clientes.total_pago_emprestimo)}
           </CText>
           <CText color={colors.red} type={'M16'}>
-            Saldo a Pagar {clientes.total_pendente}
+            Saldo a Pagar {formatCurrency(clientes.total_pendente)}
           </CText>
         </View>
       </View>
