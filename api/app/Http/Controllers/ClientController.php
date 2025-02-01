@@ -212,6 +212,9 @@ class ClientController extends Controller
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
+            ->join('emprestimos', 'clients.id', '=', 'emprestimos.client_id')
+            ->orderBy('emprestimos.data_quitacao', 'desc') // Ordena pela data mais recente de data_quitacao dos empréstimos
+            ->select('clients.*') // Seleciona apenas os campos da tabela clients
             ->get();
 
         return response()->json($clients);
