@@ -143,7 +143,7 @@ class ClientController extends Controller
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
-            ->whereHas('emprestimo', function ($query) use ($request) {
+            ->whereHas('emprestimos', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
             ->get();
