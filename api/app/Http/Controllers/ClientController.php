@@ -208,16 +208,17 @@ class ClientController extends Controller
                     $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
                 });
             })
-            ->with(['emprestimos' => function ($query) {
-                $query->whereDoesntHave('parcelas', function ($query) {
-                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
-                });
+            ->with(['emprestimos.parcelas' => function ($query) {
+                $query->orderBy('dt_baixa', 'desc'); // Ordena as parcelas pela data de baixa
             }])
             ->get();
 
         // Calcule a data de quitação dinamicamente e ordene os resultados
         $clients = $clients->sortByDesc(function ($client) {
-            return $client->emprestimos->max('data_quitacao');
+            return $client->emprestimos->max(function ($emprestimo) {
+                $ultimaParcela = $emprestimo->parcelas->first();
+                return $ultimaParcela ? $ultimaParcela->dt_baixa : null;
+            });
         });
 
         return response()->json($clients);
