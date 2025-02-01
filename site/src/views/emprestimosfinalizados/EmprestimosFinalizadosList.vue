@@ -1,7 +1,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
+import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
 import ClientService from '@/service/ClientService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
@@ -21,7 +21,14 @@ export default {
         return {
             Clientes: ref([]),
             loading: ref(false),
-            filters: ref(null),
+            filters: ref({
+                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+                name: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+                'country.name': { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+                representative: { value: null, matchMode: FilterMatchMode.IN },
+                status: { value: null, matchMode: FilterMatchMode.EQUALS },
+                verified: { value: null, matchMode: FilterMatchMode.EQUALS }
+            }),
             display: ref(false),
             form: ref({}),
             toggleValue: ref(false)
@@ -54,15 +61,15 @@ export default {
         goToWhatsApp(telefone, data) {
             let mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo.`;
 
-            if (data.emprestimos.count_late_parcels <= 2) {
+            if (data.emprestimos?.count_late_parcels <= 2) {
                 mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$${data.emprestimos.valor + 100}. Gostaria de contratar?`;
             }
 
-            if (data.emprestimos.count_late_parcels >= 3 && data.emprestimos.count_late_parcels <= 5) {
+            if (data.emprestimos?.count_late_parcels >= 3 && data.emprestimos?.count_late_parcels <= 5) {
                 mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$${data.emprestimos.valor}. Gostaria de contratar?`;
             }
 
-            if (data.emprestimos.count_late_parcels >= 6 && data.emprestimos.count_late_parcels <= 8) {
+            if (data.emprestimos?.count_late_parcels >= 6 && data.emprestimos?.count_late_parcels <= 8) {
                 mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$${data.emprestimos.valor - 100}. Gostaria de contratar?`;
             }
             // Remove caracteres não numéricos do telefone
@@ -101,7 +108,6 @@ export default {
             }
         },
         async handleToggleChange() {
-
             this.clientService
                 .alterEnvioAutomaticoRenovacao()
                 .then((response) => {
@@ -114,6 +120,14 @@ export default {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_clientes_sensitive') ? dado : '*********';
         },
+        formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('pt-BR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        },
         getClientes() {
             this.loading = true;
 
@@ -121,7 +135,6 @@ export default {
                 .getEnvioAutomaticoRenovacao()
                 .then((response) => {
                     this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
-
                 })
                 .finally(() => {
                     this.loading = false;
@@ -131,6 +144,22 @@ export default {
                 .getClientesDisponiveis()
                 .then((response) => {
                     this.Clientes = response.data;
+
+                    this.Clientes = response.data.map((Clientes) => {
+                        if (Clientes.created_at) {
+                            Clientes.created_at = new Date(Clientes.created_at); // Concatena e cria um objeto Date
+                        }
+
+                        if (Clientes.data_nascimento) {
+                            Clientes.data_nascimento = new Date(`${Clientes.data_nascimento}T00:00:00`); // Concatena e cria um objeto Date
+                        }
+
+                        if(Clientes.emprestimos?.data_quitacao) {
+                            Clientes.data_quitacao = new Date(`${Clientes.emprestimos.data_quitacao}T00:00:00`); // Concatena e cria um objeto Date
+                        }
+                        
+                        return Clientes;
+                    });
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -174,7 +203,63 @@ export default {
         },
         initFilters() {
             this.filters = {
-                nome_completo: { value: null, matchMode: FilterMatchMode.CONTAINS }
+                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+
+                nome_completo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                data_nascimento: {
+                    operator: 'and',
+                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                },
+
+                created_at: {
+                    operator: 'and',
+                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                },
+
+                data_quitacao: {
+                    operator: 'and',
+                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                },
+
+                // status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                // id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                
+
+                // nome_consultor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+
+                // valor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
+                // saldoareceber: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
+                // saldo_total_parcelas_pagas: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
+                // dt_lancamento: {
+                //     operator: 'and',
+                //     constraints: [{ value: null, matchMode: 'dateIs' }]
+                // },
+
+                // porcentagem: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN }
+
+                // cpf: {
+                //     operator: FilterOperator.AND,
+                //     constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
+                // },
+                // rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // telefone_celular_2: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                // saldo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+                // created_at: {
+                //     operator: 'and',
+                //     constraints: [{ value: null, matchMode: 'dateIs' }]
+                // },
+                // data_nascimento: {
+                //     operator: 'and',
+                //     constraints: [{ value: null, matchMode: 'dateIs' }]
+                // }
             };
         },
         clearFilter() {
@@ -206,7 +291,7 @@ export default {
                     </div>
                 </div>
             </div>
-            
+
             <div class="grid flex flex-wrap mb-3 mt-2 px-4 pt-2" style="align-items: center; justify-content: end">
                 <div class="col-12 px-0 py-0 text-right">
                     <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; gap: 10px">
@@ -216,90 +301,115 @@ export default {
                 </div>
             </div>
 
-            <div class="card">
-                <div class="mt-3">
+            <div class="col-12">
+                <div class="card">
                     <DataTable
-                        dataKey="id"
                         :value="Clientes"
                         :paginator="true"
+                        class="p-datatable-gridlines"
                         :rows="10"
+                        dataKey="id"
+                        :rowHover="true"
+                        v-model:filters="filters"
+                        filterDisplay="menu"
                         :loading="loading"
                         :filters="filters"
-                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        :rowsPerPageOptions="[5, 10, 25]"
-                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} cliente(s)"
                         responsiveLayout="scroll"
+                        :globalFilterFields="['nome_completo']"
                     >
                         <template #header>
-                            <div class="flex justify-content-between">
-                                <Button type="button" icon="pi pi-filter-slash" label="Limpar Filtros" class="p-button-outlined p-button-sm" @click="clearFilter()" />
-                                <span class="p-input-icon-left">
+                            <div class="flex justify-content-between flex-column sm:flex-row">
+                                <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
+                                <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search" />
-                                    <InputText v-model="filters.nome_completo.value" placeholder="Informe o Nome" class="p-inputtext-sm" />
+                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" />
                                 </span>
                             </div>
                         </template>
+                        <template #empty> Nenhum Cliente Encontrado. </template>
+                        <template #loading> Carregando os Clientes. Aguarde! </template>
 
-                        <Column field="name" header="Nome Completo" :sortable="true" class="w-2">
-                            <template #body="slotProps">
-                                <span class="p-column-title">Nome Completo</span>
-                                {{ slotProps.data.nome_completo }}
+                        <Column field="nome_completo" header="Cliente" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.nome_completo }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Nome Completo Cliente" />
                             </template>
                         </Column>
                         <Column field="status" header="status" :sortable="true" class="w-2">
                             <template #body="slotProps">
-                                <Button :label="slotProps.data.emprestimos.count_late_parcels" :class="getStatusClass(slotProps.data.emprestimos.count_late_parcels)" />
-                            </template>
-                        </Column>
-                        <Column field="name" header="CPF" :sortable="true" class="w-1">
-                            <template #body="slotProps">
-                                <span class="p-column-title">CPF</span>
-                                {{ dadosSensiveis(slotProps.data.cpf) }}
-                            </template>
-                        </Column>
-                        <Column field="name" header="RG" :sortable="true" class="w-1">
-                            <template #body="slotProps">
-                                <span class="p-column-title">RG</span>
-                                {{ dadosSensiveis(slotProps.data.rg) }}
-                            </template>
-                        </Column>
-                        <Column field="name" header="Telefone Principal" :sortable="true" class="w-2">
-                            <template #body="slotProps">
-                                <span class="p-column-title">Telefone Principal</span>
-                                {{ dadosSensiveis(slotProps.data.telefone_celular_1) }}
-                            </template>
-                        </Column>
-                        <Column field="name" header="Telefone Secundário" :sortable="true" class="w-2">
-                            <template #body="slotProps">
-                                <span class="p-column-title">Telefone Secundário</span>
-                                {{ dadosSensiveis(slotProps.data.telefone_celular_2) }}
-                            </template>
-                        </Column>
-                        <Column field="name" header="Dt. Nascimento" :sortable="true" class="w-2">
-                            <template #body="slotProps">
-                                <span class="p-column-title">Dt. Nascimento</span>
-                                {{ slotProps.data.data_nascimento }}
+                                <Button :label="slotProps.data.emprestimos?.count_late_parcels" :class="getStatusClass(slotProps.data.emprestimos?.count_late_parcels)" />
                             </template>
                         </Column>
 
-                        <Column field="created_at" header="Dt. Criação" :sortable="true" class="w-2">
-                            <template #body="slotProps">
-                                <span class="p-column-title">Dt. Criação</span>
-                                {{ slotProps.data.created_at }}
+                        <Column field="cpf" header="CPF" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ dadosSensiveis(data.cpf) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar pelo CPF" />
                             </template>
                         </Column>
 
-                        <Column field="data_quitacao" header="Dt. Quitação" :sortable="true" class="w-2">
-                            <template #body="slotProps">
-                                <span class="p-column-title">Dt. Quitação</span>
-                                {{ slotProps.data.emprestimos.data_quitacao }}
+                        <Column field="rg" header="RG" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ dadosSensiveis(data.rg) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar pelo RG" />
+                            </template>
+                        </Column>
+
+                        <Column field="telefone_celular_1" header="Telefone Principal" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ dadosSensiveis(data.telefone_celular_1) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Telefone" />
+                            </template>
+                        </Column>
+
+                        <Column field="telefone_celular_2" header="Telefone Secundário" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ dadosSensiveis(data.telefone_celular_2) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Telefone" />
+                            </template>
+                        </Column>
+
+                        <Column header="Dt. Nascimento" filterField="data_nascimento" dataType="date" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ formatDate(data.data_nascimento)}}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                            </template>
+                        </Column>
+
+                        <Column header="Dt. Criação" filterField="created_at" dataType="date" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ formatDate(data.created_at)}}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                            </template>
+                        </Column>
+
+                        <Column header="Dt. Quitação" filterField="data_quitacao" dataType="date" style="min-width: 10rem">
+                            <template #body="{ data }">
+                                {{ formatDate(data?.data_quitacao)}}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
                             </template>
                         </Column>
 
                         <Column field="edit" header="Whatsapp" :sortable="false" class="w-1">
                             <template #body="slotProps">
                                 <Button
-                                    v-if="!slotProps.data.standard && slotProps.data.emprestimos.count_late_parcels < 9"
+                                    v-if="!slotProps.data.standard && slotProps.data.emprestimos?.count_late_parcels < 9"
                                     class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0"
                                     type="button"
                                     :icon="icons.WHATSAPP"
@@ -308,6 +418,9 @@ export default {
                                 />
                             </template>
                         </Column>
+                    
+
+                       
                     </DataTable>
                 </div>
             </div>
