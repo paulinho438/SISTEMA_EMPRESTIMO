@@ -648,6 +648,9 @@ class BancoController extends Controller
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
             $movimentacaoFinanceira['valor'] = $dados['valor'];
 
+            $banco->saldo -= $dados['valor'];
+            $banco->save();
+
             Movimentacaofinanceira::create($movimentacaoFinanceira);
         } catch (\Exception $e) {
             return response()->json([
