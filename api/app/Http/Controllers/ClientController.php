@@ -78,7 +78,7 @@ class ClientController extends Controller
             parcelas.*,
             clients.nome_completo AS nome_completo,
             clients.telefone_celular_1 AS telefone_celular_1,
-            clients.address AS endereco,
+            address.address AS endereco,
             address.latitude,
             address.longitude,
             (6371 * acos(
