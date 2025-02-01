@@ -89,7 +89,7 @@ class ClientController extends Controller
             ->get()
             ->unique('emprestimo_id');
 
-        return response()->json($clientes);
+        return $clientes;
 
 
 
