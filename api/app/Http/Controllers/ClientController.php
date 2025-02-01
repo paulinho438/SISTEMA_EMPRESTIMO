@@ -76,7 +76,7 @@ class ClientController extends Controller
             })
             ->selectRaw("
             parcelas.*,
-            clients.name AS client_name,
+            clients.nome_completo AS nome_completo,
             address.latitude,
             address.longitude,
             (6371 * acos(
