@@ -149,19 +149,19 @@ export default function ParcelasPendentesHoje(props) {
     item.cliente.nome_completo.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  // Ordenar os itens para que aqueles com valor_recebido_pix igual a null venham primeiro
-  const sortedParcelasPendentes = filteredParcelasPendentes.sort((a, b) => {
-    const aValorRecebidoPix = a.parcelas_vencidas[0]?.valor_recebido_pix;
-    const bValorRecebidoPix = b.parcelas_vencidas[0]?.valor_recebido_pix;
+  // // Ordenar os itens para que aqueles com valor_recebido_pix igual a null venham primeiro
+  // const sortedParcelasPendentes = filteredParcelasPendentes.sort((a, b) => {
+  //   const aValorRecebidoPix = a.parcelas_vencidas[0]?.valor_recebido_pix;
+  //   const bValorRecebidoPix = b.parcelas_vencidas[0]?.valor_recebido_pix;
   
-    if (aValorRecebidoPix === null && bValorRecebidoPix !== null) {
-      return -1;
-    }
-    if (aValorRecebidoPix !== null && bValorRecebidoPix === null) {
-      return 1;
-    }
-    return 0;
-  });
+  //   if (aValorRecebidoPix === null && bValorRecebidoPix !== null) {
+  //     return -1;
+  //   }
+  //   if (aValorRecebidoPix !== null && bValorRecebidoPix === null) {
+  //     return 1;
+  //   }
+  //   return 0;
+  // });
 
   return (
     <View>
