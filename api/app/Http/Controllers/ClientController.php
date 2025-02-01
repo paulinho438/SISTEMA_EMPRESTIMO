@@ -50,7 +50,6 @@ class ClientController extends Controller
 
         $latitude = floatval($request->input('latitude'));
         $longitude = floatval($request->input('longitude'));
-        $perPage = $request->input('per_page', 10); // Define um valor padrão de 10 clientes por página
 
         $clientes = Parcela::whereNull('dt_baixa')
             ->whereNull('valor_recebido')
@@ -76,17 +75,18 @@ class ClientController extends Controller
                     ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
             })
             ->selectRaw("
-                parcelas.*,
-                address.latitude,
-                address.longitude,
-                (6371 * acos(
-                    cos(radians(?)) * cos(radians(address.latitude))
-                    * cos(radians(address.longitude) - radians(?))
-                    + sin(radians(?)) * sin(radians(address.latitude))
-                )) AS distance
-            ", [$latitude, $longitude, $latitude])
+            parcelas.*,
+            address.latitude,
+            address.longitude,
+            (6371 * acos(
+                cos(radians(?)) * cos(radians(address.latitude))
+                * cos(radians(address.longitude) - radians(?))
+                + sin(radians(?)) * sin(radians(address.latitude))
+            )) AS distance
+        ", [$latitude, $longitude, $latitude])
             ->orderBy('distance', 'asc')
-            ->paginate($perPage); // Paginação
+            ->get()
+            ->unique('emprestimo_id');
 
         return response()->json($clientes);
 
