@@ -57,6 +57,13 @@ export default function HomeScreen({navigation}) {
     vermelho: 0,
   });
 
+  const formatCurrency = value => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
 
@@ -260,7 +267,7 @@ export default function HomeScreen({navigation}) {
     if (search) {
       const newData = clientesOrig.filter(item => {
         return (
-          item.nome_cliente
+          item.nome_completo
             .toLocaleLowerCase()
             .indexOf(search.toLocaleLowerCase()) > -1
         );
@@ -278,25 +285,10 @@ export default function HomeScreen({navigation}) {
     let userReq = await getUser();
     setUser(userReq);
 
-    console.log('Position:', position);
-
     let reqClientes = await api.getClientesPendentes();
 
-    reqClientes.data.forEach(item => {
-      item.distance = haversineDistance(
-        position.coords.latitude,
-        position.coords.longitude,
-        parseFloat(item.latitude),
-        parseFloat(item.longitude),
-      );
-    });
-
-    const sortedArray = reqClientes.data.sort(
-      (a, b) => a.distance - b.distance,
-    );
-
-    setClientes(sortedArray);
-    setClientesOrig(sortedArray);
+    setClientes(reqClientes);
+    setClientesOrig(reqClientes);
     setRefreshing(false);
   };
 
@@ -607,20 +599,28 @@ export default function HomeScreen({navigation}) {
               style={[localStyles.name, {maxWidth: 160}]}
               numberOfLines={1}
               ellipsizeMode="tail">
-              {item.nome_cliente}
+              {item.nome_completo}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
               Emprestimo Número {item.emprestimo_id}
             </CText>
-            <CText type={'M12'} color={colors.tabColor}>
-              {item.distance.toFixed(2)} Km de distancia
-            </CText>
+            {item.distance && (
+              <CText type={'M12'} color={colors.tabColor}>
+                {item?.distance?.toFixed(2)} Km de distancia
+              </CText>
+            )}
+
+            {!item.distance && (
+              <CText type={'M12'} color={colors.tabColor}>
+                Endereço não informado
+              </CText>
+            )}
           </View>
         </View>
 
         <View>
           <CText type={'B16'} color={colors.red}>
-            {item.total_pendente}
+            {formatCurrency(item.valor)}
           </CText>
         </View>
       </TouchableOpacity>
