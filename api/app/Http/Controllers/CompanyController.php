@@ -586,6 +586,8 @@ class CompanyController extends Controller
     {
         $company = Company::find($request->header('company-id'));
 
+        return true;
+
         return $company;
     }
 
