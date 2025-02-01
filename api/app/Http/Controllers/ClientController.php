@@ -218,7 +218,7 @@ class ClientController extends Controller
                 return optional($client->emprestimos)->data_quitacao;
             });
 
-        return response()->json($clients);
+        return response()->json($clients->values());
     }
 
     public function insert(Request $request)
