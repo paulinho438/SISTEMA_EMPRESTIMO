@@ -217,7 +217,7 @@ class ClientController extends Controller
         $clients = $clients->sortByDesc(function ($client) {
             return $client->emprestimos->max(function ($emprestimo) {
                 $ultimaParcela = $emprestimo->parcelas->first();
-                return $ultimaParcela ? $ultimaParcela->dt_baixa : null;
+                return $ultimaParcela ? $ultimaParcela->dt_baixa : '0000-00-00';
             });
         });
 
