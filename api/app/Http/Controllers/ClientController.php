@@ -155,9 +155,6 @@ class ClientController extends Controller
             return $dataQuitacao >= $dtInicio && $dataQuitacao <= $dtFinal;
         });
 
-
-        return response()->json($filteredClients);
-
         foreach ($filteredClients as $client) {
             if ($dados['status'] == 0) {
                 if ($client->emprestimos->count_late_parcels <= 2) {
