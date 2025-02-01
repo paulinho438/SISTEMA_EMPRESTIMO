@@ -582,21 +582,19 @@ class CompanyController extends Controller
         }
     }
 
-    // public function getEnvioAutomaticoRenovacao(Request $request)
-    // {
-    //     $company = Company::find($request->header('company-id'));
-    //     $company->envio_automatico_renovacao = !$company->envio_automatico_renovacao;
-    //     $company->save();
+    public function getEnvioAutomaticoRenovacao(Request $request)
+    {
+        $company = Company::find($request->header('company-id'));
 
-    //     return $company;
-    // }
+        return $company;
+    }
 
-    // public function alterEnvioAutomaticoRenovacao(Request $request)
-    // {
-    //     $company = Company::find($request->header('company-id'));
-    //     $company->envio_automatico_renovacao = !$company->envio_automatico_renovacao;
-    //     $company->save();
+    public function alterEnvioAutomaticoRenovacao(Request $request)
+    {
+        $company = Company::find($request->header('company-id'));
+        $company->envio_automatico_renovacao = !$company->envio_automatico_renovacao;
+        $company->save();
 
-    //     return $company;
-    // }
+        return $company;
+    }
 }
