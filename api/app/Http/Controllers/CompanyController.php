@@ -585,9 +585,6 @@ class CompanyController extends Controller
     public function getEnvioAutomaticoRenovacao(Request $request)
     {
         $company = Company::find($request->header('company-id'));
-
-        return true;
-
         return $company;
     }
 
