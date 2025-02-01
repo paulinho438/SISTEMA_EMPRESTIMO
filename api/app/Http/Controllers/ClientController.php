@@ -133,15 +133,14 @@ class ClientController extends Controller
         $dtFinal = Carbon::parse($dtFinal)->format('Y-m-d');
 
         // Buscar clientes e seus empréstimos
-        $clients = Client::where('company_id', $request->header('company-id'))
-            ->whereHas('emprestimos', function ($query) {
-                $query->whereHas('parcelas', function ($query) {
-                    $query->whereNotNull('dt_baixa');
-                });
-            })
+        $clients = Client::whereDoesntHave('emprestimos', function ($query) {
+            $query->whereHas('parcelas', function ($query) {
+                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
+            });
+        })
             ->with(['emprestimos' => function ($query) {
-                $query->whereHas('parcelas', function ($query) {
-                    $query->whereNotNull('dt_baixa');
+                $query->whereDoesntHave('parcelas', function ($query) {
+                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
             }])
             ->get();
