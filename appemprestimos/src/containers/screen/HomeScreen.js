@@ -278,6 +278,8 @@ export default function HomeScreen({navigation}) {
     let userReq = await getUser();
     setUser(userReq);
 
+    console.log('Position:', position);
+
     let reqClientes = await api.getClientesPendentes();
 
     reqClientes.data.forEach(item => {
