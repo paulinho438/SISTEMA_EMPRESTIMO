@@ -59,20 +59,23 @@ class MensagemAutomaticaRenovacao extends Command
             ->get();
 
         foreach ($clients as $client) {
-            foreach ($client->emprestimos as $emprestimo) {
-                if ($emprestimo->company->envio_automatico_renovacao == 1 && $emprestimo->mensagem_renovacao == 0) {
-                    if ($emprestimo->count_late_parcels <= 2) {
-                        $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor + 100) . ' Gostaria de contratar?');
-                    } elseif ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5) {
-                        $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor) . ' Gostaria de contratar?');
-                    } elseif ($emprestimo->count_late_parcels >= 6) {
-                        $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor - 100) . ' Gostaria de contratar?');
-                    }
+            if($client->emprestimos){
+                foreach ($client->emprestimos as $emprestimo) {
+                    if ($emprestimo->company->envio_automatico_renovacao == 1 && $emprestimo->mensagem_renovacao == 0) {
+                        if ($emprestimo->count_late_parcels <= 2) {
+                            $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor + 100) . ' Gostaria de contratar?');
+                        } elseif ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5) {
+                            $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor) . ' Gostaria de contratar?');
+                        } elseif ($emprestimo->count_late_parcels >= 6) {
+                            $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($emprestimo->valor - 100) . ' Gostaria de contratar?');
+                        }
 
-                    $emprestimo->mensagem_renovacao = 1;
-                    $emprestimo->save();
+                        $emprestimo->mensagem_renovacao = 1;
+                        $emprestimo->save();
+                    }
                 }
             }
+
         }
 
         exit;
