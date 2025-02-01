@@ -1,3 +1,4 @@
+import React, {useEffect, useState, useCallback, useMemo} from 'react';
 import {
   StyleSheet,
   View,
@@ -11,37 +12,35 @@ import {
   PermissionsAndroid,
   RefreshControl,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
-
-// Local imports
-import {colors} from '../../themes/colors';
-import {styles} from '../../themes';
-import strings from '../../i18n/strings';
-import CText from '../../components/common/CText';
-import CNotification from '../../components/common/CNotification';
-import CTextInput from '../../components/common/CTextInput';
-import images from '../../assets/images/index';
-import {HomeData} from '../../api/constants';
-import {StackNav} from '../../navigation/navigationKeys';
-import {Dropdown} from 'react-native-element-dropdown';
-import {ListClient} from '../../api/constants';
-import {getHeight, moderateScale} from '../../common/constant';
-
-import {PieChart, BarChart} from 'react-native-svg-charts';
+import debounce from 'lodash.debounce';
+import Geolocation from 'react-native-geolocation-service';
+import {useFocusEffect} from '@react-navigation/native';
+import {PieChart} from 'react-native-svg-charts';
 import {G, Text as SVGText} from 'react-native-svg';
-
 import {
   getAuthCompany,
   getUser,
   getPermissions,
 } from '../../utils/asyncStorage';
-import {useFocusEffect} from '@react-navigation/native';
-
-import Geolocation from 'react-native-geolocation-service';
-
 import api from '../../services/api';
+import {colors} from '../../themes/colors';
+import {styles} from '../../themes';
+import strings from '../../i18n/strings';
+import CText from '../../components/common/CText';
+import CTextInput from '../../components/common/CTextInput';
+import images from '../../assets/images/index';
+import {StackNav} from '../../navigation/navigationKeys';
+import {Dropdown} from 'react-native-element-dropdown';
+import {ListClient} from '../../api/constants';
+import {getHeight, moderateScale} from '../../common/constant';
 
 export default function HomeScreen({navigation}) {
+  const [data, setData] = useState({
+    verde: 0,
+    amarelo: 0,
+    vermelho: 0,
+  });
+
   const [company, setCompany] = useState(null);
   const [user, setUser] = useState(null);
   const [clientes, setClientes] = useState([]);
@@ -51,209 +50,30 @@ export default function HomeScreen({navigation}) {
   const [search, setSearch] = useState('');
   const [permissoesHoje, setPermissoesHoje] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [data, setData] = useState({
-    verde: 0,
-    amarelo: 0,
-    vermelho: 0,
-  });
 
-  const formatCurrency = value => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-
-    try {
-      async function fetchData() {
-        let a = await getPermissions();
-        setPermissoesHoje(a);
-      }
-      fetchData();
-
-      const requestLocationPermission = async () => {
-        setTipoCliente('');
-        if (Platform.OS === 'ios') {
-          Geolocation.requestAuthorization('whenInUse');
-          getLocation();
-        } else {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title: 'Location Access Permission',
-              message: 'We need access to your location',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            },
-          );
-
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            getLocation();
-          } else {
-            console.log('Location permission denied');
-          }
-        }
-      };
-
-      const getLocation = () => {
-        Geolocation.getCurrentPosition(
-          position => {
-            setLocation(position);
-            getInfo(position);
-          },
-          error => {
-            console.log(error.code, error.message);
-          },
-          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-        );
-      };
-
-      requestLocationPermission();
-    } catch (error) {
-      console.error('Erro ao atualizar clientes:', error);
-    }
-  };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      let azul = 0;
-      let verde = 0;
-      let amarelo = 0;
-      let vermelho = 0;
-
-      // Processa os dados de atraso das parcelas
-      clientes.forEach(clientes => {
-        const diasAtraso = clientes.atrasadas;
-
-        if (diasAtraso == 0) {
-          azul += 1; // Sem atraso
-        } else if (diasAtraso >= 1 && diasAtraso <= 2) {
-          verde += 1; // Entre 1 e 5 dias de atraso
-        } else if (diasAtraso >= 3 && diasAtraso <= 10) {
-          amarelo += 1; // Entre 1 e 5 dias de atraso
-        } else if (diasAtraso > 10) {
-          vermelho += 1; // Mais de 5 dias de atraso
-        }
-      });
-
-      setData({azul, verde, amarelo, vermelho});
-    }, [clientes]),
-  );
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setFilterSearch();
-    }, [search]),
-  );
-
-  useFocusEffect(
-    React.useCallback(() => {
-      async function fetchData() {
-        let a = await getPermissions();
-        setPermissoesHoje(a);
-      }
-      fetchData();
-
-      const requestLocationPermission = async () => {
-        setTipoCliente('');
-        if (Platform.OS === 'ios') {
-          Geolocation.requestAuthorization('whenInUse');
-          getLocation();
-        } else {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-            {
-              title: 'Location Access Permission',
-              message: 'We need access to your location',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            },
-          );
-
-          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            getLocation();
-          } else {
-            console.log('Location permission denied');
-          }
-        }
-      };
-
-      const getLocation = () => {
-        Geolocation.getCurrentPosition(
-          position => {
-            setLocation(position);
-            getInfo(position);
-          },
-          error => {
-            console.log(error.code, error.message);
-          },
-          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-        );
-      };
-
-      requestLocationPermission();
-
-      return () => {};
-    }, []),
-  );
-
-  useEffect(() => {
-    if (tipoCliente.value == 1) {
-      setClientes(clientesOrig);
-    } else if (tipoCliente.value == 2) {
-      const filteredData = clientesOrig.filter(item => item.atrasadas > 10);
-
-      setClientes(filteredData);
-    } else if (tipoCliente.value == 3) {
-      const filteredData = clientesOrig.filter(
-        item => item.atrasadas >= 3 && item.atrasadas <= 10,
-      );
-
-      setClientes(filteredData);
-    } else if (tipoCliente.value == 4) {
-      const filteredData = clientesOrig.filter(
-        item => item.atrasadas >= 1 && item.atrasadas <= 2,
-      );
-
-      setClientes(filteredData);
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      Geolocation.requestAuthorization('whenInUse');
+      getLocation();
     } else {
-      const filteredData = clientesOrig.filter(item => item.atrasadas == 0);
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Location Access Permission',
+          message: 'We need access to your location',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
 
-      setClientes(filteredData);
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        getLocation();
+      } else {
+        console.log('Location permission denied');
+      }
     }
-  }, [tipoCliente]);
-
-  const pieData = [
-    {
-      key: 1,
-      value: 60,
-      svg: {fill: '#4A90E2'}, // Azul para "Investimento"
-    },
-    {
-      key: 2,
-      value: 40,
-      svg: {fill: '#4CAF50'}, // Verde para "Lucro"
-    },
-  ];
-
-  // Dados para o BarChart
-  const barData = [
-    {
-      value: 50,
-      svg: {fill: '#4A90E2'},
-      label: 'Nov',
-    },
-    {
-      value: 20,
-      svg: {fill: '#4A90E2'},
-      label: 'Dez',
-    },
-  ];
+  };
 
   const havePermissionsFunction = permission => {
     if (permissoesHoje.includes(permission)) {
@@ -262,6 +82,117 @@ export default function HomeScreen({navigation}) {
       return false;
     }
   };
+
+  const getLocation = () => {
+    Geolocation.getCurrentPosition(
+      position => {
+        setLocation(position);
+        getInfo(position);
+      },
+      error => {
+        console.log(error.code, error.message);
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+    );
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
+
+  const fetchData = async () => {
+    const permissions = await getPermissions();
+    setPermissoesHoje(permissions);
+    requestLocationPermission();
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (search) {
+        setClientes(
+          clientesOrig.filter(item =>
+            item.nome_completo.toLowerCase().includes(search.toLowerCase()),
+          ),
+        );
+      } else {
+        setClientes(clientesOrig);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, clientesOrig]);
+
+  useEffect(() => {
+    if (!tipoCliente) return;
+    const filteredData = clientesOrig.filter(item => {
+      if (tipoCliente.value === 1) return true;
+      if (tipoCliente.value === 2) return item.atrasadas > 10;
+      if (tipoCliente.value === 3)
+        return item.atrasadas >= 3 && item.atrasadas <= 10;
+      if (tipoCliente.value === 4)
+        return item.atrasadas >= 1 && item.atrasadas <= 2;
+      return item.atrasadas === 0;
+    });
+    setClientes(filteredData);
+  }, [tipoCliente, clientesOrig]);
+
+  const getInfo = async () => {
+    const companyReq = await getAuthCompany();
+    setCompany(companyReq);
+
+    const userReq = await getUser();
+    setUser(userReq);
+
+    if (clientes.length == 0) {
+      const reqClientes = await api.getClientesPendentes();
+      setClientes(reqClientes);
+      setClientesOrig(reqClientes);
+    }
+  };
+
+  const navigateTo = screen => navigation.navigate(screen);
+
+  const formatCurrency = value => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  useEffect(() => {
+    let azul = 0;
+    let verde = 0;
+    let amarelo = 0;
+    let vermelho = 0;
+
+    // Processa os dados de atraso das parcelas
+    clientes.forEach(clientes => {
+      const diasAtraso = clientes.atrasadas;
+
+      if (diasAtraso == 0) {
+        azul += 1; // Sem atraso
+      } else if (diasAtraso >= 1 && diasAtraso <= 2) {
+        verde += 1; // Entre 1 e 5 dias de atraso
+      } else if (diasAtraso >= 3 && diasAtraso <= 10) {
+        amarelo += 1; // Entre 1 e 5 dias de atraso
+      } else if (diasAtraso > 10) {
+        vermelho += 1; // Mais de 5 dias de atraso
+      }
+    });
+
+    setData({azul, verde, amarelo, vermelho});
+  }, [clientes]);
+
+  useEffect(() => {
+    setFilterSearch();
+  }, [search]);
+
+  const debouncedSetSearch = useMemo(() => debounce(setSearch, 300), []);
 
   const setFilterSearch = () => {
     if (search) {
@@ -276,20 +207,6 @@ export default function HomeScreen({navigation}) {
     } else {
       setClientes(clientesOrig);
     }
-  };
-
-  const getInfo = async position => {
-    let companyReq = await getAuthCompany();
-    setCompany(companyReq);
-
-    let userReq = await getUser();
-    setUser(userReq);
-
-    let reqClientes = await api.getClientesPendentes();
-
-    setClientes(reqClientes);
-    setClientesOrig(reqClientes);
-    setRefreshing(false);
   };
 
   const haversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -373,7 +290,7 @@ export default function HomeScreen({navigation}) {
         <CTextInput
           mainTxtInp={localStyles.CTxtInp}
           value={search}
-          onChangeText={text => setSearch(text)}
+          onChangeText={text => debouncedSetSearch(text)}
           text={'Pesquisar Cliente...'}
         />
       </View>
@@ -408,32 +325,10 @@ export default function HomeScreen({navigation}) {
                 {company?.company}
               </CText>
             </View>
-
-            {/* <CNotification onPress={moveToNot} /> */}
           </View>
         </View>
         <ChartExample parcelas={clientes} />
-
-        {/* <View style={localStyles.ParentImg}>
-            <Image source={images.cardBalance} style={localStyles.card3Style} />
-            <View style={localStyles.parentNomeEmpresa}>
-              <CText
-                color={colors.white}
-                type={'B18'}
-                style={localStyles.NameEmpresa}>
-                {company?.company}
-              </CText>
-            </View>
-          </View> */}
-
         <View style={localStyles.mainImg}>
-          {/* {havePermissionsFunction('view_emprestimos_autorizar_pagamentos') && (
-            <FirstImage
-              image={images.Deposit}
-              text="Aprovação"
-              onPress={moveToDeposit}
-            />
-          )} */}
           <FirstImage
             image={images.Withdraw}
             text="Emprestimo"
@@ -446,16 +341,13 @@ export default function HomeScreen({navigation}) {
               onPress={baixaMap}
             />
           )}
-
           <FirstImage
             image={images.More}
             text={strings.More}
             onPress={moveToOpt}
           />
         </View>
-
         {BotaoComponent()}
-
         <View style={localStyles.parentTodayTxt}>
           <View style={localStyles.parentTxtInp}>
             <Dropdown
@@ -475,14 +367,7 @@ export default function HomeScreen({navigation}) {
               }}
             />
           </View>
-
-          {/*<TouchableOpacity onPress={moveToAll}>
-            <CText color={colors.black} type={'M14'}>
-              Todos os pendentes
-            </CText>
-              </TouchableOpacity>*/}
         </View>
-
         <View style={localStyles.parentTodayTxt}>
           <CText type={'B14'} color={colors.tabColor}>
             {dataAtual()}
@@ -516,15 +401,13 @@ export default function HomeScreen({navigation}) {
   };
 
   const ChartExample = () => {
-    // Dados para o PieChart com valores dinâmicos
     const pieData = [
-      {key: 1, value: data.azul, svg: {fill: '#194ADFFF'}}, // Verde
-      {key: 2, value: data.verde, svg: {fill: '#4CAF50'}}, // Verde
-      {key: 3, value: data.amarelo, svg: {fill: '#FFC107'}}, // Amarelo
-      {key: 4, value: data.vermelho, svg: {fill: '#F34646'}}, // Vermelho
+      {key: 1, value: data.azul, svg: {fill: '#194ADFFF'}},
+      {key: 2, value: data.verde, svg: {fill: '#4CAF50'}},
+      {key: 3, value: data.amarelo, svg: {fill: '#FFC107'}},
+      {key: 4, value: data.vermelho, svg: {fill: '#F34646'}},
     ].filter(item => item.value !== 0);
 
-    // Função para adicionar labels de valor no PieChart
     const Labels = ({slices}) => {
       return slices.map((slice, index) => {
         const {labelCentroid, data} = slice;
@@ -546,10 +429,7 @@ export default function HomeScreen({navigation}) {
 
     return (
       <View style={styles2.container}>
-        {/* Título */}
         <Text style={styles2.title}>Status de Atrasos 📆</Text>
-
-        {/* Legenda */}
         <View style={styles2.legend}>
           <Text style={[styles2.legendItem, {color: '#194ADFFF'}]}>
             ● Azul: Sem atrasos
@@ -564,8 +444,6 @@ export default function HomeScreen({navigation}) {
             ● Vermelho: mais de 10 dias de atraso
           </Text>
         </View>
-
-        {/* Gráfico de Anel (PieChart) */}
         <PieChart
           style={{height: 150, width: 200, marginBottom: 16}}
           data={pieData}
@@ -610,7 +488,6 @@ export default function HomeScreen({navigation}) {
                 {item?.distance?.toFixed(2)} Km de distancia
               </CText>
             )}
-
             {!item.distance && (
               <CText type={'M12'} color={colors.tabColor}>
                 Endereço não informado
@@ -618,7 +495,6 @@ export default function HomeScreen({navigation}) {
             )}
           </View>
         </View>
-
         <View>
           <CText type={'B16'} color={colors.red}>
             {formatCurrency(item.valor)}
@@ -630,22 +506,15 @@ export default function HomeScreen({navigation}) {
 
   return (
     <SafeAreaView style={[styles2.mainContainerSurface]}>
-      <ScrollView
+      <FlatList
+        ListHeaderComponent={ListHeaderComponent}
+        keyExtractor={(item, index) => index.toString()}
+        data={clientes}
+        renderItem={renderHomeData}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh} // Atualiza toda a tela
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        showsVerticalScrollIndicator={false}>
-        {ListHeaderComponent()}
-        <FlatList
-          keyExtractor={(item, index) => index.toString()}
-          data={clientes}
-          renderItem={renderHomeData}
-          scrollEnabled={false} // FlatList é fixa dentro do ScrollView
-        />
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }

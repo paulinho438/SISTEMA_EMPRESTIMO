@@ -61,6 +61,11 @@ export default function ParcelasPendentesHoje({ sheetRef, parcelasPendentes, onA
     setVisible(!visible);
   };
 
+  const fecharSaldo = () => {
+    setVisible(false);
+    onAtualizarClientes();
+  }
+
   const formatCurrency = value =>
     value ? value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
 
@@ -131,7 +136,7 @@ export default function ParcelasPendentesHoje({ sheetRef, parcelasPendentes, onA
           />
         )}
 
-        <Saldo visible={visible} onPressClose={() => setVisible(false)} cliente={cliente} pendenteHoje={item} tela="baixa_pendentes_hoje" />
+        <Saldo visible={visible} onPressClose={() => fecharSaldo()} cliente={cliente} pendenteHoje={item} tela="baixa_pendentes_hoje" />
       </ActionSheet>
     </View>
   );
