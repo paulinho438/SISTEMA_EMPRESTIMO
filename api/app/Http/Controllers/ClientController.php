@@ -68,15 +68,28 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
+            ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
+            ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
+            ->join('addresses', function ($join) {
+                $join->on('clients.id', '=', 'addresses.client_id')
+                    ->whereRaw('addresses.id = (SELECT MIN(id) FROM addresses WHERE addresses.client_id = clients.id)');
+            })
             ->selectRaw("
-            *,
-            (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
+            parcelas.*,
+            addresses.latitude,
+            addresses.longitude,
+            (6371 * acos(
+                cos(radians(?)) * cos(radians(addresses.latitude))
+                * cos(radians(addresses.longitude) - radians(?))
+                + sin(radians(?)) * sin(radians(addresses.latitude))
+            )) AS distance
         ", [$latitude, $longitude, $latitude])
             ->orderBy('distance', 'asc')
             ->get()
             ->unique('emprestimo_id');
 
         return response()->json($clientes);
+
 
 
         // return ParcelaResource::collection(Parcela::where('dt_baixa', null)
