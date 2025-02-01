@@ -35,6 +35,7 @@ export default function Aprovacao({navigation, route}) {
   // const { clientes } = route.params;
 
   const [parcelas, setParcelas] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [parcelasPendentes, setParcelasPendentes] = useState([]);
 
@@ -58,8 +59,10 @@ export default function Aprovacao({navigation, route}) {
   };
 
   const getPendentesParaHoje = async () => {
+    setLoading(true);
     let req = await api.emprestimosPendentesParaHoje();
     setParcelasPendentes(req.data);
+    setLoading(false);
     
   };
 
@@ -90,7 +93,8 @@ export default function Aprovacao({navigation, route}) {
           <View style={localStyles.outerComponent}>
             <CButton
               onPress={moveToInfoModel}
-              text={'Empréstimos Pendentes'}
+              disabled={loading}
+              text={loading ? 'Carregando...' : 'Empréstimos Pendentes'}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
                 <Community

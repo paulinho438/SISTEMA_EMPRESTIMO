@@ -51,18 +51,11 @@ class ClientController extends Controller
         $latitude = floatval($request->input('latitude'));
         $longitude = floatval($request->input('longitude'));
 
-        $clientes = Parcela::whereNull('dt_baixa')
-            ->whereNull('valor_recebido')
+        $clientes = Parcela::where('dt_baixa', null)
+            ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
-                    $query->where('atrasadas', '>', 0);
-                }
-            })
-            ->where(function ($query) use ($request) {
-                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
-                    $today = Carbon::now()->toDateString();
-                    $query->whereNull('dt_ult_cobranca')
-                        ->orWhereDate('dt_ult_cobranca', '!=', $today);
+                    $query->where('consultor_id', auth()->user()->id);
                 }
             })
             ->whereHas('emprestimo', function ($query) use ($request) {
@@ -75,18 +68,20 @@ class ClientController extends Controller
                     ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
             })
             ->selectRaw("
-            parcelas.*,
-            clients.nome_completo AS nome_completo,
-            clients.telefone_celular_1 AS telefone_celular_1,
-            CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement) AS endereco,
-            address.latitude,
-            address.longitude,
-            (6371 * acos(
-                cos(radians(?)) * cos(radians(address.latitude))
-                * cos(radians(address.longitude) - radians(?))
-                + sin(radians(?)) * sin(radians(address.latitude))
-            ) / 1000) AS distance
-        ", [$latitude, $longitude, $latitude])
+        parcelas.*,
+        clients.nome_completo AS nome_completo,
+        clients.telefone_celular_1 AS telefone_celular_1,
+        CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
+        address.latitude,
+        address.longitude,
+        (6371 * acos(
+            cos(radians(?)) * cos(radians(address.latitude))
+            * cos(radians(address.longitude) - radians(?))
+            + sin(radians(?)) * sin(radians(address.latitude))
+        ) / 1000) AS distance,
+        (SELECT SUM(valor) FROM movimentacaofinanceiras WHERE movimentacaofinanceiras.parcela_id = parcelas.id) AS total_pago_parcela,
+        (SELECT SUM(saldo) FROM parcelas WHERE emprestimo_id = parcelas.emprestimo_id AND dt_baixa IS NULL) AS total_pendente
+    ", [$latitude, $longitude, $latitude])
             ->orderBy('distance', 'asc')
             ->get()
             ->unique('emprestimo_id');
