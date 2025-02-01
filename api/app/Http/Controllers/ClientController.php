@@ -48,8 +48,11 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        return ParcelaResource::collection(Parcela::where('dt_baixa', null)
-            ->where('valor_recebido', null)
+        $latitude = floatval($request->input('latitude'));
+        $longitude = floatval($request->input('longitude'));
+
+        $clientes = Parcela::whereNull('dt_baixa')
+            ->whereNull('valor_recebido')
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
                     $query->where('atrasadas', '>', 0);
@@ -65,7 +68,35 @@ class ClientController extends Controller
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })
-            ->get()->unique('emprestimo_id'));
+            ->selectRaw("
+            *,
+            (6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance
+        ", [$latitude, $longitude, $latitude])
+            ->orderBy('distance', 'asc')
+            ->get()
+            ->unique('emprestimo_id');
+
+        return response()->json($clientes);
+
+
+        // return ParcelaResource::collection(Parcela::where('dt_baixa', null)
+        //     ->where('valor_recebido', null)
+        //     ->where(function ($query) use ($request) {
+        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+        //             $query->where('atrasadas', '>', 0);
+        //         }
+        //     })
+        //     ->where(function ($query) use ($request) {
+        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+        //             $today = Carbon::now()->toDateString();
+        //             $query->whereNull('dt_ult_cobranca')
+        //                 ->orWhereDate('dt_ult_cobranca', '!=', $today);
+        //         }
+        //     })
+        //     ->whereHas('emprestimo', function ($query) use ($request) {
+        //         $query->where('company_id', $request->header('company-id'));
+        //     })
+        //     ->get()->unique('emprestimo_id'));
     }
 
     public function all(Request $request)
