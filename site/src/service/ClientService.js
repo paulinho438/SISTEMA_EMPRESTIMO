@@ -38,7 +38,7 @@ export default class ClientService {
 	};
 
 	getEnvioAutomaticoRenovacao = async () => {
-		return await axios.get(`${apiPath}/empresas/getenvioautomaticorenovacao`);
+		return await axios.get(`${apiPath}/getenvioautomaticorenovacao`);
 	};
 
 	alterEnvioAutomaticoRenovacao = async () => {
