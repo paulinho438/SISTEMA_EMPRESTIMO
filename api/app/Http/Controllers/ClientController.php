@@ -84,7 +84,7 @@ class ClientController extends Controller
                 cos(radians(?)) * cos(radians(address.latitude))
                 * cos(radians(address.longitude) - radians(?))
                 + sin(radians(?)) * sin(radians(address.latitude))
-            )* 1000) AS distance
+            ) / 1000) AS distance
         ", [$latitude, $longitude, $latitude])
             ->orderBy('distance', 'asc')
             ->get()
