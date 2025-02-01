@@ -49,7 +49,7 @@ class EmprestimoPendentesResource extends JsonResource
             "cliente" => new ClientPendenteResource($this->client),
             "consultor" => $this->user,
             // "parcelas_vencidas" => $parcelas_vencidas,
-            // "parcelas_vencidas" => ParcelaResource::collection($parcelas->where('dt_baixa', null)->take(1)),
+            "parcelas_vencidas" => $parcelas->where('dt_baixa', null)->take(1),
             // "parcelas" => ParcelaResource::collection($parcelas),
             // "quitacao" => new QuitacaoResource($this->quitacao),
             // "pagamentominimo" => new PagamentoMinimoResource($this->pagamentominimo),
