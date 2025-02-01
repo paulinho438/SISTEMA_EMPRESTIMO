@@ -186,7 +186,7 @@ class ClientController extends Controller
 
             if ($dados['status'] == 3) {
 
-                if ($client->emprestimos->count_late_parcels >= 6) {
+                if ($client->emprestimos->count_late_parcels >= 6 && $client->emprestimos->count_late_parcels <= 10) {
                     self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
                 }
             }

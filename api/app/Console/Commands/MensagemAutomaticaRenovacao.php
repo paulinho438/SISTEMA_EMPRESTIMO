@@ -65,7 +65,7 @@ class MensagemAutomaticaRenovacao extends Command
                         $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client->emprestimos->valor + 100) . ' Gostaria de contratar?');
                     } elseif ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
                         $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client->emprestimos->valor) . ' Gostaria de contratar?');
-                    } elseif ($client->emprestimos->count_late_parcels >= 6) {
+                    } elseif ($client->emprestimos->count_late_parcels >= 6 && $client->emprestimos->count_late_parcels <= 10) {
                         $this->enviarMensagem($client, 'Olá ' . $client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client->emprestimos->valor - 100) . ' Gostaria de contratar?');
                     }
 
