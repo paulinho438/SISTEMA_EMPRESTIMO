@@ -2095,7 +2095,7 @@ class EmprestimoController extends Controller
                     $movimentacaoFinanceira['banco_id'] = $deposito->banco_id;
                     $movimentacaoFinanceira['company_id'] = $deposito->company_id;
                     $movimentacaoFinanceira['descricao'] = sprintf(
-                        'Deposito Pagador: %d',
+                        'Deposito Pagador: %s',
                         $data['pagador']['nome'] ?? 'Não informado'
 
                     );
