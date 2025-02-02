@@ -33,4 +33,9 @@ class Banco extends Model
         return $this->hasMany(Emprestimo::class, 'banco_id', 'id');
     }
 
+    public function depositos()
+    {
+        return $this->hasMany(Deposito::class, 'banco_id', 'id');
+    }
+
 }
