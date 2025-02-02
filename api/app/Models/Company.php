@@ -44,6 +44,11 @@ class Company extends Model
         return $this->hasMany(Locacao::class);
     }
 
+    public function depositos()
+    {
+        return $this->hasMany(Deposito::class);
+    }
+
     public function clients()
     {
         return $this->hasMany(Client::class);
