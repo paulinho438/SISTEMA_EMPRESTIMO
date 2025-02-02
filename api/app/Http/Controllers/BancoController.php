@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Models\Banco;
+use App\Models\Deposito;
 use App\Models\CustomLog;
 use App\Models\Parcela;
 use App\Models\Movimentacaofinanceira;
@@ -527,6 +528,17 @@ class BancoController extends Controller
                 $response = $this->bcodexService->criarCobranca($dados['valor'], $banco->document);
 
                 if ($response->successful()) {
+
+
+                    Deposito::create([
+                        'banco_id' => $banco->id,
+                        'valor' => $dados['valor'],
+                        'company_id' => $request->header('company-id'),
+                        'identificador' => $response->json()['txid'],
+                        'chave_pix' => $response->json()['pixCopiaECola'],
+                    ]);
+
+
                     return response()->json(['message' => 'Pix criado com sucesso!', 'chavepix' =>  $response->json()['pixCopiaECola']]);
                 }
             } else {

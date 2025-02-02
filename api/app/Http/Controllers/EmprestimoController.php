@@ -25,6 +25,7 @@ use App\Models\Movimentacaofinanceira;
 use App\Traits\VerificarPermissao;
 use App\Models\PagamentoPersonalizado;
 use App\Models\Bank;
+use App\Models\Deposito;
 
 use App\Services\BcodexService;
 
@@ -1156,7 +1157,7 @@ class EmprestimoController extends Controller
 
             $parcelaExtorno = ParcelaExtorno::where('parcela_id', $id)->first();
 
-            if($parcelaExtorno) {
+            if ($parcelaExtorno) {
                 $parcelaExtorno->delete();
             }
 
@@ -2066,6 +2067,45 @@ class EmprestimoController extends Controller
                             }
                         }
                     }
+                }
+            }
+        }
+
+        //REFERENTE A DEPOSITO
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $valor = $pix['valor'];
+                $horario = Carbon::parse($pix['horario'])->toDateTimeString();
+
+                // Encontrar a parcela correspondente
+                $deposito = Deposito::where('identificador', $txId)->first();
+
+                if ($deposito) {
+
+                    $deposito->banco->saldo += $valor;
+                    $deposito->banco->save();
+
+                    $deposito->data_pagamento = $horario;
+                    $deposito->save();
+
+                    # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+
+                    $movimentacaoFinanceira = [];
+                    $movimentacaoFinanceira['banco_id'] = $deposito->banco_id;
+                    $movimentacaoFinanceira['company_id'] = $deposito->company_id;
+                    $movimentacaoFinanceira['descricao'] = sprintf(
+                        'Deposito %d',
+                        json_encode($data)
+
+                    );
+                    $movimentacaoFinanceira['tipomov'] = 'E';
+                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                    $movimentacaoFinanceira['valor'] = $valor;
+
+                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+
                 }
             }
         }
