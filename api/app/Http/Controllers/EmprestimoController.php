@@ -2099,7 +2099,6 @@ class EmprestimoController extends Controller
                         $data['pagador']['nome'] ?? 'Não informado'
 
                     );
-                    $movimentacaoFinanceira['descricao'] = json_encode($request->json()->all());
                     $movimentacaoFinanceira['tipomov'] = 'E';
                     $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                     $movimentacaoFinanceira['valor'] = $valor;
