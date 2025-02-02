@@ -28,6 +28,7 @@ import {styles} from '../../themes';
 import strings from '../../i18n/strings';
 import CText from '../../components/common/CText';
 import CTextInput from '../../components/common/CTextInput';
+import ResumoFinanceiro from '../../components/ResumoFinanceiro';
 import images from '../../assets/images/index';
 import {StackNav} from '../../navigation/navigationKeys';
 import {Dropdown} from 'react-native-element-dropdown';
@@ -50,6 +51,8 @@ export default function HomeScreen({navigation}) {
   const [search, setSearch] = useState('');
   const [permissoesHoje, setPermissoesHoje] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [resumoFinanceiro, setResumoFinanceiro] = useState(null);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') {
@@ -104,6 +107,7 @@ export default function HomeScreen({navigation}) {
 
   const fetchData = async () => {
     const permissions = await getPermissions();
+
     setPermissoesHoje(permissions);
     requestLocationPermission();
   };
@@ -146,6 +150,7 @@ export default function HomeScreen({navigation}) {
     setCompany(companyReq);
 
     const userReq = await getUser();
+
     setUser(userReq);
 
     if (clientes.length == 0) {
@@ -153,6 +158,14 @@ export default function HomeScreen({navigation}) {
       setClientes(reqClientes);
       setClientesOrig(reqClientes);
     }
+
+    if(!havePermissionsFunction('resumo_financeiro_aplicativo')){
+      const resumoFinanceiro = await api.getResumoFinanceiro();
+      console.log('resumoFinanceiro', resumoFinanceiro);
+      setResumoFinanceiro(resumoFinanceiro);
+    }
+  
+
   };
 
   const navigateTo = screen => navigation.navigate(screen);
@@ -328,6 +341,12 @@ export default function HomeScreen({navigation}) {
           </View>
         </View>
         <ChartExample parcelas={clientes} />
+
+        {havePermissionsFunction('resumo_financeiro_aplicativo') && (
+          <ResumoFinanceiro
+            resumoFinanceiro={resumoFinanceiro}
+          />
+        )}
         <View style={localStyles.mainImg}>
           <FirstImage
             image={images.Withdraw}

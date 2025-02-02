@@ -442,5 +442,13 @@ class PermItemsSeeder extends Seeder
             ]
         );
 
+        DB::table("permitems")->insert(
+            [
+                "name"             => "Visualizar Resumo Financeiro APP",
+                "slug"             => "resumo_financeiro_aplicativo",
+                "group"            => "aplicativo"
+            ]
+        );
+
     }
 }
