@@ -2094,11 +2094,11 @@ class EmprestimoController extends Controller
                     $movimentacaoFinanceira = [];
                     $movimentacaoFinanceira['banco_id'] = $deposito->banco_id;
                     $movimentacaoFinanceira['company_id'] = $deposito->company_id;
-                    // $movimentacaoFinanceira['descricao'] = sprintf(
-                    //     'Deposito %d',
-                    //     json_encode($data)
+                    $movimentacaoFinanceira['descricao'] = sprintf(
+                        'Deposito Pagador: %d',
+                        $data['pagador']['nome'] ?? 'Não informado'
 
-                    // );
+                    );
                     $movimentacaoFinanceira['descricao'] = json_encode($request->json()->all());
                     $movimentacaoFinanceira['tipomov'] = 'E';
                     $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
