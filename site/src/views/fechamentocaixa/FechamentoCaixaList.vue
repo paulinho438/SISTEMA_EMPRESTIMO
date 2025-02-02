@@ -71,6 +71,15 @@ export default {
                 console.log(e);
             }
         },
+        async selecionarBanco() {
+            try {
+                let response = await this.emprestimoService.searchbancofechamento('');
+                this.bancos = response.data.data;
+                this.banco = this.bancos[0];
+            } catch (e) {
+                console.log(e);
+            }
+        },
         async close() {
             try {
                 await this.bancoService.alterarcaixa(this.banco.id, this.displayFechamento.saldobanco, this.displayFechamento.saldocaixa, this.displayFechamento.saldocaixapix);
@@ -357,6 +366,8 @@ export default {
     mounted() {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
         this.getMovimentacaofinanceira();
+
+        this.selecionarBanco();
     }
 };
 </script>
