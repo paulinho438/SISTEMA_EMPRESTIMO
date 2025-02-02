@@ -188,7 +188,7 @@ watch(
                 </div>
                 <div class="flex justify-content-between mb-3" style="flex-direction: column; gap: 10px;">
                     <div>
-                        <span class="text-green-500 font-medium">Empréstimos Ativos</span>
+                        <span class="text-green-500 font-medium">Empréstimos Ativos </span>
                         <span class="text-500">{{ infoConta?.total_emprestimos_em_dias + infoConta?.total_emprestimos_muito_atrasados }}</span>
                     </div>
                     <div>
