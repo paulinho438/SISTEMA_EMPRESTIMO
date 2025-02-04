@@ -133,6 +133,7 @@ export default function HomeScreen({navigation}) {
 
   useEffect(() => {
     if (!tipoCliente) return;
+    console.log(tipoCliente);
     const filteredData = clientesOrig.filter(item => {
       if (tipoCliente.value === 1) return true;
       if (tipoCliente.value === 2) return item.atrasadas > 10;
@@ -159,13 +160,11 @@ export default function HomeScreen({navigation}) {
       setClientesOrig(reqClientes);
     }
 
-    if(!havePermissionsFunction('resumo_financeiro_aplicativo')){
+    if (!havePermissionsFunction('resumo_financeiro_aplicativo')) {
       const resumoFinanceiro = await api.getResumoFinanceiro();
       console.log('resumoFinanceiro', resumoFinanceiro);
       setResumoFinanceiro(resumoFinanceiro);
     }
-  
-
   };
 
   const navigateTo = screen => navigation.navigate(screen);
@@ -295,105 +294,6 @@ export default function HomeScreen({navigation}) {
 
   const moveToOpt = () => {
     navigation.navigate(StackNav.MoreOptions);
-  };
-
-  const BotaoComponent = () => {
-    return (
-      <View style={localStyles.parentTodayTxt}>
-        <CTextInput
-          mainTxtInp={localStyles.CTxtInp}
-          value={search}
-          onChangeText={text => debouncedSetSearch(text)}
-          text={'Pesquisar Cliente...'}
-        />
-      </View>
-    );
-  };
-
-  const ListHeaderComponent = () => {
-    return (
-      <View>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}></View>
-        <View style={localStyles.main}>
-          <View style={localStyles.mainParent}>
-            <View>
-              <CText color={colors.white} style={localStyles.WBTxt}>
-                {strings.WB}
-              </CText>
-              <CText
-                color={colors.white}
-                type={'B18'}
-                style={localStyles.AnnaTxt}>
-                {user?.nome_completo}
-              </CText>
-              <CText
-                color={colors.white}
-                type={'B18'}
-                style={localStyles.AnnaTxt}>
-                {company?.company}
-              </CText>
-            </View>
-          </View>
-        </View>
-        <ChartExample parcelas={clientes} />
-
-        {havePermissionsFunction('resumo_financeiro_aplicativo') && (
-          <ResumoFinanceiro
-            resumoFinanceiro={resumoFinanceiro}
-          />
-        )}
-        <View style={localStyles.mainImg}>
-          <FirstImage
-            image={images.Withdraw}
-            text="Emprestimo"
-            onPress={moveToWith}
-          />
-          {havePermissionsFunction('aplicativo_baixas') && (
-            <FirstImage
-              image={images.Transfer}
-              text="Baixas"
-              onPress={baixaMap}
-            />
-          )}
-          <FirstImage
-            image={images.More}
-            text={strings.More}
-            onPress={moveToOpt}
-          />
-        </View>
-        {BotaoComponent()}
-        <View style={localStyles.parentTodayTxt}>
-          <View style={localStyles.parentTxtInp}>
-            <Dropdown
-              style={localStyles.dropdownStyle}
-              data={ListClient}
-              value={tipoCliente}
-              maxHeight={moderateScale(150)}
-              labelField="label"
-              valueField="value"
-              placeholder="Selecione o Status"
-              onChange={setTipoCliente}
-              selectedTextStyle={localStyles.miniContainer}
-              itemTextStyle={localStyles.miniContainer}
-              itemContainerStyle={{
-                backgroundColor: colors.GreyScale,
-                width: 'auto',
-              }}
-            />
-          </View>
-        </View>
-        <View style={localStyles.parentTodayTxt}>
-          <CText type={'B14'} color={colors.tabColor}>
-            {dataAtual()}
-          </CText>
-        </View>
-      </View>
-    );
   };
 
   const corSelect = at => {
@@ -526,7 +426,94 @@ export default function HomeScreen({navigation}) {
   return (
     <SafeAreaView style={[styles2.mainContainerSurface]}>
       <FlatList
-        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponent={
+          <View>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}></View>
+            <View style={localStyles.main}>
+              <View style={localStyles.mainParent}>
+                <View>
+                  <CText color={colors.white} style={localStyles.WBTxt}>
+                    {strings.WB}
+                  </CText>
+                  <CText
+                    color={colors.white}
+                    type={'B18'}
+                    style={localStyles.AnnaTxt}>
+                    {user?.nome_completo}
+                  </CText>
+                  <CText
+                    color={colors.white}
+                    type={'B18'}
+                    style={localStyles.AnnaTxt}>
+                    {company?.company}
+                  </CText>
+                </View>
+              </View>
+            </View>
+            <ChartExample parcelas={clientes} />
+
+            {havePermissionsFunction('resumo_financeiro_aplicativo') && (
+              <ResumoFinanceiro resumoFinanceiro={resumoFinanceiro} />
+            )}
+            <View style={localStyles.mainImg}>
+              <FirstImage
+                image={images.Withdraw}
+                text="Emprestimo"
+                onPress={moveToWith}
+              />
+              {havePermissionsFunction('aplicativo_baixas') && (
+                <FirstImage
+                  image={images.Transfer}
+                  text="Baixas"
+                  onPress={baixaMap}
+                />
+              )}
+              <FirstImage
+                image={images.More}
+                text={strings.More}
+                onPress={moveToOpt}
+              />
+            </View>
+            <View style={localStyles.parentTodayTxt}>
+              <CTextInput
+                mainTxtInp={localStyles.CTxtInp}
+                value={search}
+                onChangeText={t => setSearch(t)}
+                text={'Pesquisar Cliente...'}
+              />
+            </View>
+            <View style={localStyles.parentTodayTxt}>
+              <View style={localStyles.parentTxtInp}>
+                <Dropdown
+                  style={localStyles.dropdownStyle}
+                  data={ListClient}
+                  value={tipoCliente}
+                  maxHeight={moderateScale(150)}
+                  labelField="label"
+                  valueField="value"
+                  placeholder="Selecione o Status"
+                  onChange={setTipoCliente}
+                  selectedTextStyle={localStyles.miniContainer}
+                  itemTextStyle={localStyles.miniContainer}
+                  itemContainerStyle={{
+                    backgroundColor: colors.GreyScale,
+                    width: 'auto',
+                  }}
+                />
+              </View>
+            </View>
+            <View style={localStyles.parentTodayTxt}>
+              <CText type={'B14'} color={colors.tabColor}>
+                {dataAtual()}
+              </CText>
+            </View>
+          </View>
+        }
         keyExtractor={(item, index) => index.toString()}
         data={clientes}
         renderItem={renderHomeData}

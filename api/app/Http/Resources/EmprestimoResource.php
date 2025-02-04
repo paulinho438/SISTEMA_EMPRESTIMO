@@ -49,7 +49,7 @@ class EmprestimoResource extends JsonResource
             "cliente" => new ClientResource($this->client),
             "consultor" => $this->user,
             "parcelas_vencidas" => $parcelas_vencidas,
-            "parcelas" => ParcelaResource::collection($parcelas),
+            "parcelas" => ParcelaResource::collection($parcelas->sortBy('parcela')),
             "quitacao" => new QuitacaoResource($this->quitacao),
             "pagamentominimo" => new PagamentoMinimoResource($this->pagamentominimo),
             "pagamentosaldopendente" => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
