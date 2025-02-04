@@ -624,11 +624,11 @@ export const CurrencyList = [
 ];
 
 export const ListClient = [
-  {label: 'Todos os Status', value: '1'},
-  {label: 'Vermelho', value: '2'},
-  {label: 'Amarelo', value: '3'},
-  {label: 'Verde', value: '4'},
-  {label: 'Azul', value: '5'}
+  {label: 'Todos os Status', value: 1},
+  {label: 'Vermelho', value: 2},
+  {label: 'Amarelo', value: 3},
+  {label: 'Verde', value: 4},
+  {label: 'Azul', value: 5}
 
 ];
 

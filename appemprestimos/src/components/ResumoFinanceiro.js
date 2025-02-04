@@ -2,29 +2,26 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 const ResumoFinanceiro = ({ resumoFinanceiro }) => {
+
+  const renderRow = (label, value, style) => (
+    <View style={styles.row}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={style}>{resumoFinanceiro != null ? value : "Carregando..."}</Text>
+    </View>
+  );
+
+  const formatCurrency = (value) => {
+    return value?.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Resumo 📈</Text>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Contratos:</Text>
-        <Text style={styles.valueGreen}>{resumoFinanceiro?.total_emprestimos}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Total investido:</Text>
-        <Text style={styles.valueBlue}>R${resumoFinanceiro?.total_ja_investido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Previsão de lucro:</Text>
-        <Text style={styles.valueGreen}>R${(resumoFinanceiro?.total_a_receber +  resumoFinanceiro?.total_ja_recebido - resumoFinanceiro?.total_ja_investido).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</Text>
-      </View>
-
-      <View style={styles.row}>
-        <Text style={styles.label}>Total a Receber:</Text>
-        <Text style={styles.valueBold}>R${resumoFinanceiro?.total_a_receber.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</Text>
-      </View>
+      {renderRow("Contratos:", resumoFinanceiro?.total_emprestimos, styles.valueGreen)}
+      {renderRow("Total investido:", `R$${formatCurrency(resumoFinanceiro?.total_ja_investido)}`, styles.valueBlue)}
+      {renderRow("Previsão de lucro:", `R$${formatCurrency(resumoFinanceiro?.total_a_receber + resumoFinanceiro?.total_ja_recebido - resumoFinanceiro?.total_ja_investido)}`, styles.valueGreen)}
+      {renderRow("Total a Receber:", `R$${formatCurrency(resumoFinanceiro?.total_a_receber)}`, styles.valueBold)}
     </View>
   );
 };
