@@ -55,7 +55,7 @@ class ClientController extends Controller
             ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
-                    $query->where('consultor_id', auth()->user()->id);
+                    $query->where('atrasadas', '>', 0);
                 }
             })
             ->whereHas('emprestimo', function ($query) use ($request) {
