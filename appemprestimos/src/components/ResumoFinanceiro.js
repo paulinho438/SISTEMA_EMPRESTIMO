@@ -18,7 +18,7 @@ const ResumoFinanceiro = ({ resumoFinanceiro }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Resumo 📈</Text>
 
-      {renderRow("Contratos:", resumoFinanceiro?.total_emprestimos, styles.valueGreen)}
+      {renderRow("Contratos Ativos:", (resumoFinanceiro?.total_emprestimos_em_dias + resumoFinanceiro?.total_emprestimos_muito_atrasados), styles.valueGreen)}
       {renderRow("Total investido:", `R$${formatCurrency(resumoFinanceiro?.total_ja_investido)}`, styles.valueBlue)}
       {renderRow("Previsão de lucro:", `R$${formatCurrency(resumoFinanceiro?.total_a_receber + resumoFinanceiro?.total_ja_recebido - resumoFinanceiro?.total_ja_investido)}`, styles.valueGreen)}
       {renderRow("Total a Receber:", `R$${formatCurrency(resumoFinanceiro?.total_a_receber)}`, styles.valueBold)}
