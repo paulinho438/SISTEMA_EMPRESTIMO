@@ -1959,7 +1959,10 @@ class EmprestimoController extends Controller
 
                 if ($pagamento) {
 
-                    $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
+                    $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
+                        ->whereNull('dt_baixa')
+                        ->orderBy('parcela', 'asc') // Ordena pela coluna 'parcela' em ordem ascendente
+                        ->first();
 
                     while ($parcela && $valor > 0) {
                         if ($valor >= $parcela->saldo) {
@@ -2104,8 +2107,6 @@ class EmprestimoController extends Controller
                     $movimentacaoFinanceira['valor'] = $valor;
 
                     Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-
                 }
             }
         }
