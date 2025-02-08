@@ -203,15 +203,15 @@ export default {
                             return {
                                 options: {
                                     position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                    title: `${item.nome_completo} [${item.nome_empresa}]`,
+                                    title: `${item.user_name}`,
                                     icon: {
                                         url: `/images/marker_50_50.png`,
                                         scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                    },
+                                    label: {
+                                        text: `${item.user_name}`,
+                                        className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
                                     }
-                                    // label: {
-                                    //     text: `${item.nome_completo}`,
-                                    //     className: 'py-2 px-2 mt-8 w-25rem h-auto flex-wrap white-space-normal'
-                                    // }
                                 }
                             };
                         });
