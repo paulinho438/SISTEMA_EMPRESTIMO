@@ -15,6 +15,7 @@ import {
 import debounce from 'lodash.debounce';
 import Geolocation from 'react-native-geolocation-service';
 import {useFocusEffect, useRoute} from '@react-navigation/native';
+import BackgroundTimer from 'react-native-background-timer';
 import {PieChart} from 'react-native-svg-charts';
 import {G, Text as SVGText} from 'react-native-svg';
 import {
@@ -70,9 +71,9 @@ export default function HomeScreen({navigation}) {
       getLocation();
     } else {
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
         {
-          title: 'Location Access Permission',
+          title: 'Permissão em background',
           message: 'We need access to your location',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
@@ -81,11 +82,41 @@ export default function HomeScreen({navigation}) {
       );
 
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        getLocation();
+        
       } else {
         console.log('Location permission denied');
       }
     }
+
+    const granted2 = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      {
+        title: 'Location Access Permission',
+        message: 'We need access to your location',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+
+    if (granted2 === PermissionsAndroid.RESULTS.GRANTED) {
+      getLocation();
+    } else {
+      console.log('Location permission denied');
+    }
+
+    BackgroundTimer.runBackgroundTimer(() => {
+      Geolocation.getCurrentPosition(
+        position => {
+          console.log('position', position);
+          informarLocalizacao(position);
+        },
+        error => {
+          console.log(error.code, error.message);
+        },
+        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+      );
+    }, 5000);
   };
 
   const havePermissionsFunction = permission => {
@@ -123,6 +154,9 @@ export default function HomeScreen({navigation}) {
 
   useEffect(() => {
     fetchData();
+    return () => {
+      BackgroundTimer.stopBackgroundTimer();
+    };
   }, []);
 
   useEffect(() => {
@@ -184,6 +218,19 @@ export default function HomeScreen({navigation}) {
       const resumoFinanceiro = await api.getResumoFinanceiro();
       setResumoFinanceiro(resumoFinanceiro);
     }
+  };
+
+  const informarLocalizacao = async position => {
+    const userReq = await getUser();
+
+    let dados = {
+      user_id: userReq.id,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    };
+
+    await api.informarLocalizacao(dados);
+
   };
 
   const getInfoRoute = async position => {
