@@ -171,8 +171,7 @@ class ClientController extends Controller
         clients.nome_completo AS nome_completo,
         clients.telefone_celular_1 AS telefone_celular_1,
         emprestimos.company_id AS company_id,
-        companies.name AS company_name, // Seleciona o nome da empresa
-        companies.address AS company_address, // Seleciona o endereço da empresa
+        companies.company AS nome_empresa,
         CONCAT(address.address, ' ', address.neighborhood, ' ', address.complement, ' ', address.city, ' ', address.complement) AS endereco,
         address.latitude,
         address.longitude,
