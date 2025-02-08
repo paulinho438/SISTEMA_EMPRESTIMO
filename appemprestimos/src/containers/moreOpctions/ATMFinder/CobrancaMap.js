@@ -65,7 +65,7 @@ export default function ATMDetails({navigation, route}) {
     try {
       await api.cobrarAmanha(clientes.id, obterDataAtual());
       Alert.alert('Cobrança alterada com sucesso!');
-      navigation.navigate(StackNav.TabNavigation);
+      navigation.navigate(StackNav.TabNavigation, {atualizarClientes: true});
     } catch (error) {
       console.error('Erro ao cobrar:', error);
     }

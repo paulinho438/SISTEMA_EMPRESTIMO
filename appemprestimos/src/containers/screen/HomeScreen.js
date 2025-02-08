@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import debounce from 'lodash.debounce';
 import Geolocation from 'react-native-geolocation-service';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useRoute} from '@react-navigation/native';
 import {PieChart} from 'react-native-svg-charts';
 import {G, Text as SVGText} from 'react-native-svg';
 import {
@@ -54,6 +54,16 @@ export default function HomeScreen({navigation}) {
 
   const [resumoFinanceiro, setResumoFinanceiro] = useState(null);
 
+  const route = useRoute();
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      requestLocationPermission();
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params?.onNavigateBack]);
+
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') {
       Geolocation.requestAuthorization('whenInUse');
@@ -86,11 +96,11 @@ export default function HomeScreen({navigation}) {
     }
   };
 
-  const getLocation = () => {
+  const getLocation = isReturnRoute => {
     Geolocation.getCurrentPosition(
       position => {
         setLocation(position);
-        getInfo(position);
+        getInfo(position, isReturnRoute);
       },
       error => {
         console.log(error.code, error.message);
@@ -109,7 +119,6 @@ export default function HomeScreen({navigation}) {
     const permissions = await getPermissions();
 
     setPermissoesHoje(permissions);
-    requestLocationPermission();
   };
 
   useEffect(() => {
@@ -146,25 +155,65 @@ export default function HomeScreen({navigation}) {
     setClientes(filteredData);
   }, [tipoCliente, clientesOrig]);
 
-  const getInfo = async () => {
+  const getInfo = async (position, isReturnRoute) => {
     const companyReq = await getAuthCompany();
     setCompany(companyReq);
 
     const userReq = await getUser();
-
     setUser(userReq);
 
-    if (clientes.length == 0) {
-      const reqClientes = await api.getClientesPendentes();
-      setClientes(reqClientes);
-      setClientesOrig(reqClientes);
+    if (clientes.length == 0 || 1 == 1) {
+      let reqClientes = await api.getClientesPendentes();
+
+      reqClientes.forEach(item => {
+        item.distance = haversineDistance(
+          position.coords.latitude,
+          position.coords.longitude,
+          parseFloat(item.latitude),
+          parseFloat(item.longitude),
+        );
+      });
+
+      const sortedArray = reqClientes.sort((a, b) => a.distance - b.distance);
+
+      setClientes(sortedArray);
+      setClientesOrig(sortedArray);
     }
 
     if (!havePermissionsFunction('resumo_financeiro_aplicativo')) {
       const resumoFinanceiro = await api.getResumoFinanceiro();
-      console.log('resumoFinanceiro', resumoFinanceiro);
       setResumoFinanceiro(resumoFinanceiro);
     }
+  };
+
+  const getInfoRoute = async position => {
+    console.log('clientes entrou 3');
+    const companyReq = await getAuthCompany();
+    setCompany(companyReq);
+
+    const userReq = await getUser();
+    setUser(userReq);
+
+    if (clientesOrig.length > 0) {
+      console.log('clientes entrou 4');
+      let reqClientes = await api.getClientesPendentes();
+
+      reqClientes.forEach(item => {
+        item.distance = haversineDistance(
+          position.coords.latitude,
+          position.coords.longitude,
+          parseFloat(item.latitude),
+          parseFloat(item.longitude),
+        );
+      });
+
+      const sortedArray = reqClientes.sort((a, b) => a.distance - b.distance);
+
+      setClientes(sortedArray);
+      setClientesOrig(sortedArray);
+    }
+
+    console.log('finalizou');
   };
 
   const navigateTo = screen => navigation.navigate(screen);

@@ -58,6 +58,13 @@ class ClientController extends Controller
                     $query->where('atrasadas', '>', 0);
                 }
             })
+            ->where(function ($query) use ($request) {
+                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+                    $today = Carbon::now()->toDateString();
+                    $query->whereNull('dt_ult_cobranca')
+                        ->orWhereDate('dt_ult_cobranca', '!=', $today);
+                }
+            })
             ->whereHas('emprestimo', function ($query) use ($request) {
                 $query->where('company_id', $request->header('company-id'));
             })

@@ -57,13 +57,30 @@ export default function Location(props) {
     navigation.navigate(StackNav.TabNavigation);
   }
 
+  // const cobrarAmanha = async () => {
+  //   let req = await api.cobrarAmanha(cliente.id, obterDataAtual());
+
+  //   Alert.alert('Cobranca alterada com sucesso!');
+
+  //   navigation.navigate(StackNav.TabNavigation);
+  // }
+
   const cobrarAmanha = async () => {
-    let req = await api.cobrarAmanha(cliente.id, obterDataAtual());
-
-    Alert.alert('Cobranca alterada com sucesso!');
-
-    navigation.navigate(StackNav.TabNavigation);
-  }
+    try {
+      await api.cobrarAmanha(clientes.id, obterDataAtual());
+      Alert.alert('Cobrança alterada com sucesso!');
+      navigation.navigate(StackNav.TabNavigation, {
+        onNavigateBack: () => executarFuncao(),
+      });
+    } catch (error) {
+      console.error('Erro ao cobrar:', error);
+    }
+  };
+  
+  const executarFuncao = () => {
+    // Coloque aqui a função que você deseja executar
+    console.log('Função executada após a navegação');
+  };
 
   const infoParcelas = async () => {
     let req = await api.cobrarAmanha(cliente.id, obterDataAtual());
