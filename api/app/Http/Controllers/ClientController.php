@@ -142,10 +142,21 @@ class ClientController extends Controller
                     ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
             })
             ->selectRaw("
+        parcelas.*,
         clients.nome_completo AS nome_completo,
+        clients.telefone_celular_1 AS telefone_celular_1,
+        CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
         address.latitude,
-        address.longitude
+        address.longitude,
+        (6371 * acos(
+            cos(radians(?)) * cos(radians(address.latitude))
+            * cos(radians(address.longitude) - radians(?))
+            + sin(radians(?)) * sin(radians(address.latitude))
+        ) / 1000) AS distance,
+         (SELECT SUM(valor) FROM movimentacaofinanceira WHERE movimentacaofinanceira.parcela_id IN (SELECT id FROM parcelas WHERE emprestimo_id = emprestimos.id)) AS total_pago_emprestimo,
+        (SELECT SUM(saldo) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NULL) AS total_pendente
     ", [$latitude, $longitude, $latitude])
+            ->orderBy('distance', 'asc')
             ->get()
             ->unique('emprestimo_id');
 
