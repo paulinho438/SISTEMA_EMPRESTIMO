@@ -169,6 +169,7 @@ class ClientController extends Controller
         parcelas.*,
         clients.nome_completo AS nome_completo,
         clients.telefone_celular_1 AS telefone_celular_1,
+        emprestimos.company_id AS company_id,
         CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
         address.latitude,
         address.longitude,
