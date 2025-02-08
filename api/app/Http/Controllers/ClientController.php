@@ -233,11 +233,9 @@ class ClientController extends Controller
             $location = $user->locations()->latest('id')->first();
             return [
                 'user_id' => $user->id,
-                'user_name' => $user->name,
+                'user_name' => $user->nome_completo,
                 'latitude' => $location ? $location->latitude : null,
-                'longitude' => $location ? $location->longitude : null,
-                'timestamp' => $location ? $location->timestamp : null,
-                'company_id' => $location ? $location->company_id : null,
+                'longitude' => $location ? $location->longitude : null
             ];
         });
 
