@@ -117,6 +117,73 @@ class ClientController extends Controller
         //     ->get()->unique('emprestimo_id'));
     }
 
+    public function mapaClientes(Request $request)
+    {
+
+        // return auth()->user()->hasPermission('criar_usuarios');
+
+        $this->custom_log->create([
+            'user_id' => auth()->user()->id,
+            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes Pendentes no APLICATIVO',
+            'operation' => 'index'
+        ]);
+
+        $latitude = floatval($request->input('latitude'));
+        $longitude = floatval($request->input('longitude'));
+
+        $clientes = Parcela::where('dt_baixa', null)
+            ->whereHas('emprestimo', function ($query) use ($request) {
+                $query->where('company_id', $request->header('company-id'));
+            })
+            ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
+            ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
+            ->join('address', function ($join) {
+                $join->on('clients.id', '=', 'address.client_id')
+                    ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
+            })
+            ->selectRaw("
+        parcelas.*,
+        clients.nome_completo AS nome_completo,
+        clients.telefone_celular_1 AS telefone_celular_1,
+        CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
+        address.latitude,
+        address.longitude,
+        (6371 * acos(
+            cos(radians(?)) * cos(radians(address.latitude))
+            * cos(radians(address.longitude) - radians(?))
+            + sin(radians(?)) * sin(radians(address.latitude))
+        ) / 1000) AS distance,
+         (SELECT SUM(valor) FROM movimentacaofinanceira WHERE movimentacaofinanceira.parcela_id IN (SELECT id FROM parcelas WHERE emprestimo_id = emprestimos.id)) AS total_pago_emprestimo,
+        (SELECT SUM(saldo) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NULL) AS total_pendente
+    ", [$latitude, $longitude, $latitude])
+            ->orderBy('distance', 'asc')
+            ->get()
+            ->unique('emprestimo_id');
+
+        return response()->json($clientes->values());
+
+
+
+        // return ParcelaResource::collection(Parcela::where('dt_baixa', null)
+        //     ->where('valor_recebido', null)
+        //     ->where(function ($query) use ($request) {
+        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+        //             $query->where('atrasadas', '>', 0);
+        //         }
+        //     })
+        //     ->where(function ($query) use ($request) {
+        //         if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+        //             $today = Carbon::now()->toDateString();
+        //             $query->whereNull('dt_ult_cobranca')
+        //                 ->orWhereDate('dt_ult_cobranca', '!=', $today);
+        //         }
+        //     })
+        //     ->whereHas('emprestimo', function ($query) use ($request) {
+        //         $query->where('company_id', $request->header('company-id'));
+        //     })
+        //     ->get()->unique('emprestimo_id'));
+    }
+
     public function all(Request $request)
     {
 
