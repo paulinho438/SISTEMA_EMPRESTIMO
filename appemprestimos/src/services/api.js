@@ -284,6 +284,11 @@ export default {
         let json = await request('post', '/emprestimo/search/banco', { name: '' }, token);
         return json;
 	},
+    informarLocalizacao: async (dados) => {
+        let token = await getAuthToken();
+        let json = await request('post', '/informar_localizacao', dados, token);
+        return json;
+	},
     getLocationGeocode: async (latitude, longitude) => {
         let req = await fetch(`https://maps.google.com/maps/api/geocode/json?key=AIzaSyDvNypCJVAfgPJ1nmrqZvz25wSbW3JOjUc&address=${latitude},${longitude}&sensor=false`);
         let json = await req.json();

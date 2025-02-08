@@ -58,6 +58,8 @@ Route::get('/setup-teste', function (Request $request) {
     return 'Email sent successfully!';
 });
 
+Route::post('/informar_localizacao', [UsuarioController::class, 'informarLocalizacao']);
+
 
 Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookRetornoCobranca']);
 Route::post('/webhook/retorno_pagamento', [EmprestimoController::class, 'webhookPagamento']);

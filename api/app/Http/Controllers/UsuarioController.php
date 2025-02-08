@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Models\Parcela;
 use App\Models\CustomLog;
 use App\Models\Permgroup;
+use App\Models\UserLocation;
+
 
 use DateTime;
 use App\Http\Resources\UsuarioResource;
@@ -80,15 +82,14 @@ class UsuarioController extends Controller
                 User::whereHas('companies', function ($query) use ($companyId) {
                     $query->where('id', $companyId);
                 })
-                ->where('login', '!=', 'MASTERGERAL') // Excluir o login "MASTERGERAL"
-                ->get()
+                    ->where('login', '!=', 'MASTERGERAL') // Excluir o login "MASTERGERAL"
+                    ->get()
             );
         }
     }
 
     public function allCompany(Request $request)
     {
-
         $companyId = $request->header('company-id');
 
         return UsuarioResource::collection(User::whereHas('companies', function ($query) use ($companyId) {
@@ -162,6 +163,37 @@ class UsuarioController extends Controller
         }
     }
 
+    public function informarLocalizacao(Request $request)
+    {
+        $array = ['error' => ''];
+
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'timestamp' => 'required|date_format:Y-m-d H:i:s',
+            'address' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => $validator->errors()->first()
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $dados = $request->all();
+
+        $userLocation = UserLocation::create([
+            'user_id' => $dados['user_id'],
+            'latitude' => $dados['latitude'],
+            'longitude' => $dados['longitude']
+        ]);
+
+        $array['data'] = $userLocation;
+
+        return response()->json($array, Response::HTTP_OK);
+    }
+
     public function update(Request $request, $id)
     {
         DB::beginTransaction();
@@ -221,14 +253,12 @@ class UsuarioController extends Controller
 
                 if ($dados['permissao']) {
                     // Obter o grupo
-                    $t = $EditUser->getGroupByEmpresaId($request->header('company-id') );
+                    $t = $EditUser->getGroupByEmpresaId($request->header('company-id'));
                     $t->users()->detach($EditUser->id);
 
                     $group = Permgroup::findOrFail($dados['permissao']['id']);
                     $group->users()->attach($EditUser->id);
-
                 }
-
             } else {
                 return response()->json([
                     "message" => $validator->errors()->first(),
