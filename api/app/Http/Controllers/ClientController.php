@@ -131,10 +131,17 @@ class ClientController extends Controller
         $latitude = floatval($request->input('latitude'));
         $longitude = floatval($request->input('longitude'));
 
+        // Obtém o usuário autenticado
+        $user = auth()->user();
+
+        // Obtém os IDs das empresas às quais o usuário pertence
+        $companyIds = $user->companies->pluck('id')->toArray();
+
+
         $clientes = Parcela::where('dt_baixa', null)
-            // ->whereHas('emprestimo', function ($query) use ($request) {
-            //     $query->where('company_id', $request->header('company-id'));
-            // })
+            ->whereHas('emprestimo', function ($query) use ( $companyIds) {
+                $query->whereIn('company_id',  $companyIds);
+            })
             ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
             ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
             ->join('address', function ($join) {
