@@ -11,4 +11,8 @@ export default class LogService {
 		return await axios.get(`${apiPath}/log`);
 	};
 
+	getAllClientesMaps = async () => {
+		return await axios.get(`${apiPath}/mapa/clientes`);
+	};
+
 }
