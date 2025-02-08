@@ -53,6 +53,8 @@ export default function HomeScreen({navigation}) {
   const [permissoesHoje, setPermissoesHoje] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [enviandoLocalizacao, setEnviandoLocalizacao] = useState(false);
+
   const [resumoFinanceiro, setResumoFinanceiro] = useState(null);
 
   const route = useRoute();
@@ -65,58 +67,152 @@ export default function HomeScreen({navigation}) {
     return unsubscribe;
   }, [navigation, route.params?.onNavigateBack]);
 
+  // const requestLocationPermission = async () => {
+  //   if (Platform.OS === 'ios') {
+  //     Geolocation.requestAuthorization('whenInUse');
+  //     getLocation();
+  //   } else {
+  //     const granted = await PermissionsAndroid.request(
+  //       PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+  //       {
+  //         title: 'Permissão em background',
+  //         message: 'We need access to your location',
+  //         buttonNeutral: 'Ask Me Later',
+  //         buttonNegative: 'Cancel',
+  //         buttonPositive: 'OK',
+  //       },
+  //     );
+
+  //     if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+  //     } else {
+  //       console.log('Location permission denied');
+  //     }
+  //   }
+
+  //   const granted2 = await PermissionsAndroid.request(
+  //     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  //     {
+  //       title: 'Location Access Permission',
+  //       message: 'We need access to your location',
+  //       buttonNeutral: 'Ask Me Later',
+  //       buttonNegative: 'Cancel',
+  //       buttonPositive: 'OK',
+  //     },
+  //   );
+
+  //   if (granted2 === PermissionsAndroid.RESULTS.GRANTED) {
+  //     getLocation();
+  //   } else {
+  //     console.log('Location permission denied');
+  //   }
+
+  //   if (!enviandoLocalizacao) {
+  //     BackgroundTimer.runBackgroundTimer(() => {
+  //       // Geolocation.getCurrentPosition(
+  //       //   position => {
+  //       //     console.log('position', position);
+  //       //     informarLocalizacao(position);
+  //       //   },
+  //       //   error => {
+  //       //     console.log(error.code, error.message);
+  //       //   },
+  //       //   {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+  //       // );
+
+  //       Geolocation.watchPosition(
+  //         position => {
+  //           informarLocalizacao(position);
+  //         },
+  //         error => console.log(error),
+  //         {
+  //           enableHighAccuracy: true,
+  //           distanceFilter: 10, // Atualiza sempre que o usuário mover 1 metro
+  //           interval: 5000, // Atualiza a cada 5 segundos
+  //           fastestInterval: 2000, // Atualiza no menor intervalo possível
+  //         },
+  //       );
+  //     }, 5000);
+  //   }
+
+  //   if (!enviandoLocalizacao) {
+  //     setEnviandoLocalizacao(true);
+  //   }
+  // };
+
   const requestLocationPermission = async () => {
     if (Platform.OS === 'ios') {
-      Geolocation.requestAuthorization('whenInUse');
-      getLocation();
-    } else {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-        {
-          title: 'Permissão em background',
-          message: 'We need access to your location',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
-      );
-
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        
+      const auth = await Geolocation.requestAuthorization('whenInUse');
+      if (auth === 'granted') {
+        getLocation();
+        startWatchingPosition();
       } else {
-        console.log('Location permission denied');
+        console.log('Location permission denied on iOS');
       }
+      return;
     }
 
-    const granted2 = await PermissionsAndroid.request(
+    // Solicita primeiro a permissão de localização fina
+    const grantedFine = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       {
-        title: 'Location Access Permission',
-        message: 'We need access to your location',
-        buttonNeutral: 'Ask Me Later',
-        buttonNegative: 'Cancel',
+        title: 'Permissão de Localização',
+        message:
+          'Precisamos da sua localização para o app funcionar corretamente',
+        buttonNeutral: 'Perguntar depois',
+        buttonNegative: 'Cancelar',
         buttonPositive: 'OK',
       },
     );
 
-    if (granted2 === PermissionsAndroid.RESULTS.GRANTED) {
-      getLocation();
-    } else {
-      console.log('Location permission denied');
+    if (grantedFine !== PermissionsAndroid.RESULTS.GRANTED) {
+      console.log('Permissão de localização negada');
+      return;
     }
 
-    BackgroundTimer.runBackgroundTimer(() => {
-      Geolocation.getCurrentPosition(
+    // Após `ACCESS_FINE_LOCATION`, solicita `ACCESS_BACKGROUND_LOCATION`
+    const grantedBackground = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+      {
+        title: 'Permissão de Localização em Background',
+        message: 'Precisamos da sua localização mesmo com o app fechado',
+        buttonNeutral: 'Perguntar depois',
+        buttonNegative: 'Cancelar',
+        buttonPositive: 'OK',
+      },
+    );
+
+    if (grantedBackground !== PermissionsAndroid.RESULTS.GRANTED) {
+      console.log('Permissão de localização em background negada');
+    }
+
+    getLocation();
+    startWatchingPosition();
+  };
+
+  let watchId = null; // Variável para armazenar o ID do watchPosition
+
+  const startWatchingPosition = () => {
+    if (!watchId) {
+      watchId = Geolocation.watchPosition(
         position => {
-          console.log('position', position);
           informarLocalizacao(position);
         },
-        error => {
-          console.log(error.code, error.message);
+        error => console.log(error),
+        {
+          enableHighAccuracy: true,
+          distanceFilter: 5, // Atualiza apenas se o usuário se mover 10 metros
+          interval: 5000, // Atualiza a cada 5 segundos
+          fastestInterval: 2000, // Menor intervalo possível
         },
-        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
       );
-    }, 5000);
+    }
+  };
+
+  const stopWatchingPosition = () => {
+    if (watchId !== null) {
+      Geolocation.clearWatch(watchId);
+      watchId = null;
+    }
   };
 
   const havePermissionsFunction = permission => {
@@ -156,6 +252,7 @@ export default function HomeScreen({navigation}) {
     fetchData();
     return () => {
       BackgroundTimer.stopBackgroundTimer();
+      stopWatchingPosition();
     };
   }, []);
 
@@ -226,11 +323,10 @@ export default function HomeScreen({navigation}) {
     let dados = {
       user_id: userReq.id,
       latitude: position.coords.latitude,
-      longitude: position.coords.longitude
+      longitude: position.coords.longitude,
     };
 
     await api.informarLocalizacao(dados);
-
   };
 
   const getInfoRoute = async position => {

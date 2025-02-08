@@ -184,7 +184,8 @@ class UsuarioController extends Controller
         $userLocation = UserLocation::create([
             'user_id' => $dados['user_id'],
             'latitude' => $dados['latitude'],
-            'longitude' => $dados['longitude']
+            'longitude' => $dados['longitude'],
+            'company_id' => $request->header('company-id')
         ]);
 
         $array['data'] = $userLocation;

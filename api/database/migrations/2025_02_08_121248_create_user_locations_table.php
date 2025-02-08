@@ -13,7 +13,8 @@ class CreateUserLocationsTable extends Migration
             $table->unsignedBigInteger('user_id');
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
-
+            $table->unsignedBigInteger('company_id');
+            $table->foreign('company_id')->references('id')->on('company');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->timestamps();
 
