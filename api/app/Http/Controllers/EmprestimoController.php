@@ -1627,7 +1627,7 @@ class EmprestimoController extends Controller
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
-                $parcela = Parcela::where('identificador', $txId)->first();
+                $parcela = Parcela::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
                 if ($parcela) {
                     $parcela->saldo = 0;
@@ -1719,7 +1719,7 @@ class EmprestimoController extends Controller
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
-                $locacao = Locacao::where('identificador', $txId)->first();
+                $locacao = Locacao::where('identificador', $txId)->whereNull('data_pagamento')->first();
                 if ($locacao) {
                     $locacao->data_pagamento = $horario;
                     $locacao->save();
@@ -1742,7 +1742,7 @@ class EmprestimoController extends Controller
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
-                $minimo = PagamentoMinimo::where('identificador', $txId)->first();
+                $minimo = PagamentoMinimo::where('identificador', $txId)->whereNull('dt_baixa')->first();
                 if ($minimo) {
 
                     $juros = 0;
@@ -1856,7 +1856,7 @@ class EmprestimoController extends Controller
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
-                $quitacao = Quitacao::where('identificador', $txId)->first();
+                $quitacao = Quitacao::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
                 if ($quitacao) {
                     $parcelas = Parcela::where('emprestimo_id', $quitacao->emprestimo_id)->get();
@@ -1900,7 +1900,7 @@ class EmprestimoController extends Controller
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
-                $pagamento = PagamentoPersonalizado::where('identificador', $txId)->first();
+                $pagamento = PagamentoPersonalizado::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
                 if ($pagamento) {
                     $pagamento->dt_baixa = $horario;
@@ -2082,7 +2082,7 @@ class EmprestimoController extends Controller
                 $horario = Carbon::parse($pix['horario'])->toDateTimeString();
 
                 // Encontrar a parcela correspondente
-                $deposito = Deposito::where('identificador', $txId)->first();
+                $deposito = Deposito::where('identificador', $txId)->whereNull('data_pagamento')->first();
 
                 if ($deposito) {
 
