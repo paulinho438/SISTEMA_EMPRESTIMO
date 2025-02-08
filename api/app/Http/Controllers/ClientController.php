@@ -146,7 +146,6 @@ class ClientController extends Controller
         address.latitude,
         address.longitude
     ", [$latitude, $longitude, $latitude])
-            ->orderBy('distance', 'asc')
             ->get()
             ->unique('emprestimo_id');
 
