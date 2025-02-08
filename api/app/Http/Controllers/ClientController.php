@@ -166,7 +166,7 @@ class ClientController extends Controller
                     ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
             })
             ->join('companies', function ($join) {
-                $join->on('emprestimos.company_id', '=', 'companies.client_id');
+                $join->on('emprestimos.company_id', '=', 'companies.id');
             })
             ->selectRaw("
         parcelas.*,
