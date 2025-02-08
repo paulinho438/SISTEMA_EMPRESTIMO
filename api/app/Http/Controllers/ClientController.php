@@ -156,8 +156,16 @@ class ClientController extends Controller
 
 
         $clientes = Parcela::where('dt_baixa', null)
-            ->whereHas('emprestimo', function ($query) use ( $companyIds) {
-                $query->whereIn('company_id',  $companyIds);
+            ->where(function ($query) use ($request, $companyIds) {
+                if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+                    $query->whereIn('company_id',  $companyIds);
+                }
+            })
+
+            ->where(function ($query) use ($request) {
+                if (!auth()->user()->getGroupNameByEmpresaId(empresaId: $request->header('company-id')) == 'Consultor') {
+                    $query->where('company_id',  $request->header('company-id'));
+                }
             })
             ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
             ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
