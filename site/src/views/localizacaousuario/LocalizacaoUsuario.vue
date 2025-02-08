@@ -56,6 +56,7 @@ export default {
             valorRecebido: ref(0),
             valorPago: ref(0),
             markers: [],
+            consultoresMarkers: [],
             atrasadasOptions: [
                 { label: 'Todos', value: 'todos' },
                 { label: 'Azul', value: 'azul' },
@@ -128,6 +129,7 @@ export default {
                     this.loading = false;
                 });
         },
+        
         getClientes() {
             this.loading = true;
 
@@ -162,7 +164,7 @@ export default {
                             return {
                                 options: {
                                     position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                    title: `${item.nome_completo}`,
+                                    title: `${item.nome_completo} [${item.nome_empresa}]`,
                                     icon: {
                                         url: iconUrl,
                                         scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
@@ -176,6 +178,44 @@ export default {
                         });
 
                     console.log(this.markers);
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        getConsultores() {
+            this.loading = true;
+
+            this.logService
+                .getAllConsultorMaps()
+                .then((response) => {
+                    this.consultoresMarkers = response.data
+                        .map((item) => {
+                            const iconUrl = this.getIconUrl(0);
+
+                            return {
+                                options: {
+                                    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+                                    title: `${item.nome_completo} [${item.nome_empresa}]`,
+                                    icon: {
+                                        url: `/images/marker_50_50.png`,
+                                        scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                    }
+                                    // label: {
+                                    //     text: `${item.nome_completo}`,
+                                    //     className: 'py-2 px-2 mt-8 w-25rem h-auto flex-wrap white-space-normal'
+                                    // }
+                                }
+                            };
+                        });
+
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -283,6 +323,7 @@ export default {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
         this.getLog();
         this.getClientes();
+        this.getConsultores();
     }
 };
 </script>
@@ -320,7 +361,10 @@ export default {
                     <GoogleMap :api-key="mapKey.trim()" :zoom="zoom" :center="center" @click="onMapClick" style="width: 100%; height: 500px">
                         <Marker :options="markerOptions"></Marker>
                         <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options" :title="marker.title"></Marker>
+
+                        <Marker v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
                     </GoogleMap>
+                    
                 </div>
             </div>
         </div>

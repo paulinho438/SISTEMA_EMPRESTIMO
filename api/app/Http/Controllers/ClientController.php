@@ -211,6 +211,25 @@ class ClientController extends Controller
         //     ->get()->unique('emprestimo_id'));
     }
 
+    public function mapaConsultor(Request $request)
+    {
+
+        // Obtém o usuário autenticado
+        $user = auth()->user();
+
+        // Obtém os IDs das empresas às quais o usuário pertence
+        $companyIds = $user->companies->pluck('id')->toArray();
+
+        // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get();
+        return User::whereHas('groups', function ($query) {
+                $query->where('name', 'Consultor');
+            })
+            ->where(function ($query) use ($request, $companyIds) {
+                $query->whereIn('emprestimos.company_id', $companyIds);
+            })
+            ->get();
+    }
+
     public function all(Request $request)
     {
 
