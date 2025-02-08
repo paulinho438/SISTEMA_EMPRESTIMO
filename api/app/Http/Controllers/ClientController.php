@@ -224,8 +224,8 @@ class ClientController extends Controller
         return User::whereHas('groups', function ($query) {
                 $query->where('name', 'Consultor');
             })
-            ->where(function ($query) use ($request, $companyIds) {
-                $query->whereIn('emprestimos.company_id', $companyIds);
+            ->whereHas('companies', function ($query) use ($companyIds) {
+                $query->whereIn('id', $companyIds);
             })
             ->get();
     }
