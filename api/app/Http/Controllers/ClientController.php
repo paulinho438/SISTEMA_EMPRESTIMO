@@ -221,13 +221,19 @@ class ClientController extends Controller
         $companyIds = $user->companies->pluck('id')->toArray();
 
         // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get();
-        return User::whereHas('groups', function ($query) {
-                $query->where('name', 'Consultor');
-            })
+        $users = User::whereHas('groups', function ($query) {
+            $query->where('name', 'Consultor');
+        })
             ->whereHas('companies', function ($query) use ($companyIds) {
                 $query->whereIn('id', $companyIds);
             })
             ->get();
+
+        $lastLocations = $users->map(function ($user) {
+            return $user->locations()->latest('id')->first();
+        });
+
+        return response()->json($lastLocations);
     }
 
     public function all(Request $request)

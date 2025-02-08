@@ -86,5 +86,10 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Emprestimo::class, 'user_id', 'id');
     }
+
+    public function locations()
+    {
+        return $this->hasMany(UserLocation::class);
+    }
 }
 
