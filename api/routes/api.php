@@ -141,6 +141,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/usuario/{id}', [UsuarioController::class, 'update']);
     Route::post('/usuario', [UsuarioController::class, 'insert']);
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
+    Route::get('/mapa/clientes', [ClientController::class, 'mapaClientes']);
 
     Route::get('/cobranca/buttonpressed', [BotaoCobrancaController::class, 'pressed']);
     Route::get('/cobranca/getbuttonpressed', [BotaoCobrancaController::class, 'getButtonPressed']);
