@@ -143,7 +143,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
     Route::get('/mapa/clientes', [ClientController::class, 'mapaClientes']);
     Route::get('/mapa/consultor', [ClientController::class, 'mapaConsultor']);
-    
+
 
     Route::get('/cobranca/buttonpressed', [BotaoCobrancaController::class, 'pressed']);
     Route::get('/cobranca/getbuttonpressed', [BotaoCobrancaController::class, 'getButtonPressed']);
