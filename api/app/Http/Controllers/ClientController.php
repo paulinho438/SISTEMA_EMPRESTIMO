@@ -230,7 +230,15 @@ class ClientController extends Controller
             ->get();
 
         $lastLocations = $users->map(function ($user) {
-            return $user->locations()->latest('id')->first();
+            $location = $user->locations()->latest('id')->first();
+            return [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'latitude' => $location ? $location->latitude : null,
+                'longitude' => $location ? $location->longitude : null,
+                'timestamp' => $location ? $location->timestamp : null,
+                'company_id' => $location ? $location->company_id : null,
+            ];
         });
 
         return response()->json($lastLocations);
