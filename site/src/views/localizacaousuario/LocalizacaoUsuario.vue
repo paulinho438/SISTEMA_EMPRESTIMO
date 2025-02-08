@@ -162,7 +162,7 @@ export default {
                             return {
                                 options: {
                                     position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                    title: `${item.nome_completo} [CUIABANO]`,
+                                    title: `${item.nome_completo} [${item.nome_empresa}]`,
                                     icon: {
                                         url: iconUrl,
                                         scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
