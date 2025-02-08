@@ -160,20 +160,16 @@ class ClientController extends Controller
                     $query->whereIn('emprestimos.company_id',  $companyIds);
             })
             ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
-            ->join('clients', 'emprestimos.company_id', '=', 'clients.id')
+            ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
             ->join('address', function ($join) {
                 $join->on('clients.id', '=', 'address.client_id')
                     ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
-            })
-            ->join('companies', function ($join) {
-                $join->on('emprestimos.company_id', '=', 'companies.id');
             })
             ->selectRaw("
         parcelas.*,
         clients.nome_completo AS nome_completo,
         clients.telefone_celular_1 AS telefone_celular_1,
         emprestimos.company_id AS company_id,
-        companies.company AS nome_empresa,
         CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
         address.latitude,
         address.longitude,
