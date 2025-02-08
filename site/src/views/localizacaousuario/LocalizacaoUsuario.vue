@@ -51,7 +51,13 @@ export default {
             form: ref({}),
             valorRecebido: ref(0),
             valorPago: ref(0),
-            markers: []
+            markers: [],
+            iconMapping: {
+                1: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                8: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                3: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                // Adicione mais mapeamentos conforme necessário
+            }
         };
     },
     methods: {
@@ -91,18 +97,23 @@ export default {
                             const lng = Number(item.longitude);
                             return !isNaN(lat) && !isNaN(lng);
                         }) // Filtra itens sem latitude ou longitude válidas
+                        .filter((item) => {
+                            return item.atrasadas > 0;
+                        }) // Filtra itens sem latitude ou longitude válidas
                         .map((item) => {
+                            const iconUrl = this.iconMapping[item.company_id] || 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png'; // Ícone padrão se não houver mapeamento
+
                             return {
                                 options: {
                                     position: { lat: Number(item.latitude), lng: Number(item.longitude) },
                                     title: `${item.nome_completo}`,
-                                    // icon: {
-                                    //     url: `/images/marker_50_50.png`,
-                                    //     title: `${item.endereco}`
-                                    // },
+                                    icon: {
+                                        url: iconUrl,
+                                        scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                    },
                                     // label: {
                                     //     text: `${item.nome_completo}`,
-                                    //     className: 'py-2 px-2  mt-8 w-25rem h-auto flex-wrap white-space-normal'
+                                    //     className: 'py-2 px-2 mt-8 w-25rem h-auto flex-wrap white-space-normal'
                                     // }
                                 }
                             };
