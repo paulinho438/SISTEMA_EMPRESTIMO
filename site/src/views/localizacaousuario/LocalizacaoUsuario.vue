@@ -48,14 +48,46 @@ export default {
             center: ref({ lat: -16.6699897, lng: -49.2898949 }),
             loading: ref(false),
             filters: ref(null),
-            form: ref({}),
+            form: ref({
+                dt_inicio: null,
+                dt_final: null,
+                atrasadas: null
+            }),
             valorRecebido: ref(0),
             valorPago: ref(0),
             markers: [],
+            atrasadasOptions: [
+                { label: 'Todos', value: 'todos' },
+                { label: 'Azul', value: 'azul' },
+                { label: 'Verde', value: 'verde' },
+                { label: 'Amarelo', value: 'amarelo' },
+                { label: 'Vermelho', value: 'vermelho' },
+                { label: 'Todos os atrasados', value: 'todos_atrasados' },
+                
+            ],
             iconMapping: {
-                1: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                8: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                3: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                0: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                1: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                2: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                3: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                4: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                5: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                6: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                7: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                8: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                9: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+                10: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                11: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                12: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                13: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                14: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                15: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                16: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                17: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                18: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                19: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                20: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                21: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
                 // Adicione mais mapeamentos conforme necessário
             }
         };
@@ -63,6 +95,17 @@ export default {
     methods: {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
+        },
+        getIconUrl(atrasadas) {
+            if (atrasadas === 0) {
+                return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+            } else if (atrasadas > 0 && atrasadas <= 2) {
+                return 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+            } else if (atrasadas >= 3 && atrasadas <= 9) {
+                return 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+            } else {
+                return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+            }
         },
         getLog() {
             this.loading = true;
@@ -98,19 +141,32 @@ export default {
                             return !isNaN(lat) && !isNaN(lng);
                         }) // Filtra itens sem latitude ou longitude válidas
                         .filter((item) => {
-                            return item.atrasadas > 0;
-                        }) // Filtra itens sem latitude ou longitude válidas
+                            if (this.form.atrasadas !== 'todos') {
+                                if (this.form.atrasadas === 'azul') {
+                                    return item.atrasadas === 0;
+                                } else if (this.form.atrasadas === 'verde') {
+                                    return item.atrasadas > 0 && item.atrasadas <= 2;
+                                } else if (this.form.atrasadas === 'amarelo') {
+                                    return item.atrasadas >= 3 && item.atrasadas <= 9;
+                                } else if (this.form.atrasadas === 'vermelho') {
+                                    return item.atrasadas >= 10;
+                                } else if (this.form.atrasadas === 'todos_atrasados') {
+                                    return item.atrasadas > 0;
+                                }
+                            }
+                            return true;
+                        })
                         .map((item) => {
-                            const iconUrl = this.iconMapping[item.company_id] || 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png'; // Ícone padrão se não houver mapeamento
+                            const iconUrl = this.getIconUrl(item.atrasadas);
 
                             return {
                                 options: {
                                     position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                    title: `${item.nome_completo}`,
+                                    title: `${item.nome_completo} [CUIABANO]`,
                                     icon: {
                                         url: iconUrl,
                                         scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
-                                    },
+                                    }
                                     // label: {
                                     //     text: `${item.nome_completo}`,
                                     //     className: 'py-2 px-2 mt-8 w-25rem h-auto flex-wrap white-space-normal'
@@ -132,6 +188,9 @@ export default {
                     this.loading = false;
                 });
         },
+        busca() {
+            this.getClientes();
+        },
         setLastWeekDates() {
             const today = new Date();
             const lastWeekEnd = new Date(today);
@@ -144,27 +203,27 @@ export default {
 
             this.busca(); // Call the search method to filter data
         },
-        busca() {
-            if (!this.form.dt_inicio || !this.form.dt_final) {
-                this.toast.add({
-                    severity: ToastSeverity.WARN,
-                    detail: 'Selecione as datas de início e fim',
-                    life: 3000
-                });
-                return;
-            }
+        // busca() {
+        //     if (!this.form.dt_inicio || !this.form.dt_final) {
+        //         this.toast.add({
+        //             severity: ToastSeverity.WARN,
+        //             detail: 'Selecione as datas de início e fim',
+        //             life: 3000
+        //         });
+        //         return;
+        //     }
 
-            const dt_inicio = new Date(this.form.dt_inicio);
-            const dt_final = new Date(this.form.dt_final);
+        //     const dt_inicio = new Date(this.form.dt_inicio);
+        //     const dt_final = new Date(this.form.dt_final);
 
-            dt_inicio.setHours(0, 0, 0, 999); // Ensure the end date covers the entire day
-            dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
+        //     dt_inicio.setHours(0, 0, 0, 999); // Ensure the end date covers the entire day
+        //     dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
 
-            this.Log = this.LogReal.filter((mov) => {
-                const dt_mov = new Date(mov.created_at); // Converte a string de data para um objeto Date
-                return dt_mov >= dt_inicio && dt_mov <= dt_final;
-            });
-        },
+        //     this.Log = this.LogReal.filter((mov) => {
+        //         const dt_mov = new Date(mov.created_at); // Converte a string de data para um objeto Date
+        //         return dt_mov >= dt_inicio && dt_mov <= dt_final;
+        //     });
+        // },
         editCategory(id) {
             if (undefined === id) this.router.push('/Movimentacaofinanceira/add');
             else this.router.push(`/Movimentacaofinanceira/${id}/edit`);
@@ -247,8 +306,8 @@ export default {
                     </div>
                     <div class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
-                            <label for="username">Data Final</label>
-                            <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data Final'" v-model="form.dt_final" showIcon :showOnFocus="false" class="" />
+                            <label for="username">Atrasadas</label>
+                            <Dropdown v-model="form.atrasadas" :options="atrasadasOptions" optionLabel="label" optionValue="value" placeholder="Selecione uma cor" />
                         </div>
                     </div>
                     <div class="col-12 md:col-2">
@@ -260,7 +319,6 @@ export default {
                 <div class="mt-3">
                     <GoogleMap :api-key="mapKey.trim()" :zoom="zoom" :center="center" @click="onMapClick" style="width: 100%; height: 500px">
                         <Marker :options="markerOptions"></Marker>
-
                         <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options" :title="marker.title"></Marker>
                     </GoogleMap>
                 </div>
