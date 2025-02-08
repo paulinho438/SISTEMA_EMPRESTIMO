@@ -169,9 +169,7 @@ class UsuarioController extends Controller
 
         $validator = Validator::make($request->all(), [
             'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'timestamp' => 'required|date_format:Y-m-d H:i:s',
-            'address' => 'nullable|string',
+            'longitude' => 'required|numeric'
         ]);
 
         if ($validator->fails()) {
