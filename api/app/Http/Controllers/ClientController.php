@@ -75,13 +75,13 @@ class ClientController extends Controller
 
             ->where(function ($query) use ($request, $companyIds) {
                 if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
-                    $query->whereIn('company_id',  $companyIds);
+                    $query->whereIn('emprestimos.company_id',  $companyIds);
                 }
             })
 
             ->where(function ($query) use ($request) {
                 if (!auth()->user()->getGroupNameByEmpresaId(empresaId: $request->header('company-id')) == 'Consultor') {
-                    $query->where('company_id',  $request->header('company-id'));
+                    $query->where('emprestimos.company_id',  $request->header('company-id'));
                 }
             })
 
