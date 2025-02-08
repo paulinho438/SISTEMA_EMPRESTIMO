@@ -51,26 +51,7 @@ export default {
             form: ref({}),
             valorRecebido: ref(0),
             valorPago: ref(0),
-            markers: [
-                {
-                    options: {
-                        position: { lat: -23.55052, lng: -46.633308 },
-                        title: 'Marker 1'
-                    }
-                },
-                {
-                    options: {
-                        position: { lat: -23.55152, lng: -46.634308 },
-                        title: 'Marker 2'
-                    }
-                },
-                {
-                    options: {
-                        position: { lat: -23.55252, lng: -46.635308 },
-                        title: 'Marker 3'
-                    }
-                }
-            ]
+            markers: []
         };
     },
     methods: {
@@ -86,6 +67,48 @@ export default {
                     this.Log = response.data;
                     this.LogReal = response.data;
                     this.setLastWeekDates();
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        getClientes() {
+            this.loading = true;
+
+            this.logService
+                .getAllClientesMaps()
+                .then((response) => {
+                    this.markers = response.data
+                        .filter((item) => {
+                            const lat = Number(item.latitude);
+                            const lng = Number(item.longitude);
+                            return !isNaN(lat) && !isNaN(lng);
+                        }) // Filtra itens sem latitude ou longitude válidas
+                        .map((item) => {
+                            return {
+                                options: {
+                                    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+                                    title: `${item.nome_completo}`,
+                                    // icon: {
+                                    //     url: `/images/marker_50_50.png`,
+                                    //     title: `${item.endereco}`
+                                    // },
+                                    // label: {
+                                    //     text: `${item.nome_completo}`,
+                                    //     className: 'py-2 px-2  mt-8 w-25rem h-auto flex-wrap white-space-normal'
+                                    // }
+                                }
+                            };
+                        });
+
+                    console.log(this.markers);
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -189,6 +212,7 @@ export default {
     mounted() {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
         this.getLog();
+        this.getClientes();
     }
 };
 </script>
@@ -226,7 +250,7 @@ export default {
                     <GoogleMap :api-key="mapKey.trim()" :zoom="zoom" :center="center" @click="onMapClick" style="width: 100%; height: 500px">
                         <Marker :options="markerOptions"></Marker>
 
-                        <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options"></Marker>
+                        <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options" :title="marker.title"></Marker>
                     </GoogleMap>
                 </div>
             </div>
