@@ -253,7 +253,9 @@ class UsuarioController extends Controller
                 if ($dados['permissao']) {
                     // Obter o grupo
                     $t = $EditUser->getGroupByEmpresaId($request->header('company-id'));
-                    $t->users()->detach($EditUser->id);
+                    if ($t) {
+                        $t->users()->detach($EditUser->id);
+                    }
 
                     $group = Permgroup::findOrFail($dados['permissao']['id']);
                     $group->users()->attach($EditUser->id);
