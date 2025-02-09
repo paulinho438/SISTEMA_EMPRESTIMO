@@ -245,35 +245,13 @@ class ClientController extends Controller
     public function mapaRotaConsultor(Request $request)
     {
         $dados = $request->all();
+        $data = Carbon::parse($dados['data'])->toDateString(); // Converte a data para o formato YYYY-MM-DD
 
-        return response()->json($dados);
+        $user = User::find($dados['consultor']);
 
-        // Obtém o usuário autenticado
-        $user = auth()->user();
+        $localizacoes = $user->locations()->whereDate('created_at', $data)->get();
 
-        // Obtém os IDs das empresas às quais o usuário pertence
-        $companyIds = $user->companies->pluck('id')->toArray();
-
-        // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get();
-        $users = User::whereHas('groups', function ($query) {
-            $query->where('name', 'Consultor');
-        })
-            ->whereHas('companies', function ($query) use ($companyIds) {
-                $query->whereIn('id', $companyIds);
-            })
-            ->get();
-
-        $lastLocations = $users->map(function ($user) {
-            $location = $user->locations()->latest('id')->first();
-            return [
-                'user_id' => $user->id,
-                'user_name' => $user->nome_completo,
-                'latitude' => $location ? $location->latitude : null,
-                'longitude' => $location ? $location->longitude : null
-            ];
-        });
-
-        return response()->json($lastLocations);
+        return response()->json($localizacoes);
     }
 
     public function all(Request $request)
