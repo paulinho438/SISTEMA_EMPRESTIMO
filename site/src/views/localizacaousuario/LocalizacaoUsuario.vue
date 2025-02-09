@@ -6,7 +6,7 @@ import LogService from '@/service/LogService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
 
-import { GoogleMap, Marker } from 'vue3-google-map';
+import { GoogleMap, Marker, Polyline } from 'vue3-google-map';
 
 export default {
     name: 'localizacaousuarioList',
@@ -21,7 +21,8 @@ export default {
     },
     components: {
         GoogleMap,
-        Marker
+        Marker,
+        Polyline
     },
     computed: {
         markerOptions() {
@@ -58,14 +59,36 @@ export default {
             markers: [],
             consultoresMarkers: [],
             consultores: [],
+            rotaconsultor: [],
+            directions: null,
+            directionsRenderer: null,
+            flightPlanCoordinates: [
+                { lat: 37.772, lng: -122.214 },
+                { lat: 21.291, lng: -157.821 },
+                { lat: -18.142, lng: 178.431 },
+                { lat: -27.467, lng: 153.027 }
+            ],
+            flightPath: {
+                path: [],
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 2
+            },
+            route: [
+                { lat: -23.55052, lng: -46.633308 }, // Ponto A
+                { lat: -23.55152, lng: -46.634308 }, // Ponto B
+                { lat: -23.55252, lng: -46.635308 } // Ponto C
+            ],
+            map: null, // Referência ao mapa
+            polyline: null, // Referência à linha
             atrasadasOptions: [
                 { label: 'Todos', value: 'todos' },
                 { label: 'Azul', value: 'azul' },
                 { label: 'Verde', value: 'verde' },
                 { label: 'Amarelo', value: 'amarelo' },
                 { label: 'Vermelho', value: 'vermelho' },
-                { label: 'Todos os atrasados', value: 'todos_atrasados' },
-                
+                { label: 'Todos os atrasados', value: 'todos_atrasados' }
             ],
             iconMapping: {
                 0: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
@@ -95,6 +118,23 @@ export default {
         };
     },
     methods: {
+        drawPolyline() {
+            if (this.map && this.route.length > 1) {
+                this.polyline = new google.maps.Polyline({
+                    path: this.route,
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 4
+                });
+
+                this.polyline.setMap(this.map);
+            }
+        },
+        onMapLoad(map) {
+            this.map = map;
+            this.drawPolyline();
+        },
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
         },
@@ -130,7 +170,7 @@ export default {
                     this.loading = false;
                 });
         },
-        
+
         getClientes() {
             this.loading = true;
 
@@ -198,26 +238,25 @@ export default {
                 .getAllConsultorMaps()
                 .then((response) => {
                     this.consultores = response.data;
-                    this.consultoresMarkers = response.data
-                        .map((item) => {
-                            const iconUrl = this.getIconUrl(0);
 
-                            return {
-                                options: {
-                                    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                    title: `${item.user_name}`,
-                                    icon: {
-                                        url: `/images/marker_50_50.png`,
-                                        scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
-                                    },
-                                    label: {
-                                        text: `${item.user_name}`,
-                                        className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
-                                    }
+                    this.consultoresMarkers = response.data.map((item) => {
+                        const iconUrl = this.getIconUrl(0);
+
+                        return {
+                            options: {
+                                position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+                                title: `${item.user_name}`,
+                                icon: {
+                                    url: `/images/marker_50_50.png`,
+                                    scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                },
+                                label: {
+                                    text: `${item.user_name}`,
+                                    className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
                                 }
-                            };
-                        });
-
+                            }
+                        };
+                    });
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -241,27 +280,20 @@ export default {
             this.logService
                 .getRotaConsultor(data)
                 .then((response) => {
-                    this.consultores = response.data;
-                    this.consultoresMarkers = response.data
-                        .map((item) => {
-                            const iconUrl = this.getIconUrl(0);
+                    this.rotaconsultor = response.data;
 
-                            return {
-                                options: {
-                                    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                    title: `${item.user_name}`,
-                                    icon: {
-                                        url: `/images/marker_50_50.png`,
-                                        scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
-                                    },
-                                    label: {
-                                        text: `${item.user_name}`,
-                                        className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
-                                    }
-                                }
-                            };
-                        });
+                    let locations = this.rotaconsultor.filter((location) => location.latitude && location.longitude);
 
+                    this.flightPath = {
+                        path: locations.map((location) => ({
+                            lat: Number(location.latitude),
+                            lng: Number(location.longitude)
+                        })),
+                        geodesic: true,
+                        strokeColor: '#FF0000',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 2
+                    };
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -274,8 +306,53 @@ export default {
                     this.loading = false;
                 });
         },
+        calculateRoute() {
+            const directionsService = new google.maps.DirectionsService();
+            const waypoints = this.rotaconsultor
+                .filter((location) => location.latitude && location.longitude)
+                .map((location) => ({
+                    location: new google.maps.LatLng(location.latitude, location.longitude),
+                    stopover: true
+                }));
+
+            if (waypoints.length < 2) {
+                this.toast.add({
+                    severity: ToastSeverity.WARN,
+                    detail: 'É necessário pelo menos dois pontos para calcular a rota',
+                    life: 3000
+                });
+                return;
+            }
+
+            const origin = waypoints.shift().location;
+            const destination = waypoints.pop().location;
+
+            directionsService.route(
+                {
+                    origin: origin,
+                    destination: destination,
+                    waypoints: waypoints,
+                    travelMode: google.maps.TravelMode.DRIVING
+                },
+                (result, status) => {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        if (!this.directionsRenderer) {
+                            this.directionsRenderer = new google.maps.DirectionsRenderer();
+                            this.directionsRenderer.setMap(this.$refs.mapRef.$mapObject);
+                        }
+                        this.directionsRenderer.setDirections(result);
+                    } else {
+                        this.toast.add({
+                            severity: ToastSeverity.ERROR,
+                            detail: 'Não foi possível calcular a rota',
+                            life: 3000
+                        });
+                    }
+                }
+            );
+        },
         busca() {
-            if(this.form.consultor != null){
+            if (this.form.consultor != null) {
                 this.getRotaConsultor();
             }
             this.getClientes();
@@ -413,13 +490,13 @@ export default {
                     </div>
                 </div>
                 <div class="mt-3">
-                    <GoogleMap :api-key="mapKey.trim()" :zoom="zoom" :center="center" @click="onMapClick" style="width: 100%; height: 500px">
+                    <GoogleMap ref="mapRef" :api-key="mapKey.trim()" :zoom="zoom" :center="center" @click="onMapClick" @load="onMapLoad" style="width: 100%; height: 500px">
                         <Marker :options="markerOptions"></Marker>
                         <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options" :title="marker.title"></Marker>
 
-                        <Marker v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
+                        <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
+                        <Polyline :options="flightPath" />
                     </GoogleMap>
-                    
                 </div>
             </div>
         </div>
