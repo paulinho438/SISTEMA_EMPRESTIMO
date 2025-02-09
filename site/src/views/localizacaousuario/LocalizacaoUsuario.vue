@@ -57,6 +57,7 @@ export default {
             valorPago: ref(0),
             markers: [],
             consultoresMarkers: [],
+            consultores: [],
             atrasadasOptions: [
                 { label: 'Todos', value: 'todos' },
                 { label: 'Azul', value: 'azul' },
@@ -196,6 +197,51 @@ export default {
             this.logService
                 .getAllConsultorMaps()
                 .then((response) => {
+                    this.consultores = response.data;
+                    this.consultoresMarkers = response.data
+                        .map((item) => {
+                            const iconUrl = this.getIconUrl(0);
+
+                            return {
+                                options: {
+                                    position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+                                    title: `${item.user_name}`,
+                                    icon: {
+                                        url: `/images/marker_50_50.png`,
+                                        scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                    },
+                                    label: {
+                                        text: `${item.user_name}`,
+                                        className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
+                                    }
+                                }
+                            };
+                        });
+
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        getRotaConsultor() {
+            this.loading = true;
+
+            let data = {
+                consultor: this.form.consultor,
+                data: this.form.dt_inicio
+            };
+
+            this.logService
+                .getRotaConsultor(data)
+                .then((response) => {
+                    this.consultores = response.data;
                     this.consultoresMarkers = response.data
                         .map((item) => {
                             const iconUrl = this.getIconUrl(0);
@@ -229,6 +275,9 @@ export default {
                 });
         },
         busca() {
+            if(this.form.consultor != null){
+                this.getRotaConsultor();
+            }
             this.getClientes();
         },
         setLastWeekDates() {
@@ -341,14 +390,20 @@ export default {
                 <div class="grid">
                     <div class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
-                            <label for="username">Data Inicio</label>
-                            <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'" v-model="form.dt_inicio" showIcon :showOnFocus="false" class="" />
+                            <label for="username">Data</label>
+                            <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data'" v-model="form.dt_inicio" showIcon :showOnFocus="false" class="" />
                         </div>
                     </div>
                     <div class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="username">Atrasadas</label>
                             <Dropdown v-model="form.atrasadas" :options="atrasadasOptions" optionLabel="label" optionValue="value" placeholder="Selecione uma cor" />
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-2">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <label for="consultor">Consultor</label>
+                            <Dropdown v-model="form.consultor" :options="consultores" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um consultor" />
                         </div>
                     </div>
                     <div class="col-12 md:col-2">
