@@ -72,8 +72,12 @@ class ClientController extends Controller
                             ->orWhereDate('dt_ult_cobranca', '!=', $today);
                     }
                 })
-                ->where(function ($query) use ($companyIds) {
-                    $query->whereIn('emprestimos.company_id', $companyIds); // Especifica a tabela emprestimos
+                ->where(function ($query) use ($request, $companyIds) {
+                    if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+                        $query->where('emprestimos.company_id', $request->header('company-id'));
+                    }else{
+                        $query->whereIn('emprestimos.company_id', $companyIds); // Especifica a tabela emprestimos
+                    }
                 })
                 ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
                 ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
