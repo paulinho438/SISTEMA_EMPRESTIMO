@@ -57,6 +57,9 @@ class ClientController extends Controller
         // Obtém os IDs das empresas às quais o usuário pertence
         $companyIds = $user->companies->pluck('id')->toArray();
 
+        var_dump($companyIds);
+        die();
+
         $clientes = Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
             ->where(function ($query) use ($request) {
