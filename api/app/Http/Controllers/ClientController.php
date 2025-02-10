@@ -57,8 +57,6 @@ class ClientController extends Controller
         // Obtém os IDs das empresas às quais o usuário pertence
         $companyIds = $user->companies->pluck('id')->toArray();
 
-        var_dump(auth()->user()->getGroupNameByEmpresaId($request->header('company-id')));
-        die();
 
         $clientes = Parcela::where('dt_baixa', null)
             ->where('valor_recebido', null)
@@ -83,7 +81,7 @@ class ClientController extends Controller
             })
 
             ->where(function ($query) use ($request) {
-                if (!auth()->user()->getGroupNameByEmpresaId(empresaId: $request->header('company-id')) == 'Consultor') {
+                if (auth()->user()->getGroupNameByEmpresaId(empresaId: $request->header('company-id')) != 'Consultor') {
                     $query->where('company_id',  $request->header('company-id'));
                 }
             })
