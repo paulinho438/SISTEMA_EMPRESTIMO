@@ -81,7 +81,7 @@ class ClientController extends Controller
 
             ->where(function ($query) use ($request, $companyIds) {
                 $groupName = auth()->user()->getGroupNameByEmpresaId($request->header('company-id'));
-                if ($groupName != 'Consultor') {
+                if ($groupName == 'Consultor') {
                     $query->whereIn('company_id', $companyIds);
                 }
             })
