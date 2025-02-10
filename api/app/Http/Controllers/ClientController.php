@@ -79,8 +79,8 @@ class ClientController extends Controller
                 }
             })
 
-            ->where(function ($query) use ($companyIds) {
-                    $query->whereIn('company_id', $companyIds);
+            ->whereHas('emprestimos', function ($query) use ($companyIds) {
+                $query->whereIn('company_id', $companyIds);
             })
 
 
