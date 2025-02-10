@@ -73,7 +73,7 @@ class ClientController extends Controller
                     }
                 })
                 ->where(function ($query) use ($companyIds) {
-                    $query->whereIn('company_id', $companyIds);
+                    $query->whereIn('emprestimos.company_id', $companyIds); // Especifica a tabela emprestimos
                 })
                 ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
                 ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
