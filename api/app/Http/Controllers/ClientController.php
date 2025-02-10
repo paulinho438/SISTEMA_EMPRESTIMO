@@ -79,7 +79,7 @@ class ClientController extends Controller
                 }
             })
 
-            ->where(function ($query) use ($request, $companyIds) {
+            ->where(function ($query) use ($companyIds) {
                     $query->whereIn('company_id', $companyIds);
             })
 
