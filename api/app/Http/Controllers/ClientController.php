@@ -73,16 +73,15 @@ class ClientController extends Controller
                 }
             })
 
-            ->where(function ($query) use ($request) {
-                if (auth()->user()->getGroupNameByEmpresaId(empresaId: $request->header('company-id')) == 'Consultor') {
-                    $query->where('company_id',  $request->header('company-id'));
-                }
-            })
+            // ->where(function ($query) use ($request) {
+            //     if (auth()->user()->getGroupNameByEmpresaId(empresaId: $request->header('company-id')) == 'Consultor') {
+            //         $query->where('company_id',  $request->header('company-id'));
+            //     }
+            // })
 
-            ->whereHas('emprestimos', function ($query) use ($companyIds) {
-                $query->whereIn('company_id', $companyIds);
+            ->where(function ($query) use ($companyIds) {
+                $query->whereIn('company_id',  $companyIds);
             })
-
 
 
             ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
