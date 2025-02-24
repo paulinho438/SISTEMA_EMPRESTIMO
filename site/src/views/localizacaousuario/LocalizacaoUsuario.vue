@@ -1,10 +1,12 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { latLng } from 'leaflet';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import LogService from '@/service/LogService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
+import ExternoService from '@/service/ExternoService';
 
 import { GoogleMap, Marker, Polyline } from 'vue3-google-map';
 
@@ -16,7 +18,8 @@ export default {
             permissionsService: new PermissionsService(),
             router: useRouter(),
             icons: PrimeIcons,
-            toast: useToast()
+            toast: useToast(),
+			externoService: new ExternoService(),
         };
     },
     components: {
@@ -30,10 +33,10 @@ export default {
                 position: this.center,
                 icon: {
                     url: `/images/marker_50_50.png`,
-                    title: `${this.occurrence?.address} ${this.occurrence?.number}`
+                    title: this.textoReferencia,
                 },
                 label: {
-                    text: `Empresa Age Controle`,
+                    text: this.textoReferencia,
                     className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
                 }
             };
@@ -49,6 +52,8 @@ export default {
             center: ref({ lat: -16.6699897, lng: -49.2898949 }),
             loading: ref(false),
             filters: ref(null),
+            occurrence: ref({}),
+            textoReferencia: `Empresa Age Controle`,
             form: ref({
                 dt_inicio: null,
                 dt_final: null,
@@ -90,6 +95,7 @@ export default {
                 { label: 'Vermelho', value: 'vermelho' },
                 { label: 'Todos os atrasados', value: 'todos_atrasados' }
             ],
+            cep: null,
             iconMapping: {
                 0: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
                 1: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
@@ -119,10 +125,18 @@ export default {
         };
     },
     methods: {
+        setCenter() {
+			if (this.occurrence?.latitude != '') {
+				this.center = latLng(this.occurrence.latitude, this.occurrence.longitude);
+                this.textoReferencia = 'Ponto de Pesquisa.';
+                this.stopFetchingConsultores();
+                this.markers = [];
+			}
+		},
         startFetchingConsultores() {
             this.intervalId = setInterval(() => {
                 this.getConsultores();
-            }, 5000); // 5000 ms = 5 segundos
+            }, 10000); // 5000 ms = 5 segundos
         },
         stopFetchingConsultores() {
             if (this.intervalId) {
@@ -464,7 +478,39 @@ export default {
         this.getLog();
         this.getClientes();
         this.startFetchingConsultores();
-    }
+    },
+    watch: {
+		cep(cepVemDoFormulario) {
+            console.log('cep', cepVemDoFormulario)
+			if (cepVemDoFormulario == "") {
+				return;
+			}
+
+			if (cepVemDoFormulario.substr(8) != "_") {
+				this.occurrence.cep = cepVemDoFormulario;
+
+				this.externoService.getEndereco(cepVemDoFormulario).then((data) => {
+					this.occurrence.address = data.logradouro;
+					this.occurrence.neighborhood = data.bairro;
+					this.occurrence.city = data.localidade;
+					this.occurrence.number = '';
+					this.occurrence.complement = '';
+				});
+
+				this.externoService.getLatLong(cepVemDoFormulario).then((data) => {
+					if (data.status == "OK") {
+
+						this.occurrence.latitude 	= data.results[0].geometry.viewport.northeast.lat;
+						this.occurrence.longitude 	= data.results[0].geometry.viewport.northeast.lng;
+
+						this.setCenter()
+
+					}
+				});
+			}
+		},
+		
+	}
 };
 </script>
 
@@ -495,6 +541,12 @@ export default {
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="consultor">Consultor</label>
                             <Dropdown v-model="form.consultor" :options="consultores" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um consultor" />
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-2">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <label for="consultor">CEP</label>
+                            <InputMask id="inputmask" mask="99999-999" :modelValue="occurrence?.cep" v-model.trim="cep" ></InputMask>
                         </div>
                     </div>
                     <div class="col-12 md:col-2">
