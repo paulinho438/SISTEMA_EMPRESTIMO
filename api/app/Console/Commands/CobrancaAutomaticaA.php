@@ -105,7 +105,7 @@ class CobrancaAutomaticaA extends Command
 
 Relatório de Parcelas Pendentes:
 
-Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
+Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
