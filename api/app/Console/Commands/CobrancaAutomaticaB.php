@@ -90,7 +90,7 @@ class CobrancaAutomaticaB extends Command
 
 🤷‍♂️ Não identificamos seu pagamento na data de hoje, evite multas!
 
-Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
+Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 

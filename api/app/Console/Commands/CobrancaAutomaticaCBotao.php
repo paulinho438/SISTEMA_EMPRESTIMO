@@ -92,7 +92,7 @@ class CobrancaAutomaticaCBotao extends Command
 
 🤷‍♂️ Última chamada, Ainda não identificamos seu pagamento na data de hoje, será aplicado multas e entrará na rota de cobrança!
 
-Segue abaixo link para pagamento parcela diária e acesso todo o histórico de parcelas:
+Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
