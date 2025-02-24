@@ -114,10 +114,22 @@ export default {
                 20: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
                 21: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
                 // Adicione mais mapeamentos conforme necessário
-            }
+            },
+            intervalId: null
         };
     },
     methods: {
+        startFetchingConsultores() {
+            this.intervalId = setInterval(() => {
+                this.getConsultores();
+            }, 5000); // 5000 ms = 5 segundos
+        },
+        stopFetchingConsultores() {
+            if (this.intervalId) {
+                clearInterval(this.intervalId);
+                this.intervalId = null;
+            }
+        },
         drawPolyline() {
             if (this.map && this.route.length > 1) {
                 this.polyline = new google.maps.Polyline({
@@ -237,7 +249,8 @@ export default {
             this.logService
                 .getAllConsultorMaps()
                 .then((response) => {
-                    this.consultores = response.data;
+                    this.consultores = response.data.filter(item => item.latitude && item.longitude);
+
 
                     this.consultoresMarkers = response.data.map((item) => {
                         const iconUrl = this.getIconUrl(0);
@@ -353,6 +366,7 @@ export default {
         },
         busca() {
             if (this.form.consultor != null) {
+                this.stopFetchingConsultores();
                 this.getRotaConsultor();
             }
             this.getClientes();
@@ -449,7 +463,7 @@ export default {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
         this.getLog();
         this.getClientes();
-        this.getConsultores();
+        this.startFetchingConsultores();
     }
 };
 </script>
