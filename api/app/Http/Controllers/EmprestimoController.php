@@ -2040,19 +2040,18 @@ class EmprestimoController extends Controller
 
                         // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        if ($proximaParcela->emprestimo->quitacao->chave_pix) {
+                        if ($parcela->emprestimo->quitacao->chave_pix) {
 
-                            $proximaParcela->emprestimo->quitacao->valor = $proximaParcela->emprestimo->parcelas[0]->totalPendente();
-                            $proximaParcela->emprestimo->quitacao->saldo = $proximaParcela->emprestimo->parcelas[0]->totalPendente();
+                            $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                            $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
+                            $parcela->emprestimo->quitacao->save();
 
-                            $proximaParcela->emprestimo->quitacao->save();
-
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->proximaParcelas->totalPendente(), $proximaParcela->emprestimo->banco->document);
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
 
                             if ($response->successful()) {
-                                $proximaParcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                $proximaParcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                $proximaParcela->emprestimo->quitacao->save();
+                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->emprestimo->quitacao->save();
                             }
                         }
 
