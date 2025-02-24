@@ -2042,11 +2042,11 @@ class EmprestimoController extends Controller
 
                         if ($proximaParcela->emprestimo->quitacao->chave_pix) {
 
-                            $proximaParcela->emprestimo->quitacao->valor = $proximaParcela->emprestimo->proximaParcelas[0]->totalPendente();
-                            $proximaParcela->emprestimo->quitacao->saldo = $proximaParcela->emprestimo->proximaParcelas[0]->totalPendente();
+                            $proximaParcela->emprestimo->quitacao->valor = $proximaParcela->emprestimo->proximaParcelas->totalPendente();
+                            $proximaParcela->emprestimo->quitacao->saldo = $proximaParcela->emprestimo->proximaParcelas->totalPendente();
                             $proximaParcela->emprestimo->quitacao->save();
 
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->proximaParcelas[0]->totalPendente(), $proximaParcela->emprestimo->banco->document);
+                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->proximaParcelas->totalPendente(), $proximaParcela->emprestimo->banco->document);
 
                             if ($response->successful()) {
                                 $proximaParcela->emprestimo->quitacao->identificador = $response->json()['txid'];
