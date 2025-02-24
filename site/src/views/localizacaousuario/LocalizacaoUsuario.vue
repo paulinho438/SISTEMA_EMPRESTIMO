@@ -54,6 +54,7 @@ export default {
             filters: ref(null),
             occurrence: ref({}),
             textoReferencia: `Empresa Age Controle`,
+            passos: 0,
             form: ref({
                 dt_inicio: null,
                 dt_final: null,
@@ -244,7 +245,7 @@ export default {
                             };
                         });
 
-                    console.log(this.markers);
+                    this.passos++;
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -284,6 +285,7 @@ export default {
                             }
                         };
                     });
+                    this.passos++;
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -379,6 +381,7 @@ export default {
             );
         },
         busca() {
+            this.passos = 0;
             if (this.form.consultor != null) {
                 this.stopFetchingConsultores();
                 this.getRotaConsultor();
@@ -543,7 +546,7 @@ export default {
                             <Dropdown v-model="form.consultor" :options="consultores" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um consultor" />
                         </div>
                     </div>
-                    <div class="col-12 md:col-2">
+                    <div v-if="passos >= 2" class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="consultor">CEP</label>
                             <InputMask id="inputmask" mask="99999-999" :modelValue="occurrence?.cep" v-model.trim="cep" ></InputMask>
