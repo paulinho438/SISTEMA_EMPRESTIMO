@@ -71,9 +71,16 @@ class ClientController extends Controller
                             ->orWhereDate('dt_ult_cobranca', '!=', $today);
                     }
                 })
-
+                ->where(function ($query) use ($request, $companyIds) {
+                    if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
+                        $query->whereIn('emprestimos.company_id', $companyIds);
+                    } else {
+                        $query->where('emprestimos.company_id', $request->header('company-id'));
+                    }
+                })
                 ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
                 ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
+                ->join('companies', 'emprestimos.company_id', '=', 'companies.id')
                 ->join('address', function ($join) {
                     $join->on('clients.id', '=', 'address.client_id')
                         ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
@@ -82,14 +89,9 @@ class ClientController extends Controller
                 parcelas.*,
                 clients.nome_completo AS nome_completo,
                 clients.telefone_celular_1 AS telefone_celular_1,
-                CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
+                CONCAT('Empresa ',companies.company, ' - ', address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
                 address.latitude,
                 address.longitude,
-                (6371 * acos(
-                    cos(radians(?)) * cos(radians(address.latitude))
-                    * cos(radians(address.longitude) - radians(?))
-                    + sin(radians(?)) * sin(radians(address.latitude))
-                ) / 1000) AS distance,
                 (SELECT SUM(valor) FROM movimentacaofinanceira WHERE movimentacaofinanceira.parcela_id IN (SELECT id FROM parcelas WHERE emprestimo_id = emprestimos.id)) AS total_pago_emprestimo,
                 (SELECT SUM(saldo) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NULL) AS total_pendente
             ", [$latitude, $longitude, $latitude])
