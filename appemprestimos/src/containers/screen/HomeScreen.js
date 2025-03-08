@@ -109,7 +109,7 @@ export default function HomeScreen({navigation}) {
       startOnBoot: true,        // <-- Auto start tracking when device is powered-up.
       // HTTP / SQLite config
       url: 'https://api.agecontrole.com.br/api/informar_localizacao_app',
-      batchSync: true,       // <-- [Default: false] Set true to sync locations to server in a single HTTP request.
+      batchSync: false,       // <-- [Default: false] Set true to sync locations to server in a single HTTP request.
       autoSync: true,         // <-- [Default: true] Set true to sync each location to server as it arrives.
       params: {
         user_id: userReq.id,
