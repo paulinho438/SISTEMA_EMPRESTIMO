@@ -220,20 +220,29 @@ class UsuarioController extends Controller
 
         $dados = $request->all();
 
-        $userLocation = [];
-
-        foreach($dados['location'] as $location){
-            $userLocation[] = UserLocation::create([
-                'user_id' => $dados['user_id'],
-                'latitude' => $location['coords']['latitude'],
-                'longitude' => $location['coords']['longitude'],
-                'company_id' => $dados['company_id']
-            ]);
-        }
+        $userLocation = UserLocation::create([
+            'user_id' => $dados['user_id'],
+            'latitude' => $dados['location']['coords']['latitude'],
+            'longitude' => $dados['location']['coords']['longitude'],
+            'company_id' => $dados['company_id']
+        ]);
 
         $array['data'] = $userLocation;
 
         return response()->json($array, Response::HTTP_OK);
+
+        // $userLocation = [];
+
+        // foreach($dados['location'] as $location){
+        //     $userLocation[] = UserLocation::create([
+        //         'user_id' => $dados['user_id'],
+        //         'latitude' => $location['coords']['latitude'],
+        //         'longitude' => $location['coords']['longitude'],
+        //         'company_id' => $dados['company_id']
+        //     ]);
+        // }
+
+        // $array['data'] = $userLocation;
     }
 
     public function update(Request $request, $id)
