@@ -328,22 +328,24 @@ class EmprestimoController extends Controller
 
         if ($dados['banco']['wallet'] == 1) {
 
-            $quitacao = [];
-            $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
-            $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
-            $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
+            if (count($emprestimoAdd->parcelas) > 1) {
+                $quitacao = [];
+                $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+                $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
+                $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
 
-            //API COBRANCA B.CODEX
-            // $response = $this->bcodexService->criarCobranca(
-            //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
-            // );
+                //API COBRANCA B.CODEX
+                // $response = $this->bcodexService->criarCobranca(
+                //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
+                // );
 
-            // if ($response->successful()) {
-            //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
-            //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
-            // }
+                // if ($response->successful()) {
+                //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
+                //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
+                // }
 
-            Quitacao::create($quitacao);
+                Quitacao::create($quitacao);
+            }
         }
 
         if ($dados['banco']['wallet'] == 1 && count($dados['parcelas']) == 1) {
