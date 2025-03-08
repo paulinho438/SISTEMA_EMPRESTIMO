@@ -55,9 +55,8 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme">
-      <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyDvNypCJVAfgPJ1nmrqZvz25wSbW3JOjUc"/>
+      <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyDvNypCJVAfgPJ1nmrqZvz25wSbW3JOjUc"/>
+      <meta-data android:name="com.transistorsoft.locationmanager.license" android:value="9554a48db23b2c045c1ecc1d3b7110d8fae2c3fa70b04515c78dd92030447185" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

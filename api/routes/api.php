@@ -45,6 +45,9 @@ Route::get('/users', [UserController::class, 'index']);
 Route::get('/users/{id}', [UserController::class, 'id']);
 Route::get('/testarAutomacaoRenovacao', [CompanyController::class, 'testarAutomacaoRenovacao']);
 
+Route::post('/informar_localizacao_app', [UsuarioController::class, 'informarLocalizacaoApp']);
+
+
 
 
 Route::get('/setup-teste', function (Request $request) {

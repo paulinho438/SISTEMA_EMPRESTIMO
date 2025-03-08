@@ -18,6 +18,7 @@ import {useFocusEffect, useRoute} from '@react-navigation/native';
 import BackgroundTimer from 'react-native-background-timer';
 import {PieChart} from 'react-native-svg-charts';
 import {G, Text as SVGText} from 'react-native-svg';
+import BackgroundGeolocation from "react-native-background-geolocation";
 import {
   getAuthCompany,
   getUser,
@@ -52,6 +53,7 @@ export default function HomeScreen({navigation}) {
   const [search, setSearch] = useState('');
   const [permissoesHoje, setPermissoesHoje] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   const [enviandoLocalizacao, setEnviandoLocalizacao] = useState(false);
 
@@ -66,6 +68,73 @@ export default function HomeScreen({navigation}) {
 
     return unsubscribe;
   }, [navigation, route.params?.onNavigateBack]);
+
+  
+
+  useEffect( async () => {
+    console.log('entrou');
+
+    const userReq = await getUser();
+    let authCompany = await getAuthCompany();
+    // 1.  Subscribe to events.
+    const onLocation = BackgroundGeolocation.onLocation((location) => {
+      console.log('[onLocation]', location);
+      informarLocalizacao(location);
+    })
+
+    const onMotionChange = BackgroundGeolocation.onMotionChange((event) => {
+      console.log('[onMotionChange]', event);
+      informarLocalizacao(event);
+    });
+
+    const onActivityChange = BackgroundGeolocation.onActivityChange((event) => {
+      console.log('[onActivityChange]', event);
+    })
+
+    const onProviderChange = BackgroundGeolocation.onProviderChange((event) => {
+      console.log('[onProviderChange]', event);
+    })
+
+    /// 2. ready the plugin.
+    BackgroundGeolocation.ready({
+      // Geolocation Config
+      desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+      distanceFilter: 5,
+      // Activity Recognition
+      stopTimeout: 5,
+      // Application config
+      debug: false, // <-- enable this hear sounds for background-geolocation life-cycle.
+      logLevel: BackgroundGeolocation.LOG_LEVEL_VERBOSE,
+      stopOnTerminate: true,   // <-- Allow the background-service to continue tracking when user closes the app.
+      startOnBoot: true,        // <-- Auto start tracking when device is powered-up.
+      // HTTP / SQLite config
+      url: 'https://api.agecontrole.com.br/api/informar_localizacao_app',
+      batchSync: true,       // <-- [Default: false] Set true to sync locations to server in a single HTTP request.
+      autoSync: true,         // <-- [Default: true] Set true to sync each location to server as it arrives.
+      params: {
+        user_id: userReq.id,
+        company_id: authCompany?.id
+      }
+    }).then((state) => {
+      console.log("- BackgroundGeolocation is configured and ready: ", state.enabled);
+
+      if (!state.enabled) {
+         BackgroundGeolocation.start(() => {
+            console.log("- Start success");
+         });
+      }
+   }).catch((error) => {
+      console.error("BackgroundGeolocation ready() failed: ", error);
+   });
+
+    return () => {
+      console.log("Cleaning up BackgroundGeolocation events...");
+      if (onLocation) onLocation.remove();
+      if (onMotionChange) onMotionChange.remove();
+      if (onActivityChange) onActivityChange.remove();
+      if (onProviderChange) onProviderChange.remove();
+   };
+  }, []);
 
   // const requestLocationPermission = async () => {
   //   if (Platform.OS === 'ios') {
@@ -195,7 +264,7 @@ export default function HomeScreen({navigation}) {
     if (!watchId) {
       watchId = Geolocation.watchPosition(
         position => {
-          informarLocalizacao(position);
+          // informarLocalizacao(position);
         },
         error => console.log(error),
         {
