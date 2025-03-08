@@ -1903,6 +1903,13 @@ class EmprestimoController extends Controller
                 $pagamento = PagamentoPersonalizado::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
                 if ($pagamento) {
+
+                    $valor1 = $pagamento->emprestimo->pagamentominimo->valor;
+                    $valor2 = $pagamento->emprestimo->pagamentosaldopendente->valor - $pagamento->emprestimo->pagamentominimo->valor;
+
+                    $porcentagem = ($valor1 / $valor2);
+
+
                     $pagamento->dt_baixa = $horario;
                     $pagamento->save();
 
@@ -1928,19 +1935,47 @@ class EmprestimoController extends Controller
                             ->first();
                     }
 
-                    if ($parcela->emprestimo->pagamentosaldopendente && $parcela->emprestimo->pagamentosaldopendente->chave_pix) {
+                    $novoAntigo = $parcela->saldo;
+                    $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
 
-                        $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
+                    $parcela->saldo = $novoValor;
 
-                        $parcela->emprestimo->pagamentosaldopendente->save();
+                    $qtAtrasadas = 1;
+                    $qtAtrasadas += $parcela->atrasadas;
 
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
+                    $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                    $dataFinalCarbon = Carbon::parse($parcela->venc_real);
 
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentosaldopendente->save();
-                        }
+                    $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+
+                    $diferencaEmMeses++;
+
+                    $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                    $parcela->save();
+
+
+                    $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
+
+                    $pagamento->emprestimo->pagamentosaldopendente->save();
+
+                    $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document);
+
+                    if ($response->successful()) {
+                        $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                        $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                        $pagamento->emprestimo->pagamentosaldopendente->save();
+                    }
+
+                    $pagamento->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
+
+                    $pagamento->emprestimo->pagamentominimo->save();
+
+                    $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document);
+
+                    if ($response->successful()) {
+                        $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                        $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                        $pagamento->emprestimo->pagamentominimo->save();
                     }
                 }
             }
