@@ -1952,18 +1952,6 @@ class EmprestimoController extends Controller
                             $pagamento->emprestimo->pagamentosaldopendente->save();
                         }
 
-                        $pagamento->emprestimo->quitacao->valor = $parcela->saldo;
-
-                        $pagamento->emprestimo->quitacao->save();
-
-                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->quitacao->valor, $pagamento->emprestimo->banco->document);
-
-                        if ($response->successful()) {
-                            $pagamento->emprestimo->quitacao->identificador = $response->json()['txid'];
-                            $pagamento->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                            $pagamento->emprestimo->quitacao->save();
-                        }
-
                         $pagamento->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
 
                         $pagamento->emprestimo->pagamentominimo->save();
