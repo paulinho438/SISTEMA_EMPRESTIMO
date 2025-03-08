@@ -6166,6 +6166,18 @@ react-native-actions-sheet@^0.9.2:
   dependencies:
     react-native-safe-area-context "^4.8.2"
 
+react-native-background-fetch@^4.2.7, react-native-background-fetch@~4.2.6:
+  version "4.2.7"
+  resolved "https://registry.yarnpkg.com/react-native-background-fetch/-/react-native-background-fetch-4.2.7.tgz#2c13afa2454d0f01da2b798d0968acf4a6b34373"
+  integrity sha512-lR8MmQRjd7MV9KBSOsyxFRW7jeCjNOSvsT4PECwZv54iZZtxUkRjH8Kbr6SGiSPK1AmYM6TCdRBEt2I9FDZJEg==
+
+react-native-background-geolocation@^4.18.6:
+  version "4.18.6"
+  resolved "https://registry.yarnpkg.com/react-native-background-geolocation/-/react-native-background-geolocation-4.18.6.tgz#56fc8de7a8a893daa1b60cea901be9d4c63027bf"
+  integrity sha512-45wgsO9D6fZxWNB+RMctVOgluTfj5ktCL8mVXapxnLcIlNHoKYVFVxaJj45AcVzPYTHIxsnwn9LP/+gJydkFGA==
+  dependencies:
+    react-native-background-fetch "~4.2.6"
+
 react-native-background-timer@^2.4.1:
   version "2.4.1"
   resolved "https://registry.yarnpkg.com/react-native-background-timer/-/react-native-background-timer-2.4.1.tgz#a3bc1cafa8c1e3aeefd0611de120298b67978a0f"
