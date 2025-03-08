@@ -317,7 +317,7 @@ class BancoController extends Controller
 
 
                 if (count($parcela->emprestimo->parcelas) == 1) {
-                    $valor = $parcela->valor_recebido;
+                    $valor = $parcela->valor_recebido_pix;
                     $valor1 = $parcela->emprestimo->pagamentominimo->valor;
                     $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
 
