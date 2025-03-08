@@ -81,6 +81,7 @@ class ClientController extends Controller
                 })
                 ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
                 ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
+                ->join('companies', 'emprestimos.company_id', '=', 'companies.id')
                 ->join('address', function ($join) {
                     $join->on('clients.id', '=', 'address.client_id')
                         ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
@@ -89,7 +90,7 @@ class ClientController extends Controller
                 parcelas.*,
                 clients.nome_completo AS nome_completo,
                 clients.telefone_celular_1 AS telefone_celular_1,
-                CONCAT(address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
+                CONCAT(companies.company, ' ', address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
                 address.latitude,
                 address.longitude,
                 (6371 * acos(
