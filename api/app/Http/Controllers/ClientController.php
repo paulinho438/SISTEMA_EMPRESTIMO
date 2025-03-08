@@ -81,10 +81,7 @@ class ClientController extends Controller
                 ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
                 ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
                 ->join('companies', 'emprestimos.company_id', '=', 'companies.id')
-                ->join('address', function ($join) {
-                    $join->on('clients.id', '=', 'address.client_id')
-                        ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
-                })
+
 
                 ->get();
 
