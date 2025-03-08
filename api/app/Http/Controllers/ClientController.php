@@ -59,7 +59,6 @@ class ClientController extends Controller
 
         try {
             $clientes = Parcela::where('dt_baixa', null)
-                ->where('valor_recebido', null)
                 ->where(function ($query) use ($request) {
                     if (auth()->user()->getGroupNameByEmpresaId($request->header('company-id')) == 'Consultor') {
                         $query->where('atrasadas', '>', 0);
