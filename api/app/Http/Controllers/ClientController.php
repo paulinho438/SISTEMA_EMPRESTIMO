@@ -90,7 +90,7 @@ class ClientController extends Controller
                 parcelas.*,
                 clients.nome_completo AS nome_completo,
                 clients.telefone_celular_1 AS telefone_celular_1,
-                CONCAT(companies.company, ' ', address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
+                CONCAT('Empresa ',companies.company, ' - ', address.address, ' ', address.neighborhood, ' ' ,address.complement, ' ', address.city, ' ', address.complement ) AS endereco,
                 address.latitude,
                 address.longitude,
                 (6371 * acos(
