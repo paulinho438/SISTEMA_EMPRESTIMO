@@ -86,8 +86,7 @@ class ClientController extends Controller
                         ->whereRaw('address.id = (SELECT MIN(id) FROM address WHERE address.client_id = clients.id)');
                 })
 
-                ->get()
-                ->unique('emprestimo_id');
+                ->get();
 
             // Log para verificar se a consulta retornou resultados
             Log::info('Consulta executada com sucesso', ['clientes' => $clientes]);
