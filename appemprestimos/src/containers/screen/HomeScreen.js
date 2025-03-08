@@ -105,7 +105,7 @@ export default function HomeScreen({navigation}) {
       // Application config
       debug: false, // <-- enable this hear sounds for background-geolocation life-cycle.
       logLevel: BackgroundGeolocation.LOG_LEVEL_VERBOSE,
-      stopOnTerminate: true,   // <-- Allow the background-service to continue tracking when user closes the app.
+      stopOnTerminate: false,   // <-- Allow the background-service to continue tracking when user closes the app.
       startOnBoot: true,        // <-- Auto start tracking when device is powered-up.
       // HTTP / SQLite config
       url: 'https://api.agecontrole.com.br/api/informar_localizacao_app',

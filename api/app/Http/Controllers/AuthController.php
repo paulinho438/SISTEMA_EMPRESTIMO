@@ -164,25 +164,9 @@ class AuthController extends Controller
             ]);
 
             if(!$token){
-                $tentativas = 0;
-
-                $validTentativas = User::where('login', $request->usuario)->first();
-                if($validTentativas){
-                    $tentativas = ++$validTentativas->tentativas;
-                    $validTentativas->tentativas = $tentativas;
-                    $validTentativas->save();
-
-                    return response()->json([
-                        "message" => $tentativas
-                    ], Response::HTTP_FORBIDDEN);
-
-                }else{
-                    return response()->json([
-                        "message" => "Seus dados estão incorretos!"
-                    ], Response::HTTP_FORBIDDEN);
-                }
-
-
+                return response()->json([
+                    "message" => "Seus dados estão incorretos!"
+                ], Response::HTTP_FORBIDDEN);
             }
 
             $array['token'] = $token;
