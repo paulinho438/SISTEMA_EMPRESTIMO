@@ -315,60 +315,52 @@ class BancoController extends Controller
             foreach ($parcelas as $parcela) {
                 $valor = $parcela->valor_recebido_pix;
 
+
                 if (count($parcela->emprestimo->parcelas) == 1) {
-                    // MOVIMENTACAO FINANCEIRA
-                    $movimentacaoFinanceira = [];
-                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                    $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Pagamento da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
-                    $movimentacaoFinanceira['tipomov'] = 'E';
-                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                    $movimentacaoFinanceira['valor'] = $parcela->valor_recebido_pix;
-                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+                    $valor = $parcela->valor_recebido;
+                    $valor1 = $parcela->emprestimo->pagamentominimo->valor;
+                    $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
 
-                    $pagamentoMinimo = $parcela->emprestimo->juros * $parcela->emprestimo->valor / 100;
+                    $porcentagem = ($valor1 / $valor2);
 
-                    if ($valor >= $pagamentoMinimo) {
-                        // Quitar a parcela atual
+                    $parcela->saldo -= $valor;
+                    $parcela->save();
+
+                    if ($parcela->saldo != 0) {
+
+
+                        $novoAntigo = $parcela->saldo;
+                        $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
+
+                        $parcela->saldo = $novoValor;
+
+                        $qtAtrasadas = 1;
+                        $qtAtrasadas += $parcela->atrasadas;
+
                         $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                         $dataFinalCarbon = Carbon::parse($parcela->venc_real);
 
                         $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+
                         $diferencaEmMeses++;
+
                         $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
-                    }
-
-                    $parcela->saldo -= $valor;
-                    $parcela->valor_recebido_pix = 0;
-
-                    $parcela->save();
-
-                    if ($valor >= $pagamentoMinimo) {
-                        $parcela->emprestimo->valor = $parcela->saldo;
-                        $parcela->emprestimo->save();
-
-                        $novoValorParcela = $parcela->emprestimo->juros * $parcela->emprestimo->valor / 100;
-
-                        $parcela->saldo += $novoValorParcela;
                         $parcela->save();
-                    }
 
-                    if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
-                        $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+                        $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
+
+                        $parcela->emprestimo->pagamentosaldopendente->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
-                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
-                            $parcela->emprestimo->quitacao->save();
+                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentosaldopendente->save();
                         }
-                    }
 
-                    if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix) {
-
-                        $parcela->emprestimo->pagamentominimo->valor =  $parcela->emprestimo->juros * $parcela->totalPendente() / 100;
+                        $parcela->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
 
                         $parcela->emprestimo->pagamentominimo->save();
 
@@ -380,6 +372,7 @@ class BancoController extends Controller
                             $parcela->emprestimo->pagamentominimo->save();
                         }
                     }
+
                 } else {
 
 
