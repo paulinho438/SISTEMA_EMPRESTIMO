@@ -1915,67 +1915,54 @@ class EmprestimoController extends Controller
 
                     $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
 
-                    while ($parcela && $valor > 0) {
-                        if ($valor >= $parcela->saldo) {
-                            // Quitar a parcela atual
-                            $valor -= $parcela->saldo;
-                            $parcela->saldo = 0;
-                            $parcela->dt_baixa = $horario;
-                        } else {
-                            // Reduzir o saldo da parcela atual
-                            $parcela->saldo -= $valor;
-                            $valor = 0;
-                        }
-                        $parcela->save();
-
-                        // Encontrar a próxima parcela
-                        $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                            ->where('id', '>', $parcela->id)
-                            ->orderBy('id', 'asc')
-                            ->first();
-                    }
-
-                    $novoAntigo = $parcela->saldo;
-                    $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
-
-                    $parcela->saldo = $novoValor;
-
-                    $qtAtrasadas = 1;
-                    $qtAtrasadas += $parcela->atrasadas;
-
-                    $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
-                    $dataFinalCarbon = Carbon::parse($parcela->venc_real);
-
-                    $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
-
-                    $diferencaEmMeses++;
-
-                    $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                    $parcela->saldo -= $valor;
                     $parcela->save();
 
+                    if ($parcela->saldo != 0) {
 
-                    $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
-                    $pagamento->emprestimo->pagamentosaldopendente->save();
+                        $novoAntigo = $parcela->saldo;
+                        $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
 
-                    $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document);
+                        $parcela->saldo = $novoValor;
 
-                    if ($response->successful()) {
-                        $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                        $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                        $qtAtrasadas = 1;
+                        $qtAtrasadas += $parcela->atrasadas;
+
+                        $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                        $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+
+                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+
+                        $diferencaEmMeses++;
+
+                        $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                        $parcela->save();
+
+
+                        $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
+
                         $pagamento->emprestimo->pagamentosaldopendente->save();
-                    }
 
-                    $pagamento->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
+                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document);
 
-                    $pagamento->emprestimo->pagamentominimo->save();
+                        if ($response->successful()) {
+                            $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            $pagamento->emprestimo->pagamentosaldopendente->save();
+                        }
 
-                    $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document);
+                        $pagamento->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
 
-                    if ($response->successful()) {
-                        $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                        $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                         $pagamento->emprestimo->pagamentominimo->save();
+
+                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $pagamento->emprestimo->pagamentominimo->save();
+                        }
                     }
                 }
             }
