@@ -324,6 +324,7 @@ class BancoController extends Controller
                     $porcentagem = ($valor1 / $valor2);
 
                     $parcela->saldo -= $valor;
+                    $parcela->valor_recebido_pix = 0;
                     $parcela->save();
 
                     if ($parcela->saldo != 0) {
