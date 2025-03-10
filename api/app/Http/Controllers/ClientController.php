@@ -228,7 +228,7 @@ class ClientController extends Controller
         $dados = $request->all();
         $data = Carbon::parse($dados['data'])->toDateString(); // Converte a data para o formato YYYY-MM-DD
 
-        $user = User::find(3);
+        $user = User::find($dados['consultor']);
 
         $localizacoes = $user->locations()->whereDate('created_at', $data)->get();
 
