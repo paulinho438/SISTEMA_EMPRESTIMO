@@ -1577,8 +1577,9 @@ class EmprestimoController extends Controller
                 if ($response->successful()) {
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
-                    $parcela['identificador'] = $response->json()['txid'];
-                    $parcela['chave_pix'] = $response->json()['pixCopiaECola'];
+                    $parcela->identificador = $response->json()['txid'];
+                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->dt_ult_cobranca = $hoje;
                     $parcela->save();
 
                     return ['chave_pix' => $response->json()['pixCopiaECola']];
