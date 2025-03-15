@@ -37,7 +37,6 @@ return new class extends Migration
             $table->timestamp('ult_dt_geracao_pix')->nullable();
         });
 
-
     }
 
     /**

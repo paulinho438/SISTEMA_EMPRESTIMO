@@ -20,6 +20,19 @@ class ParcelaResource extends JsonResource
      */
     public function toArray($request)
     {
+        $dtLancamentoHoje = $this->dt_lancamento ? (new DateTime($this->dt_lancamento))->format('Y-m-d') === Carbon::now()->format('Y-m-d') : false;
+
+        // Definindo chave_pix com base na lógica fornecida
+        $chave_pix = null;
+        if ($dtLancamentoHoje) {
+            $chave_pix = $this->chave_pix;
+        } elseif ($this->emprestimo->banco->wallet == 1) {
+            $chave_pix = '';
+        } else {
+            $chave_pix = $this->emprestimo->banco->chavepix;
+        }
+
+
         return [
             "id" => $this->id,
             "emprestimo_id" => $this->emprestimo_id,
@@ -34,7 +47,7 @@ class ParcelaResource extends JsonResource
             "dt_baixa" => ($this->dt_baixa != null) ? Carbon::parse($this->dt_baixa, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y') : '',
             "dt_ult_cobranca" => $this->dt_ult_cobranca,
             "identificador" => $this->identificador,
-            "chave_pix" => ($this->chave_pix != null) ? $this->chave_pix : $this->emprestimo->banco->chavepix,
+            "chave_pix" => $chave_pix,
             "nome_cliente" => $this->emprestimo->client->nome_completo ?? null,
             "cpf" => $this->emprestimo->client->cpf ?? null,
             "telefone_celular_1" => $this->emprestimo->client->telefone_celular_1 ?? null,
