@@ -1565,7 +1565,7 @@ class EmprestimoController extends Controller
         $hoje = Carbon::today()->toDateString();
 
         if ($parcela) {
-            if ($parcela->dt_ult_cobranca != $hoje) {
+            if ($parcela->ult_dt_geracao_pix != $hoje) {
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
@@ -1574,7 +1574,7 @@ class EmprestimoController extends Controller
 
                     $parcela->identificador = $response->json()['txid'];
                     $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                    $parcela->dt_ult_cobranca = $hoje;
+                    $parcela->ult_dt_geracao_pix = $hoje;
                     $parcela->save();
 
                     return ['chave_pix' => $response->json()['pixCopiaECola']];
@@ -1613,7 +1613,7 @@ class EmprestimoController extends Controller
                 return $parcela->emprestimo->banco->chave_pix;
             }
 
-            if ($parcela->dt_ult_cobranca != $hoje) {
+            if ($parcela->ult_dt_geracao_pix != $hoje) {
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
@@ -1622,7 +1622,7 @@ class EmprestimoController extends Controller
 
                     $parcela->identificador = $response->json()['txid'];
                     $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                    $parcela->dt_ult_cobranca = $hoje;
+                    $parcela->ult_dt_geracao_pix = $hoje;
                     $parcela->save();
 
                     return ['chave_pix' => $response->json()['pixCopiaECola']];
