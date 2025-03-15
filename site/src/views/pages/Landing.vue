@@ -91,6 +91,7 @@ export default {
                 this.emprestimoService
                     .gerarPixPagamentoParcela(parcela.id)
                     .then((response) => {
+                        console.log(response.data);
                         const textArea = document.createElement('textarea');
                         textArea.value = response.data.chave_pix;
                         document.body.appendChild(textArea);
