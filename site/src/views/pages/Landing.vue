@@ -10,6 +10,9 @@ import FullScreenLoading from "@/components/FullScreenLoading.vue";
 import moment from 'moment';
 
 export default {
+    components: {
+        FullScreenLoading, // Registra o componente
+    },
     data() {
         return {
             router: useRouter(),
