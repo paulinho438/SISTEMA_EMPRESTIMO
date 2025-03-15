@@ -1565,7 +1565,30 @@ class EmprestimoController extends Controller
         $hoje = Carbon::today()->toDateString();
 
         if ($parcela) {
-            if ($parcela->ult_dt_geracao_pix != null && Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
+            if($parcela->ult_dt_geracao_pix){
+                if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
+                    //API COBRANCA B.CODEX
+                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+
+                    if ($response->successful()) {
+                        ControleBcodex::create(['identificador' => $response->json()['txid']]);
+
+                        $parcela->identificador = $response->json()['txid'];
+                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->ult_dt_geracao_pix = $hoje;
+                        $parcela->save();
+
+                        return ['chave_pix' => $response->json()['pixCopiaECola']];
+                    } else {
+                        return response()->json([
+                            "message" => "Erro ao gerar pagamento personalizado",
+                            "error" => $response->json()
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                } else {
+                    return ['chave_pix' => $parcela->chave_pix];
+                }
+            }else{
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
@@ -1580,13 +1603,12 @@ class EmprestimoController extends Controller
                     return ['chave_pix' => $response->json()['pixCopiaECola']];
                 } else {
                     return response()->json([
-                        "message" => "Erro ao gerar pagamento personalizado",
+                        "message" => "Erro ao gerar cobrança",
                         "error" => $response->json()
                     ], Response::HTTP_FORBIDDEN);
                 }
-            } else {
-                return ['chave_pix' => $parcela->chave_pix, 'info' => Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString()];
             }
+
         } else {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
