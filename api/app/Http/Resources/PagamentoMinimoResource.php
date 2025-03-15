@@ -26,6 +26,7 @@ class PagamentoMinimoResource extends JsonResource
             "dt_baixa"              => ($this->dt_baixa != null) ? (new DateTime($this->dt_baixa))->format('d/m/Y') : '',
             "identificador"         => $this->identificador,
             "chave_pix"             => ($this->chave_pix != null) ? $this->chave_pix : '',
+            "ult_dt_geracao_pix" => $this->ult_dt_geracao_pix ? (new DateTime($this->ult_dt_geracao_pix))->format('d/m/Y') : null,
         ];
     }
 
