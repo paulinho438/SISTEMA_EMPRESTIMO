@@ -74,6 +74,42 @@ export default {
                 console.error('Pix link is not available');
             }
         },
+        copyToClipboardGeracaoPixParcela(parcela) {
+            if (parcela?.chave_pix) {
+                const textArea = document.createElement('textarea');
+                textArea.value = parcela.chave_pix;
+                document.body.appendChild(textArea);
+
+                textArea.select();
+                textArea.setSelectionRange(0, 99999);
+
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+
+                alert('Chave PIX copiado para a área de transferência!');
+            } else {
+                this.emprestimoService
+                    .gerarPixPagamentoParcela(parcela.id)
+                    .then((response) => {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = response;
+                        document.body.appendChild(textArea);
+
+                        textArea.select();
+                        textArea.setSelectionRange(0, 99999);
+
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+
+                        alert('Chave PIX copiado para a área de transferência!');
+                    })
+                    .catch((error) => {
+                        if (error?.response?.status != 422) {
+                            alert(UtilService.message(error.response.data));
+                        }
+                    });
+            }
+        },
         copyToClipboard(text) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -102,13 +138,12 @@ export default {
             .infoEmprestimoFront(this.id_pedido)
             .then((response) => {
                 if (response.data?.data?.emprestimo?.parcelas) {
-                    response.data.data.emprestimo.parcelas = response.data.data.emprestimo.parcelas
-                        .map((parcela) => {
-                            return {
-                                ...parcela,
-                                status: parcela.dt_baixa ? 'Pago' : 'Pendente'
-                            };
-                        });
+                    response.data.data.emprestimo.parcelas = response.data.data.emprestimo.parcelas.map((parcela) => {
+                        return {
+                            ...parcela,
+                            status: parcela.dt_baixa ? 'Pago' : 'Pendente'
+                        };
+                    });
                 }
                 this.products = response.data;
 
@@ -146,7 +181,9 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">
+                    Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+                </button>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente" class="payment-section">
@@ -155,7 +192,9 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">
+                    Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+                </button>
             </section>
 
             <!-- Quitar Empréstimo -->
@@ -236,7 +275,7 @@ export default {
                         <Button
                             v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago'"
                             label="Copiar Chave Pix"
-                            @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
+                            @click="copyToClipboardGeracaoPixParcela(this.encontrarPrimeiraParcelaPendente())"
                             class="p-button-raised p-button-danger mr-2 mb-2"
                         />
                     </template>

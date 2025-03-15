@@ -65,8 +65,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Support\Facades\Http;
+use App\Models\ControleBcodex;
 
 class EmprestimoController extends Controller
+
+
 {
 
     protected $custom_log;
@@ -1548,6 +1551,54 @@ class EmprestimoController extends Controller
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
 
+
+    public function gerarPixPagamentoParcela(Request $request, $id)
+    {
+
+        $array = ['error' => '', 'data' => []];
+
+        $user = auth()->user();
+
+        $dados = $request->all();
+
+        $parcela = Parcela::find($id);
+
+        $hoje = Carbon::today()->toDateString();
+
+        if ($parcela) {
+            if($parcela->emprestimo->banco->wallet == 0){
+               return $parcela->emprestimo->banco->chave_pix;
+            }
+
+            if ($parcela->dt_ult_cobranca != $hoje) {
+                //API COBRANCA B.CODEX
+                $response = $this->bcodexService->criarCobranca($dados['valor'], $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
+
+                    $parcela['identificador'] = $response->json()['txid'];
+                    $parcela['chave_pix'] = $response->json()['pixCopiaECola'];
+                    $parcela->save();
+
+                    return $response->json()['pixCopiaECola'];
+                } else {
+                    return response()->json([
+                        "message" => "Erro ao gerar pagamento personalizado",
+                        "error" => $response->json()
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }else{
+                return $parcela->chave_pix;
+            }
+
+        } else {
+            return response()->json([
+                "message" => "Erro ao buscar pix da parcela",
+                "error" => ''
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
     public function personalizarPagamento(Request $request, $id)
     {
 
