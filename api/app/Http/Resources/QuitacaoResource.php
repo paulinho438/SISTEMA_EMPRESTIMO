@@ -19,7 +19,7 @@ class QuitacaoResource extends JsonResource
      */
     public function toArray($request)
     {
-        $dtLancamentoHoje = $this->dt_lancamento ? (new DateTime($this->dt_lancamento))->format('Y-m-d') === Carbon::now()->format('Y-m-d') : false;
+        $dtLancamentoHoje = $this->dt_ult_cobranca ? (new DateTime($this->dt_ult_cobranca))->format('Y-m-d') === Carbon::now()->format('Y-m-d') : false;
 
         // Definindo chave_pix com base na lógica fornecida
         $chave_pix = null;
