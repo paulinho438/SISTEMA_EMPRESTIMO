@@ -1568,7 +1568,7 @@ class EmprestimoController extends Controller
             if($parcela->ult_dt_geracao_pix){
                 if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
                     //API COBRANCA B.CODEX
-                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                    $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
 
                     if ($response->successful()) {
                         ControleBcodex::create(['identificador' => $response->json()['txid']]);
