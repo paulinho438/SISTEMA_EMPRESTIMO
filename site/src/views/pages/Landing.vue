@@ -177,7 +177,7 @@ export default {
                 alert('Chave PIX copiado para a área de transferência!');
             } else {
                 this.emprestimoService
-                    .gerarPixPagamentoQuitacao(parcela.id)
+                    .gerarPixPagamentoSaldoPendente(parcela.id)
                     .then((response) => {
                         console.log(response.data);
                         const textArea = document.createElement('textarea');
