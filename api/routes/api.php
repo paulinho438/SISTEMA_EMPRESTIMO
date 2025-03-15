@@ -82,6 +82,7 @@ Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, '
 Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class, 'personalizarPagamento']);
 Route::post('/parcela/{id}/gerarpixpagamentoparcela', [EmprestimoController::class, 'gerarPixPagamentoParcela']);
 Route::post('/parcela/{id}/gerarpixpagamentoquitacao', [EmprestimoController::class, 'gerarPixPagamentoQuitacao']);
+Route::post('/parcela/{id}/gerarpixpagamentosaldopendente', [EmprestimoController::class, 'gerarPixPagamentoSaldoPendente']);
 
 
 Route::middleware('auth:api')->group(function () {
