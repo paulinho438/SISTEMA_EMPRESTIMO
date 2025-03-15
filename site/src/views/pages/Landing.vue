@@ -25,7 +25,8 @@ export default {
             sliderValue: ref(1),
             min: ref(0),
             max: ref(1000),
-            toast: useToast()
+            toast: useToast(),
+            loading: ref(false),
         };
     },
 
@@ -79,6 +80,7 @@ export default {
             }
         },
         copyToClipboardGeracaoPixParcela(parcela) {
+            this.loading = true;
             if (parcela?.chave_pix) {
                 const textArea = document.createElement('textarea');
                 textArea.value = parcela.chave_pix;
@@ -89,7 +91,7 @@ export default {
 
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-
+                this.loading = false;
                 alert('Chave PIX copiado para a área de transferência!');
             } else {
                 this.emprestimoService
@@ -105,15 +107,18 @@ export default {
 
                         document.execCommand('copy');
                         document.body.removeChild(textArea);
-
+                        this.loading = false;
                         alert('Chave PIX copiado para a área de transferência!');
+                        
                     })
                     .catch((error) => {
                         if (error?.response?.status != 422) {
                             alert(UtilService.message(error.response.data));
+                            this.loading = false;
                         }
                     });
             }
+            this.loading = false;
         },
         copyToClipboard(text) {
             const textArea = document.createElement('textarea');
@@ -174,7 +179,7 @@ export default {
 
 <template>
     <div class="container">
-        <FullScreenLoading :isLoading="true" />
+        <FullScreenLoading :isLoading="loading" />
         <header>
             <h1>Histórico de Parcelas</h1>
         </header>
