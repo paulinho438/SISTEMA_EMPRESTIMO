@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Models\ControleBcodex;
 
 use App\Services\BcodexService;
 
@@ -584,6 +585,7 @@ class BancoController extends Controller
                 $response = $this->bcodexService->criarCobranca($dados['valor'], $banco->document);
 
                 if ($response->successful()) {
+                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
 
                     Deposito::create([

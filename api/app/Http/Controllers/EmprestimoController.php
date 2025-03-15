@@ -1551,6 +1551,49 @@ class EmprestimoController extends Controller
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
 
+    public function gerarPixPagamentoQuitacao(Request $request, $id)
+    {
+
+        $array = ['error' => '', 'data' => []];
+
+        $user = auth()->user();
+
+        $dados = $request->all();
+
+        $parcela = Quitacao::find($id);
+
+        $hoje = Carbon::today()->toDateString();
+
+        if ($parcela) {
+            if ($parcela->dt_ult_cobranca != $hoje) {
+                //API COBRANCA B.CODEX
+                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
+
+                    $parcela->identificador = $response->json()['txid'];
+                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->dt_ult_cobranca = $hoje;
+                    $parcela->save();
+
+                    return ['chave_pix' => $response->json()['pixCopiaECola']];
+                } else {
+                    return response()->json([
+                        "message" => "Erro ao gerar pagamento personalizado",
+                        "error" => $response->json()
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            } else {
+                return ['chave_pix' => $parcela->chave_pix];
+            }
+        } else {
+            return response()->json([
+                "message" => "Erro ao buscar pix da parcela",
+                "error" => ''
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
 
     public function gerarPixPagamentoParcela(Request $request, $id)
     {
@@ -1616,7 +1659,7 @@ class EmprestimoController extends Controller
             $response = $this->bcodexService->criarCobranca($dados['valor'], $parcela->emprestimo->banco->document);
 
             if ($response->successful()) {
-
+                ControleBcodex::create(['identificador' => $response->json()['txid']]);
                 $newPagamento = [];
 
                 $newPagamento['emprestimo_id'] = $parcela->emprestimo_id;
@@ -2244,6 +2287,7 @@ class EmprestimoController extends Controller
                     $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document);
 
                     if ($response->successful()) {
+                        ControleBcodex::create(['identificador' => $response->json()['txid']]);
                         $entidade->identificador = $response->json()['txid'];
                         $entidade->chave_pix = $response->json()['pixCopiaECola'];
                         $entidade->save();

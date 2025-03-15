@@ -120,6 +120,47 @@ export default {
                     });
             }
         },
+        copyToClipboardGeracaoPixQuitacao(parcela) {
+            this.loading = true;
+            if (parcela?.chave_pix) {
+                const textArea = document.createElement('textarea');
+                textArea.value = parcela.chave_pix;
+                document.body.appendChild(textArea);
+
+                textArea.select();
+                textArea.setSelectionRange(0, 99999);
+
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.loading = false;
+                alert('Chave PIX copiado para a área de transferência!');
+            } else {
+                this.emprestimoService
+                    .gerarPixPagamentoQuitacao(parcela.id)
+                    .then((response) => {
+                        console.log(response.data);
+                        const textArea = document.createElement('textarea');
+                        textArea.value = response.data.chave_pix;
+                        document.body.appendChild(textArea);
+
+                        textArea.select();
+                        textArea.setSelectionRange(0, 99999);
+
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        this.loading = false;
+                        alert('Chave PIX copiado para a área de transferência!');
+                        
+                    })
+                    .catch((error) => {
+                        this.loading = false;
+                        console.log('error', error);
+                        if (error?.response?.status != 422) {
+                            alert(UtilService.message(error.response.data));
+                        }
+                    });
+            }
+        },
         copyToClipboard(text) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -212,7 +253,11 @@ export default {
             <section v-if="this.products?.data?.emprestimo?.quitacao?.saldo && this.products?.data?.emprestimo?.quitacao?.saldo != this.products?.data?.emprestimo?.pagamentosaldopendente?.valor" class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
+                <button v-if="this.products?.data?.emprestimo?.quitacao.chave_pix != ''" class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
+                    Copiar Chave Pix - Quitar Empréstimo <br />
+                    {{ this.products?.data?.emprestimo?.quitacao?.saldo }}
+                </button>
+                <button v-if="this.products?.data?.emprestimo?.quitacao.chave_pix == ''" class="btn-primary" @click="copyToClipboardGeracaoPixQuitacao(this.products?.data?.emprestimo?.quitacao)">
                     Copiar Chave Pix - Quitar Empréstimo <br />
                     {{ this.products?.data?.emprestimo?.quitacao?.saldo }}
                 </button>
