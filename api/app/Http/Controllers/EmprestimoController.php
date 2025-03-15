@@ -1581,7 +1581,7 @@ class EmprestimoController extends Controller
                     $parcela['chave_pix'] = $response->json()['pixCopiaECola'];
                     $parcela->save();
 
-                    return $response->json()['pixCopiaECola'];
+                    return ['chave_pix' => $response->json()['pixCopiaECola']];
                 } else {
                     return response()->json([
                         "message" => "Erro ao gerar pagamento personalizado",
@@ -1589,7 +1589,7 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
             }else{
-                return $parcela->chave_pix;
+                return ['chave_pix' => $parcela->chave_pix];
             }
 
         } else {
