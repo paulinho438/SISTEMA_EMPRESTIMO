@@ -1572,7 +1572,7 @@ class EmprestimoController extends Controller
 
             if ($parcela->dt_ult_cobranca != $hoje) {
                 //API COBRANCA B.CODEX
-                $response = $this->bcodexService->criarCobranca($dados['valor'], $parcela->emprestimo->banco->document);
+                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
                 if ($response->successful()) {
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
