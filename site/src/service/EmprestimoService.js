@@ -112,5 +112,11 @@ export default class EmprestimoService {
 		return await axios.post(`${apiPath}/parcela/${id}/gerarpixpagamentoparcela`, {});
 	};
 
+	gerarPixPagamentoQuitacao = async (id) => {
+		return await axios.post(`${apiPath}/parcela/${id}/gerarpixpagamentoquitacao`, {});
+	};
+
+	
+
 
 }
