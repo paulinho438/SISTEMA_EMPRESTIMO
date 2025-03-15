@@ -161,6 +161,47 @@ export default {
                     });
             }
         },
+        copyToClipboardGeracaoPixSaldoPendente(parcela) {
+            this.loading = true;
+            if (parcela?.chave_pix) {
+                const textArea = document.createElement('textarea');
+                textArea.value = parcela.chave_pix;
+                document.body.appendChild(textArea);
+
+                textArea.select();
+                textArea.setSelectionRange(0, 99999);
+
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.loading = false;
+                alert('Chave PIX copiado para a área de transferência!');
+            } else {
+                this.emprestimoService
+                    .gerarPixPagamentoQuitacao(parcela.id)
+                    .then((response) => {
+                        console.log(response.data);
+                        const textArea = document.createElement('textarea');
+                        textArea.value = response.data.chave_pix;
+                        document.body.appendChild(textArea);
+
+                        textArea.select();
+                        textArea.setSelectionRange(0, 99999);
+
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        this.loading = false;
+                        alert('Chave PIX copiado para a área de transferência!');
+                        
+                    })
+                    .catch((error) => {
+                        this.loading = false;
+                        console.log('error', error);
+                        if (error?.response?.status != 422) {
+                            alert(UtilService.message(error.response.data));
+                        }
+                    });
+            }
+        },
         copyToClipboard(text) {
             const textArea = document.createElement('textarea');
             textArea.value = text;
@@ -233,7 +274,7 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">
+                <button class="btn-secondary" @click="copyToClipboardGeracaoPixSaldoPendente(this.products?.data?.emprestimo?.pagamentosaldopendente)">
                     Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </button>
             </section>

@@ -1551,6 +1551,71 @@ class EmprestimoController extends Controller
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
 
+    public function gerarPixPagamentoSaldoPendente(Request $request, $id)
+    {
+
+        $array = ['error' => '', 'data' => []];
+
+        $user = auth()->user();
+
+        $dados = $request->all();
+
+        $parcela = PagamentoSaldoPendente::find($id);
+
+        $hoje = Carbon::today()->toDateString();
+
+        if ($parcela) {
+            if($parcela->ult_dt_geracao_pix){
+                if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
+                    //API COBRANCA B.CODEX
+                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+
+                    if ($response->successful()) {
+                        ControleBcodex::create(['identificador' => $response->json()['txid']]);
+
+                        $parcela->identificador = $response->json()['txid'];
+                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->ult_dt_geracao_pix = $hoje;
+                        $parcela->save();
+
+                        return ['chave_pix' => $response->json()['pixCopiaECola']];
+                    } else {
+                        return response()->json([
+                            "message" => "Erro ao gerar pagamento personalizado",
+                            "error" => $response->json()
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                } else {
+                    return ['chave_pix' => $parcela->chave_pix];
+                }
+            }else{
+                //API COBRANCA B.CODEX
+                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+
+                if ($response->successful()) {
+                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
+
+                    $parcela->identificador = $response->json()['txid'];
+                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                    $parcela->ult_dt_geracao_pix = $hoje;
+                    $parcela->save();
+
+                    return ['chave_pix' => $response->json()['pixCopiaECola']];
+                } else {
+                    return response()->json([
+                        "message" => "Erro ao gerar cobrança",
+                        "error" => $response->json()
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
+        } else {
+            return response()->json([
+                "message" => "Erro ao buscar pix da parcela",
+                "error" => ''
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
     public function gerarPixPagamentoQuitacao(Request $request, $id)
     {
 
