@@ -92,7 +92,7 @@ export default {
                     .gerarPixPagamentoParcela(parcela.id)
                     .then((response) => {
                         const textArea = document.createElement('textarea');
-                        textArea.value = response;
+                        textArea.value = response.data.chave_pix;
                         document.body.appendChild(textArea);
 
                         textArea.select();
