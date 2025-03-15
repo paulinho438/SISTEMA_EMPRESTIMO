@@ -5,7 +5,6 @@ import EmprestimoService from '../../service/EmprestimoService';
 import { useToast } from 'primevue/usetoast';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
-import LoadingComponent from '../../components/Loading.vue';
 
 import moment from 'moment';
 
@@ -171,7 +170,6 @@ export default {
 
 <template>
     <div class="container">
-        <LoadingComponent :loading="true" />
         <header>
             <h1>Histórico de Parcelas</h1>
         </header>
