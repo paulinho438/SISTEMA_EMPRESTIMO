@@ -30,6 +30,7 @@ class ParcelaResource extends JsonResource
             "venc" => (new DateTime($this->venc))->format('d/m/Y'),
             "venc_real" => (new DateTime($this->venc_real))->format('d/m/Y'),
             "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
+            "ult_dt_geracao_pix" => (new DateTime($this->ult_dt_geracao_pix))->format('d/m/Y'),
             "dt_baixa" => ($this->dt_baixa != null) ? Carbon::parse($this->dt_baixa, 'UTC')->setTimezone('America/Sao_Paulo')->format('d/m/Y') : '',
             "dt_ult_cobranca" => $this->dt_ult_cobranca,
             "identificador" => $this->identificador,
