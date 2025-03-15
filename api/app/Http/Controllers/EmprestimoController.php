@@ -1566,8 +1566,8 @@ class EmprestimoController extends Controller
         $hoje = Carbon::today()->toDateString();
 
         if ($parcela) {
-            if($parcela->emprestimo->banco->wallet == 0){
-               return $parcela->emprestimo->banco->chave_pix;
+            if ($parcela->emprestimo->banco->wallet == 0) {
+                return $parcela->emprestimo->banco->chave_pix;
             }
 
             if ($parcela->dt_ult_cobranca != $hoje) {
@@ -1589,10 +1589,9 @@ class EmprestimoController extends Controller
                         "error" => $response->json()
                     ], Response::HTTP_FORBIDDEN);
                 }
-            }else{
+            } else {
                 return ['chave_pix' => $parcela->chave_pix];
             }
-
         } else {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
@@ -1735,13 +1734,13 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                             $parcela->emprestimo->quitacao->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+                            // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
 
-                            if ($response->successful()) {
-                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                $parcela->emprestimo->quitacao->save();
-                            }
+                            // if ($response->successful()) {
+                            //     $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            //     $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            //     $parcela->emprestimo->quitacao->save();
+                            // }
                         }
                     }
 
@@ -1753,13 +1752,13 @@ class EmprestimoController extends Controller
 
                         $proximaParcela->emprestimo->pagamentosaldopendente->save();
 
-                        $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document);
+                        // $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document);
 
-                        if ($response->successful()) {
-                            $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                            $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                            $proximaParcela->emprestimo->pagamentosaldopendente->save();
-                        }
+                        // if ($response->successful()) {
+                        //     $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                        //     $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                        // }
                     }
                 }
             }
@@ -1824,13 +1823,13 @@ class EmprestimoController extends Controller
 
                         $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
 
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                        // $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
+                        // if ($response->successful()) {
+                        //     $parcela->identificador = $response->json()['txid'];
+                        //     $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $parcela->save();
+                        // }
 
                         $parcela->save();
 
@@ -1856,15 +1855,16 @@ class EmprestimoController extends Controller
 
                             if ($parcela->emprestimo->quitacao->chave_pix) {
 
+                                $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                                $parcela->emprestimo->quitacao->save();
+                                // $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
 
-                                $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
-
-                                if ($response->successful()) {
-                                    $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                    $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                    $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
-                                    $parcela->emprestimo->quitacao->save();
-                                }
+                                // if ($response->successful()) {
+                                //     $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                //     $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                //     $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                                //     $parcela->emprestimo->quitacao->save();
+                                // }
                             }
 
                             if ($parcela->emprestimo->pagamentominimo->chave_pix) {
@@ -1873,13 +1873,13 @@ class EmprestimoController extends Controller
 
                                 $parcela->emprestimo->pagamentominimo->save();
 
-                                $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
+                                // $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document);
 
-                                if ($response->successful()) {
-                                    $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                                    $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                                    $parcela->emprestimo->pagamentominimo->save();
-                                }
+                                // if ($response->successful()) {
+                                //     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                                //     $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                                //     $parcela->emprestimo->pagamentominimo->save();
+                                // }
                             }
                         }
 
@@ -1889,13 +1889,13 @@ class EmprestimoController extends Controller
 
                             $parcela->emprestimo->pagamentosaldopendente->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
+                            // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
 
-                            if ($response->successful()) {
-                                $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                                $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                                $parcela->emprestimo->pagamentosaldopendente->save();
-                            }
+                            // if ($response->successful()) {
+                            //     $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            //     $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            //     $parcela->emprestimo->pagamentosaldopendente->save();
+                            // }
                         }
                     }
                 }
@@ -1998,25 +1998,25 @@ class EmprestimoController extends Controller
 
                         $pagamento->emprestimo->pagamentosaldopendente->save();
 
-                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document);
+                        // $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document);
 
-                        if ($response->successful()) {
-                            $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                            $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                            $pagamento->emprestimo->pagamentosaldopendente->save();
-                        }
+                        // if ($response->successful()) {
+                        //     $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                        //     $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $pagamento->emprestimo->pagamentosaldopendente->save();
+                        // }
 
                         $pagamento->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
 
                         $pagamento->emprestimo->pagamentominimo->save();
 
-                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document);
+                        // $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document);
 
-                        if ($response->successful()) {
-                            $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                            $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                            $pagamento->emprestimo->pagamentominimo->save();
-                        }
+                        // if ($response->successful()) {
+                        //     $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                        //     $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $pagamento->emprestimo->pagamentominimo->save();
+                        // }
                     }
                 }
             }
@@ -2066,13 +2066,13 @@ class EmprestimoController extends Controller
                         $pagamento->valor = $proximaParcela->saldo;
                         $pagamento->save();
 
-                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document);
+                        // $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document);
 
-                        if ($response->successful()) {
-                            $pagamento->identificador = $response->json()['txid'];
-                            $pagamento->chave_pix = $response->json()['pixCopiaECola'];
-                            $pagamento->save();
-                        }
+                        // if ($response->successful()) {
+                        //     $pagamento->identificador = $response->json()['txid'];
+                        //     $pagamento->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $pagamento->save();
+                        // }
                     }
 
                     if ($proximaParcela->contasreceber) {
@@ -2122,13 +2122,13 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                             $parcela->emprestimo->quitacao->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
+                            // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document);
 
-                            if ($response->successful()) {
-                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                $parcela->emprestimo->quitacao->save();
-                            }
+                            // if ($response->successful()) {
+                            //     $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            //     $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            //     $parcela->emprestimo->quitacao->save();
+                            // }
                         }
 
                         if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
@@ -2137,13 +2137,13 @@ class EmprestimoController extends Controller
 
                             $proximaParcela->emprestimo->pagamentosaldopendente->save();
 
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document);
+                            // $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document);
 
-                            if ($response->successful()) {
-                                $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                                $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                                $proximaParcela->emprestimo->pagamentosaldopendente->save();
-                            }
+                            // if ($response->successful()) {
+                            //     $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            //     $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            //     $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                            // }
                         }
                     }
                 }
@@ -2191,7 +2191,7 @@ class EmprestimoController extends Controller
 
         $controle = ControleBcodex::where('identificador', $data['txId'])->first();
 
-        if($controle){
+        if ($controle) {
             $controle->data_pagamento = Carbon::parse($pix['horario'])->toDateTimeString();
             $controle->save();
         }
