@@ -26,7 +26,7 @@ class PagamentoSaldoPendenteResource extends JsonResource
         if ($dtLancamentoHoje) {
             $chave_pix = $this->chave_pix;
         } elseif ($this->emprestimo->banco->wallet == 1) {
-            $chave_pix = '';
+            $chave_pix = $this->chave_pix;
         } else {
             $chave_pix = $this->emprestimo->banco->chavepix;
         }
