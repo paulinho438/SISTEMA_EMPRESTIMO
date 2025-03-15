@@ -13,7 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-
+        Schema::table('parcelas', function (Blueprint $table) {
+            $table->timestamp('ult_dt_geracao_pix')->nullable();
+        });
 
         Schema::table('quitacao', function (Blueprint $table) {
             $table->timestamp('ult_dt_geracao_pix')->nullable();
