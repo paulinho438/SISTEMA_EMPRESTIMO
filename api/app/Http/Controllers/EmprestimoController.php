@@ -1585,7 +1585,7 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
             } else {
-                return ['chave_pix' => $parcela->chave_pix];
+                return ['chave_pix' => $parcela->chave_pix, 'info' => $parcela];
             }
         } else {
             return response()->json([
