@@ -80,6 +80,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, 'infoEmprestimoFront']);
 Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class, 'personalizarPagamento']);
+Route::post('/parcela/{id}/gerarpixpagamentoparcela', [EmprestimoController::class, 'gerarPixPagamentoParcela']);
 
 
 Route::middleware('auth:api')->group(function () {
