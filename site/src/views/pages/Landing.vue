@@ -118,7 +118,6 @@ export default {
                         }
                     });
             }
-            this.loading = false;
         },
         copyToClipboard(text) {
             const textArea = document.createElement('textarea');
