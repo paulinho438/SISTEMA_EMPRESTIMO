@@ -2187,6 +2187,15 @@ class EmprestimoController extends Controller
             }
         }
 
+        //Controle de cobranca bcodex
+
+        $controle = ControleBcodex::where('identificador', $data['txId'])->first();
+
+        if($controle){
+            $controle->data_pagamento = Carbon::parse($pix['horario'])->toDateTimeString();
+            $controle->save();
+        }
+
         return response()->json(['message' => 'Baixas realizadas com sucesso.']);
     }
 
