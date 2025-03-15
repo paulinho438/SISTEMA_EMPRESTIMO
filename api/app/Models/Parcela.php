@@ -25,7 +25,8 @@ class Parcela extends Model
         'tentativas',
         'dt_ult_cobranca',
         'valor_recebido_pix',
-        'valor_recebido'
+        'valor_recebido',
+        'ult_dt_geracao_pix'
     ];
 
     public function emprestimo()

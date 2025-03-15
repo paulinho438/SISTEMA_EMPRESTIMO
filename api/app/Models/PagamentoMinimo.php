@@ -17,6 +17,7 @@ class PagamentoMinimo extends Model
         'dt_baixa',
         'identificador',
         'chave_pix',
+        'ult_dt_geracao_pix'
     ];
 
     public function emprestimo()
