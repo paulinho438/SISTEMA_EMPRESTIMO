@@ -1565,7 +1565,7 @@ class EmprestimoController extends Controller
         $hoje = Carbon::today()->toDateString();
 
         if ($parcela) {
-            if($parcela->ult_dt_geracao_pix){
+            if ($parcela->ult_dt_geracao_pix) {
                 if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
                     //API COBRANCA B.CODEX
                     $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
@@ -1588,7 +1588,7 @@ class EmprestimoController extends Controller
                 } else {
                     return ['chave_pix' => $parcela->chave_pix];
                 }
-            }else{
+            } else {
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
 
@@ -1608,7 +1608,6 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
             }
-
         } else {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
@@ -1630,7 +1629,7 @@ class EmprestimoController extends Controller
         $hoje = Carbon::today()->toDateString();
 
         if ($parcela) {
-            if($parcela->ult_dt_geracao_pix){
+            if ($parcela->ult_dt_geracao_pix) {
                 if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
                     //API COBRANCA B.CODEX
                     $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
@@ -1653,7 +1652,7 @@ class EmprestimoController extends Controller
                 } else {
                     return ['chave_pix' => $parcela->chave_pix];
                 }
-            }else{
+            } else {
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
@@ -1673,7 +1672,6 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
             }
-
         } else {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
@@ -2319,12 +2317,19 @@ class EmprestimoController extends Controller
 
         //Controle de cobranca bcodex
 
-        $controle = ControleBcodex::where('identificador', $data['txId'])->first();
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            foreach ($data['pix'] as $pix) {
+                $txId = $pix['txId'];
+                $controle = ControleBcodex::where('identificador', $txId)->first();
 
-        if ($controle) {
-            $controle->data_pagamento = Carbon::parse($pix['horario'])->toDateTimeString();
-            $controle->save();
+                if ($controle) {
+                    $controle->data_pagamento = Carbon::parse($pix['horario'])->toDateTimeString();
+                    $controle->save();
+                }
+            }
         }
+
+
 
         return response()->json(['message' => 'Baixas realizadas com sucesso.']);
     }
