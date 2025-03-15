@@ -112,9 +112,10 @@ export default {
                         
                     })
                     .catch((error) => {
+                        this.loading = false;
+                        console.log('error', error);
                         if (error?.response?.status != 422) {
                             alert(UtilService.message(error.response.data));
-                            this.loading = false;
                         }
                     });
             }
