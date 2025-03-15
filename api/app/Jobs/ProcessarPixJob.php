@@ -77,29 +77,29 @@ class ProcessarPixJob implements ShouldQueue
         $maxTentativas = 5;
         $sucesso = false;
 
-        while ($tentativas < $maxTentativas && !$sucesso) {
-            try {
-                $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
+        // while ($tentativas < $maxTentativas && !$sucesso) {
+        //     try {
+        //         $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
 
-                if ($response->successful()) {
-                    $entidade->identificador = $response->json()['txid'];
-                    $entidade->chave_pix = $response->json()['pixCopiaECola'];
-                    $entidade->save();
-                    $sucesso = true;
-                } else {
-                    $tentativas++;
-                }
-            } catch (\Exception $e) {
-                Log::error('Erro ao processar cobrança: ' . $e->getMessage());
-                $tentativas++;
-            }
+        //         if ($response->successful()) {
+        //             $entidade->identificador = $response->json()['txid'];
+        //             $entidade->chave_pix = $response->json()['pixCopiaECola'];
+        //             $entidade->save();
+        //             $sucesso = true;
+        //         } else {
+        //             $tentativas++;
+        //         }
+        //     } catch (\Exception $e) {
+        //         Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+        //         $tentativas++;
+        //     }
 
-            if (!$sucesso && $tentativas >= $maxTentativas) {
-                // Armazenar que não deu certo após 5 tentativas
-                Log::error('Falha ao processar cobrança após 5 tentativas.');
-                // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
-            }
-        }
+        //     if (!$sucesso && $tentativas >= $maxTentativas) {
+        //         // Armazenar que não deu certo após 5 tentativas
+        //         Log::error('Falha ao processar cobrança após 5 tentativas.');
+        //         // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
+        //     }
+        // }
     }
 
     /**

@@ -17,7 +17,8 @@ class Locacao extends Model
         'valor',
         'company_id',
         'chave_pix',
-        'identificador'
+        'identificador',
+        'ult_dt_geracao_pix'
     ];
 
     public function company()
