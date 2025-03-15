@@ -1565,7 +1565,7 @@ class EmprestimoController extends Controller
         $hoje = Carbon::today()->toDateString();
 
         if ($parcela) {
-            if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
+            if ($parcela->ult_dt_geracao_pix != null && Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
