@@ -337,7 +337,9 @@ export default {
                                 <span
                                     :class="{
                                         'text-red': data.descricao.includes('Baixa com desconto no'),
-                                        'text-green-500': data.descricao.includes('Refinanciamento')
+                                        'text-green-500': data.descricao.includes('Refinanciamento'),
+                                        'text-blue-500': data.descricao.includes('baixa manual')
+                                        
                                     }"
                                 >
                                     {{ data.descricao }}
