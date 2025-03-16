@@ -103,14 +103,6 @@ class ProcessarPixJob implements ShouldQueue
             $this->emprestimo->banco->saldo -= $this->emprestimo->valor;
             $this->emprestimo->banco->save();
 
-            CustomLog::create([
-                'user_id' => auth()->user()->id,
-                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $this->emprestimo->id . 'no valor de R$ ' . $this->emprestimo->valor . ' para o cliente ' . $this->emprestimo->client->nome_completo,
-                'operation' => 'edit'
-            ]);
-
-
-
             $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
 
             foreach ($this->emprestimo->parcelas as $parcela) {

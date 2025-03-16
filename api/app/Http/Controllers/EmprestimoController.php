@@ -634,6 +634,12 @@ class EmprestimoController extends Controller
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
             }
 
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $emprestimo->valor . ' para o cliente ' . $emprestimo->client->nome_completo,
+                'operation' => 'edit'
+            ]);
+
             DB::commit();
 
             return $array;
