@@ -84,12 +84,6 @@ class ProcessarPixJob implements ShouldQueue
             } else {
             }
 
-
-            $this->emprestimo->contaspagar->status = 'Pagamento Efetuado';
-
-            $this->emprestimo->contaspagar->dt_baixa = date('Y-m-d');
-            $this->emprestimo->contaspagar->save();
-
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $this->emprestimo->banco->id;
             $movimentacaoFinanceira['company_id'] = $this->emprestimo->company_id;

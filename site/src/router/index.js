@@ -13,6 +13,7 @@ import EmprestimosRoutes from './emprestimos.js';
 import ContaspagarRoutes from './contaspagar.js';
 import ContasreceberRoutes from './contasreceber.js';
 import MovimentacaofinanceiraRoutes from './movimentacaofinanceira.js';
+import ControleBcodexRoutes from './controlebcodex.js';
 import AprovacaoRoutes from './aprovacao.js';
 import EmpresaRoutes from './empresa.js';
 import UsuarioRoutes from './usuarios.js';
@@ -54,6 +55,7 @@ const router = createRouter({
                 ...EmpresasRoutes,
                 ...LogRoutes,
                 ...localizacaousuarioRoutes,
+                ...ControleBcodexRoutes,
                 {
                     path: '/uikit/formlayout',
                     name: 'formlayout',

@@ -105,6 +105,12 @@ const model = ref([
                         to: '/movimentacaofinanceira', 
                         permission: 'view_movimentacaofinanceira' 
                     },
+                    { 
+                        label: 'Controle Bcodex', 
+                        icon: 'pi pi-fw pi-globe', 
+                        to: '/controlebcodex', 
+                        permission: 'view_movimentacaofinanceira' 
+                    },
                    
                 ]
             },

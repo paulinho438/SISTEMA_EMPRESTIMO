@@ -16,6 +16,7 @@ use App\Http\Controllers\{
     ContaspagarController,
     ContasreceberController,
     MovimentacaofinanceiraController,
+    ControleBcodexController,
     UsuarioController,
     FeriadoController,
     AddressController,
@@ -198,6 +199,10 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('/movimentacaofinanceira', [MovimentacaofinanceiraController::class, 'all']);
     Route::get('/movimentacaofinanceira/{id}', [MovimentacaofinanceiraController::class, 'id']);
+
+    Route::get('/controlebcodex', [ControleBcodexController::class, 'all']);
+
+
 
     Route::get('/log', [LogController::class, 'all']);
 
