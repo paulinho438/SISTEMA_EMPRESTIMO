@@ -112,7 +112,6 @@ export default {
                     //     }
                     // });
 
-                    this.setLastWeekDates();
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -191,7 +190,8 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
-        this.getMovimentacaofinanceira();
+        this.setLastWeekDates();
+
     }
 };
 </script>
@@ -202,7 +202,7 @@ export default {
         <div class="col-12">
             <div class="grid flex flex-wrap mb-3 px-4 pt-2">
                 <div class="col-8 px-0 py-0">
-                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Movimentacao Financeira</h5>
+                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Controle Bcodex</h5>
                 </div>
 
                 <div class="col-4 px-0 py-0 text-right">
