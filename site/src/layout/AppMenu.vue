@@ -125,7 +125,7 @@ const model = ref([
                     },
                     { 
                         label: 'Controle Bcodex', 
-                        icon: 'pi pi-fw pi-globe', 
+                        icon: 'pi pi-fw pi-chart-line',
                         to: '/controlebcodex', 
                         permission: 'view_movimentacaofinanceira' 
                     },

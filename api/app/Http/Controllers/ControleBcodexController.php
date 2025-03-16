@@ -33,7 +33,7 @@ class ControleBcodexController extends Controller
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
-            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Controle Bcodes',
+            'content' => 'O usuário: '.auth()->user()->nome_completo.' acessou a tela de Controle Bcodex',
             'operation' => 'index'
         ]);
 
