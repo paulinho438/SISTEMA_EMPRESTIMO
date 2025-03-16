@@ -622,42 +622,7 @@ class EmprestimoController extends Controller
 
                         $array['dados'] = $dados;
 
-                        // Renderizar o HTML da view
-                        $html = view('comprovante-template', $dados)->render();
 
-                        // Salvar o HTML em um arquivo temporário
-                        $htmlFilePath = storage_path('app/public/comprovante.html');
-                        file_put_contents($htmlFilePath, $html);
-
-                        // Caminho para o arquivo PNG de saída
-                        $pngPath = storage_path('app/public/comprovante.png');
-
-                        // Configurações de tamanho, qualidade e zoom
-                        $width = 800;    // Largura em pixels
-                        $height = 1600;  // Altura em pixels
-                        $quality = 100;  // Qualidade máxima
-                        $zoom = 1.6;     // Zoom de 2x
-
-                        // Executar o comando wkhtmltoimage com ajustes
-                        $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
-                        shell_exec($command);
-
-                        // Verificar se o PNG foi gerado
-                        if (file_exists($pngPath)) {
-                            try {
-                                $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
-                                // Enviar o PNG gerado para o endpoint
-                                $response = Http::attach(
-                                    'arquivo', // Nome do campo no formulário
-                                    file_get_contents($pngPath), // Conteúdo do arquivo
-                                    'comprovante.png' // Nome do arquivo enviado
-                                )->post($emprestimo->company->whatsapp . '/enviar-pdf', [
-                                    'numero' =>  "55" . $telefone,
-                                ]);
-                            } catch (\Exception $e) {
-                            }
-                        } else {
-                        }
                     }
                 } else {
                     return response()->json([
@@ -668,31 +633,6 @@ class EmprestimoController extends Controller
                 // Disparar o job para processar o empréstimo em paralelo
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
             }
-
-
-            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
-
-            $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
-            $emprestimo->contaspagar->save();
-
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $emprestimo->banco->id;
-            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
-            $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
-            $movimentacaoFinanceira['tipomov'] = 'S';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $emprestimo->valor;
-
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-            $emprestimo->banco->saldo -= $emprestimo->valor;
-            $emprestimo->banco->save();
-
-            $this->custom_log->create([
-                'user_id' => auth()->user()->id,
-                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $id . 'no valor de R$ ' . $emprestimo->valor . ' para o cliente ' . $emprestimo->client->nome_completo,
-                'operation' => 'edit'
-            ]);
 
             DB::commit();
 

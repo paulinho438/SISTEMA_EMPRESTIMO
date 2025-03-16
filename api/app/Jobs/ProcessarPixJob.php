@@ -12,6 +12,10 @@ use Illuminate\Queue\SerializesModels;
 use App\Services\BcodexService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\CustomLog;
+use App\Models\Movimentacaofinanceira;
+
+
 
 class ProcessarPixJob implements ShouldQueue
 {
@@ -79,6 +83,31 @@ class ProcessarPixJob implements ShouldQueue
                 }
             } else {
             }
+
+
+            $this->emprestimo->contaspagar->status = 'Pagamento Efetuado';
+
+            $this->emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+            $this->emprestimo->contaspagar->save();
+
+            $movimentacaoFinanceira = [];
+            $movimentacaoFinanceira['banco_id'] = $this->emprestimo->banco->id;
+            $movimentacaoFinanceira['company_id'] = $this->emprestimo->company_id;
+            $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
+            $movimentacaoFinanceira['tipomov'] = 'S';
+            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            $movimentacaoFinanceira['valor'] = $this->emprestimo->valor;
+
+            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+            $this->emprestimo->banco->saldo -= $this->emprestimo->valor;
+            $this->emprestimo->banco->save();
+
+            CustomLog::create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do emprestimo ' . $this->emprestimo->id . 'no valor de R$ ' . $this->emprestimo->valor . ' para o cliente ' . $this->emprestimo->client->nome_completo,
+                'operation' => 'edit'
+            ]);
 
 
 
