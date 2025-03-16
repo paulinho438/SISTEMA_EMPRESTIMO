@@ -124,7 +124,7 @@ class EmprestimoController extends Controller
             Emprestimo::where('company_id', $request->header('company-id'))
                 ->with(['user', 'client', 'costcenter']) // Carregar as relações user e client
                 ->orderBy('id', 'desc')
-                ->paginate(20)
+                ->paginate(10)
         );
     }
 
