@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
+use Carbon\Carbon;
 class ControleBcodexController extends Controller
 {
 
@@ -35,11 +37,16 @@ class ControleBcodexController extends Controller
             'operation' => 'index'
         ]);
 
+        $dt_inicio = Carbon::parse($request->query('dt_inicio'))->startOfDay();
+        $dt_final = Carbon::parse($request->query('dt_final'))->endOfDay();
+
+
         $itensGeradoNaoPago = ControleBcodex::select(
             DB::raw('COUNT(*) * 0.04 AS total_registros_valor'),
             DB::raw('COUNT(*) AS total_registros')
         )
         ->whereNull('data_pagamento')
+        ->whereBetween('created_at', [$dt_inicio, $dt_final])
         ->first();
 
         $itensGeradoPago = ControleBcodex::select(
@@ -47,6 +54,7 @@ class ControleBcodexController extends Controller
             DB::raw('COUNT(*) AS total_registros')
         )
         ->whereNotNull('data_pagamento')
+        ->whereBetween('created_at', [$dt_inicio, $dt_final])
         ->first();
 
         return [
