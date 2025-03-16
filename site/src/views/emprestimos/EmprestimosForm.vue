@@ -153,7 +153,7 @@ export default {
 			this.client.cliente = this.city;
 			this.client.banco = this.banco;
 			this.client.costcenter = this.costcenter;
-			this.client.consultor = this.consultor;
+			this.client.consultor = this.$store?.getters?.usuario;
 			this.client.parcelas = this.parcelas;
 			console.log('TIME 1', this.client.dt_lancamento)
 			this.client.dt_lancamento = this.formatarDataParaString(this.client.dt_lancamento);
@@ -242,20 +242,25 @@ export default {
 			<template #content>
 				<div class="col-12">
 					<div class="p-fluid formgrid grid">
-						<div class="field col-12 md:col-12 m-0 p-0">
+						<!-- <div class="field col-12 md:col-12 m-0 p-0">
 							<div class="field col-12 md:col-3 ">
 								<label for="firstname2">Data Lançamento</label>
 								<Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'"
 								v-model="client.dt_lancamento" showIcon :showOnFocus="false" class="" />
 							</div>
-						</div>
+						</div> -->
 						<div class="field col-12 md:col-3">
+							<label for="firstname2">Data Lançamento</label>
+								<Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'"
+								v-model="client.dt_lancamento" showIcon :showOnFocus="false" class="" />
+						</div>
+						<!-- <div class="field col-12 md:col-3">
 							<label for="firstname2">Consultor</label>
 							<AutoComplete :modelValue="consultor" v-model="consultor" :dropdown="true"
 								:suggestions="consultores" placeholder="Informe o nome do consultor" class="w-full"
 								inputClass="w-full p-inputtext-sm" @complete="searchConsultor($event)"
 								optionLabel="nome_completo" />
-						</div>
+						</div> -->
 						<div class="field col-12 md:col-3">
 							<label for="firstname2">Cliente</label>
 							<AutoComplete :modelValue="city" v-model="city" :dropdown="true" :suggestions="cities"

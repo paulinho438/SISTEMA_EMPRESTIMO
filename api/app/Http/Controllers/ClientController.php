@@ -380,6 +380,7 @@ class ClientController extends Controller
 
             $dados['company_id'] = $request->header('company-id');
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
+            $dados['nome_usuario_criacao'] = auth()->user()->nome_completo;
 
             $newGroup = Client::create($dados);
 
