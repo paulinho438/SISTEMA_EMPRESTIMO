@@ -1352,6 +1352,7 @@ class EmprestimoController extends Controller
             $editParcela->emprestimo->company->save();
 
             $editParcela->valor_recebido_pix += $valor_recebido;
+            $editParcela->nome_usuario_baixa_pix = auth()->user()->nome_completo;
             $editParcela->save();
 
 
@@ -1497,6 +1498,7 @@ class EmprestimoController extends Controller
             $editParcela = Parcela::find($id);
 
             $editParcela->valor_recebido = $request->valor;
+            $editParcela->nome_usuario_baixa = auth()->user()->nome_completo;
             $editParcela->dt_ult_cobranca = $request->dt_baixa;
 
             $editParcela->save();

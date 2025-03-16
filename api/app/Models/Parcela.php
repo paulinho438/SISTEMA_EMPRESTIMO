@@ -26,7 +26,9 @@ class Parcela extends Model
         'dt_ult_cobranca',
         'valor_recebido_pix',
         'valor_recebido',
-        'ult_dt_geracao_pix'
+        'ult_dt_geracao_pix',
+        'nome_usuario_baixa_pix',
+        'nome_usuario_baixa'
     ];
 
     public function emprestimo()
