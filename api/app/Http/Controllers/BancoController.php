@@ -217,13 +217,23 @@ class BancoController extends Controller
 
                         $parcela->emprestimo->pagamentominimo->save();
 
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa manual da parcela Nº ' . $parcela->parcela . ' do emprestimo mensal n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentominimo->save();
-                        }
+                        // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+
+                        // if ($response->successful()) {
+                        //     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                        //     $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $parcela->emprestimo->pagamentominimo->save();
+                        // }
                     }
 
                 } else {
@@ -367,13 +377,23 @@ class BancoController extends Controller
 
                         $parcela->emprestimo->pagamentominimo->save();
 
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa manual da parcela Nº ' . $parcela->parcela . ' do emprestimo mensal n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentominimo->save();
-                        }
+                        // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+
+                        // if ($response->successful()) {
+                        //     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                        //     $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                        //     $parcela->emprestimo->pagamentominimo->save();
+                        // }
                     }
 
                 } else {
