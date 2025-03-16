@@ -598,6 +598,11 @@ class EmprestimoController extends Controller
                             ], Response::HTTP_FORBIDDEN);
                         }
 
+                        $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+
+                        $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+                        $emprestimo->contaspagar->save();
+
                         $array['response'] = $response->json();
 
                         $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
@@ -621,8 +626,6 @@ class EmprestimoController extends Controller
                         ];
 
                         $array['dados'] = $dados;
-
-
                     }
                 } else {
                     return response()->json([
