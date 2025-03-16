@@ -170,6 +170,8 @@ export default {
         getEmprestimos(page = 1) {
             this.loading = true;
 
+            this.currentPage = page; // Atualiza a página atual corretamente
+
             const params = {
                 page: this.currentPage,
                 per_page: this.perPage
@@ -285,6 +287,7 @@ export default {
                         :loading="loading"
                         responsiveLayout="scroll"
                         @filter="getEmprestimos"
+                        @page="changePage"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">
