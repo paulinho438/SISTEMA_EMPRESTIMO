@@ -133,11 +133,6 @@ class EmprestimoController extends Controller
 
         // Inicia a query
         $query = Emprestimo::where('company_id', $companyId)
-            ->with([
-                'user:id,nome_completo',
-                'client:id,nome_completo,cpf',
-                'costcenter:id,nome'
-            ])
             ->orderByDesc('id');
 
         // 🔍 Filtros dinâmicos
