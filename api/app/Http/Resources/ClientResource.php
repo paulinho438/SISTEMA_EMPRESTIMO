@@ -32,6 +32,7 @@ class ClientResource extends JsonResource
             "status"                => $this->status,
             "status_motivo"         => $this->status_motivo,
             "observation"           => $this->observation,
+            "nome_usuario_criacao"  => $this->nome_usuario_criacao,
             "limit"                 => $this->limit,
             "pix_cliente"           => $this->pix_cliente,
             "created_at"            => $this->created_at->format('d/m/Y H:i:s'),

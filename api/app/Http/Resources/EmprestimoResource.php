@@ -47,7 +47,6 @@ class EmprestimoResource extends JsonResource
             "costcenter" => $this->costcenter,
             "banco" => new BancosResource($this->banco),
             "cliente" => new ClientResource($this->client),
-            "nome_usuario_criacao" => $this->client->nome_usuario_criacao,
             "consultor" => $this->user,
             "parcelas_vencidas" => $parcelas_vencidas,
             "parcelas" => ParcelaResource::collection($parcelas->sortBy('parcela')),
