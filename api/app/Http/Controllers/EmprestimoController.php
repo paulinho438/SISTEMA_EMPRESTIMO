@@ -135,14 +135,14 @@ class EmprestimoController extends Controller
         $query = Emprestimo::where('company_id', $companyId)
             ->orderByDesc('id');
 
-        // 🔍 Filtros dinâmicos
-        if ($request->has('status')) {
-            $query->where('status', 'LIKE', "%{$request->status}%");
-        }
+        // // 🔍 Filtros dinâmicos
+        // if ($request->has('status')) {
+        //     $query->where('status', 'LIKE', "%{$request->status}%");
+        // }
 
-        if ($request->has('id')) {
-            $query->where('id', $request->id);
-        }
+        // if ($request->has('id')) {
+        //     $query->where('id', $request->id);
+        // }
 
         if ($request->has('nome_cliente')) {
             $query->whereHas('client', function ($q) use ($request) {
@@ -157,7 +157,8 @@ class EmprestimoController extends Controller
         }
 
         if ($request->has('dt_lancamento')) {
-            $query->whereDate('dt_lancamento', $request->dt_lancamento);
+            $dt_lancamento = Carbon::parse($request->dt_lancamento)->format('Y-m-d');
+            $query->whereDate('dt_lancamento', $dt_lancamento);
         }
 
         if ($request->has('valor_min') && $request->has('valor_max')) {

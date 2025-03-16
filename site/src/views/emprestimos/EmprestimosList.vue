@@ -177,11 +177,11 @@ export default {
 
             // Adicionando os filtros dinamicamente
             Object.keys(this.filters).forEach((key) => {
-                if (this.filters[key].constraints[0].value) {
-                    params[key] = this.filters[key].constraints[0].value;
+                const constraint = this.filters[key]?.constraints?.[0]; // Verifica se existe constraints[0]
+                if (constraint && constraint.value !== null && constraint.value !== undefined) {
+                    params[key] = constraint.value;
                 }
             });
-
             this.emprestimoService
                 .getAll(params) // Passa paginação na requisição
                 .then((response) => {
@@ -284,8 +284,7 @@ export default {
                         filterDisplay="menu"
                         :loading="loading"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['status', 'nome_cliente', 'nome_consultor', 'valor', 'saldoareceber']"
-                        @page="changePage"
+                        @filter="getEmprestimos"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">
