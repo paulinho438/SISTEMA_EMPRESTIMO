@@ -339,7 +339,7 @@ export default {
                 <h2 v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" style="margin-top: -3px">
                     Pagamento mínimo - Juros {{ (this.encontrarPrimeiraParcelaPendente().saldo - this.products?.data?.emprestimo?.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </h2>
-                <p>Para pagamento de demais valores<br />Entre em contato pelo WhatsApp {{ formatarTelefone(this.products?.data?.emprestimo?.telefone_empresa) }}</p>
+                <p v-if="this.products?.data?.emprestimo?.parcelas.length == 1" >Para pagamento de demais valores<br />Entre em contato pelo WhatsApp {{ formatarTelefone(this.products?.data?.emprestimo?.telefone_empresa) }}</p>
                 <button v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="btn-success" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">
                     Copiar Chave Pix - Pagamento mínimo <br />{{ (this.encontrarPrimeiraParcelaPendente().saldo - this.products?.data?.emprestimo?.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </button>
