@@ -411,6 +411,7 @@ export default {
             <template #content>
                 <div class="col-12">
                     <div class="p-fluid formgrid grid">
+                        
                         <div class="field col-12 md:col-12">
                             <label for="firstname2">Consultor</label>
                             <Chip :label="consultor?.nome_completo" class="w-full p-inputtext-sm"></Chip>
@@ -418,6 +419,10 @@ export default {
                         <div class="field col-12 md:col-12">
                             <label for="firstname2">Cliente</label>
                             <Chip :label="city?.nome_completo_cpf" class="w-full p-inputtext-sm"></Chip>
+                        </div>
+                        <div  v-if="city?.nome_usuario_criacao"  class="field col-12 md:col-12">
+                            <label for="firstname2">Cliente cadastrado por</label>
+                            <Chip :label="city?.nome_usuario_criacao ?? 'Sem informação cadastrada'" class="w-full p-inputtext-sm"></Chip>
                         </div>
                         <div class="field col-12 md:col-12">
                             <label for="firstname2">Banco</label>

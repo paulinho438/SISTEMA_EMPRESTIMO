@@ -120,12 +120,10 @@ class EmprestimoController extends Controller
             'operation' => 'index'
         ]);
 
-        return EmprestimoAllResource::collection(
-            Emprestimo::where('company_id', $request->header('company-id'))
-                ->with(['user', 'client', 'costcenter']) // Carregar as relações user e client
-                ->orderBy('id', 'desc')
-                ->get()
-        );
+        return Emprestimo::where('company_id', $request->header('company-id'))
+        ->with(['user', 'client', 'costcenter']) // Carregar as relações user e client
+        ->orderBy('id', 'desc')
+        ->get();
     }
 
     public function cobrancaAutomatica()
