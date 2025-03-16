@@ -635,6 +635,24 @@ class EmprestimoController extends Controller
                 }
                 // Disparar o job para processar o empréstimo em paralelo
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
+            } else {
+                $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+
+                $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+                $emprestimo->contaspagar->save();
+
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $emprestimo->banco->id;
+                $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+                $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
+                $movimentacaoFinanceira['tipomov'] = 'S';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = $emprestimo->valor;
+
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                $emprestimo->banco->saldo -= $emprestimo->valor;
+                $emprestimo->banco->save();
             }
 
             $this->custom_log->create([
