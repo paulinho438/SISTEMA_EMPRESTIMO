@@ -420,7 +420,7 @@ export default {
                             <label for="firstname2">Cliente</label>
                             <Chip :label="city?.nome_completo_cpf" class="w-full p-inputtext-sm"></Chip>
                         </div>
-                        <div  v-if="city?.nome_usuario_criacao"  class="field col-12 md:col-12">
+                        <div class="field col-12 md:col-12">
                             <label for="firstname2">Cliente cadastrado por</label>
                             <Chip :label="city?.nome_usuario_criacao ?? 'Sem informação cadastrada'" class="w-full p-inputtext-sm"></Chip>
                         </div>
