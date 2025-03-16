@@ -230,7 +230,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
-                        sleep(8);
+                        sleep(2);
                     }
                 }
             } catch (\Throwable $th) {
@@ -276,7 +276,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
-                        sleep(8);
+                        sleep(2);
                     }
                 }
             } catch (\Throwable $th) {
@@ -306,7 +306,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         )->post($parcela->emprestimo->company->whatsapp . '/enviar-pdf', [
                             'numero' => "55" . $telefone,
                         ]);
-                        sleep(8);
+                        sleep(2);
                     }
                 }
             } catch (\Throwable $th) {
