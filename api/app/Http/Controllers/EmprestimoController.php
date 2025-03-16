@@ -113,19 +113,68 @@ class EmprestimoController extends Controller
 
     public function all(Request $request)
     {
+        // Verifica se há um usuário autenticado antes de registrar log
+        if (auth()->check()) {
+            $this->custom_log->create([
+                'user_id' => auth()->id(),
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Empréstimos',
+                'operation' => 'index'
+            ]);
+        }
 
-        $this->custom_log->create([
-            'user_id' => auth()->user()->id,
-            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Emprestimos',
-            'operation' => 'index'
-        ]);
+        // Verifica se o cabeçalho 'company-id' foi enviado na requisição
+        $companyId = $request->header('company-id');
+        if (!$companyId) {
+            return response()->json(['error' => 'Company ID não fornecido'], 400);
+        }
 
-        return EmprestimoAllResource::collection(
-            Emprestimo::where('company_id', $request->header('company-id'))
-                ->with(['user', 'client', 'costcenter']) // Carregar as relações user e client
-                ->orderBy('id', 'desc')
-                ->paginate(10)
-        );
+        // Define a quantidade de registros por página com um valor padrão de 10
+        $perPage = $request->get('per_page', 10);
+
+        // Inicia a query
+        $query = Emprestimo::where('company_id', $companyId)
+            ->with([
+                'user:id,nome_completo',
+                'client:id,nome_completo,cpf',
+                'costcenter:id,nome'
+            ])
+            ->orderByDesc('id');
+
+        // 🔍 Filtros dinâmicos
+        if ($request->has('status')) {
+            $query->where('status', 'LIKE', "%{$request->status}%");
+        }
+
+        if ($request->has('id')) {
+            $query->where('id', $request->id);
+        }
+
+        if ($request->has('nome_cliente')) {
+            $query->whereHas('client', function ($q) use ($request) {
+                $q->where('nome_completo', 'LIKE', "%{$request->nome_cliente}%");
+            });
+        }
+
+        if ($request->has('nome_consultor')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where('nome_completo', 'LIKE', "%{$request->nome_consultor}%");
+            });
+        }
+
+        if ($request->has('dt_lancamento')) {
+            $query->whereDate('dt_lancamento', $request->dt_lancamento);
+        }
+
+        if ($request->has('valor_min') && $request->has('valor_max')) {
+            $query->whereBetween('valor', [$request->valor_min, $request->valor_max]);
+        }
+
+        if ($request->has('saldoareceber_min') && $request->has('saldoareceber_max')) {
+            $query->whereBetween('saldoareceber', [$request->saldoareceber_min, $request->saldoareceber_max]);
+        }
+
+        // Retorna a coleção paginada
+        return EmprestimoAllResource::collection($query->paginate($perPage));
     }
 
     public function cobrancaAutomatica()
