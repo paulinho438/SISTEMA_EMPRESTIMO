@@ -327,7 +327,6 @@ export default {
             </section> -->
 
             <section v-if="this.products?.data?.emprestimo?.banco?.wallet == 0" class="payment-section">
-                <h2>Valor para quitação {{ this.encontrarPrimeiraParcelaPendente().total_pendente.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <h2 v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" style="margin-top: -3px">
                     Pagamento mínimo - Juros {{ (this.encontrarPrimeiraParcelaPendente().saldo - this.products?.data?.emprestimo?.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </h2>
