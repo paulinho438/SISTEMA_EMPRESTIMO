@@ -80,14 +80,19 @@ export default {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
         },
-        getMovimentacaofinanceira() {
+        getMovimentacaofinanceira(dt_inicio, dt_final) {
             this.loading = true;
 
             this.movimentacaofinanceiraService
-                .getAllControleBcodex()
+                .getAllControleBcodex(dt_inicio, dt_final)
                 .then((response) => {
+                    console.log('res', response);
+                    this.itens_pagos_real = response.data.itens_pagos;
+                    this.itens_pagos = response.data.itens_pagos;
 
-                    console.log('res',response);
+                    this.itens_nao_pagos_real = response.data.itens_nao_pagos;
+                    this.itens_nao_pagos = response.data.itens_nao_pagos;
+
                     // this.Movimentacaofinanceira = response.data.data;
                     // this.MovimentacaofinanceiraReal = response.data.data;
 
@@ -107,7 +112,7 @@ export default {
                     //     }
                     // });
 
-                    // this.setLastWeekDates();
+                    this.setLastWeekDates();
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -143,25 +148,10 @@ export default {
 
             const dt_inicio = new Date(this.form.dt_inicio);
             const dt_final = new Date(this.form.dt_final);
-            dt_inicio.setHours(0, 0, 0, 0); // Ensure the end date covers the entire day
+            dt_inicio.setHours(0, 0, 0, 0); // Ensure the start date covers the entire day
             dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
 
-            this.Movimentacaofinanceira = this.MovimentacaofinanceiraReal.filter((mov) => {
-                const [day, month, year] = mov.dt_movimentacao.split('/').map(Number);
-                const dt_mov = new Date(year, month - 1, day); // JavaScript Date uses zero-based month index
-                return dt_mov >= dt_inicio && dt_mov <= dt_final;
-            });
-
-            this.valorRecebido = 0;
-            this.valorPago = 0;
-
-            this.Movimentacaofinanceira.forEach((item) => {
-                if (item.tipomov === 'E') {
-                    this.valorRecebido += item.valor;
-                } else if (item.tipomov === 'S') {
-                    this.valorPago += item.valor;
-                }
-            });
+            this.getMovimentacaofinanceira(dt_inicio.toISOString(), dt_final.toISOString());
         },
         editCategory(id) {
             if (undefined === id) this.router.push('/Movimentacaofinanceira/add');
@@ -246,10 +236,13 @@ export default {
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
                                     <div>
-                                        <span class="block text-500 font-medium mb-3">Total Pago</span>
+                                        <span class="block text-500 font-medium mb-3">Cobranças não liquidadas</span>
+                                        <div class="text-600 font-medium text-xl mb-3">
+                                            {{ itens_nao_pagos.total_registros }}
+                                        </div>
                                         <div class="text-900 font-medium text-xl">
                                             {{
-                                                valorPago.toLocaleString('pt-BR', {
+                                                parseFloat(itens_nao_pagos.total_registros_valor).toLocaleString('pt-BR', {
                                                     style: 'currency',
                                                     currency: 'BRL'
                                                 })
@@ -269,10 +262,14 @@ export default {
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
                                     <div>
-                                        <span class="block text-500 font-medium mb-3">Total Recebido</span>
+                                        <span class="block text-500 font-medium mb-3">Cobranças liquidadas</span>
+
+                                        <div class="text-600 font-medium text-xl mb-3">
+                                            {{ itens_pagos.total_registros }}
+                                        </div>
                                         <div class="text-900 font-medium text-xl">
                                             {{
-                                                valorRecebido.toLocaleString('pt-BR', {
+                                                parseFloat(itens_pagos.total_registros_valor).toLocaleString('pt-BR', {
                                                     style: 'currency',
                                                     currency: 'BRL'
                                                 })
