@@ -20,15 +20,18 @@ class ProcessarPixJob implements ShouldQueue
     protected $emprestimo;
     protected $bcodexService;
 
+    protected $comprovante;
+
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Emprestimo $emprestimo, BcodexService $bcodexService)
+    public function __construct(Emprestimo $emprestimo, BcodexService $bcodexService, $comprovante)
     {
         $this->emprestimo = $emprestimo;
         $this->bcodexService = $bcodexService;
+        $this->comprovante = $comprovante;
     }
 
     /**
@@ -39,6 +42,46 @@ class ProcessarPixJob implements ShouldQueue
     public function handle()
     {
         try {
+
+            // Renderizar o HTML da view
+            $html = view('comprovante-template', $this->comprovante['dados'])->render();
+
+            // Salvar o HTML em um arquivo temporário
+            $htmlFilePath = storage_path('app/public/comprovante.html');
+            file_put_contents($htmlFilePath, $html);
+
+            // Caminho para o arquivo PNG de saída
+            $pngPath = storage_path('app/public/comprovante.png');
+
+            // Configurações de tamanho, qualidade e zoom
+            $width = 800;    // Largura em pixels
+            $height = 1600;  // Altura em pixels
+            $quality = 100;  // Qualidade máxima
+            $zoom = 1.6;     // Zoom de 2x
+
+            // Executar o comando wkhtmltoimage com ajustes
+            $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
+            shell_exec($command);
+
+            // Verificar se o PNG foi gerado
+            if (file_exists($pngPath)) {
+                try {
+                    $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
+                    // Enviar o PNG gerado para o endpoint
+                    $response = Http::attach(
+                        'arquivo', // Nome do campo no formulário
+                        file_get_contents($pngPath), // Conteúdo do arquivo
+                        'comprovante.png' // Nome do arquivo enviado
+                    )->post($this->emprestimo->company->whatsapp . '/enviar-pdf', [
+                        'numero' =>  "55" . $telefone,
+                    ]);
+                } catch (\Exception $e) {
+                }
+            } else {
+            }
+
+
+
             $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
 
             foreach ($this->emprestimo->parcelas as $parcela) {
@@ -58,7 +101,6 @@ class ProcessarPixJob implements ShouldQueue
             }
 
             $this->envioMensagem($this->emprestimo->parcelas[0]);
-
         } catch (\Exception $e) {
             Log::error('Erro ao processar PIX: ' . $e->getMessage());
             throw $e;

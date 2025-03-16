@@ -666,7 +666,7 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
                 // Disparar o job para processar o empréstimo em paralelo
-                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService);
+                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
             }
 
 
