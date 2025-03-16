@@ -13,8 +13,8 @@ export default class EmprestimoService {
 		return await axios.get(`${apiPath}/emprestimo/${id}`);
 	};
 
-    getAll = async () => {
-		return await axios.get(`${apiPath}/emprestimo`);
+    getAll = async (params) => {
+		return await axios.get(`${apiPath}/emprestimo`, { params });
 	};
 
     delete = async (id) => {
