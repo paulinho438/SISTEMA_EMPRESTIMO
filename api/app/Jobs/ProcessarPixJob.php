@@ -60,8 +60,8 @@ class ProcessarPixJob implements ShouldQueue
             // Configurações de tamanho, qualidade e zoom
             $width = 800;    // Largura em pixels
             $height = 1600;  // Altura em pixels
-            $quality = 100;  // Qualidade máxima
-            $zoom = 1.6;     // Zoom de 2x
+            $quality = 85;  // Qualidade máxima
+            $zoom = 1.5;     // Zoom de 2x
 
             // Executar o comando wkhtmltoimage com ajustes
             $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
@@ -74,7 +74,7 @@ class ProcessarPixJob implements ShouldQueue
                     // Enviar o PNG gerado para o endpoint
                     $response = Http::attach(
                         'arquivo', // Nome do campo no formulário
-                        file_get_contents($pngPath), // Conteúdo do arquivo
+                        fopen($pngPath, 'rb'),// Conteúdo do arquivo
                         'comprovante.png' // Nome do arquivo enviado
                     )->post($this->emprestimo->company->whatsapp . '/enviar-pdf', [
                         'numero' =>  "55" . $telefone,
