@@ -37,7 +37,7 @@ class BcodexService
         throw new \Exception('Falha no login: ' . $response->body());
     }
 
-    public function criarCobranca(float $valor , string $document)
+    public function criarCobranca(float $valor, string $document, ?string $txId = null )
     {
 
          // Dados da cobrança
@@ -47,7 +47,7 @@ class BcodexService
             ],
             "valor" => [
                 "original" => number_format($valor, 2, '.', ''),
-                "modalidadeAlteracao" => 0
+                "modalidadeAlteracao" => $txId == null ? 0 : 1
             ],
             "chave" => $document,
             "solicitacaoPagador" => "RJ EMPRESTIMOS",
@@ -59,7 +59,10 @@ class BcodexService
             ]
         ];
 
-        $txId = bin2hex(random_bytes(16));
+        if($txId == null){
+            $txId = bin2hex(random_bytes(16));
+        }
+
         $url = "{$this->baseUrl}/cob/{$txId}";
         $accessToken = $this->login();
 
