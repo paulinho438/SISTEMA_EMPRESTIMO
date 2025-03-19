@@ -7,7 +7,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Permgroup;
 
 use DateTime;
-use Carbon\Carbon;
 
 class PagamentoSaldoPendenteResource extends JsonResource
 {
@@ -19,26 +18,13 @@ class PagamentoSaldoPendenteResource extends JsonResource
      */
     public function toArray($request)
     {
-        $dtLancamentoHoje = $this->dt_ult_cobranca ? (new DateTime($this->dt_ult_cobranca))->format('Y-m-d') === Carbon::now()->format('Y-m-d') : false;
-
-        // Definindo chave_pix com base na lógica fornecida
-        $chave_pix = null;
-        if ($dtLancamentoHoje) {
-            $chave_pix = $this->chave_pix;
-        } elseif ($this->emprestimo->banco->wallet == 1) {
-            $chave_pix = '';
-        } else {
-            $chave_pix = $this->emprestimo->banco->chavepix;
-        }
-
         return [
             "id"                    => $this->id,
             "emprestimo_id"         => $this->emprestimo_id,
             "valor"                 => $this->formatarMoeda($this->valor),
             "valorSemFormatacao"    => $this->valor,
             "identificador"         => $this->identificador,
-            "chave_pix"             => $chave_pix,
-            "ult_dt_geracao_pix" => $this->ult_dt_geracao_pix ? (new DateTime($this->ult_dt_geracao_pix))->format('d/m/Y') : null,
+            "chave_pix"             => ($this->chave_pix != null) ? $this->chave_pix : '',
         ];
     }
 
