@@ -2393,7 +2393,6 @@ class EmprestimoController extends Controller
                     $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document);
 
                     if ($response->successful()) {
-                        ControleBcodex::create(['identificador' => $response->json()['txid']]);
                         $entidade->identificador = $response->json()['txid'];
                         $entidade->chave_pix = $response->json()['pixCopiaECola'];
                         $entidade->save();
