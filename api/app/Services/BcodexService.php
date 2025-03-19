@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use App\Models\ControleBcodex;
 
 class BcodexService
 {
@@ -37,17 +38,18 @@ class BcodexService
         throw new \Exception('Falha no login: ' . $response->body());
     }
 
-    public function criarCobranca(float $valor, string $document, ?string $txId = null )
+    public function criarCobranca(float $valor, string $document, ?string $txId = null)
     {
+        $modalidadeAlteracao = $txId == null ? 0 : 1;
 
-         // Dados da cobrança
-         $data = [
+        // Dados da cobrança
+        $data = [
             "calendario" => [
                 "expiracao" => 95920000
             ],
             "valor" => [
                 "original" => number_format($valor, 2, '.', ''),
-                "modalidadeAlteracao" => $txId == null ? 0 : 1
+                "modalidadeAlteracao" => $modalidadeAlteracao
             ],
             "chave" => $document,
             "solicitacaoPagador" => "RJ EMPRESTIMOS",
@@ -59,7 +61,7 @@ class BcodexService
             ]
         ];
 
-        if($txId == null){
+        if ($txId == null) {
             $txId = bin2hex(random_bytes(16));
         }
 
@@ -70,6 +72,10 @@ class BcodexService
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
         ])->put($url, $data);
+
+        if($modalidadeAlteracao == 0) {
+            ControleBcodex::create(['identificador' => $response->json()['txid']]);
+        }
 
         return $response;
     }
@@ -100,7 +106,7 @@ class BcodexService
 
     public function realizarPagamentoPix(float $valor, string $accountId, string $paymentId)
     {
-         // Dados da consulta
+        // Dados da consulta
         $data = [
             "amount" => $valor,
             "paymentId" => $paymentId,
@@ -133,5 +139,4 @@ class BcodexService
 
         return $response;
     }
-
 }
