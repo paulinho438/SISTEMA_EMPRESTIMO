@@ -74,7 +74,16 @@ class BcodexService
         ])->put($url, $data);
 
         if($modalidadeAlteracao == 0) {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $accessToken,
+            ])->put($url, $data);
             ControleBcodex::create(['identificador' => $response->json()['txid']]);
+        }else{
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $accessToken,
+            ])->patch($url, $data);
         }
 
         return $response;
