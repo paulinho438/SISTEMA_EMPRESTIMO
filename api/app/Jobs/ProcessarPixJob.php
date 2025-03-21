@@ -136,7 +136,7 @@ class ProcessarPixJob implements ShouldQueue
 
         while ($tentativas < $maxTentativas && !$sucesso) {
             try {
-                $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document, $entidade->identificador);
+                $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
 
                 if ($response->successful()) {
                     $entidade->identificador = $response->json()['txid'];
