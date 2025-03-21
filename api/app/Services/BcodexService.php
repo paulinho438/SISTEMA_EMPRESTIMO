@@ -68,11 +68,6 @@ class BcodexService
         $url = "{$this->baseUrl}/cob/{$txId}";
         $accessToken = $this->login();
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $accessToken,
-        ])->put($url, $data);
-
         if($modalidadeAlteracao == 0) {
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
