@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Str;
 
+use Illuminate\Support\Facades\Log;
+
 use Carbon\Carbon;
 
 class CobrancaAutomaticaB extends Command
@@ -107,7 +109,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 "numero" => "55" . $telefone,
                                 "mensagem" => $frase
                             ];
-
+                            Log::info('Cobranca', $data);
                             $response = Http::asJson()->post($baseUrl, $data);
                             sleep(4);
                         }
