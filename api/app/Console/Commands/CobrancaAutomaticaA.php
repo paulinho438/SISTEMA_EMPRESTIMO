@@ -42,10 +42,18 @@ class CobrancaAutomaticaA extends Command
             return 0;
         }
 
-        $parcelas = Parcela::whereNull('dt_baixa')
+        $todayHoje = Carbon::today();
+
+        // Pegar parcelas atrasadas
+        $parcelasQuery = Parcela::whereNull('dt_baixa')
             ->whereNull('valor_recebido_pix')
-            ->whereNull('valor_recebido')
-            ->whereDate('venc_real', $today)
+            ->whereNull('valor_recebido');
+
+        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+            $parcelasQuery->where('atrasadas', '>', 0);
+        }
+
+        $parcelas = $parcelasQuery->whereDate('venc_real', $today)
             ->get()
             ->unique('emprestimo_id');
 
