@@ -109,7 +109,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 "mensagem" => $frase
                             ];
                             Log::info('Cobranca', $data);
-                            // $response = Http::asJson()->post($baseUrl, $data);
+                            $response = Http::asJson()->post($baseUrl, $data);
                             sleep(4);
                         }
                     }
