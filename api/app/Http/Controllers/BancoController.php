@@ -200,6 +200,14 @@ class BancoController extends Controller
                         $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
+
 
                         $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
@@ -227,15 +235,14 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['valor'] = $valor;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
 
-                        // if ($response->successful()) {
-                        //     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                        //     $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                        //     $parcela->emprestimo->pagamentominimo->save();
-                        // }
+                        if ($response->successful()) {
+                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
                     }
-
                 } else {
                     $valor = $parcela->valor_recebido;
 
@@ -288,6 +295,14 @@ class BancoController extends Controller
 
                         $parcela->valor_recebido = 0;
                         $parcela->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
 
                         if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
@@ -361,12 +376,20 @@ class BancoController extends Controller
                         $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
+
 
                         $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
                         $parcela->emprestimo->pagamentosaldopendente->save();
 
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentosaldopendente->identificador);
 
                         if ($response->successful()) {
                             $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
@@ -388,15 +411,14 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['valor'] = $valor;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        // $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
 
-                        // if ($response->successful()) {
-                        //     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                        //     $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                        //     $parcela->emprestimo->pagamentominimo->save();
-                        // }
+                        if ($response->successful()) {
+                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
                     }
-
                 } else {
 
 
@@ -450,6 +472,16 @@ class BancoController extends Controller
 
                         $parcela->valor_recebido_pix = 0;
                         $parcela->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
+
+
 
 
                         // Encontrar a próxima parcela
