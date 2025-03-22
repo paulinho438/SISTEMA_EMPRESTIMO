@@ -61,11 +61,10 @@ class CobrancaAutomaticaB extends Command
 
             if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
                 $parcelasQuery->where('atrasadas', '>', 0);
+            }else{
+                $parcelasQuery->whereDate('venc_real', $today);
             }
-
-            $parcelas = $parcelasQuery->whereDate('venc_real', $today)
-                ->get()
-                ->unique('emprestimo_id');
+            $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
         }
 
 
