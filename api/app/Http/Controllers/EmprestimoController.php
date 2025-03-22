@@ -1966,7 +1966,7 @@ class EmprestimoController extends Controller
 
                         $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
 
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
                             $parcela->identificador = $response->json()['txid'];
