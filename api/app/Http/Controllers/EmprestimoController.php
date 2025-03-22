@@ -2207,7 +2207,7 @@ class EmprestimoController extends Controller
                         $pagamento->valor = $proximaParcela->saldo;
                         $pagamento->save();
 
-                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document, $pagamento->identificador);
+                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
                             $pagamento->identificador = $response->json()['txid'];
@@ -2263,7 +2263,8 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                             $parcela->emprestimo->quitacao->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, $parcela->emprestimo->quitacao->identificador);
+                            $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, $txId);
 
                             if ($response->successful()) {
                                 $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -2277,8 +2278,8 @@ class EmprestimoController extends Controller
                             $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
 
                             $proximaParcela->emprestimo->pagamentosaldopendente->save();
-
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, $proximaParcela->emprestimo->pagamentosaldopendente->identificador);
+                            $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
+                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, $txId);
 
                             if ($response->successful()) {
                                 $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
