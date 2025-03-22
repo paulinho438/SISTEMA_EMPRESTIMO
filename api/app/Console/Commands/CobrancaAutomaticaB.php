@@ -55,9 +55,7 @@ class CobrancaAutomaticaB extends Command
             $todayHoje = Carbon::today();
 
             // Pegar parcelas atrasadas
-            $parcelasQuery = Parcela::whereNull('dt_baixa')
-                ->whereNull('valor_recebido_pix')
-                ->whereNull('valor_recebido');
+            $parcelasQuery = Parcela::whereNull('dt_baixa');
 
             if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
                 $parcelasQuery->where('atrasadas', '>', 0);
