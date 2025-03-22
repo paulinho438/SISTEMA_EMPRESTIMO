@@ -35,6 +35,8 @@ class CobrancaAutomaticaA extends Command
     {
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
+        Log::info("Cobranca Automatica A inicio de rotina");
+
         $today = Carbon::today()->toDateString();
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
 
@@ -53,11 +55,12 @@ class CobrancaAutomaticaA extends Command
             $parcelasQuery->whereDate('venc_real', $today);
         }
         $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
-
+        $count = count($parcelas);
+        Log::info("Cobranca Automatica A quantidade de clientes: {$count}");
         foreach ($parcelas as $parcela) {
             $this->processarParcela($parcela);
         }
-
+        Log::info("Cobranca Automatica A finalizada");
         return 0;
     }
 
