@@ -2685,76 +2685,94 @@ class EmprestimoController extends Controller
     public function aplicarMultaParcela(Request $request, $id)
     {
         $parcela = Parcela::find($id);
+        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->where('emprestimo_id', $parcela->emprestimo_id)->get();
 
-        if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
-            $valorJuros = 0;
+        $bcodexService = new BcodexService();
 
-            $juros = $parcela->emprestimo->company->juros ?? 1;
 
-            $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros  / 100), 2, '.', '');
+        // Faça algo com as parcelas vencidas, por exemplo, exiba-as
+        foreach ($parcelasVencidas as $parcela) {
 
-            $novoValor = $valorJuros + $parcela->saldo;
+            if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+                $valorJuros = 0;
 
-            if (count($parcela->emprestimo->parcelas) == 1) {
-                $novoValor = $parcela->saldo + (1 * $parcela->saldo / 100);
-                $valorJuros = (1 * $parcela->saldo / 100);
-            }
 
-            $parcela->saldo = $novoValor;
-            $parcela->venc_real = date('Y-m-d');
-            $parcela->atrasadas = $parcela->atrasadas + 1;
+                echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
 
-            if ($parcela->emprestimo->banco->wallet) {
-                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                $juros = $parcela->emprestimo->company->juros ?? 1;
 
-                if ($response->successful()) {
-                    $parcela->identificador = $response->json()['txid'];
-                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                    $parcela->save();
+                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros  / 100), 2, '.', '');
+
+                $novoValor = $valorJuros + $parcela->saldo;
+
+                if (count($parcela->emprestimo->parcelas) == 1) {
+                    $novoValor = $parcela->saldo + (1 * $parcela->saldo / 100);
+                    $valorJuros = (1 * $parcela->saldo / 100);
                 }
-            }
 
-            $parcela->save();
+                $parcela->saldo = $novoValor;
+                $parcela->venc_real = date('Y-m-d');
+                $parcela->atrasadas = $parcela->atrasadas + 1;
 
-            if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
+                if ($parcela->emprestimo->banco->wallet) {
+                    $txId = $parcela->identificador ? $parcela->identificador : null;
+                    echo "txId: $txId parcelaId: { $parcela->id }";
+                    $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
 
-                $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
+                    if ($response->successful()) {
+                        $newTxId = $response->json()['txid'];
+                        echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
+                        $parcela->identificador = $response->json()['txid'];
+                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->save();
+                    }
+                }
 
-                if ($response->successful()) {
-                    $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                    $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                $parcela->save();
+
+                if ($parcela->emprestimo->quitacao) {
+
                     $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                     $parcela->emprestimo->quitacao->save();
+                    $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
+                    $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
+
+                    if ($response->successful()) {
+                        $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                        $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                        $parcela->emprestimo->quitacao->save();
+                    }
                 }
-            }
 
-            if ($parcela->emprestimo->pagamentominimo && $parcela->emprestimo->pagamentominimo->chave_pix) {
+                if ($parcela->emprestimo->pagamentominimo) {
 
-                $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
+                    $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
 
-                $parcela->emprestimo->pagamentominimo->save();
-
-                $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document);
-
-                if ($response->successful()) {
-                    $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                    $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                     $parcela->emprestimo->pagamentominimo->save();
+                    $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
+                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $txId);
+
+                    if ($response->successful()) {
+                        $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                        $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->emprestimo->pagamentominimo->save();
+                    }
                 }
-            }
 
-            if ($parcela->emprestimo->pagamentosaldopendente && $parcela->emprestimo->pagamentosaldopendente->chave_pix) {
+                if ($parcela->emprestimo->pagamentosaldopendente) {
 
-                $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
+                    $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
 
-                $parcela->emprestimo->pagamentosaldopendente->save();
-
-                $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
-
-                if ($response->successful()) {
-                    $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                    $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                     $parcela->emprestimo->pagamentosaldopendente->save();
+                    $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
+                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
+
+                    if ($response->successful()) {
+                        $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                        $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                        $parcela->emprestimo->pagamentosaldopendente->save();
+                    }
                 }
             }
         }
