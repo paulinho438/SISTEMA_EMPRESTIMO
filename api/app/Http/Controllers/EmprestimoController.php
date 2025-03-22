@@ -1964,7 +1964,7 @@ class EmprestimoController extends Controller
 
                         $diferencaEmMeses++;
 
-                        $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
@@ -2133,7 +2133,7 @@ class EmprestimoController extends Controller
 
                         $diferencaEmMeses++;
 
-                        $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
 
