@@ -99,7 +99,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             ];
 
                             $response = Http::asJson()->post($baseUrl, $data);
-                            sleep(8);
+                            sleep(4);
                         }
                     }
                 } catch (\Throwable $th) {
