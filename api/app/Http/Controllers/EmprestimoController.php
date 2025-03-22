@@ -1887,18 +1887,20 @@ class EmprestimoController extends Controller
 
                     $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
 
-                    if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
+                    if($proximaParcela){
+                        if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
 
-                        $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
+                            $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
 
-                        $proximaParcela->emprestimo->pagamentosaldopendente->save();
-
-                        $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, $proximaParcela->emprestimo->pagamentosaldopendente->identificador);
-
-                        if ($response->successful()) {
-                            $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                            $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                             $proximaParcela->emprestimo->pagamentosaldopendente->save();
+
+                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, $proximaParcela->emprestimo->pagamentosaldopendente->identificador);
+
+                            if ($response->successful()) {
+                                $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                                $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                                $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                            }
                         }
                     }
                 }
