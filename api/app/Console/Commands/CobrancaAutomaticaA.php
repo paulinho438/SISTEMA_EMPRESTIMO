@@ -8,6 +8,7 @@ use App\Models\Juros;
 use App\Models\Parcela;
 use App\Models\Feriado;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class CobrancaAutomaticaA extends Command
 {
@@ -94,8 +95,10 @@ class CobrancaAutomaticaA extends Command
             "mensagem" => $mensagem
         ];
 
-        Http::asJson()->post($baseUrl, $data);
-        sleep(8);
+        Log::info('Cobranca', $data);
+
+        // Http::asJson()->post($baseUrl, $data);
+        // sleep(8);
     }
 
     private function montarMensagem($parcela, $saudacao)
