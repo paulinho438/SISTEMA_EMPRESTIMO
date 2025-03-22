@@ -197,7 +197,7 @@ class BancoController extends Controller
 
                         $diferencaEmMeses++;
 
-                        $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
 
@@ -357,7 +357,7 @@ class BancoController extends Controller
 
                         $diferencaEmMeses++;
 
-                        $parcela->venc_real = Carbon::parse($parcela->venc)->addMonths($diferencaEmMeses);
+                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
 
