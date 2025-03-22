@@ -1963,15 +1963,14 @@ class EmprestimoController extends Controller
                         $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
 
                         $diferencaEmMeses++;
-
                         $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
 
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                        $response = $this->bcodexService->criarCobranca($minimo->valor, $parcela->emprestimo->banco->document);
 
                         if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
+                            $minimo->identificador = $response->json()['txid'];
+                            $minimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $minimo->save();
                         }
 
                         $parcela->save();
