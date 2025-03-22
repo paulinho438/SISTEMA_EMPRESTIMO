@@ -2570,7 +2570,7 @@ class EmprestimoController extends Controller
                 }
             }
 
-            $dados['PagamentoSaldoPendente'] = PagamentoSaldoPendente::where('imprestimo_id', $entidadeParcela->emprestimo_id)->get();
+            $dados['PagamentoSaldoPendente'] = PagamentoSaldoPendente::where('emprestimo_id', $entidadeParcela->emprestimo_id)->get();
 
             foreach ($dados['PagamentoSaldoPendente'] as $entidade) {
                 $tentativas = 0;
@@ -2603,7 +2603,7 @@ class EmprestimoController extends Controller
                 }
             }
 
-            $dados['PagamentoMinimo'] = PagamentoMinimo::where('imprestimo_id', $entidadeParcela->emprestimo_id)->get();
+            $dados['PagamentoMinimo'] = PagamentoMinimo::where('emprestimo_id', $entidadeParcela->emprestimo_id)->get();
 
             foreach ($dados['PagamentoMinimo'] as $entidade) {
                 $tentativas = 0;
@@ -2636,7 +2636,7 @@ class EmprestimoController extends Controller
                 }
             }
 
-            $dados['Quitacao'] = Quitacao::where('imprestimo_id', $entidadeParcela->emprestimo_id)->get();
+            $dados['Quitacao'] = Quitacao::where('emprestimo_id', $entidadeParcela->emprestimo_id)->get();
 
             foreach ($dados['Quitacao'] as $entidade) {
                 $tentativas = 0;
