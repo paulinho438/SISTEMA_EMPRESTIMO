@@ -97,8 +97,8 @@ class CobrancaAutomaticaA extends Command
 
         Log::info('Cobranca', $data);
 
-        // Http::asJson()->post($baseUrl, $data);
-        // sleep(8);
+        Http::asJson()->post($baseUrl, $data);
+        sleep(6);
     }
 
     private function montarMensagem($parcela, $saudacao)
