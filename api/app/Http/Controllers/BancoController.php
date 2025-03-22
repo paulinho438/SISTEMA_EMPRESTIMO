@@ -221,7 +221,7 @@ class BancoController extends Controller
                         $movimentacaoFinanceira = [];
                         $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                         $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - usuário '. $parcela->nome_usuario_baixa .' realizou a baixa manual da parcela Nº ' . $parcela->parcela . ' do emprestimo mensal n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                         $movimentacaoFinanceira['valor'] = $valor;
@@ -246,11 +246,12 @@ class BancoController extends Controller
 
                         if ($valor >= $parcela->saldo) {
 
+
                             // MOVIMENTACAO FINANCEIRA
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -274,7 +275,7 @@ class BancoController extends Controller
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcial da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -381,7 +382,7 @@ class BancoController extends Controller
                         $movimentacaoFinanceira = [];
                         $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                         $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - usuário '. $parcela->nome_usuario_baixa_pix .' realizou a baixa manual da parcela Nº ' . $parcela->parcela . ' do emprestimo mensal n° ' . $parcela->emprestimo_id;
+                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
                         $movimentacaoFinanceira['tipomov'] = 'E';
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                         $movimentacaoFinanceira['valor'] = $valor;
@@ -412,7 +413,7 @@ class BancoController extends Controller
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
@@ -436,7 +437,7 @@ class BancoController extends Controller
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Fechamento de Caixa - Baixa da parcial da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
