@@ -47,6 +47,9 @@ class CobrancaAutomaticaB extends Command
 
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
+        Log::info("Cobranca Automatica B inicio de rotina");
+
+
         $today = Carbon::today()->toDateString();
         // Verificando se hoje é um feriado
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
@@ -70,6 +73,8 @@ class CobrancaAutomaticaB extends Command
 
 
         $r = [];
+        $count = count($parcelas);
+        Log::info("Cobranca Automatica B quantidade de clientes: {$count}");
         foreach ($parcelas as $parcela) {
 
             if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
@@ -108,7 +113,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 "numero" => "55" . $telefone,
                                 "mensagem" => $frase
                             ];
-                            Log::info('Cobranca', $data);
                             $response = Http::asJson()->post($baseUrl, $data);
                             sleep(4);
                         }
@@ -118,7 +122,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 }
             }
         }
-
+        Log::info("Cobranca Automatica B finalizada");
         exit;
     }
 
