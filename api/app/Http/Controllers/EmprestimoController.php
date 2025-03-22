@@ -2528,6 +2528,203 @@ class EmprestimoController extends Controller
         return $dados;
     }
 
+    public function corrigirValoresPix(Request $request)
+    {
+        $dados = [];
+
+        $txIdParcela = $request->txId;
+
+        if($txIdParcela){
+            $entidade = Parcela::where('identificador', $txIdParcela)->first();
+
+            $tentativas = 0;
+            $maxTentativas = 5;
+            $sucesso = false;
+
+            while ($tentativas < $maxTentativas && !$sucesso) {
+                try {
+                    $txId = $entidade->identificador ? $entidade->identificador : null;
+                    $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document, $txId);
+
+                    if ($response->successful()) {
+                        $entidade->identificador = $response->json()['txid'];
+                        $entidade->chave_pix = $response->json()['pixCopiaECola'];
+                        $entidade->save();
+                        $sucesso = true;
+                    } else {
+                        $tentativas++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+                    $tentativas++;
+                }
+
+                if (!$sucesso && $tentativas >= $maxTentativas) {
+                    // Armazenar que não deu certo após 5 tentativas
+                    Log::error('Falha ao processar cobrança após 5 tentativas.');
+                    // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
+                }
+            }
+
+            return $entidade;
+        }
+
+        $hoje = Carbon::today()->toDateString();
+
+        $dados['Parcela'] = Parcela::whereNotNull('identificador')
+            ->where('saldo', '>', 0)
+            ->whereHas('emprestimo.banco', function ($query) {
+                $query->where('wallet', true);
+            })
+            ->whereDate('updated_at', '!=', $hoje)
+            ->get();
+
+        foreach ($dados['Parcela'] as $entidade) {
+            $tentativas = 0;
+            $maxTentativas = 5;
+            $sucesso = false;
+
+            while ($tentativas < $maxTentativas && !$sucesso) {
+                try {
+                    $txId = $entidade->identificador ? $entidade->identificador : null;
+                    $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document, $txId);
+
+                    if ($response->successful()) {
+                        $entidade->identificador = $response->json()['txid'];
+                        $entidade->chave_pix = $response->json()['pixCopiaECola'];
+                        $entidade->save();
+                        $sucesso = true;
+                    } else {
+                        $tentativas++;
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+                    $tentativas++;
+                }
+
+                if (!$sucesso && $tentativas >= $maxTentativas) {
+                    // Armazenar que não deu certo após 5 tentativas
+                    Log::error('Falha ao processar cobrança após 5 tentativas.');
+                    // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
+                }
+            }
+        }
+
+        // $dados['PagamentoSaldoPendente'] = PagamentoSaldoPendente::whereNull('identificador')
+        //     ->where('valor', '>', 0)
+        //     ->whereHas('emprestimo.banco', function ($query) {
+        //         $query->where('wallet', true);
+        //     })
+        //     ->get();
+
+        // foreach ($dados['PagamentoSaldoPendente'] as $entidade) {
+        //     $tentativas = 0;
+        //     $maxTentativas = 5;
+        //     $sucesso = false;
+
+        //     while ($tentativas < $maxTentativas && !$sucesso) {
+        //         try {
+        //             $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document);
+
+        //             if ($response->successful()) {
+        //                 $entidade->identificador = $response->json()['txid'];
+        //                 $entidade->chave_pix = $response->json()['pixCopiaECola'];
+        //                 $entidade->save();
+        //                 $sucesso = true;
+        //             } else {
+        //                 $tentativas++;
+        //             }
+        //         } catch (\Exception $e) {
+        //             Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+        //             $tentativas++;
+        //         }
+
+        //         if (!$sucesso && $tentativas >= $maxTentativas) {
+        //             // Armazenar que não deu certo após 5 tentativas
+        //             Log::error('Falha ao processar cobrança após 5 tentativas.');
+        //             // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
+        //         }
+        //     }
+        // }
+
+        // $dados['PagamentoMinimo'] = PagamentoMinimo::whereNull('identificador')
+        //     ->where('valor', '>', 0)
+        //     ->whereHas('emprestimo.banco', function ($query) {
+        //         $query->where('wallet', true);
+        //     })
+        //     ->get();
+
+        // foreach ($dados['PagamentoMinimo'] as $entidade) {
+        //     $tentativas = 0;
+        //     $maxTentativas = 5;
+        //     $sucesso = false;
+
+        //     while ($tentativas < $maxTentativas && !$sucesso) {
+        //         try {
+        //             $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document);
+
+        //             if ($response->successful()) {
+        //                 $entidade->identificador = $response->json()['txid'];
+        //                 $entidade->chave_pix = $response->json()['pixCopiaECola'];
+        //                 $entidade->save();
+        //                 $sucesso = true;
+        //             } else {
+        //                 $tentativas++;
+        //             }
+        //         } catch (\Exception $e) {
+        //             Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+        //             $tentativas++;
+        //         }
+
+        //         if (!$sucesso && $tentativas >= $maxTentativas) {
+        //             // Armazenar que não deu certo após 5 tentativas
+        //             Log::error('Falha ao processar cobrança após 5 tentativas.');
+        //             // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
+        //         }
+        //     }
+        // }
+
+        // $dados['Quitacao'] = Quitacao::whereNull('identificador')
+        //     ->where('saldo', '>', 0)
+        //     ->whereHas('emprestimo.banco', function ($query) {
+        //         $query->where('wallet', true);
+        //     })
+        //     ->get();
+
+        // foreach ($dados['Quitacao'] as $entidade) {
+        //     $tentativas = 0;
+        //     $maxTentativas = 5;
+        //     $sucesso = false;
+
+        //     while ($tentativas < $maxTentativas && !$sucesso) {
+        //         try {
+        //             $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document);
+
+        //             if ($response->successful()) {
+        //                 $entidade->identificador = $response->json()['txid'];
+        //                 $entidade->chave_pix = $response->json()['pixCopiaECola'];
+        //                 $entidade->save();
+        //                 $sucesso = true;
+        //             } else {
+        //                 $tentativas++;
+        //             }
+        //         } catch (\Exception $e) {
+        //             Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+        //             $tentativas++;
+        //         }
+
+        //         if (!$sucesso && $tentativas >= $maxTentativas) {
+        //             // Armazenar que não deu certo após 5 tentativas
+        //             Log::error('Falha ao processar cobrança após 5 tentativas.');
+        //             // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
+        //         }
+        //     }
+        // }
+
+
+        return $dados;
+    }
+
     public function aplicarMultaParcela(Request $request, $id)
     {
         $parcela = Parcela::find($id);
