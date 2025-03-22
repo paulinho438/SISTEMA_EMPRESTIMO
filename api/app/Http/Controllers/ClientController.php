@@ -105,7 +105,7 @@ class ClientController extends Controller
                 ->unique('emprestimo_id');
 
             // Log para verificar se a consulta retornou resultados
-            Log::info('Consulta executada com sucesso', ['clientes' => $clientes]);
+            // Log::info('Consulta executada com sucesso', ['clientes' => $clientes]);
 
             return response()->json($clientes->values());
         } catch (\Exception $e) {
