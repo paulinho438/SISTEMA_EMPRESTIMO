@@ -85,7 +85,8 @@ class RecalcularParcelas extends Command
                     $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
-                        echo "sucesso txId: { $response->json()['txid'] } parcelaId: {{$parcela->id}}";
+                        $newTxId = $response->json()['txid'];
+                        echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
                         $parcela->identificador = $response->json()['txid'];
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->save();
