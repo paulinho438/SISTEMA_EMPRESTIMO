@@ -52,14 +52,20 @@ class CobrancaAutomaticaB extends Command
         $parcelas = collect(); // Coleção vazia se hoje for um feriado
 
         if (!$isHoliday) {
-            $parcelas = Parcela::where('dt_baixa', null)
+            $todayHoje = Carbon::today();
+
+            // Pegar parcelas atrasadas
+            $parcelasQuery = Parcela::whereNull('dt_baixa')
                 ->whereNull('valor_recebido_pix')
-                ->whereNull('valor_recebido')
-                ->whereDate('venc_real', $today)
+                ->whereNull('valor_recebido');
+
+            if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+                $parcelasQuery->where('atrasadas', '>', 0);
+            }
+
+            $parcelas = $parcelasQuery->whereDate('venc_real', $today)
                 ->get()
                 ->unique('emprestimo_id');
-            echo "<pre>" . json_encode($parcelas, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
-            echo "<pre>" . json_encode($today, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "</pre>";
         }
 
 
@@ -133,10 +139,11 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
     }
 
-    function encontrarPrimeiraParcelaPendente($parcelas) {
+    function encontrarPrimeiraParcelaPendente($parcelas)
+    {
 
-        foreach($parcelas as $parcela){
-            if($parcela->dt_baixa === '' || $parcela->dt_baixa === null){
+        foreach ($parcelas as $parcela) {
+            if ($parcela->dt_baixa === '' || $parcela->dt_baixa === null) {
                 return $parcela;
             }
         }
