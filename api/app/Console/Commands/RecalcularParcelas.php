@@ -99,8 +99,8 @@ class RecalcularParcelas extends Command
 
                     $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                     $parcela->emprestimo->quitacao->save();
-                    $txId = $parcela->identificador ? $parcela->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $parcela->emprestimo->quitacao->identificador);
+                    $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
+                    $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
                         $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -115,8 +115,8 @@ class RecalcularParcelas extends Command
                     $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
 
                     $parcela->emprestimo->pagamentominimo->save();
-                    $txId = $parcela->identificador ? $parcela->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
+                    $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
+                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
                         $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
@@ -130,8 +130,8 @@ class RecalcularParcelas extends Command
                     $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
 
                     $parcela->emprestimo->pagamentosaldopendente->save();
-                    $txId = $parcela->identificador ? $parcela->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentosaldopendente->identificador);
+                    $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
+                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
                         $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
