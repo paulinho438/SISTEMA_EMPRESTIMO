@@ -71,7 +71,9 @@ precisa adicionar uma linha
  screen -ls // listar todas as screen
 
  cd /path/to/your/project
-php artisan queue:work
+php artisan queue:work --timeout=300 --tries=3
+
+curl -X POST https://api.agecontrole.com.br/api/manutencao/aplicar_multa_parcela/24962 -H "Content-Type: application/json" -d '{}'
 
 
 control + a e d

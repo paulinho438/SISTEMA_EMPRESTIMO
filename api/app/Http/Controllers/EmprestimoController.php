@@ -1996,7 +1996,7 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $minimo->valor;
                             $parcela->emprestimo->banco->save();
 
-                            if ($parcela->emprestimo->quitacao->chave_pix) {
+                            if ($parcela->emprestimo->quitacao) {
 
                                 $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                                 $parcela->emprestimo->quitacao->save();
@@ -2010,7 +2010,7 @@ class EmprestimoController extends Controller
                                 }
                             }
 
-                            if ($parcela->emprestimo->pagamentominimo->chave_pix) {
+                            if ($parcela->emprestimo->pagamentominimo) {
 
                                 $parcela->emprestimo->pagamentominimo->valor = $juros;
 
