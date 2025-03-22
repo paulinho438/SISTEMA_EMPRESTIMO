@@ -49,11 +49,10 @@ class CobrancaAutomaticaA extends Command
 
         if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
             $parcelasQuery->where('atrasadas', '>', 0);
+        } else {
+            $parcelasQuery->whereDate('venc_real', $today);
         }
-
-        $parcelas = $parcelasQuery->whereDate('venc_real', $today)
-            ->get()
-            ->unique('emprestimo_id');
+        $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
 
         foreach ($parcelas as $parcela) {
             $this->processarParcela($parcela);
@@ -120,7 +119,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
 📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
 ";
-return $saudacaoTexto . $fraseInicial;
+        return $saudacaoTexto . $fraseInicial;
     }
 
 
