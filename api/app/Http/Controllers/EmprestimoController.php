@@ -2684,6 +2684,7 @@ class EmprestimoController extends Controller
 
     public function aplicarMultaParcela(Request $request, $id)
     {
+        Log::info('Função iniciada aplicarMultaParcela');
         $parcela = Parcela::find($id);
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->where('emprestimo_id', $parcela->emprestimo_id)->get();
 
@@ -2693,9 +2694,10 @@ class EmprestimoController extends Controller
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
 
+
             if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
                 $valorJuros = 0;
-
+                Log::info(message: "Processando parcela: {$parcela->id} ");
 
                 echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
 
@@ -2717,10 +2719,12 @@ class EmprestimoController extends Controller
                 if ($parcela->emprestimo->banco->wallet) {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
+                    Log::info(message: "Processando cobranca parcela: txId: $txId parcelaId: { $parcela->id }");
                     $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
                         $newTxId = $response->json()['txid'];
+                        Log::info(message: "Processando com sucesso cobranca parcela: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
                         echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
                         $parcela->identificador = $response->json()['txid'];
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
