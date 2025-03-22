@@ -2135,6 +2135,13 @@ class EmprestimoController extends Controller
                         $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $pagamento->emprestimo->banco->document, $parcela->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
 
                         $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
@@ -2159,6 +2166,8 @@ class EmprestimoController extends Controller
                             $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $pagamento->emprestimo->pagamentominimo->save();
                         }
+
+
                     }
                 }
             }
