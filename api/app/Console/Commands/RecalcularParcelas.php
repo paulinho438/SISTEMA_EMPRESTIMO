@@ -14,6 +14,8 @@ use App\Services\BcodexService;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
+use Illuminate\Support\Facades\Log;
+
 use App\Models\CustomLog;
 
 use Illuminate\Support\Facades\DB;
@@ -50,6 +52,8 @@ class RecalcularParcelas extends Command
 
         $this->info('Recalculando as Parcelas em Atrasos');
 
+        Log::info("Recalculando as Parcelas em Atrasos");
+
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->where('dt_baixa', null)
             ->whereDate('updated_at', '!=', Carbon::today())
@@ -57,6 +61,8 @@ class RecalcularParcelas extends Command
 
         $bcodexService = new BcodexService();
 
+        $qtClientes = count($parcelasVencidas);
+        Log::info("Processando $qtClientes clientes");
 
         // Faça algo com as parcelas vencidas, por exemplo, exiba-as
         foreach ($parcelasVencidas as $parcela) {
@@ -83,9 +89,11 @@ class RecalcularParcelas extends Command
                 if ($parcela->emprestimo->banco->wallet) {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
+                    Log::info(message: "Alterando cobranca da parcela $parcela->id no valor de $parcela->saldo txid: $txId");
                     $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
+                        Log::info("Parcela alterada com sucesso");
                         $newTxId = $response->json()['txid'];
                         echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
                         $parcela->saldo = $novoValor;
@@ -94,6 +102,9 @@ class RecalcularParcelas extends Command
                         $parcela->identificador = $response->json()['txid'];
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->save();
+                    }else{
+                        Log::info("Não deu certo");
+                        continue;
                     }
                 }
 
