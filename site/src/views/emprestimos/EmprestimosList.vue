@@ -189,7 +189,7 @@ export default {
             if (this.filters.global.value) {
                 params.global = this.filters.global.value;
             }
-            
+
             this.emprestimoService
                 .getAll(params) // Passa paginação na requisição
                 .then((response) => {
@@ -300,7 +300,7 @@ export default {
                                 <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search" />
-                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" />
+                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%"/>
                                 </span>
                             </div>
                         </template>
