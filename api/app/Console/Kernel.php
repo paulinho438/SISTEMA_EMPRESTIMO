@@ -47,7 +47,9 @@ class Kernel extends ConsoleKernel
 
 
 
-        $schedule->command('recalcular:Parcelas')->dailyAt('00:00');
+        //$schedule->command('recalcular:Parcelas')->dailyAt('00:00');
+
+        $schedule->command('recalcular:Parcelas')->everyTenMinutes()->withoutOverlapping();
 
         $schedule->command('cobranca:AutomaticaA')->dailyAt('08:00');
         $schedule->command('cobranca:AutomaticaB')->dailyAt('13:00');
