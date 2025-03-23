@@ -76,16 +76,19 @@ class BcodexService
                     'Authorization' => 'Bearer ' . $accessToken,
                 ])->put($url, $data);
                 ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                if (!$response->successful()) {
+                    Log::error('Erro ao criar cobrança: ' . $response->body());
+                    return false;
+                }
             } else {
                 $response = Http::withHeaders([
                     'Content-Type' => 'application/json',
                     'Authorization' => 'Bearer ' . $accessToken,
                 ])->patch($url, $data);
-            }
-
-            if (!$response->successful()) {
-                Log::error('Erro ao criar cobrança: ' . $response->body());
-                return false;
+                if (!$response->successful()) {
+                    Log::error('Erro ao criar cobrança: ' . $response->body());
+                    return false;
+                }
             }
 
             return $response;
