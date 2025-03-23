@@ -135,14 +135,34 @@ class EmprestimoController extends Controller
         $query = Emprestimo::where('company_id', $companyId)
             ->orderByDesc('id');
 
-        // // 🔍 Filtros dinâmicos
+        // 🔍 Filtros dinâmicos
         // if ($request->has('status')) {
         //     $query->where('status', 'LIKE', "%{$request->status}%");
         // }
 
-        // if ($request->has('id')) {
-        //     $query->where('id', $request->id);
-        // }
+        if ($request->has('status')) {
+            $status = $request->get('status');
+            $query->whereHas('parcelas', function ($q) use ($status) {
+                $q->where(function ($q) use ($status) {
+                    $q->whereRaw("(
+                        CASE
+                            WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 0 THEN
+                                CASE
+                                    WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) = (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Vencido'
+                                    WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 4 OR (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) / (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) > 0.5 THEN 'Muito Atrasado'
+                                    ELSE 'Atrasado'
+                                END
+                            WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NOT NULL) = (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Pago'
+                            ELSE 'Em Dias'
+                        END
+                    ) LIKE ?", ["%{$status}%"]);
+                });
+            });
+        }
+
+        if ($request->has('id')) {
+            $query->where('id', $request->id);
+        }
 
         if ($request->has('nome_cliente')) {
             $query->whereHas('client', function ($q) use ($request) {
