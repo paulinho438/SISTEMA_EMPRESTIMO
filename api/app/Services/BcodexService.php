@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use App\Models\ControleBcodex;
+use Illuminate\Support\Facades\Log;
 
 class BcodexService
 {
@@ -68,20 +69,32 @@ class BcodexService
         $url = "{$this->baseUrl}/cob/{$txId}";
         $accessToken = $this->login();
 
-        if($modalidadeAlteracao == 0) {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $accessToken,
-            ])->put($url, $data);
-            ControleBcodex::create(['identificador' => $response->json()['txid']]);
-        }else{
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Authorization' => 'Bearer ' . $accessToken,
-            ])->patch($url, $data);
+        try {
+            if ($modalidadeAlteracao == 0) {
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $accessToken,
+                ])->put($url, $data);
+                ControleBcodex::create(['identificador' => $response->json()['txid']]);
+            } else {
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $accessToken,
+                ])->patch($url, $data);
+            }
+
+            if (!$response->successful()) {
+                throw new \Exception('Erro ao criar cobrança: ' . $response->body());
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('Erro ao criar cobrança: ' . $e->getMessage());
+
+            return false;
         }
 
-        return $response;
     }
 
     public function consultarChavePix(float $valor, string $pix, string $accountId)

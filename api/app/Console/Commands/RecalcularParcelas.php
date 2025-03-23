@@ -50,7 +50,10 @@ class RecalcularParcelas extends Command
 
         $this->info('Recalculando as Parcelas em Atrasos');
 
-        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())->where('dt_baixa', null)->get();
+        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
+            ->where('dt_baixa', null)
+            ->whereDate('updated_at', '!=', Carbon::today())
+            ->get();
 
         $bcodexService = new BcodexService();
 
@@ -75,9 +78,7 @@ class RecalcularParcelas extends Command
                     $valorJuros = (1 * $parcela->saldo / 100);
                 }
 
-                $parcela->saldo = $novoValor;
-                $parcela->venc_real = date('Y-m-d');
-                $parcela->atrasadas = $parcela->atrasadas + 1;
+
 
                 if ($parcela->emprestimo->banco->wallet) {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
@@ -87,13 +88,14 @@ class RecalcularParcelas extends Command
                     if ($response->successful()) {
                         $newTxId = $response->json()['txid'];
                         echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
+                        $parcela->saldo = $novoValor;
+                        $parcela->venc_real = date('Y-m-d');
+                        $parcela->atrasadas = $parcela->atrasadas + 1;
                         $parcela->identificador = $response->json()['txid'];
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->save();
                     }
                 }
-
-                $parcela->save();
 
                 if ($parcela->emprestimo->quitacao) {
 
