@@ -189,6 +189,19 @@ class EmprestimoController extends Controller
             $query->whereBetween('saldoareceber', [$request->saldoareceber_min, $request->saldoareceber_max]);
         }
 
+        if ($request->has('global')) {
+            $global = $request->get('global');
+            $query->where(function ($q) use ($global) {
+                $q->where('id', 'LIKE', "%{$global}%")
+                    ->orWhere('nome_cliente', 'LIKE', "%{$global}%")
+                    ->orWhere('nome_consultor', 'LIKE', "%{$global}%")
+                    ->orWhere('valor', 'LIKE', "%{$global}%")
+                    ->orWhere('saldoareceber', 'LIKE', "%{$global}%")
+                    ->orWhere('saldo_total_parcelas_pagas', 'LIKE', "%{$global}%")
+                    ->orWhere('dt_lancamento', 'LIKE', "%{$global}%");
+            });
+        }
+
         // Retorna a coleção paginada
         return EmprestimoAllResource::collection($query->paginate($perPage));
     }

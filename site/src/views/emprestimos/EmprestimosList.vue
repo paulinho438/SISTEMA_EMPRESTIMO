@@ -184,6 +184,12 @@ export default {
                     params[key] = constraint.value;
                 }
             });
+
+            // Adiciona o filtro global aos parâmetros
+            if (this.filters.global.value) {
+                params.global = this.filters.global.value;
+            }
+            
             this.emprestimoService
                 .getAll(params) // Passa paginação na requisição
                 .then((response) => {
