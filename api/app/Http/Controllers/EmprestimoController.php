@@ -193,8 +193,12 @@ class EmprestimoController extends Controller
             $global = $request->get('global');
             $query->where(function ($q) use ($global) {
                 $q->where('id', 'LIKE', "%{$global}%")
-                    ->orWhere('nome_cliente', 'LIKE', "%{$global}%")
-                    ->orWhere('nome_consultor', 'LIKE', "%{$global}%")
+                    ->orWhereHas('client', function ($q) use ($global) {
+                        $q->where('nome_completo', 'LIKE', "%{$global}%");
+                    })
+                    ->orWhereHas('user', function ($q) use ($global) {
+                        $q->where('nome_completo', 'LIKE', "%{$global}%");
+                    })
                     ->orWhere('valor', 'LIKE', "%{$global}%")
                     ->orWhere('saldoareceber', 'LIKE', "%{$global}%")
                     ->orWhere('saldo_total_parcelas_pagas', 'LIKE', "%{$global}%")
