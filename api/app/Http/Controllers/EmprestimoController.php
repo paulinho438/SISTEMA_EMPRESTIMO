@@ -200,8 +200,6 @@ class EmprestimoController extends Controller
                         $q->where('nome_completo', 'LIKE', "%{$global}%");
                     })
                     ->orWhere('valor', 'LIKE', "%{$global}%")
-                    ->orWhere('saldoareceber', 'LIKE', "%{$global}%")
-                    ->orWhere('saldo_total_parcelas_pagas', 'LIKE', "%{$global}%")
                     ->orWhere('dt_lancamento', 'LIKE', "%{$global}%");
             });
         }
