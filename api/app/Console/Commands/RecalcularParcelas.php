@@ -114,8 +114,9 @@ class RecalcularParcelas extends Command
                     $parcela->emprestimo->quitacao->save();
                     $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
                     $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
-
+                    Log::info(message: "Alterando quitacao da parcela $parcela->id quitacao: {$parcela->emprestimo->quitacao->id} txid: $txId");
                     if ($response->successful()) {
+                        Log::info('Quitacao alterada com sucesso');
                         $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                         $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
@@ -124,14 +125,15 @@ class RecalcularParcelas extends Command
                 }
 
                 if ($parcela->emprestimo->pagamentominimo) {
-
                     $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
 
                     $parcela->emprestimo->pagamentominimo->save();
                     $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
                     $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $txId);
+                    Log::info(message: "Alterando pagamento minimo da parcela $parcela->id no valor de {$parcela->emprestimo->pagamentominimo->valor} txid: $txId");
 
                     if ($response->successful()) {
+                        Log::info(message: 'Pagamento minimo alterada com sucesso');
                         $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                         $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->pagamentominimo->save();
@@ -145,8 +147,9 @@ class RecalcularParcelas extends Command
                     $parcela->emprestimo->pagamentosaldopendente->save();
                     $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
                     $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
-
+                    Log::info(message: "Alterando saldo pendente da parcela $parcela->id no valor de {$parcela->emprestimo->pagamentosaldopendente->valor} txid: $txId");
                     if ($response->successful()) {
+                        Log::info(message: 'Saldo pendente alterada com sucesso');
                         $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                         $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->pagamentosaldopendente->save();
