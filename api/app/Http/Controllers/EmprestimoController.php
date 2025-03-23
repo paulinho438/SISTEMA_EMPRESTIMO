@@ -181,8 +181,8 @@ class EmprestimoController extends Controller
             $query->whereDate('dt_lancamento', $dt_lancamento);
         }
 
-        if ($request->has('valor_min') && $request->has('valor_max')) {
-            $query->whereBetween('valor', [$request->valor_min, $request->valor_max]);
+        if ($request->has('valor')) {
+            $query->where('valor', 'LIKE' , "%{$request->valor}%");
         }
 
         if ($request->has('saldoareceber_min') && $request->has('saldoareceber_max')) {
