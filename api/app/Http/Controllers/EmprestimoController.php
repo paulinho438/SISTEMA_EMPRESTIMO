@@ -54,6 +54,8 @@ use App\Http\Resources\BancosComSaldoResource;
 use App\Http\Resources\CostcenterResource;
 use App\Http\Resources\FeriadoEmprestimoResource;
 use App\Http\Resources\FornecedorResource;
+use App\Http\Resources\EmprestimoLandingPageResource;
+
 
 use App\Jobs\gerarPixParcelas;
 use App\Models\ParcelaExtorno;
@@ -1591,7 +1593,7 @@ class EmprestimoController extends Controller
         $parcela = Parcela::find($id);
 
         if ($parcela) {
-            $array['data']['emprestimo'] = new EmprestimoResource($parcela->emprestimo);
+            $array['data']['emprestimo'] = new EmprestimoLandingPageResource($parcela->emprestimo);
             return $array;
         }
 
