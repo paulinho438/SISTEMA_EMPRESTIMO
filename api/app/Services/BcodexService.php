@@ -84,7 +84,8 @@ class BcodexService
             }
 
             if (!$response->successful()) {
-                throw new \Exception('Erro ao criar cobrança: ' . $response->body());
+                Log::error('Erro ao criar cobrança: ' . $response->body());
+                return false;
             }
 
             return $response;

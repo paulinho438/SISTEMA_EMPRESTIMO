@@ -103,7 +103,7 @@ class RecalcularParcelas extends Command
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->save();
                     }else{
-                        Log::info("Não deu certo");
+                        Log::info("Não deu certo, parcela $parcela->id no valor de $parcela->saldo txid: $txId");
                         continue;
                     }
                 }
