@@ -180,6 +180,9 @@ class BancoController extends Controller
                 if (count($parcela->emprestimo->parcelas) == 1) {
                     $passo = "Processando emprestimo mensal - parcela ID {$parcela->id}";
                     Log::debug("Passo: $passo");
+                    Log::debug("Parcela: $parcela");
+
+
 
                     $valor = $parcela->valor_recebido;
                     $valor1 = $parcela->emprestimo->pagamentominimo->valor;
