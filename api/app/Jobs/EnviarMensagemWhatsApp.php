@@ -35,7 +35,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
 
-        if($this->parcela->atrasadas > 0) {
+        if(1 == 1) {
             $telefone = preg_replace('/\D/', '', $this->parcela->emprestimo->client->telefone_celular_1);
             $baseUrl = $this->parcela->emprestimo->company->whatsapp;
             $tipo = "1.1";
