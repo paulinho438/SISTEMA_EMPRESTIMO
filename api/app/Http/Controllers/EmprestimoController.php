@@ -2853,6 +2853,7 @@ class EmprestimoController extends Controller
             return response()->json(['message' => 'Cobrança atualizada com sucesso.']);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error("Erro cobrar amanha".$e->getMessage());
 
             return response()->json([
                 "message" => "Erro ao mudar cobrança da parcela do Emprestimo.",
