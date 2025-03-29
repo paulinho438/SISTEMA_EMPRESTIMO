@@ -59,7 +59,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                     break;
             }
 
-            if($tipo <> "0"){
+            if($tipo != "0"){
                 $data = [
                     "numero" => "55" . $telefone,
                     "nomeCliente" => $this->parcela->emprestimo->client->nome_completo,
