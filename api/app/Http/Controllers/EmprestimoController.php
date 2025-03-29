@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Emprestimo;
 use App\Models\Parcela;
 use App\Models\Locacao;
-use App\Models\ParcelaExtornox;
+use App\Models\ParcelaExtorno;
 use App\Models\Quitacao;
 use App\Models\PagamentoMinimo;
 use App\Models\Client;
