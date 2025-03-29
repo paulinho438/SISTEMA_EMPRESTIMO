@@ -10,7 +10,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 
-
 class EnviarMensagemWhatsApp implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -70,7 +69,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
             $data = [
                 "numero" => "55" . $telefone,
                 "nomeCliente" => $parcela->emprestimo->client->nome_completo,
-                "tipo" => $tipo
+                "tipo" => "1.1"
             ];
 
 
