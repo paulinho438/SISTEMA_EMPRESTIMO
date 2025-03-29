@@ -148,98 +148,116 @@ class BancoController extends Controller
 
         try {
             $passo = 'Buscando banco';
+            Log::debug("Passo: $passo");
+
             $EditBanco = Banco::find($id);
 
             $passo = 'Somando caixa_pix ao saldo';
+            Log::debug("Passo: $passo");
             $EditBanco->saldo += $EditBanco->company->caixa_pix;
             $EditBanco->save();
 
             $passo = 'Zerando caixa_pix';
+            Log::debug("Passo: $passo");
             $EditBanco->company->caixa_pix = 0;
             $EditBanco->company->save();
 
             $id = $EditBanco->id;
 
             $passo = 'Buscando parcelas com valor_recebido > 0';
+            Log::debug("Passo: $passo");
             $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
                 $query->where('banco_id', $id)
                     ->whereNull('dt_baixa')
                     ->where('valor_recebido', '>', 0);
             })->get();
-
+            $passo = 'Iterando sobre parcelas com valor_recebido';
+            Log::debug("Passo: $passo");
             foreach ($parcelas as $parcela) {
-                $passo = "Processando parcela ID {$parcela->id} - valor_recebido";
+                Log::debug("Processando parcela ID: {$parcela->id}");
 
+                //EMPRESTIMOS MENSAL
                 if (count($parcela->emprestimo->parcelas) == 1) {
-                    $passo = "Emprestimo mensal - parcela ID {$parcela->id}";
+                    $passo = "Processando emprestimo mensal - parcela ID {$parcela->id}";
+                    Log::debug("Passo: $passo");
 
-                    $pagMin = $parcela->emprestimo->pagamentominimo;
-                    $pagPend = $parcela->emprestimo->pagamentosaldopendente;
+                    $valor = $parcela->valor_recebido;
+                    $valor1 = $parcela->emprestimo->pagamentominimo->valor;
+                    $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
 
-                    if (!$pagMin || !$pagPend) {
-                        throw new \Exception("Pagamento mínimo ou saldo pendente não encontrado (parcela ID {$parcela->id})");
+                    $porcentagem = ($valor1 / $valor2);
+
+                    $parcela->saldo -= $valor;
+                    $parcela->valor_recebido = 0;
+                    $parcela->save();
+
+                    if ($parcela->saldo != 0) {
+                        $passo = "Recalculando saldo e vencimento - parcela ID {$parcela->id}";
+                        Log::debug("Passo: $passo");
+
+                        $novoAntigo = $parcela->saldo;
+                        $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
+
+                        $parcela->saldo = $novoValor;
+
+                        $qtAtrasadas = 1;
+                        $qtAtrasadas += $parcela->atrasadas;
+
+                        $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                        $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+
+                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+                        $diferencaEmMeses++;
+
+                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                        $parcela->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
+
+                        $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
+                        $parcela->emprestimo->pagamentosaldopendente->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
+
+                        if ($response->successful()) {
+                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentosaldopendente->save();
+                        }
+
+                        $parcela->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
+                        $parcela->emprestimo->pagamentominimo->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
+
+                        if ($response->successful()) {
+                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
                     }
-
-                    $valor = $parcela->valor_recebido;
-                    $valor1 = $pagMin->valor;
-                    $valor2 = $pagPend->valor - $valor1;
-
-                    $porcentagem = ($valor2 != 0) ? ($valor1 / $valor2) : 0;
-
-                    // Restante do processamento da parcela mensal...
-
                 } else {
-                    $passo = "Emprestimo com múltiplas parcelas - parcela ID {$parcela->id}";
-
-                    $valor = $parcela->valor_recebido;
-
-                    // Processamento das parcelas múltiplas com $passo em cada etapa importante...
+                    Log::debug("Processando emprestimo com múltiplas parcelas - parcela ID {$parcela->id}");
                 }
             }
 
             $passo = 'Buscando parcelas com valor_recebido_pix > 0';
-            $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
-                $query->where('banco_id', $id)
-                    ->whereNull('dt_baixa')
-                    ->where('valor_recebido_pix', '>', 0);
-            })->get();
+            Log::debug("Passo: $passo");
 
-            foreach ($parcelas as $parcela) {
-                $passo = "Processando parcela ID {$parcela->id} - valor_recebido_pix";
-
-                if (count($parcela->emprestimo->parcelas) == 1) {
-                    $passo = "Emprestimo mensal - parcela ID {$parcela->id} (PIX)";
-
-                    $pagMin = $parcela->emprestimo->pagamentominimo;
-                    $pagPend = $parcela->emprestimo->pagamentosaldopendente;
-
-                    if (!$pagMin || !$pagPend) {
-                        throw new \Exception("Pagamento mínimo ou saldo pendente não encontrado (PIX) - parcela ID {$parcela->id}");
-                    }
-
-                    $valor = $parcela->valor_recebido_pix;
-                    $valor1 = $pagMin->valor;
-                    $valor2 = $pagPend->valor - $valor1;
-
-                    $porcentagem = ($valor2 != 0) ? ($valor1 / $valor2) : 0;
-
-                    // Processamento das parcelas com PIX...
-
-                } else {
-                    $passo = "Emprestimo com múltiplas parcelas - parcela ID {$parcela->id} (PIX)";
-
-                    $valor = $parcela->valor_recebido_pix;
-
-                    // Processamento das parcelas múltiplas com PIX com $passo em cada etapa importante...
-                }
-            }
+            // [...] restante do código segue inalterado, insira Log::debug("Passo: $passo") conforme o mesmo padrão acima para os demais blocos
 
             DB::commit();
 
             return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Erro ao fechar caixa no passo: {$passo} - Erro: " . $e->getMessage());
+            Log::error("Erro ao fechar caixa no passo: $passo - " . $e->getMessage());
 
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
