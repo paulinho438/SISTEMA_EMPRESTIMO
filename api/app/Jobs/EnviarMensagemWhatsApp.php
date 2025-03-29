@@ -24,10 +24,15 @@ class EnviarMensagemWhatsApp implements ShouldQueue
     {
         $telefone = preg_replace('/\D/', '', $this->parcela->emprestimo->client->telefone_celular_1);
         $baseUrl = $this->parcela->emprestimo->company->whatsapp;
-        \Illuminate\Support\Facades\Log::error('envio');
+
+        $data2 = [
+            "numero" => "55" . $telefone,
+            "nomeCliente" => $this->parcela->emprestimo->client->nome_completo,
+            "tipo" => "1.1"
+        ];
 
         $saudacao = $this->obterSaudacao();
-        $mensagem = $this->montarMensagem($this->parcela, $saudacao);
+        $mensagem = $this->montarMensagem($this->parcela, json_encode($data2));
 
         $data = [
             "numero" => "55" . $telefone,
