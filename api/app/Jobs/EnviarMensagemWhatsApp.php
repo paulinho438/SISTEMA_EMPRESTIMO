@@ -9,7 +9,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class EnviarMensagemWhatsApp implements ShouldQueue
 {
@@ -68,7 +67,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                     "tipo" => $tipo
                 ];
 
-                Log::debug('envio', $data);
+                \Illuminate\Support\Facades\Log::debug('envio', $data);
 
                 Http::asJson()->post("$baseUrl/enviar-audio", $data);
             }
