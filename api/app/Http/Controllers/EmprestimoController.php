@@ -493,16 +493,6 @@ class EmprestimoController extends Controller
             $contaspagar['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
             $contaspagar['company_id'] = $request->header('company-id');
             Contaspagar::create($contaspagar);
-
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $dados['banco']['id'];
-            $movimentacaoFinanceira['company_id'] = $request->header('company-id');
-            $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
-            $movimentacaoFinanceira['tipomov'] = 'S';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $dados['valor'];
-
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
