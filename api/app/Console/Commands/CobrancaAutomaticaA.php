@@ -58,6 +58,8 @@ class CobrancaAutomaticaA extends Command
         $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
         $count = count($parcelas);
         Log::info("Cobranca Automatica A quantidade de clientes: {$count}");
+
+        $parcelas = Parcela::where('id', 23167)->get();
         foreach ($parcelas as $parcela) {
             $this->processarParcela($parcela);
         }
