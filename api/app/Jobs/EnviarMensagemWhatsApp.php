@@ -24,6 +24,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
     {
         $telefone = preg_replace('/\D/', '', $this->parcela->emprestimo->client->telefone_celular_1);
         $baseUrl = $this->parcela->emprestimo->company->whatsapp;
+        \Illuminate\Support\Facades\Log::error('envio');
 
         $saudacao = $this->obterSaudacao();
         $mensagem = $this->montarMensagem($this->parcela, $saudacao);
@@ -58,7 +59,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                     $tipo = "6.1";
                     break;
             }
-            Log::debug('envio');
+            \Illuminate\Support\Facades\Log::error('envio');
 
             if($tipo != "0"){
                 $data = [
