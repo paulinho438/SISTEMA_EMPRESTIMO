@@ -145,18 +145,18 @@ class AuthController extends Controller
 
             $validTentativas = User::where('login', $request->usuario)->first();
 
-            if($validTentativas && $validTentativas->tentativas == '5'){
-                return response()->json([
-                    "message" => 'Sua conta está desativada pois ultrapassou 4 tentativas, recupere sua senha para continuar utilizando o aplicativo!'
-                ], Response::HTTP_FORBIDDEN);
-            }
-
-            if(!$validTentativas){
-
-                return response()->json([
-                    "message" => 'E-mail ou CPF não existe!'
-                ], Response::HTTP_FORBIDDEN);
-            }
+//            if($validTentativas && $validTentativas->tentativas == '5'){
+//                return response()->json([
+//                    "message" => 'Sua conta está desativada pois ultrapassou 4 tentativas, recupere sua senha para continuar utilizando o aplicativo!'
+//                ], Response::HTTP_FORBIDDEN);
+//            }
+//
+//            if(!$validTentativas){
+//
+//                return response()->json([
+//                    "message" => 'E-mail ou CPF não existe!'
+//                ], Response::HTTP_FORBIDDEN);
+//            }
 
             $token = Auth::attempt([
                 'login' => $request->usuario,
