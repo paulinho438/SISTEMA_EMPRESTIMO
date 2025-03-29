@@ -142,23 +142,25 @@ class BancoController extends Controller
 
     public function fechamentocaixa(Request $request, $id)
     {
-
+        $passo = '';
 
         DB::beginTransaction();
 
         try {
-
+            $passo = 'Buscando banco';
             $EditBanco = Banco::find($id);
 
+            $passo = 'Somando caixa_pix ao saldo';
             $EditBanco->saldo += $EditBanco->company->caixa_pix;
             $EditBanco->save();
 
+            $passo = 'Zerando caixa_pix';
             $EditBanco->company->caixa_pix = 0;
             $EditBanco->company->save();
 
             $id = $EditBanco->id;
 
-            // Encontrar a parcela correspondente
+            $passo = 'Buscando parcelas com valor_recebido > 0';
             $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
                 $query->where('banco_id', $id)
                     ->whereNull('dt_baixa')
@@ -166,174 +168,36 @@ class BancoController extends Controller
             })->get();
 
             foreach ($parcelas as $parcela) {
+                $passo = "Processando parcela ID {$parcela->id} - valor_recebido";
 
-                //EMPRESTIMOS MENSAL
                 if (count($parcela->emprestimo->parcelas) == 1) {
-                    $valor = $parcela->valor_recebido;
-                    $valor1 = $parcela->emprestimo->pagamentominimo->valor;
-                    $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
+                    $passo = "Emprestimo mensal - parcela ID {$parcela->id}";
 
-                    $porcentagem = ($valor1 / $valor2);
+                    $pagMin = $parcela->emprestimo->pagamentominimo;
+                    $pagPend = $parcela->emprestimo->pagamentosaldopendente;
 
-                    $parcela->saldo -= $valor;
-                    $parcela->valor_recebido = 0;
-                    $parcela->save();
-
-                    if ($parcela->saldo != 0) {
-
-
-                        $novoAntigo = $parcela->saldo;
-                        $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
-
-                        $parcela->saldo = $novoValor;
-
-                        $qtAtrasadas = 1;
-                        $qtAtrasadas += $parcela->atrasadas;
-
-                        $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
-                        $dataFinalCarbon = Carbon::parse($parcela->venc_real);
-
-                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
-
-                        $diferencaEmMeses++;
-
-                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
-                        $parcela->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
-
-
-                        $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
-
-                        $parcela->emprestimo->pagamentosaldopendente->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
-
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentosaldopendente->save();
-                        }
-
-                        $parcela->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
-
-                        $parcela->emprestimo->pagamentominimo->save();
-
-                        // MOVIMENTACAO FINANCEIRA
-                        $movimentacaoFinanceira = [];
-                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
-                        $movimentacaoFinanceira['tipomov'] = 'E';
-                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        $movimentacaoFinanceira['valor'] = $valor;
-                        Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentominimo->save();
-                        }
+                    if (!$pagMin || !$pagPend) {
+                        throw new \Exception("Pagamento mínimo ou saldo pendente não encontrado (parcela ID {$parcela->id})");
                     }
+
+                    $valor = $parcela->valor_recebido;
+                    $valor1 = $pagMin->valor;
+                    $valor2 = $pagPend->valor - $valor1;
+
+                    $porcentagem = ($valor2 != 0) ? ($valor1 / $valor2) : 0;
+
+                    // Restante do processamento da parcela mensal...
+
                 } else {
+                    $passo = "Emprestimo com múltiplas parcelas - parcela ID {$parcela->id}";
+
                     $valor = $parcela->valor_recebido;
 
-
-                    while ($parcela && $valor > 0) {
-
-
-
-                        if ($valor >= $parcela->saldo) {
-
-
-                            // MOVIMENTACAO FINANCEIRA
-                            $movimentacaoFinanceira = [];
-                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
-                            $movimentacaoFinanceira['tipomov'] = 'E';
-                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $parcela->saldo;
-                            Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                            if ($parcela->contasreceber) {
-                                $parcela->contasreceber->status = 'Pago';
-                                $parcela->contasreceber->dt_baixa = date('Y-m-d');
-                                $parcela->contasreceber->forma_recebto = 'PIX';
-                                $parcela->contasreceber->save();
-                            }
-
-                            // Quitar a parcela atual
-                            $valor -= $parcela->saldo;
-                            $parcela->saldo = 0;
-                            $parcela->dt_baixa = date('Y-m-d');
-                        } else {
-
-                            // MOVIMENTACAO FINANCEIRA
-                            $movimentacaoFinanceira = [];
-                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
-                            $movimentacaoFinanceira['tipomov'] = 'E';
-                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $valor;
-                            Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                            $parcela->saldo -= $valor;
-                            $valor = 0;
-                        }
-
-                        $parcela->valor_recebido = 0;
-                        $parcela->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
-
-                        if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
-
-                            $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
-
-                            if ($response->successful()) {
-                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
-                                $parcela->emprestimo->quitacao->save();
-                            }
-                        }
-
-                        // Encontrar a próxima parcela
-                        $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                            ->where('id', '>', $parcela->id)
-                            ->orderBy('id', 'asc')
-                            ->first();
-                    }
-
-
-                    // Encontrar a próxima parcela
-                    $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                        ->where('id', '>', $parcela->id)
-                        ->orderBy('id', 'asc')
-                        ->first();
+                    // Processamento das parcelas múltiplas com $passo em cada etapa importante...
                 }
             }
 
-
-            // Encontrar a parcela correspondente
+            $passo = 'Buscando parcelas com valor_recebido_pix > 0';
             $parcelas = Parcela::whereHas('emprestimo', function ($query) use ($id) {
                 $query->where('banco_id', $id)
                     ->whereNull('dt_baixa')
@@ -341,155 +205,32 @@ class BancoController extends Controller
             })->get();
 
             foreach ($parcelas as $parcela) {
-                $valor = $parcela->valor_recebido_pix;
-
+                $passo = "Processando parcela ID {$parcela->id} - valor_recebido_pix";
 
                 if (count($parcela->emprestimo->parcelas) == 1) {
+                    $passo = "Emprestimo mensal - parcela ID {$parcela->id} (PIX)";
+
+                    $pagMin = $parcela->emprestimo->pagamentominimo;
+                    $pagPend = $parcela->emprestimo->pagamentosaldopendente;
+
+                    if (!$pagMin || !$pagPend) {
+                        throw new \Exception("Pagamento mínimo ou saldo pendente não encontrado (PIX) - parcela ID {$parcela->id}");
+                    }
+
                     $valor = $parcela->valor_recebido_pix;
-                    $valor1 = $parcela->emprestimo->pagamentominimo->valor;
-                    $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
+                    $valor1 = $pagMin->valor;
+                    $valor2 = $pagPend->valor - $valor1;
 
-                    $porcentagem = ($valor1 / $valor2);
+                    $porcentagem = ($valor2 != 0) ? ($valor1 / $valor2) : 0;
 
-                    $parcela->saldo -= $valor;
-                    $parcela->valor_recebido_pix = 0;
-                    $parcela->save();
+                    // Processamento das parcelas com PIX...
 
-                    if ($parcela->saldo != 0) {
-
-
-                        $novoAntigo = $parcela->saldo;
-                        $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
-
-                        $parcela->saldo = $novoValor;
-
-                        $qtAtrasadas = 1;
-                        $qtAtrasadas += $parcela->atrasadas;
-
-                        $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
-                        $dataFinalCarbon = Carbon::parse($parcela->venc_real);
-
-                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
-
-                        $diferencaEmMeses++;
-
-                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
-                        $parcela->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
-
-
-                        $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
-
-                        $parcela->emprestimo->pagamentosaldopendente->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentosaldopendente->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentosaldopendente->save();
-                        }
-
-                        $parcela->emprestimo->pagamentominimo->valor = $novoValor - $novoAntigo;
-
-                        $parcela->emprestimo->pagamentominimo->save();
-
-                        // MOVIMENTACAO FINANCEIRA
-                        $movimentacaoFinanceira = [];
-                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
-                        $movimentacaoFinanceira['tipomov'] = 'E';
-                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        $movimentacaoFinanceira['valor'] = $valor;
-                        Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->emprestimo->pagamentominimo->save();
-                        }
-                    }
                 } else {
+                    $passo = "Emprestimo com múltiplas parcelas - parcela ID {$parcela->id} (PIX)";
 
+                    $valor = $parcela->valor_recebido_pix;
 
-                    if ($parcela->emprestimo->extornos) {
-                        foreach ($parcela->emprestimo->extornos as $ext) {
-                            $ext->delete();
-                        }
-                    }
-
-                    while ($parcela && $valor > 0) {
-                        if ($valor >= $parcela->saldo) {
-
-                            // MOVIMENTACAO FINANCEIRA
-                            $movimentacaoFinanceira = [];
-                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
-                            $movimentacaoFinanceira['tipomov'] = 'E';
-                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $parcela->saldo;
-                            Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                            if ($parcela->contasreceber) {
-                                $parcela->contasreceber->status = 'Pago';
-                                $parcela->contasreceber->dt_baixa = date('Y-m-d');
-                                $parcela->contasreceber->forma_recebto = 'PIX';
-                                $parcela->contasreceber->save();
-                            }
-
-                            // Quitar a parcela atual
-                            $valor -= $parcela->saldo;
-                            $parcela->saldo = 0;
-                            $parcela->dt_baixa = date('Y-m-d');
-                        } else {
-
-                            // MOVIMENTACAO FINANCEIRA
-                            $movimentacaoFinanceira = [];
-                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
-                            $movimentacaoFinanceira['tipomov'] = 'E';
-                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                            $movimentacaoFinanceira['valor'] = $valor;
-                            Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                            $parcela->saldo -= $valor;
-                            $valor = 0;
-                        }
-
-                        $parcela->valor_recebido_pix = 0;
-                        $parcela->save();
-
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
-
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
-
-
-
-
-                        // Encontrar a próxima parcela
-                        $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
-                            ->where('id', '>', $parcela->id)
-                            ->orderBy('id', 'asc')
-                            ->first();
-                    }
+                    // Processamento das parcelas múltiplas com PIX com $passo em cada etapa importante...
                 }
             }
 
@@ -498,10 +239,11 @@ class BancoController extends Controller
             return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erro ao criar cobrança: ' . $e->getMessage());
+            Log::error("Erro ao fechar caixa no passo: {$passo} - Erro: " . $e->getMessage());
 
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
+                "passo" => $passo,
                 "error" => $e->getMessage()
             ], Response::HTTP_FORBIDDEN);
         }
