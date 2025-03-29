@@ -44,7 +44,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
         $baseUrl = $parcela->emprestimo->company->whatsapp;
         $tipo = "0";
-        switch ($parcela->atrasada) {
+        switch ($parcela->atrasadas) {
             case 2:
                 $tipo = "1.1";
                 break;
