@@ -36,46 +36,43 @@ class EnviarMensagemWhatsApp implements ShouldQueue
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
 
         if($this->parcela->atrasadas > 0) {
-            $this->enviarMensagemComAudio($this->parcela);
+            $telefone = preg_replace('/\D/', '', $this->parcela->emprestimo->client->telefone_celular_1);
+            $baseUrl = $this->parcela->emprestimo->company->whatsapp;
+            $tipo = "1.1";
+            switch ($this->parcela->atrasadas) {
+                case 2:
+                    $tipo = "1.1";
+                    break;
+                case 4:
+                    $tipo = "2.1";
+                    break;
+                case 6:
+                    $tipo = "3.1";
+                    break;
+                case 8:
+                    $tipo = "4.1";
+                    break;
+                case 10:
+                    $tipo = "5.1";
+                    break;
+                case 15:
+                    $tipo = "6.1";
+                    break;
+            }
+
+            if($tipo <> "0"){
+                $data = [
+                    "numero" => "55" . $telefone,
+                    "nomeCliente" => $this->parcela->emprestimo->client->nome_completo,
+                    "tipo" => $tipo
+                ];
+
+
+                Http::asJson()->post("$baseUrl/enviar-audio", $data);
+            }
         }
     }
 
-    public function enviarMensagemComAudio($parcela){
-        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-        $baseUrl = $parcela->emprestimo->company->whatsapp;
-        $tipo = "1.1";
-        switch ($parcela->atrasadas) {
-            case 2:
-                $tipo = "1.1";
-                break;
-            case 4:
-                $tipo = "2.1";
-                break;
-            case 6:
-                $tipo = "3.1";
-                break;
-            case 8:
-                $tipo = "4.1";
-                break;
-            case 10:
-                $tipo = "5.1";
-                break;
-            case 15:
-                $tipo = "6.1";
-                break;
-        }
-
-        if($tipo <> "0"){
-            $data = [
-                "numero" => "55" . $telefone,
-                "nomeCliente" => $parcela->emprestimo->client->nome_completo,
-                "tipo" => "1.1"
-            ];
-
-
-            Http::asJson()->post("$baseUrl/enviar-audio", $data);
-        }
-    }
     private function montarMensagem($parcela, $saudacao)
     {
         $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
