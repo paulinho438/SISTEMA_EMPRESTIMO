@@ -44,6 +44,8 @@ class BcodexService
         if($valor) {
             $modalidadeAlteracao = $txId == null ? 0 : 1;
 
+            $sucesso = true;
+
             // Dados da cobrança
             $data = [
                 "calendario" => [
@@ -79,7 +81,7 @@ class BcodexService
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
                     if (!$response->successful()) {
                         Log::error('Erro ao criar cobrança: ' . $response->body());
-                        return false;
+                        $sucesso = false;
                     }
                 } else {
                     $response = Http::withHeaders([
@@ -88,7 +90,7 @@ class BcodexService
                     ])->patch($url, $data);
                     if (!$response->successful()) {
                         Log::error('Erro ao criar cobrança: ' . $response->body());
-                        return false;
+                        $sucesso = false;
                     }
                 }
 
@@ -96,8 +98,21 @@ class BcodexService
             } catch (\Exception $e) {
                 // Log the error
                 Log::error('Erro ao criar cobrança: ' . $e->getMessage());
+                $sucesso = false;
+            }
 
-                return false;
+            if(!$sucesso) {
+                $txId = bin2hex(random_bytes(16));
+                $url = "{$this->baseUrl}/cob/{$txId}";
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $accessToken,
+                ])->put($url, $data);
+                ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                if (!$response->successful()) {
+                    Log::error('Erro ao criar cobrança: ' . $response->body());
+                    return false;
+                }
             }
         }
         return false;
