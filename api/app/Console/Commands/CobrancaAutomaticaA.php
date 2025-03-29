@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\EnviarMensagemWhatsApp;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use App\Models\Juros;
@@ -77,7 +78,7 @@ class CobrancaAutomaticaA extends Command
                 $this->enviarMensagem($parcela);
             }
         } catch (\Throwable $th) {
-            dd($th);
+            Log::error($th);
         }
     }
 
@@ -90,66 +91,6 @@ class CobrancaAutomaticaA extends Command
 
     private function enviarMensagem($parcela)
     {
-        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-
-        $saudacao = $this->obterSaudacao();
-        $parcelaPendente = $this->encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-
-        $mensagem = $this->montarMensagem($parcela, $saudacao);
-
-        $data = [
-            "numero" => "55" . $telefone,
-            "mensagem" => $mensagem
-        ];
-
-        Log::info('Cobranca', $data);
-
-        Http::asJson()->post($baseUrl, $data);
-        sleep(4);
-    }
-
-    private function montarMensagem($parcela, $saudacao)
-    {
-        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-        $fraseInicial = "
-
-Relatório de Parcelas Pendentes:
-
-Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
-
-https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
-
-📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
-";
-        return $saudacaoTexto . $fraseInicial;
-    }
-
-
-    private function obterSaudacao()
-    {
-        $hora = date('H');
-        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌤️ Tenha um excelente dia'];
-        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌤️ Espero que sua tarde esteja ótima'];
-        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌤️ Espero que sua noite esteja ótima'];
-
-        if ($hora < 12) {
-            return $saudacoesManha[array_rand($saudacoesManha)];
-        } elseif ($hora < 18) {
-            return $saudacoesTarde[array_rand($saudacoesTarde)];
-        } else {
-            return $saudacoesNoite[array_rand($saudacoesNoite)];
-        }
-    }
-
-    private function encontrarPrimeiraParcelaPendente($parcelas)
-    {
-        foreach ($parcelas as $parcela) {
-            if (is_null($parcela->dt_baixa)) {
-                return $parcela;
-            }
-        }
-
-        return null;
+        EnviarMensagemWhatsApp::dispatch($parcela);
     }
 }
