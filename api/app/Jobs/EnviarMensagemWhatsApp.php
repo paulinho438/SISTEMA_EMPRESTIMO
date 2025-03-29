@@ -9,7 +9,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class EnviarMensagemWhatsApp implements ShouldQueue
 {
@@ -33,8 +32,6 @@ class EnviarMensagemWhatsApp implements ShouldQueue
             "numero" => "55" . $telefone,
             "mensagem" => $mensagem
         ];
-
-        \Log::info('Cobranca Async', $data);
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
 
@@ -75,7 +72,6 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                 "tipo" => "1.1"
             ];
 
-            \Log::info("Cobranca AUDIO Async: tipo: $tipo", $data);
 
             Http::asJson()->post("$baseUrl/enviar-audio", $data);
         }
