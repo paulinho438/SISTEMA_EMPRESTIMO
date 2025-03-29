@@ -498,6 +498,7 @@ class BancoController extends Controller
             return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Erro ao criar cobrança: ' . $e->getMessage());
 
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
