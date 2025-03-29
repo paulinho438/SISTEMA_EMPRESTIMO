@@ -26,7 +26,7 @@ class EmprestimoLandingPageResource extends JsonResource
     public function toArray($request)
     {
         $parcelas = $this->parcelas;
-
+        $saldoareceber = $parcelas->where('dt_baixa', null)->sum('saldo');
 
         return [
             "id" => $this->id,
@@ -34,6 +34,7 @@ class EmprestimoLandingPageResource extends JsonResource
             "valor" => $this->valor,
             "lucro" => $this->lucro,
             "juros" => $this->juros,
+            "saldoareceber" => $saldoareceber,
             "parcelas" => ParcelaResource::collection($parcelas->sortBy('parcela')),
             "quitacao" => new QuitacaoResource($this->quitacao),
             "pagamentominimo" => new PagamentoMinimoResource($this->pagamentominimo),
