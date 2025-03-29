@@ -2837,6 +2837,9 @@ class EmprestimoController extends Controller
             foreach ($parcelas as $parcela) {
                 $parcela->dt_ult_cobranca = $request->dt_ult_cobranca;
                 $parcela->save();
+
+                Log::debug("Cobrar amanha parcela: $parcela");
+
             }
 
             DB::commit();
