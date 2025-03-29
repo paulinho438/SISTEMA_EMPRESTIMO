@@ -64,7 +64,6 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                     $tipo = "6.1";
                     break;
             }
-            \Illuminate\Support\Facades\Log::error('envio');
 
             if($tipo != "0"){
                 $data = [
@@ -73,7 +72,6 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                     "tipo" => $tipo
                 ];
 
-                \Illuminate\Support\Facades\Log::debug('envio', $data);
 
                 Http::asJson()->post("$baseUrl/enviar-audio", $data);
             }
