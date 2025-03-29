@@ -66,8 +66,6 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                     "tipo" => $tipo
                 ];
 
-                print_r($data);
-
                 Http::asJson()->post("$baseUrl/enviar-audio", $data);
             }
         }
