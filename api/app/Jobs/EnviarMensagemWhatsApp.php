@@ -34,7 +34,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
             "mensagem" => $mensagem
         ];
 
-        Log::info('Cobranca Async', $data);
+        \Log::info('Cobranca Async', $data);
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
 
@@ -75,7 +75,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
                 "tipo" => "1.1"
             ];
 
-            Log::info("Cobranca AUDIO Async: tipo: $tipo", $data);
+            \Log::info("Cobranca AUDIO Async: tipo: $tipo", $data);
 
             Http::asJson()->post("$baseUrl/enviar-audio", $data);
         }
