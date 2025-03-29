@@ -182,6 +182,7 @@ class BancoController extends Controller
                     Log::debug("Passo: $passo");
 
                     if(!$parcela->emprestimo->pagamentominimo || !$parcela->emprestimo->pagamentosaldopendente) {
+                        Log::debug("Processando emprestimo mensal - parcela ID {$parcela->id} NA0 FOI PROCESSADA, PAGAMENTO MINIMO OU SALDO PENDENTE NÃO ENCONTRADO");
                         continue;
                     }
 
