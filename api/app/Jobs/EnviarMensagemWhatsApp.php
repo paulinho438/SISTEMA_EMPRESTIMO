@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 
+
 class EnviarMensagemWhatsApp implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -43,7 +44,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
     public function enviarMensagemComAudio($parcela){
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
         $baseUrl = $parcela->emprestimo->company->whatsapp;
-        $tipo = "0";
+        $tipo = "1.1";
         switch ($parcela->atrasadas) {
             case 2:
                 $tipo = "1.1";
@@ -69,7 +70,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
             $data = [
                 "numero" => "55" . $telefone,
                 "nomeCliente" => $parcela->emprestimo->client->nome_completo,
-                "tipo" => "1.1"
+                "tipo" => $tipo
             ];
 
 
