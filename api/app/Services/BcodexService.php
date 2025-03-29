@@ -41,64 +41,66 @@ class BcodexService
 
     public function criarCobranca(float $valor, string $document, ?string $txId = null)
     {
-        $modalidadeAlteracao = $txId == null ? 0 : 1;
+        if($valor) {
+            $modalidadeAlteracao = $txId == null ? 0 : 1;
 
-        // Dados da cobrança
-        $data = [
-            "calendario" => [
-                "expiracao" => 95920000
-            ],
-            "valor" => [
-                "original" => number_format($valor, 2, '.', ''),
-                "modalidadeAlteracao" => $modalidadeAlteracao
-            ],
-            "chave" => $document,
-            "solicitacaoPagador" => "RJ EMPRESTIMOS",
-            "infoAdicionais" => [
-                [
-                    "nome" => "RJ",
-                    "valor" => "RJ EMPRESTIMOS"
+            // Dados da cobrança
+            $data = [
+                "calendario" => [
+                    "expiracao" => 95920000
+                ],
+                "valor" => [
+                    "original" => number_format($valor, 2, '.', ''),
+                    "modalidadeAlteracao" => $modalidadeAlteracao
+                ],
+                "chave" => $document,
+                "solicitacaoPagador" => "RJ EMPRESTIMOS",
+                "infoAdicionais" => [
+                    [
+                        "nome" => "RJ",
+                        "valor" => "RJ EMPRESTIMOS"
+                    ]
                 ]
-            ]
-        ];
+            ];
 
-        if ($txId == null) {
-            $txId = bin2hex(random_bytes(16));
-        }
-
-        $url = "{$this->baseUrl}/cob/{$txId}";
-        $accessToken = $this->login();
-
-        try {
-            if ($modalidadeAlteracao == 0) {
-                $response = Http::withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $accessToken,
-                ])->put($url, $data);
-                ControleBcodex::create(['identificador' => $response->json()['txid']]);
-                if (!$response->successful()) {
-                    Log::error('Erro ao criar cobrança: ' . $response->body());
-                    return false;
-                }
-            } else {
-                $response = Http::withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $accessToken,
-                ])->patch($url, $data);
-                if (!$response->successful()) {
-                    Log::error('Erro ao criar cobrança: ' . $response->body());
-                    return false;
-                }
+            if ($txId == null) {
+                $txId = bin2hex(random_bytes(16));
             }
 
-            return $response;
-        } catch (\Exception $e) {
-            // Log the error
-            Log::error('Erro ao criar cobrança: ' . $e->getMessage());
+            $url = "{$this->baseUrl}/cob/{$txId}";
+            $accessToken = $this->login();
 
-            return false;
+            try {
+                if ($modalidadeAlteracao == 0) {
+                    $response = Http::withHeaders([
+                        'Content-Type' => 'application/json',
+                        'Authorization' => 'Bearer ' . $accessToken,
+                    ])->put($url, $data);
+                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                    if (!$response->successful()) {
+                        Log::error('Erro ao criar cobrança: ' . $response->body());
+                        return false;
+                    }
+                } else {
+                    $response = Http::withHeaders([
+                        'Content-Type' => 'application/json',
+                        'Authorization' => 'Bearer ' . $accessToken,
+                    ])->patch($url, $data);
+                    if (!$response->successful()) {
+                        Log::error('Erro ao criar cobrança: ' . $response->body());
+                        return false;
+                    }
+                }
+
+                return $response;
+            } catch (\Exception $e) {
+                // Log the error
+                Log::error('Erro ao criar cobrança: ' . $e->getMessage());
+
+                return false;
+            }
         }
-
+        return false;
     }
 
     public function consultarChavePix(float $valor, string $pix, string $accountId)

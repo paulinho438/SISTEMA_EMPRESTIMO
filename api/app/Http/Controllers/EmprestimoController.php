@@ -58,7 +58,6 @@ use App\Http\Resources\EmprestimoLandingPageResource;
 
 
 use App\Jobs\gerarPixParcelas;
-use App\Models\ParcelaExtorno;
 use App\Models\PagamentoSaldoPendente;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
