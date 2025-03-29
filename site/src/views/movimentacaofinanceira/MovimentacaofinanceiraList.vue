@@ -88,7 +88,9 @@ export default {
 
                     response.data.data.forEach((item) => {
                         if (item.tipomov === 'E') {
-                            this.valorRecebido += item.valor;
+                            if (!(item.descricao.includes('desconto') || item.descricao.includes('Refinanciamento') || item.descricao.includes('manual'))) {
+                                this.valorRecebido += item.valor;
+                            }
                         }
                     });
 
@@ -96,7 +98,9 @@ export default {
 
                     response.data.data.forEach((item) => {
                         if (item.tipomov === 'S') {
-                            this.valorPago += item.valor;
+                            if (!(item.descricao.includes('desconto') || item.descricao.includes('Refinanciamento') || item.descricao.includes('manual'))) {
+                                this.valorPago += item.valor;
+                            }
                         }
                     });
 
@@ -150,9 +154,13 @@ export default {
 
             this.Movimentacaofinanceira.forEach((item) => {
                 if (item.tipomov === 'E') {
-                    this.valorRecebido += item.valor;
+                    if (!(item.descricao.includes('desconto') || item.descricao.includes('Refinanciamento') || item.descricao.includes('manual'))) {
+                        this.valorRecebido += item.valor;
+                    }
                 } else if (item.tipomov === 'S') {
-                    this.valorPago += item.valor;
+                    if (!(item.descricao.includes('desconto') || item.descricao.includes('Refinanciamento') || item.descricao.includes('manual'))) {
+                        this.valorPago += item.valor;
+                    }
                 }
             });
         },
@@ -339,7 +347,6 @@ export default {
                                         'text-red': data.descricao.includes('Baixa com desconto no'),
                                         'text-green-500': data.descricao.includes('Refinanciamento'),
                                         'text-blue-500': data.descricao.includes('baixa manual')
-                                        
                                     }"
                                 >
                                     {{ data.descricao }}
