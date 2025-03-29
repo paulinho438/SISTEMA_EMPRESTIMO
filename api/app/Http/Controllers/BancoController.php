@@ -192,10 +192,8 @@ class BancoController extends Controller
                         $novoAntigo = $parcela->saldo;
                         $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
 
+                        $parcela->atrasadas = 0;
                         $parcela->saldo = $novoValor;
-
-                        $qtAtrasadas = 1;
-                        $qtAtrasadas += $parcela->atrasadas;
 
                         $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                         $dataFinalCarbon = Carbon::parse($parcela->venc_real);
@@ -372,10 +370,8 @@ class BancoController extends Controller
                         $novoAntigo = $parcela->saldo;
                         $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
 
+                        $parcela->atrasadas = 0;
                         $parcela->saldo = $novoValor;
-
-                        $qtAtrasadas = 1;
-                        $qtAtrasadas += $parcela->atrasadas;
 
                         $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                         $dataFinalCarbon = Carbon::parse($parcela->venc_real);
