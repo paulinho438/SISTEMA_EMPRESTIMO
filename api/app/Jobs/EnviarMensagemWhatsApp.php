@@ -27,7 +27,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
 
         $data2 = [
             "numero" => "55" . $telefone,
-            "nomeCliente" => $this->parcela->emprestimo->client->nome_completo,
+            "nomeCliente" => $this->parcela->emprestimo->client,
             "tipo" => "1.1"
         ];
 
