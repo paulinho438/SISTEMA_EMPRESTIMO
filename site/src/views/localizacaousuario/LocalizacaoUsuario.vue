@@ -275,7 +275,7 @@ export default {
                                 position: { lat: Number(item.latitude), lng: Number(item.longitude) },
                                 title: `${item.user_name}`,
                                 icon: {
-                                    url: `/images/marker_50_50.png`,
+                                    url: `/images/motoboy.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
                                 },
                                 label: {
