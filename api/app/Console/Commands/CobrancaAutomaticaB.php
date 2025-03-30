@@ -98,7 +98,9 @@ class CobrancaAutomaticaB extends Command
                             $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
                             $fraseInicial = "
 
-🤷‍♂️ Não identificamos seu pagamento na data de hoje, evite multas!
+🤷‍♂️ Não identificamos seu pagamento na data de hoje, lembrando que é até 40 minutos para processar se não pagou evite multas!
+
+⚠️  *sempre enviar o comprovante para ajudar na conferência não se esqueça*
 
 Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
 
