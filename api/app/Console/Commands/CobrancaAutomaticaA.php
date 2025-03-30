@@ -96,57 +96,52 @@ class CobrancaAutomaticaA extends Command
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
         $baseUrl = $parcela->emprestimo->company->whatsapp;
 
-        $data2 = [
-            "numero" => "55" . $telefone,
-            "nomeCliente" => $parcela->emprestimo->client,
-            "tipo" => "1.1"
-        ];
 
-//        $saudacao = $this->obterSaudacao();
-//        $mensagem = $this->montarMensagem($parcela, json_encode($data2) );
+
+        $saudacao = $this->obterSaudacao();
+        $mensagem = $this->montarMensagem($parcela, $saudacao );
 
         $data = [
             "numero" => "55" . $telefone,
-            "mensagem" => json_encode($data2)
+            "mensagem" => json_encode($mensagem)
         ];
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
 
-//        if($this->parcela->atrasadas > 0) {
-//            $baseUrl = $this->parcela->emprestimo->company->whatsapp;
-//            $tipo = "1.1";
-//            switch ($this->parcela->atrasadas) {
-//                case 2:
-//                    $tipo = "1.1";
-//                    break;
-//                case 4:
-//                    $tipo = "2.1";
-//                    break;
-//                case 6:
-//                    $tipo = "3.1";
-//                    break;
-//                case 8:
-//                    $tipo = "4.1";
-//                    break;
-//                case 10:
-//                    $tipo = "5.1";
-//                    break;
-//                case 15:
-//                    $tipo = "6.1";
-//                    break;
-//            }
-//
-//            if($tipo != "0"){
-//                $data = [
-//                    "numero" => "55" . $telefone,
-//                    "nomeCliente" => $this->parcela->emprestimo->client->nome_completo,
-//                    "tipo" => $tipo
-//                ];
-//
-//
-//                Http::asJson()->post("$baseUrl/enviar-audio", $data);
-//            }
-//        }
+        if($parcela->atrasadas > 0) {
+            $baseUrl = $parcela->emprestimo->company->whatsapp;
+            $tipo = "1.1";
+            switch ($parcela->atrasadas) {
+                case 2:
+                    $tipo = "1.1";
+                    break;
+                case 4:
+                    $tipo = "2.1";
+                    break;
+                case 6:
+                    $tipo = "3.1";
+                    break;
+                case 8:
+                    $tipo = "4.1";
+                    break;
+                case 10:
+                    $tipo = "5.1";
+                    break;
+                case 15:
+                    $tipo = "6.1";
+                    break;
+            }
+
+            if($tipo != "0"){
+                $data2 = [
+                    "numero" => "55" . $telefone,
+                    "nomeCliente" => $parcela->emprestimo->client->nome_completo,
+                    "tipo" => $tipo
+                ];
+
+                Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+            }
+        }
     }
 
     private function montarMensagem($parcela, $saudacao)
