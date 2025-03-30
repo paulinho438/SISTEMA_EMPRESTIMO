@@ -99,18 +99,18 @@ class CobrancaAutomaticaA extends Command
 
 
         $saudacao = $this->obterSaudacao();
-        $mensagem = $this->montarMensagem($parcela, $saudacao );
+        $mensagem = $this->montarMensagem($parcela, $saudacao);
 
         $data = [
             "numero" => "55" . $telefone,
-            "mensagem" => json_encode($mensagem)
+            "mensagem" => $mensagem
         ];
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
 
         if($parcela->atrasadas > 0) {
             $baseUrl = $parcela->emprestimo->company->whatsapp;
-            $tipo = "1.1";
+            $tipo = "0";
             switch ($parcela->atrasadas) {
                 case 2:
                     $tipo = "1.1";
