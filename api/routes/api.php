@@ -166,8 +166,12 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/empresas/{id}', [CompanyController::class, 'update']);
 
     Route::get('/getenvioautomaticorenovacao', [CompanyController::class, 'getEnvioAutomaticoRenovacao']);
+    Route::get('/getmensagemaudioautomatico', [CompanyController::class, 'getMensagemAudioAutomatico']);
 
     Route::post('/empresas/alterenvioautomaticorenovacao', [CompanyController::class, 'alterEnvioAutomaticoRenovacao']);
+    Route::post('/empresas/altermensagemaudioautomatico', [CompanyController::class, 'alterMensagemAudioAutomatico']);
+
+
 
 
     Route::get('/planos/{id}', [PlanosController::class, 'get']);

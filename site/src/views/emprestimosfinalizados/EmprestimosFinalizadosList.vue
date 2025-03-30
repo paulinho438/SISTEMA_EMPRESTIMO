@@ -1,10 +1,10 @@
 <script>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
+import {ref} from 'vue';
+import {useRouter} from 'vue-router';
+import {FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator} from 'primevue/api';
 import ClientService from '@/service/ClientService';
 import PermissionsService from '@/service/PermissionsService';
-import { useToast } from 'primevue/usetoast';
+import {useToast} from 'primevue/usetoast';
 
 export default {
     name: 'EmprestimosFinalizadosList',
@@ -22,16 +22,17 @@ export default {
             Clientes: ref([]),
             loading: ref(false),
             filters: ref({
-                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-                name: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
-                'country.name': { value: null, matchMode: FilterMatchMode.STARTS_WITH },
-                representative: { value: null, matchMode: FilterMatchMode.IN },
-                status: { value: null, matchMode: FilterMatchMode.EQUALS },
-                verified: { value: null, matchMode: FilterMatchMode.EQUALS }
+                global: {value: null, matchMode: FilterMatchMode.CONTAINS},
+                name: {value: null, matchMode: FilterMatchMode.STARTS_WITH},
+                'country.name': {value: null, matchMode: FilterMatchMode.STARTS_WITH},
+                representative: {value: null, matchMode: FilterMatchMode.IN},
+                status: {value: null, matchMode: FilterMatchMode.EQUALS},
+                verified: {value: null, matchMode: FilterMatchMode.EQUALS}
             }),
             display: ref(false),
             form: ref({}),
-            toggleValue: ref(false)
+            toggleValue: ref(false),
+            mensagemAudioValue: ref(false)
         };
     },
     methods: {
@@ -46,7 +47,7 @@ export default {
                 });
 
                 setTimeout(() => {
-                    this.router.push({ name: 'emprestimosfinalizadosList' });
+                    this.router.push({name: 'emprestimosfinalizadosList'});
                 }, 1200);
             } catch (e) {
                 console.log(e);
@@ -117,6 +118,16 @@ export default {
                     this.loading = false;
                 });
         },
+        async mensagemAudioChange() {
+            this.clientService
+                .alterMensagemAudioAutomatico()
+                .then((response) => {
+                    this.mensagemAudioValue = response.data.mensagem_audio;
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_clientes_sensitive') ? dado : '*********';
         },
@@ -154,10 +165,10 @@ export default {
                             Clientes.data_nascimento = new Date(`${Clientes.data_nascimento}T00:00:00`); // Concatena e cria um objeto Date
                         }
 
-                        if(Clientes.emprestimos?.data_quitacao) {
+                        if (Clientes.emprestimos?.data_quitacao) {
                             Clientes.data_quitacao = new Date(`${Clientes.emprestimos.data_quitacao}T00:00:00`); // Concatena e cria um objeto Date
                         }
-                        
+
                         return Clientes;
                     });
                 })
@@ -203,38 +214,52 @@ export default {
         },
         initFilters() {
             this.filters = {
-                global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+                global: {value: null, matchMode: FilterMatchMode.CONTAINS},
 
-                nome_completo: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                nome_completo: {
+                    operator: FilterOperator.AND,
+                    constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
+                },
 
                 data_nascimento: {
                     operator: 'and',
-                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                    constraints: [{value: null, matchMode: 'dateIs'}]
                 },
 
                 created_at: {
                     operator: 'and',
-                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                    constraints: [{value: null, matchMode: 'dateIs'}]
                 },
 
                 data_quitacao: {
                     operator: 'and',
-                    constraints: [{ value: null, matchMode: 'dateIs' }]
+                    constraints: [{value: null, matchMode: 'dateIs'}]
                 },
 
-                telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                telefone_celular_1: {
+                    operator: FilterOperator.AND,
+                    constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
+                },
 
-                telefone_celular_2: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                telefone_celular_2: {
+                    operator: FilterOperator.AND,
+                    constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
+                },
 
-                rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                rg: {
+                    operator: FilterOperator.AND,
+                    constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
+                },
 
-                cpf: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                cpf: {
+                    operator: FilterOperator.AND,
+                    constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
+                },
 
                 // status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 
                 // id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 
-                
 
                 // nome_consultor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 
@@ -285,17 +310,22 @@ export default {
 </script>
 
 <template>
-    <Toast />
+    <Toast/>
     <div class="grid">
         <div class="col-12">
             <div class="grid flex flex-wrap mb-3 px-4 pt-2">
                 <div class="col-8 px-0 py-0">
-                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes Disponíveis</h5>
+                    <h5 class="px-0 py-0 align-self-center m-2"><i class="pi pi-building"></i> Lista de Clientes
+                        Disponíveis</h5>
                 </div>
 
                 <div class="col-4 px-0 py-0 text-right mb-2">
-                    <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; align-items: center; gap: 10px">
-                        <Button v-if="$store?.getters?.isCompany?.whatsapp && $store.getters.isCompany.whatsapp.trim() !== ''" label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="display = true" />
+                    <div class="col-12 px-0 py-0 text-right"
+                         style="display: flex; justify-content: end; align-items: center; gap: 10px">
+                        <Button
+                            v-if="$store?.getters?.isCompany?.whatsapp && $store.getters.isCompany.whatsapp.trim() !== ''"
+                            label="Enviar Mensagem Geral" class="p-button-sm p-button-info" :icon="icons.PLUS"
+                            @click="display = true"/>
                     </div>
                 </div>
             </div>
@@ -304,7 +334,16 @@ export default {
                 <div class="col-12 px-0 py-0 text-right">
                     <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; gap: 10px">
                         <h5>Envio automático ao quitar o empréstimo</h5>
-                        <InputSwitch v-model="toggleValue" @change="handleToggleChange" />
+                        <InputSwitch v-model="toggleValue" @change="handleToggleChange"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid flex flex-wrap mb-3 mt-2 px-4 pt-2" style="align-items: center; justify-content: end">
+                <div class="col-12 px-0 py-0 text-right">
+                    <div class="col-12 px-0 py-0 text-right" style="display: flex; justify-content: end; gap: 10px">
+                        <h5>Envio automático mensagem com audio</h5>
+                        <InputSwitch v-model="mensagemAudioValue" @change="mensagemAudioChange"/>
                     </div>
                 </div>
             </div>
@@ -327,27 +366,32 @@ export default {
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">
-                                <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
+                                <Button type="button" icon="pi pi-filter-slash" label="Clear"
+                                        class="p-button-outlined mb-2"
+                                        @click="clearFilter()"/>
                                 <span class="p-input-icon-left mb-2">
-                                    <i class="pi pi-search" />
-                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" />
+                                    <i class="pi pi-search"/>
+                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
+                                               style="width: 100%"/>
                                 </span>
                             </div>
                         </template>
-                        <template #empty> Nenhum Cliente Encontrado. </template>
-                        <template #loading> Carregando os Clientes. Aguarde! </template>
+                        <template #empty> Nenhum Cliente Encontrado.</template>
+                        <template #loading> Carregando os Clientes. Aguarde!</template>
 
                         <Column field="nome_completo" header="Cliente" style="min-width: 12rem">
                             <template #body="{ data }">
                                 {{ data.nome_completo }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Nome Completo Cliente" />
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter"
+                                           placeholder="Buscar Nome Completo Cliente"/>
                             </template>
                         </Column>
                         <Column field="status" header="status" :sortable="true" class="w-2">
                             <template #body="slotProps">
-                                <Button :label="slotProps.data.emprestimos?.count_late_parcels" :class="getStatusClass(slotProps.data.emprestimos?.count_late_parcels)" />
+                                <Button :label="slotProps.data.emprestimos?.count_late_parcels"
+                                        :class="getStatusClass(slotProps.data.emprestimos?.count_late_parcels)"/>
                             </template>
                         </Column>
 
@@ -356,7 +400,8 @@ export default {
                                 {{ dadosSensiveis(data.cpf) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar pelo CPF" />
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter"
+                                           placeholder="Buscar pelo CPF"/>
                             </template>
                         </Column>
 
@@ -365,7 +410,8 @@ export default {
                                 {{ dadosSensiveis(data.rg) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar pelo RG" />
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter"
+                                           placeholder="Buscar pelo RG"/>
                             </template>
                         </Column>
 
@@ -374,7 +420,8 @@ export default {
                                 {{ dadosSensiveis(data.telefone_celular_1) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Telefone" />
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter"
+                                           placeholder="Buscar Telefone"/>
                             </template>
                         </Column>
 
@@ -383,34 +430,43 @@ export default {
                                 {{ dadosSensiveis(data.telefone_celular_2) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Telefone" />
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter"
+                                           placeholder="Buscar Telefone"/>
                             </template>
                         </Column>
 
-                        <Column header="Dt. Nascimento" filterField="data_nascimento" dataType="date" style="min-width: 10rem">
+                        <Column header="Dt. Nascimento" filterField="data_nascimento" dataType="date"
+                                style="min-width: 10rem">
                             <template #body="{ data }">
-                                {{ formatDate(data.data_nascimento)}}
+                                {{ formatDate(data.data_nascimento) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy"
+                                          placeholder="Selecione uma data"
+                                          class="p-column-filter"/>
                             </template>
                         </Column>
 
                         <Column header="Dt. Criação" filterField="created_at" dataType="date" style="min-width: 10rem">
                             <template #body="{ data }">
-                                {{ formatDate(data.created_at)}}
+                                {{ formatDate(data.created_at) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy"
+                                          placeholder="Selecione uma data"
+                                          class="p-column-filter"/>
                             </template>
                         </Column>
 
-                        <Column header="Dt. Quitação" filterField="data_quitacao" dataType="date" style="min-width: 10rem">
+                        <Column header="Dt. Quitação" filterField="data_quitacao" dataType="date"
+                                style="min-width: 10rem">
                             <template #body="{ data }">
-                                {{ formatDate(data?.data_quitacao)}}
+                                {{ formatDate(data?.data_quitacao) }}
                             </template>
                             <template #filter="{ filterModel }">
-                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy" placeholder="Selecione uma data" class="p-column-filter" />
+                                <Calendar v-model="filterModel.value" dateFormat="dd/mm/yy"
+                                          placeholder="Selecione uma data"
+                                          class="p-column-filter"/>
                             </template>
                         </Column>
 
@@ -426,21 +482,25 @@ export default {
                                 />
                             </template>
                         </Column>
-                    
 
-                       
+
                     </DataTable>
                 </div>
             </div>
         </div>
-        <Dialog header="Mensagem em Massa" v-model:visible="display" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
+        <Dialog header="Mensagem em Massa" v-model:visible="display" :breakpoints="{ '960px': '75vw' }"
+                :style="{ width: '30vw' }" :modal="true">
             <div class="flex flex-column gap-2 m-2 mt-4">
                 <label for="username">Data Inicio</label>
-                <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'" v-model="form.dt_inicio" showIcon :showOnFocus="false" class="" />
+                <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data de Inicio'" v-model="form.dt_inicio"
+                          showIcon
+                          :showOnFocus="false" class=""/>
             </div>
             <div class="flex flex-column gap-2 m-2 mt-4">
                 <label for="username">Data Final</label>
-                <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data Final'" v-model="form.dt_final" showIcon :showOnFocus="false" class="" />
+                <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data Final'" v-model="form.dt_final"
+                          showIcon
+                          :showOnFocus="false" class=""/>
             </div>
             <div class="flex flex-column gap-2 m-2 mt-4">
                 <label for="color">Cor do status</label>
@@ -458,10 +518,12 @@ export default {
                     class="w-full"
                 />
             </div>
-            <p class="line-height-3 mb-4 mt-4">Ao confirmar, todos os clientes com o status na cor selecionada receberão uma mensagem padrão.</p>
+            <p class="line-height-3 mb-4 mt-4">Ao confirmar, todos os clientes com o status na cor selecionada receberão
+                uma
+                mensagem padrão.</p>
             <Message v-if="error" severity="error">{{ error }}</Message>
             <template #footer>
-                <Button label="Confirmar" @click="close" icon="pi pi-check" class="p-button-outlined" />
+                <Button label="Confirmar" @click="close" icon="pi pi-check" class="p-button-outlined"/>
             </template>
         </Dialog>
     </div>

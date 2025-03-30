@@ -593,10 +593,28 @@ class CompanyController extends Controller
         return $company;
     }
 
+    public function getMensagemAudioAutomatico(Request $request)
+    {
+        $company = Company::find($request->header('company-id'));
+
+        $company->mensagem_audio = (bool) $company->mensagem_audio;
+
+        return $company;
+    }
+
     public function alterEnvioAutomaticoRenovacao(Request $request)
     {
         $company = Company::find($request->header('company-id'));
         $company->envio_automatico_renovacao = !$company->envio_automatico_renovacao;
+        $company->save();
+
+        return $company;
+    }
+
+    public function alterMensagemAudioAutomatico(Request $request)
+    {
+        $company = Company::find($request->header('company-id'));
+        $company->mensagem_audio = !$company->mensagem_audio;
         $company->save();
 
         return $company;

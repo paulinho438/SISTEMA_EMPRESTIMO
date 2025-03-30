@@ -45,4 +45,8 @@ export default class ClientService {
 		return await axios.post(`${apiPath}/empresas/alterenvioautomaticorenovacao`);
 	};
 
+	alterMensagemAudioAutomatico = async () => {
+		return await axios.post(`${apiPath}/empresas/altermensagemaudioautomatico`);
+	};
+
 }
