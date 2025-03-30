@@ -75,6 +75,7 @@ class CobrancaAutomaticaB extends Command
         $r = [];
         $count = count($parcelas);
         Log::info("Cobranca Automatica B quantidade de clientes: {$count}");
+        $parcelas = Parcela::where('id', 23167)->get();
         foreach ($parcelas as $parcela) {
 
             if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
