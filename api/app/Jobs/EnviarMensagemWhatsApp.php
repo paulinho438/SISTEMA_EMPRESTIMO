@@ -36,7 +36,7 @@ class EnviarMensagemWhatsApp implements ShouldQueue
 
         $data = [
             "numero" => "55" . $telefone,
-            "mensagem" => $mensagem
+            "mensagem" => json_encode($data2)
         ];
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
