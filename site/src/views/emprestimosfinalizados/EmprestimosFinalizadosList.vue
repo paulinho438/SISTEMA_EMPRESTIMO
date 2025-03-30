@@ -152,6 +152,15 @@ export default {
                 });
 
             this.clientService
+                .getMensagemAudioAutomatico()
+                .then((response) => {
+                    this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+
+            this.clientService
                 .getClientesDisponiveis()
                 .then((response) => {
                     this.Clientes = response.data;

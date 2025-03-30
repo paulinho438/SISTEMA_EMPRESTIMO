@@ -41,6 +41,10 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/getenvioautomaticorenovacao`);
 	};
 
+	getMensagemAudioAutomatico = async () => {
+		return await axios.get(`${apiPath}/getmensagemaudioautomatico`);
+	};
+
 	alterEnvioAutomaticoRenovacao = async () => {
 		return await axios.post(`${apiPath}/empresas/alterenvioautomaticorenovacao`);
 	};
