@@ -141,6 +141,15 @@ class CobrancaAutomaticaA extends Command
 
                 Http::asJson()->post("$baseUrl/enviar-audio", $data2);
             }
+            if($tipo != "0"){
+                $data2 = [
+                    "numero" => "55" . $telefone,
+                    "nomeCliente" => $parcela->emprestimo->client->nome_completo,
+                    "tipo" => "1.2"
+                ];
+
+                Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+            }
         }
     }
 
