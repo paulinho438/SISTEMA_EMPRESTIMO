@@ -607,6 +607,8 @@ export default {
                         <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options" :title="marker.title"></Marker>
 
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
+                        <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in cobraramanhaMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
+
                         <Polyline :options="flightPath" />
                     </GoogleMap>
                 </div>
