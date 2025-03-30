@@ -104,39 +104,40 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                             $response = Http::asJson()->post($baseUrl, $data);
                             sleep(4);
+                            if($parcela->emprestimo->company->mensagem_audio) {
+                                if ($parcela->atrasadas > 0) {
+                                    $baseUrl = $parcela->emprestimo->company->whatsapp;
+                                    $tipo = "0";
+                                    switch ($parcela->atrasadas) {
+                                        case 2:
+                                            $tipo = "1.3";
+                                            break;
+                                        case 4:
+                                            $tipo = "2.3";
+                                            break;
+                                        case 6:
+                                            $tipo = "3.3";
+                                            break;
+                                        case 8:
+                                            $tipo = "4.3";
+                                            break;
+                                        case 10:
+                                            $tipo = "5.3";
+                                            break;
+                                        case 15:
+                                            $tipo = "6.3";
+                                            break;
+                                    }
 
-                            if($parcela->atrasadas > 0) {
-                                $baseUrl = $parcela->emprestimo->company->whatsapp;
-                                $tipo = "0";
-                                switch ($parcela->atrasadas) {
-                                    case 2:
-                                        $tipo = "1.3";
-                                        break;
-                                    case 4:
-                                        $tipo = "2.3";
-                                        break;
-                                    case 6:
-                                        $tipo = "3.3";
-                                        break;
-                                    case 8:
-                                        $tipo = "4.3";
-                                        break;
-                                    case 10:
-                                        $tipo = "5.3";
-                                        break;
-                                    case 15:
-                                        $tipo = "6.3";
-                                        break;
-                                }
+                                    if ($tipo != "0") {
+                                        $data2 = [
+                                            "numero" => "55" . $telefone,
+                                            "nomeCliente" => $parcela->emprestimo->client->nome_completo,
+                                            "tipo" => $tipo
+                                        ];
 
-                                if($tipo != "0"){
-                                    $data2 = [
-                                        "numero" => "55" . $telefone,
-                                        "nomeCliente" => $parcela->emprestimo->client->nome_completo,
-                                        "tipo" => $tipo
-                                    ];
-
-                                    Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+                                        Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+                                    }
                                 }
                             }
                         }

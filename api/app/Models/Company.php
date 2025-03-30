@@ -24,7 +24,8 @@ class Company extends Model
         'plano_id',
         'login',
         'numero_contato',
-        'envio_automatico_renovacao'
+        'envio_automatico_renovacao',
+        'mensagem_audio'
 
     ];
 

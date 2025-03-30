@@ -232,29 +232,20 @@ app.post("/enviar-audio", async (req, res) => {
         await client.sendMessage(chatId, mensagem);
         const audioPath11 = path.join(__dirname, "uploads", "mensagem_1_atraso_2d.ogg");
         // Aguarda 20 segundos
-        await wait(20000);
         const media11 = MessageMedia.fromFilePath(audioPath11);
         await client.sendMessage(chatId, media11, {
           sendAudioAsVoice: true,
         });
         break;
       case "1.2":
-        mensagem = `Oi ${nomeFormatado} escute com atenção o áudio abaixo para ficar bem intendido!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath12 = path.join(__dirname, "uploads", "mensagem_2_atraso_2d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media12 = MessageMedia.fromFilePath(audioPath12);
         await client.sendMessage(chatId, media12, {
           sendAudioAsVoice: true,
         });
         break;
       case "1.3":
-        mensagem = `Oi ${nomeFormatado} escute com atenção o áudio abaixo para ficar bem intendido!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath13 = path.join(__dirname, "uploads", "mensagem_3_atraso_2d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media13 = MessageMedia.fromFilePath(audioPath13);
         await client.sendMessage(chatId, media13, {
           sendAudioAsVoice: true,
@@ -265,29 +256,20 @@ app.post("/enviar-audio", async (req, res) => {
         await client.sendMessage(chatId, mensagem);
         const audioPath21 = path.join(__dirname, "uploads", "mensagem_1_atraso_4d.ogg");
         // Aguarda 20 segundos
-        await wait(20000);
         const media21 = MessageMedia.fromFilePath(audioPath21);
         await client.sendMessage(chatId, media21, {
           sendAudioAsVoice: true,
         });
         break;
       case "2.2":
-        mensagem = `E aí ${nomeFormatado} olha só vamos organizar sua questão!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath22 = path.join(__dirname, "uploads", "mensagem_1_atraso_4d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media22 = MessageMedia.fromFilePath(audioPath22);
         await client.sendMessage(chatId, media22, {
           sendAudioAsVoice: true,
         });
         break;
       case "2.3":
-        mensagem = `E aí ${nomeFormatado} olha só vamos organizar sua questão!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath23 = path.join(__dirname, "uploads", "mensagem_3_atraso_4d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media23 = MessageMedia.fromFilePath(audioPath23);
         await client.sendMessage(chatId, media23, {
           sendAudioAsVoice: true,
@@ -298,29 +280,20 @@ app.post("/enviar-audio", async (req, res) => {
         await client.sendMessage(chatId, mensagem);
         const audioPath31 = path.join(__dirname, "uploads", "mensagem_1_atraso_6d.ogg");
         // Aguarda 20 segundos
-        await wait(20000);
         const media31 = MessageMedia.fromFilePath(audioPath31);
         await client.sendMessage(chatId, media31, {
           sendAudioAsVoice: true,
         });
         break;
       case "3.2":
-        mensagem = `E aí ${nomeFormatado} olha só vamos organizar sua questão!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath32 = path.join(__dirname, "uploads", "mensagem_2_atraso_6d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media32 = MessageMedia.fromFilePath(audioPath32);
         await client.sendMessage(chatId, media32, {
           sendAudioAsVoice: true,
         });
         break;
       case "3.3":
-        mensagem = `E aí ${nomeFormatado} olha só vamos organizar sua questão!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath33 = path.join(__dirname, "uploads", "mensagem_3_atraso_6d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media33 = MessageMedia.fromFilePath(audioPath33);
         await client.sendMessage(chatId, media33, {
           sendAudioAsVoice: true,
@@ -331,29 +304,20 @@ app.post("/enviar-audio", async (req, res) => {
         await client.sendMessage(chatId, mensagem);
         const audioPath41 = path.join(__dirname, "uploads", "mensagem_1_atraso_8d.ogg");
         // Aguarda 20 segundos
-        await wait(20000);
         const media41 = MessageMedia.fromFilePath(audioPath41);
         await client.sendMessage(chatId, media41, {
           sendAudioAsVoice: true,
         });
         break;
       case "4.2":
-        mensagem = `${nomeFormatado} olha só atenção que vamos organizar essa parada agora`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath42 = path.join(__dirname, "uploads", "mensagem_2_atraso_8d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media42 = MessageMedia.fromFilePath(audioPath42);
         await client.sendMessage(chatId, media42, {
           sendAudioAsVoice: true,
         });
         break;
       case "4.3":
-        mensagem = `${nomeFormatado} olha só atenção que vamos organizar essa parada agora`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath43 = path.join(__dirname, "uploads", "mensagem_3_atraso_8d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media43 = MessageMedia.fromFilePath(audioPath43);
         await client.sendMessage(chatId, media43, {
           sendAudioAsVoice: true,
@@ -371,22 +335,14 @@ app.post("/enviar-audio", async (req, res) => {
         });
         break;
       case "5.2":
-        mensagem = `E aí ${nomeFormatado} olha só vamos organizar sua questão!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath52 = path.join(__dirname, "uploads", "mensagem_2_atraso_10d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media52 = MessageMedia.fromFilePath(audioPath52);
         await client.sendMessage(chatId, media52, {
           sendAudioAsVoice: true,
         });
         break;
       case "5.3":
-        mensagem = `E aí ${nomeFormatado} olha só vamos organizar sua questão!`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath53 = path.join(__dirname, "uploads", "mensagem_3_atraso_10d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media53 = MessageMedia.fromFilePath(audioPath53);
         await client.sendMessage(chatId, media53, {
           sendAudioAsVoice: true,
@@ -397,29 +353,20 @@ app.post("/enviar-audio", async (req, res) => {
         await client.sendMessage(chatId, mensagem);
         const audioPath61 = path.join(__dirname, "uploads", "mensagem_1_atraso_15d.ogg");
         // Aguarda 20 segundos
-        await wait(20000);
         const media61 = MessageMedia.fromFilePath(audioPath61);
         await client.sendMessage(chatId, media61, {
           sendAudioAsVoice: true,
         });
         break;
       case "6.2":
-        mensagem = `${nomeFormatado} Seu caso tá sério mesmo`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath62 = path.join(__dirname, "uploads", "mensagem_2_atraso_15d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media62 = MessageMedia.fromFilePath(audioPath62);
         await client.sendMessage(chatId, media62, {
           sendAudioAsVoice: true,
         });
         break;
       case "6.3":
-        mensagem = `${nomeFormatado} Seu caso tá sério mesmo`;
-        await client.sendMessage(chatId, mensagem);
         const audioPath63 = path.join(__dirname, "uploads", "mensagem_3_atraso_15d.ogg");
-        // Aguarda 20 segundos
-        await wait(20000);
         const media63 = MessageMedia.fromFilePath(audioPath63);
         await client.sendMessage(chatId, media63, {
           sendAudioAsVoice: true,
