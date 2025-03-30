@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CobrarAmanhaUltimaLocalizacao;
 use Illuminate\Http\Request;
 
 use App\Models\Address;
@@ -192,6 +193,22 @@ class ClientController extends Controller
         //     ->get()->unique('emprestimo_id'));
     }
 
+    public function mapaCobrarAmanha(Request $request)
+    {
+        $localizacoes = CobrarAmanhaUltimaLocalizacao::with(['parcela', 'user'])
+            ->where('created_at', '>=', Carbon::now()->subDays(1)->toDateString())
+            ->get();
+
+        $lastLocations = $localizacoes->map(function ($localizacao) {
+            $descricao = "Usuário : {$localizacao->user->nome_completo}  Empréstimo: {$localizacao->parcela->emprestimo->id} Data e hora: ".Carbon::parse($localizacao->created_at)->format('d/m/Y H:i:s');
+            return [
+                '$descricao' => $descricao,
+                'latitude' => $localizacao->latitude,
+                'longitude' => $localizacao->longitude
+            ];
+        });
+        return response()->json($lastLocations);
+    }
     public function mapaConsultor(Request $request)
     {
 

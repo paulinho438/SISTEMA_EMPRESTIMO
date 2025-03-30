@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CobrarAmanhaUltimaLocalizacao;
+use App\Models\UserLocation;
 use Illuminate\Http\Request;
 
 
@@ -2829,6 +2831,8 @@ class EmprestimoController extends Controller
 
             $editParcela = Parcela::find($id);
 
+            $ultimaLocalizacao = UserLocation::where('user_id', $user->id)->orderByDesc('id')->first();
+
             $parcelas = Parcela::where('emprestimo_id', $editParcela->emprestimo_id)
                 ->where('dt_baixa', null)
                 ->where('atrasadas', '>', 0)
@@ -2837,8 +2841,17 @@ class EmprestimoController extends Controller
             foreach ($parcelas as $parcela) {
                 $parcela->dt_ult_cobranca = $request->dt_ult_cobranca;
                 $parcela->save();
-
                 Log::debug("Cobrar amanha parcela: $parcela");
+            }
+
+            if($parcelas->count() > 0 && $ultimaLocalizacao){
+                CobrarAmanhaUltimaLocalizacao::create([
+                    'user_id' => $user->id,
+                    'parcela_id' => $parcelas[0]->id,
+                    'latitude' => $ultimaLocalizacao->latitude,
+                    'longitude' => $ultimaLocalizacao->longitude,
+                    'company_id' => $request->header('company-id')
+                ]);
 
             }
 

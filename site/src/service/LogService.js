@@ -18,6 +18,10 @@ export default class LogService {
         return await axios.get(`${apiPath}/mapa/consultor`);
     };
 
+    getAllCobrarAmanhaMaps = async () => {
+        return await axios.get(`${apiPath}/mapa/cobraramanha`);
+    };
+
     getRotaConsultor = async (data) => {
         return await axios.post(`${apiPath}/mapa/rotaconsultor`, data);
     };

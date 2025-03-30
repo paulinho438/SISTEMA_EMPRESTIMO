@@ -65,6 +65,8 @@ export default {
             markers: [],
             consultoresMarkers: [],
             consultores: [],
+            cobraramanhaMarkers: [],
+            cobraramanha: [],
             rotaconsultor: [],
             directions: null,
             directionsRenderer: null,
@@ -298,6 +300,46 @@ export default {
                     this.loading = false;
                 });
         },
+        getPontosCobrarAmanha() {
+            this.loading = true;
+
+            this.logService
+                .getAllCobrarAmanhaMaps()
+                .then((response) => {
+                    this.cobraramanha = response.data.filter(item => item.latitude && item.longitude);
+
+
+                    this.cobraramanhaMarkers = response.data.map((item) => {
+                        const iconUrl = this.getIconUrl(0);
+
+                        return {
+                            options: {
+                                position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+                                title: `${item.descricao}`,
+                                icon: {
+                                    url: `/images/icone_alert.png`,
+                                    scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                },
+                                label: {
+                                    text: `${item.descricao}`,
+                                    className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
+                                }
+                            }
+                        };
+                    });
+                    this.passos++;
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
         getRotaConsultor() {
             this.loading = true;
 
@@ -480,6 +522,7 @@ export default {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
         this.getLog();
         this.getClientes();
+        this.getPontosCobrarAmanha();
         this.startFetchingConsultores();
     },
     watch: {
@@ -546,7 +589,7 @@ export default {
                             <Dropdown v-model="form.consultor" :options="consultores" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um consultor" />
                         </div>
                     </div>
-                    <div v-if="passos >= 2" class="col-12 md:col-2">
+                    <div v-if="passos >= 3" class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="consultor">CEP</label>
                             <InputMask id="inputmask" mask="99999-999" :modelValue="occurrence?.cep" v-model.trim="cep" ></InputMask>
