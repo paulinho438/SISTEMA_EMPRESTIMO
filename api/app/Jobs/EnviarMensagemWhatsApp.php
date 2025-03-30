@@ -31,8 +31,8 @@ class EnviarMensagemWhatsApp implements ShouldQueue
             "tipo" => "1.1"
         ];
 
-        $saudacao = $this->obterSaudacao();
-        $mensagem = $this->montarMensagem($this->parcela, json_encode($data2) );
+//        $saudacao = $this->obterSaudacao();
+//        $mensagem = $this->montarMensagem($this->parcela, json_encode($data2) );
 
         $data = [
             "numero" => "55" . $telefone,
