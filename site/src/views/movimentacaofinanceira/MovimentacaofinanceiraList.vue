@@ -78,8 +78,11 @@ export default {
         getMovimentacaofinanceira() {
             this.loading = true;
 
+            const hoje = new Date().toISOString().split('T')[0]; // Formata a data no formato AAAA-MM-DD
+
+
             this.movimentacaofinanceiraService
-                .getAll()
+                .getAll(hoje, hoje)
                 .then((response) => {
                     this.Movimentacaofinanceira = response.data.data;
                     this.MovimentacaofinanceiraReal = response.data.data;
@@ -138,17 +141,31 @@ export default {
                 return;
             }
 
-            const dt_inicio = new Date(this.form.dt_inicio);
-            const dt_final = new Date(this.form.dt_final);
-            dt_inicio.setHours(0, 0, 0, 0); // Ensure the end date covers the entire day
-            dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
+            const dt_inicio = new Date(this.form.dt_inicio).toISOString().split('T')[0]; // Formatar para AAAA-MM-DD
+            const dt_final = new Date(this.form.dt_final).toISOString().split('T')[0]; // Formatar para AAAA-MM-DD
 
-            this.Movimentacaofinanceira = this.MovimentacaofinanceiraReal.filter((mov) => {
-                const [day, month, year] = mov.dt_movimentacao.split('/').map(Number);
-                const dt_mov = new Date(year, month - 1, day); // JavaScript Date uses zero-based month index
-                return dt_mov >= dt_inicio && dt_mov <= dt_final;
-            });
+            this.loading = true;
 
+            this.movimentacaofinanceiraService
+                .getAll(dt_inicio, dt_final) // Nova função de serviço para buscar com base nas datas
+                .then((response) => {
+                    this.Movimentacaofinanceira = response.data; // Atualizar os dados com a resposta
+                    this.calcularValores();
+                })
+                .catch((error) => {
+                    console.error('Erro ao buscar movimentações:', error);
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: 'Erro ao buscar movimentações. Por favor, tente novamente.',
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+
+        calcularValores() {
             this.valorRecebido = 0;
             this.valorPago = 0;
 

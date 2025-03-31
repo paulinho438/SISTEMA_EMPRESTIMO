@@ -37,8 +37,13 @@ class MovimentacaofinanceiraController extends Controller
             'operation' => 'index'
         ]);
 
+        $dt_inicio = $request->query('dt_inicio');
+        $dt_final = $request->query('dt_final');
+
+
         return MovimentacaofinanceiraResource::collection(
             Movimentacaofinanceira::where('company_id', $request->header('company-id'))
+                ->whereBetween('dt_movimentacao', [$dt_inicio, $dt_final])
                 ->orderBy('id', 'desc')
                 ->get()
         );
