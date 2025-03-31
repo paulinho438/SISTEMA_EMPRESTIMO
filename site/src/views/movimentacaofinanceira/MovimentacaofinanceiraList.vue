@@ -149,8 +149,28 @@ export default {
             this.movimentacaofinanceiraService
                 .getAll(dt_inicio, dt_final) // Nova função de serviço para buscar com base nas datas
                 .then((response) => {
-                    this.Movimentacaofinanceira = response.data; // Atualizar os dados com a resposta
-                    this.calcularValores();
+                    this.Movimentacaofinanceira = response.data.data;
+                    this.MovimentacaofinanceiraReal = response.data.data;
+
+                    this.valorRecebido = 0;
+
+                    response.data.data.forEach((item) => {
+                        if (item.tipomov === 'E') {
+                            if (!(item.descricao.includes('desconto') || item.descricao.includes('Refinanciamento') || item.descricao.includes('manual'))) {
+                                this.valorRecebido += item.valor;
+                            }
+                        }
+                    });
+
+                    this.valorPago = 0;
+
+                    response.data.data.forEach((item) => {
+                        if (item.tipomov === 'S') {
+                            if (!(item.descricao.includes('desconto') || item.descricao.includes('Refinanciamento') || item.descricao.includes('manual'))) {
+                                this.valorPago += item.valor;
+                            }
+                        }
+                    });
                 })
                 .catch((error) => {
                     console.error('Erro ao buscar movimentações:', error);
