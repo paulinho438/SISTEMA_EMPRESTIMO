@@ -566,7 +566,7 @@ class EmprestimoController extends Controller
             PagamentoMinimo::create($pagamentoMinimo);
         }
 
-        ProcessarPixJob::dispatch($emprestimoAdd, $this->bcodexService);
+        ProcessarPixJob::dispatch($emprestimoAdd, $this->bcodexService, null);
 
         return $emprestimoAdd;
     }
