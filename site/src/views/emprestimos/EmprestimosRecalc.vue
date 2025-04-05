@@ -32,7 +32,12 @@ export default {
                 { name: 'Segunda a Sábado', code: '2' },
                 { name: 'Segunda a Domingo', code: '3' }
             ]),
+            dropdownMinimoValues: ref([
+                { name: 'Não', code: '0' },
+                { name: 'Sim', code: '1' }
+            ]),
             dropdownValue: ref(null),
+            dropdownMinimoValue: ref(null),
             emprestimoService: new EmprestimoService(),
             feriados: ref([])
         };
@@ -77,6 +82,15 @@ export default {
         gerarParcelas() {
             let parcela = {};
             // Defina a data inicial
+            if(!this.dropdownMinimoValue){
+                alert('Selecione se pode efetuar o pagamento minimo.')
+                return;
+            }
+
+            if(!this.dropdownValue){
+                alert('Selecione a opção de cobrança.')
+                return;
+            }
 
             this.$emit('eliminarParcelas');
 
@@ -125,6 +139,11 @@ export default {
 
                 this.enviado = true;
             }
+
+
+
+            this.emprestimo.liberar_minimo = this.dropdownMinimoValue?.code;
+
 
             this.$emit('saveInfoEmprestimo', this.emprestimo);
 
@@ -364,6 +383,12 @@ export default {
                 <div class="field col-12 md:col-12">
                     <label for="firstname2">Opção de cobrança</label>
                     <Dropdown v-model="dropdownValue" :options="dropdownValues" optionLabel="name" placeholder="Selecione" />
+                </div>
+            </div>
+            <div class="p-fluid formgrid grid">
+                <div class="field col-12 md:col-12">
+                    <label for="firstname2">Liberar pagamento mínimo?</label>
+                    <Dropdown v-model="dropdownMinimoValue" :options="dropdownMinimoValues" optionLabel="name" placeholder="Selecione" />
                 </div>
             </div>
             <div class="p-fluid formgrid grid">

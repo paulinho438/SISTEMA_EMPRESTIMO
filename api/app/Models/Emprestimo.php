@@ -21,7 +21,8 @@ class Emprestimo extends Model
         'user_id',
         'company_id',
         'hash_locacao',
-        'mensagem_renovacao'
+        'mensagem_renovacao',
+        'liberar_minimo'
     ];
 
     public function company()

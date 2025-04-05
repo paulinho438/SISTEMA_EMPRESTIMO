@@ -476,6 +476,7 @@ class EmprestimoController extends Controller
         $emprestimoAdd['client_id'] = $dados['cliente']['id'];
         $emprestimoAdd['user_id'] = $dados['consultor']['id'];
         $emprestimoAdd['company_id'] = $request->header('company-id');
+        $emprestimoAdd['liberar_minimo'] = $dados['liberar_minimo'];
 
         $emprestimoAdd = Emprestimo::create($emprestimoAdd);
 
@@ -1981,9 +1982,6 @@ class EmprestimoController extends Controller
 
                         $parcela->saldo += $parcela->emprestimo->juros * $parcela->saldo / 100;
 
-                        $qtAtrasadas = 1;
-                        $qtAtrasadas += $parcela->atrasadas;
-
                         $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                         $dataFinalCarbon = Carbon::parse($parcela->venc_real);
 
@@ -2000,6 +1998,7 @@ class EmprestimoController extends Controller
                             $minimo->save();
                         }
 
+                        $parcela->atrasadas = 0;
                         $parcela->save();
 
                         if ($parcela->contasreceber) {
