@@ -671,7 +671,7 @@ class EmprestimoController extends Controller
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $emprestimo->banco->id;
                 $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
+                $movimentacaoFinanceira['descricao'] = 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
                 $movimentacaoFinanceira['tipomov'] = 'S';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $emprestimo->valor;

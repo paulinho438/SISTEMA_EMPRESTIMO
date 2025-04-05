@@ -106,7 +106,7 @@ class CobrancaAutomaticaA extends Command
         ];
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
-
+        sleep(4);
         if($parcela->emprestimo->company->mensagem_audio) {
             if($parcela->atrasadas > 0) {
                 $baseUrl = $parcela->emprestimo->company->whatsapp;

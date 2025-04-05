@@ -92,7 +92,7 @@ class ProcessarPixJob implements ShouldQueue
             $movimentacaoFinanceira['banco_id'] = $this->emprestimo->banco->id;
             $movimentacaoFinanceira['company_id'] = $this->emprestimo->company_id;
             if ($this->comprovante) {
-                $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
+                $movimentacaoFinanceira['descricao'] = 'P Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
             } else {
                 $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
             }
