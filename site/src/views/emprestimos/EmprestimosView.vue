@@ -167,6 +167,7 @@ export default {
 			this.client.valor = emprestimo.valor
 			this.client.lucro = emprestimo.lucro
 			this.client.juros = emprestimo.juros
+            this.client.liberar_minimo = emprestimo.liberar_minimo
 
 			await this.refinanciamento();
 
