@@ -159,7 +159,7 @@ export default {
             </section>
 
             <!-- Quitar Empréstimo -->
-            <section v-if="this.products?.data?.emprestimo?.quitacao?.saldo && this.products?.data?.emprestimo?.quitacao?.saldo != this.products?.data?.emprestimo?.pagamentosaldopendente?.valor" class="payment-section">
+            <section v-if="(this.products?.data?.emprestimo?.quitacao?.saldo && this.products?.data?.emprestimo?.quitacao?.saldo != this.products?.data?.emprestimo?.pagamentosaldopendente?.valor) && (this.products?.data?.emprestimo?.saldoareceber != this.encontrarPrimeiraParcelaPendente().saldo)" class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
@@ -198,9 +198,9 @@ export default {
                 <p>Para pagamento de demais valores<br />Entre em contato pelo WhatsApp {{ formatarTelefone(this.products?.data?.emprestimo?.telefone_empresa) }}</p>
             </section> -->
 
-            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
-                <h2>{{ this.products?.data?.emprestimo?.banco.info_recebedor_pix }}</h2>
-                <h2 style="margin-top: -3px" @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)">Chave pix: {{ this.products?.data?.emprestimo?.banco.chavepix }}</h2>
+            <section v-if="(!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1) && this.products?.data?.emprestimo?.banco?.chavepix" class="payment-section">
+                <h2>{{ this.products?.data?.emprestimo?.banco?.info_recebedor_pix }}</h2>
+                <h2 style="margin-top: -3px" @click="copyToClipboard(this.products?.data?.emprestimo?.banco?.chavepix)">Chave pix: {{ this.products?.data?.emprestimo?.banco?.chavepix }}</h2>
             </section>
 
             <DataTable :value="this.products?.data?.emprestimo?.parcelas">
