@@ -37,7 +37,7 @@ class EmprestimoLandingPageResource extends JsonResource
             "saldoareceber" => $saldoareceber,
             "parcelas" => ParcelaResource::collection($parcelas->sortBy('parcela')),
             "quitacao" => new QuitacaoResource($this->quitacao),
-            "pagamentominimo" => new PagamentoMinimoResource($this->pagamentominimo),
+            "pagamentominimo" => $this->emprestimo->liberar_minimo == 1 ? new PagamentoMinimoResource($this->pagamentominimo) : null,
             "pagamentosaldopendente" => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
             "telefone_empresa" => $this->company->numero_contato,
         ];
