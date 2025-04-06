@@ -142,6 +142,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                     }
                                 }
                             }
+
+                            //identificar se o emprestimo é mensal
+                            //identificar se é a primeira cobranca
+                            if(count($parcela->emprestimo->parcelas) == 1) {
+                                if($parcela->atrasadas == 0){
+                                    $data3 = [
+                                        "numero" => "55" . $telefone,
+                                        "nomeCliente" => "Sistema",
+                                        "tipo" => "msginfo3"
+                                    ];
+
+                                    Http::asJson()->post("$baseUrl/enviar-audio", $data3);
+                                }
+                            }
                         }
                     }
                 } catch (\Throwable $th) {

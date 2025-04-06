@@ -61,6 +61,8 @@ class CobrancaAutomaticaA extends Command
         //$parcelas = Parcela::where('id', 23167)->get();
         foreach ($parcelas as $parcela) {
             $this->processarParcela($parcela);
+
+
         }
         Log::info("Cobranca Automatica A finalizada");
         return 0;
@@ -141,6 +143,20 @@ class CobrancaAutomaticaA extends Command
 
                     Http::asJson()->post("$baseUrl/enviar-audio", $data2);
                 }
+            }
+        }
+
+        //identificar se o emprestimo é mensal
+        //identificar se é a primeira cobranca
+        if(count($parcela->emprestimo->parcelas) == 1) {
+            if($parcela->atrasadas == 0){
+                $data3 = [
+                    "numero" => "55" . $telefone,
+                    "nomeCliente" => "Sistema",
+                    "tipo" => "msginfo1"
+                ];
+
+                Http::asJson()->post("$baseUrl/enviar-audio", $data3);
             }
         }
 
