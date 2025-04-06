@@ -195,8 +195,15 @@ class ClientController extends Controller
 
     public function mapaCobrarAmanha(Request $request)
     {
+
+        $data = $request->input('data');
+
+        if (is_null($data)) {
+            $data = Carbon::now();
+        }
+
         $localizacoes = CobrarAmanhaUltimaLocalizacao::with(['parcela', 'user'])
-            ->where('created_at', '>=', Carbon::now()->subDays(1)->toDateString())
+            ->where('created_at', '>=', $data)
             ->get();
 
         $lastLocations = $localizacoes->map(function ($localizacao) {

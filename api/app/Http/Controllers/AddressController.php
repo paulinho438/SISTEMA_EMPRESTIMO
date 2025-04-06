@@ -17,10 +17,10 @@ use Illuminate\Support\Facades\Log;
 class AddressController extends Controller
 {
 
-    protected $custom_log;
+    protected $customLog;
 
-    public function __construct(Customlog $custom_log){
-        $this->custom_log = $custom_log;
+    public function __construct(Customlog $customLog){
+        $this->custom_log = $customLog;
     }
 
     public function id(Request $r, $id){
@@ -49,7 +49,7 @@ class AddressController extends Controller
         $dados = $request->all();
         if(!$validator->fails()){
 
-            $newGroup = Address::create($dados);
+            Address::create($dados);
 
             return $array;
 
@@ -59,8 +59,6 @@ class AddressController extends Controller
                 "error" => ""
             ], Response::HTTP_FORBIDDEN);
         }
-
-        return $array;
     }
 
     public function cancelarCadastro() {
@@ -75,8 +73,6 @@ class AddressController extends Controller
 
         try {
             $array = ['error' => ''];
-
-            $user = auth()->user();
 
             $validator = Validator::make($request->all(), [
                 'description' => 'required',
@@ -93,19 +89,19 @@ class AddressController extends Controller
             $dados = $request->all();
             if(!$validator->fails()){
 
-                $EditAddress = Address::find($id);
+                $editAddress = Address::find($id);
 
-                $EditAddress->description   = $dados['description'];
-                $EditAddress->address       = $dados['address'];
-                $EditAddress->cep           = $dados['cep'];
-                $EditAddress->number        = $dados['number'];
-                $EditAddress->complement    = $dados['complement'];
-                $EditAddress->neighborhood  = $dados['neighborhood'];
-                $EditAddress->city          = $dados['city'];
-                $EditAddress->latitude      = $dados['latitude'];
-                $EditAddress->longitude     = $dados['longitude'];
+                $editAddress->description   = $dados['description'];
+                $editAddress->address       = $dados['address'];
+                $editAddress->cep           = $dados['cep'];
+                $editAddress->number        = $dados['number'];
+                $editAddress->complement    = $dados['complement'];
+                $editAddress->neighborhood  = $dados['neighborhood'];
+                $editAddress->city          = $dados['city'];
+                $editAddress->latitude      = $dados['latitude'];
+                $editAddress->longitude     = $dados['longitude'];
 
-                $EditAddress->save();
+                $editAddress->save();
 
             } else {
                 return response()->json([

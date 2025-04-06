@@ -34,10 +34,6 @@ export default {
                 icon: {
                     url: `/images/marker_50_50.png`,
                     title: this.textoReferencia,
-                },
-                label: {
-                    text: this.textoReferencia,
-                    className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
                 }
             };
         }
@@ -45,6 +41,7 @@ export default {
     data() {
         return {
             LogReal: ref([]),
+            flightPaths: [],
             Log: ref([]),
             showMap: ref(true),
             mapKey: ref(import.meta.env.VITE_APP_GOOGLE_MAPS_KEY),
@@ -239,10 +236,6 @@ export default {
                                         url: iconUrl,
                                         scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
                                     }
-                                    // label: {
-                                    //     text: `${item.nome_completo}`,
-                                    //     className: 'py-2 px-2 mt-8 w-25rem h-auto flex-wrap white-space-normal'
-                                    // }
                                 }
                             };
                         });
@@ -279,10 +272,6 @@ export default {
                                 icon: {
                                     url: `/images/motoboy.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
-                                },
-                                label: {
-                                    text: `${item.user_name}`,
-                                    className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
                                 }
                             }
                         };
@@ -302,9 +291,11 @@ export default {
         },
         getPontosCobrarAmanha() {
             this.loading = true;
-
+            let data = {
+                data: this.form.dt_inicio
+            };
             this.logService
-                .getAllCobrarAmanhaMaps()
+                .getAllCobrarAmanhaMaps(data)
                 .then((response) => {
                     this.cobraramanha = response.data.filter(item => item.latitude && item.longitude);
 
@@ -319,10 +310,6 @@ export default {
                                 icon: {
                                     url: `/images/icone_alert.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
-                                },
-                                label: {
-                                    text: `${item.descricao}`,
-                                    className: 'py-2 px-2 bg-gray-100 mt-8 border-1 border-gray-300 border-round w-25rem h-auto flex-wrap white-space-normal'
                                 }
                             }
                         };
@@ -340,6 +327,22 @@ export default {
                     this.loading = false;
                 });
         },
+        getDistanceInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Raio da Terra em metros
+            const toRad = x => x * Math.PI / 180;
+
+            const φ1 = toRad(lat1);
+            const φ2 = toRad(lat2);
+            const Δφ = toRad(lat2 - lat1);
+            const Δλ = toRad(lon2 - lon1);
+
+            const a = Math.sin(Δφ / 2) ** 2 +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        },
         getRotaConsultor() {
             this.loading = true;
 
@@ -353,18 +356,63 @@ export default {
                 .then((response) => {
                     this.rotaconsultor = response.data;
 
-                    let locations = this.rotaconsultor.filter((location) => location.latitude && location.longitude);
+                    let locations = this.rotaconsultor.filter(
+                        (location) => location.latitude && location.longitude
+                    );
 
-                    this.flightPath = {
-                        path: locations.map((location) => ({
-                            lat: Number(location.latitude),
-                            lng: Number(location.longitude)
-                        })),
+                    let routes = [];
+                    let currentRoute = [];
+
+                    const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
+                        const R = 6371e3; // Raio da Terra em metros
+                        const toRad = (x) => x * Math.PI / 180;
+
+                        const φ1 = toRad(lat1);
+                        const φ2 = toRad(lat2);
+                        const Δφ = toRad(lat2 - lat1);
+                        const Δλ = toRad(lon2 - lon1);
+
+                        const a =
+                            Math.sin(Δφ / 2) ** 2 +
+                            Math.cos(φ1) * Math.cos(φ2) *
+                            Math.sin(Δλ / 2) ** 2;
+                        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                        return R * c;
+                    };
+
+                    for (let i = 0; i < locations.length; i++) {
+                        const current = locations[i];
+                        const lat = Number(current.latitude);
+                        const lng = Number(current.longitude);
+
+                        if (currentRoute.length === 0) {
+                            currentRoute.push({ lat, lng });
+                        } else {
+                            const prev = currentRoute[currentRoute.length - 1];
+                            const distance = getDistanceInMeters(prev.lat, prev.lng, lat, lng);
+
+                            if (distance > 500) {
+                                routes.push(currentRoute);
+                                currentRoute = [{ lat, lng }];
+                            } else {
+                                currentRoute.push({ lat, lng });
+                            }
+                        }
+                    }
+
+                    if (currentRoute.length > 0) {
+                        routes.push(currentRoute);
+                    }
+
+                    // flightPaths agora será um array de paths
+                    this.flightPaths = routes.map(route => ({
+                        path: route,
                         geodesic: true,
                         strokeColor: '#FF0000',
                         strokeOpacity: 1.0,
                         strokeWeight: 2
-                    };
+                    }));
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -425,8 +473,9 @@ export default {
         busca() {
             this.passos = 0;
             if (this.form.consultor != null) {
-                this.stopFetchingConsultores();
+                // this.stopFetchingConsultores();
                 this.getRotaConsultor();
+                this.getPontosCobrarAmanha();
             }
             this.getClientes();
         },
@@ -609,7 +658,11 @@ export default {
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in cobraramanhaMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
 
-                        <Polyline :options="flightPath" />
+                        <Polyline
+                            v-for="(path, index) in flightPaths"
+                            :key="index"
+                            :options="path"
+                        />
                     </GoogleMap>
                 </div>
             </div>
