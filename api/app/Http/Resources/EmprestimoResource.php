@@ -40,6 +40,7 @@ class EmprestimoResource extends JsonResource
             "valor" => $this->valor,
             "lucro" => $this->lucro,
             "juros" => $this->juros,
+            "cliente_cadastrado" => $this->client->nome_usuario_criacao,
             "saldoareceber" => $saldoareceber,
             "saldoatrasado" => $saldoatrasado,
             "porcentagem" => $porcentagem,
