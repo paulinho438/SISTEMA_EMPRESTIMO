@@ -128,6 +128,10 @@ class ProcessarPixJob implements ShouldQueue
             }
 
             $this->envioMensagem($this->emprestimo->parcelas[0]);
+
+            if ($this->comprovante) {
+                $this->envioAudio($this->emprestimo->parcelas[0]);
+            }
         } catch (\Exception $e) {
             Log::error('Erro ao processar PIX: ' . $e->getMessage());
             throw $e;
@@ -233,6 +237,36 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $data = [
                             "numero" => "55" . $telefone,
                             "mensagem" => $frase
+                        ];
+
+                        $response = Http::asJson()->post($baseUrl, $data);
+                        sleep(2);
+                    }
+                }
+            } catch (\Throwable $th) {
+                dd($th);
+            }
+        }
+    }
+
+    public function envioAudio($parcela)
+    {
+        if (isset($parcela->emprestimo->company->whatsapp)) {
+            try {
+                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+
+                if ($response->successful()) {
+                    $r = $response->json();
+                    if ($r['loggedIn']) {
+
+                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-audio';
+
+
+                        $data = [
+                            "numero" => "55" . $telefone,
+                            "tipo" => "msginicio",
+                            "nomeCliente" => "Sistema"
                         ];
 
                         $response = Http::asJson()->post($baseUrl, $data);
