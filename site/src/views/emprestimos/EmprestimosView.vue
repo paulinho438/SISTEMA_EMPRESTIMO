@@ -324,6 +324,10 @@ export default {
 							<label for="firstname2">Cliente</label>
 							<Chip :label="city?.nome_completo_cpf" class="w-full p-inputtext-sm"></Chip>
 						</div>
+                        <div class="field col-12 md:col-12">
+                            <label for="firstname2">Cadastrado por</label>
+                            <Chip :label="client?.cliente_cadastrado" class="w-full p-inputtext-sm"></Chip>
+                        </div>
 						<div class="field col-12 md:col-12">
 							<label for="firstname2">Banco</label>
 							<Chip :label="banco?.name_agencia_conta" class="w-full p-inputtext-sm"></Chip>
