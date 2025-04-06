@@ -207,7 +207,7 @@ class ClientController extends Controller
             ->get();
 
         $lastLocations = $localizacoes->map(function ($localizacao) {
-            $descricao = "FUNC. COBRAR AMANHA - Usuário : {$localizacao->user->nome_completo}  Empréstimo: {$localizacao->parcela->emprestimo->id} Data e hora: ".Carbon::parse($localizacao->created_at)->format('d/m/Y H:i:s');
+            $descricao = "FUNC. COBRAR AMANHA - Usuário : {$localizacao->user->nome_completo}  Empréstimo: {$localizacao->parcela->emprestimo->id} Cliente: {$localizacao->parcela->emprestimo->client->nome_completo} Data e hora: ".Carbon::parse($localizacao->created_at)->format('d/m/Y H:i:s');
             return [
                 'descricao' => $descricao,
                 'latitude' => $localizacao->latitude,
