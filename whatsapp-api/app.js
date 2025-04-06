@@ -372,6 +372,13 @@ app.post("/enviar-audio", async (req, res) => {
           sendAudioAsVoice: true,
         });
         break;
+      default:
+        const audioPathpersonaliado = path.join(__dirname, "uploads", tipo+".ogg");
+        const mediapersonaliado = MessageMedia.fromFilePath(audioPathpersonaliado);
+        await client.sendMessage(chatId, mediapersonaliado, {
+          sendAudioAsVoice: true,
+        });
+        break;
     }
 
     res.send("Mensagem de voz enviada com sucesso!");
