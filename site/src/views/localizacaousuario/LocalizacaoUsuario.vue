@@ -475,8 +475,8 @@ export default {
             if (this.form.consultor != null) {
                 // this.stopFetchingConsultores();
                 this.getRotaConsultor();
-                this.getPontosCobrarAmanha();
             }
+            this.getPontosCobrarAmanha();
             this.getClientes();
         },
         setLastWeekDates() {
