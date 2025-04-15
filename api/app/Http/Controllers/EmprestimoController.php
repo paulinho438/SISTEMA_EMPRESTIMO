@@ -185,7 +185,7 @@ class EmprestimoController extends Controller
         }
 
         if ($request->has('valor')) {
-            $query->where('valor', 'LIKE' , "%{$request->valor}%");
+            $query->where('valor', 'LIKE', "%{$request->valor}%");
         }
 
         if ($request->has('saldoareceber_min') && $request->has('saldoareceber_max')) {
@@ -1915,7 +1915,7 @@ class EmprestimoController extends Controller
 
                     $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
 
-                    if($proximaParcela){
+                    if ($proximaParcela) {
                         if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
 
                             $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
@@ -2192,8 +2192,6 @@ class EmprestimoController extends Controller
                             $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $pagamento->emprestimo->pagamentominimo->save();
                         }
-
-
                     }
                 }
             }
@@ -2219,11 +2217,60 @@ class EmprestimoController extends Controller
 
                     while ($parcela && $valor > 0) {
                         if ($valor >= $parcela->saldo) {
+
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = sprintf(
+                                'Baixa automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                $parcela->id,
+                                $parcela->emprestimo_id,
+                                $parcela->emprestimo->client->nome_completo,
+                                $pix['pagador']['nome']
+                            );
+                            $movimentacaoFinanceira['tipomov'] = 'E';
+                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $parcela->saldo;
+
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                            # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                            $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $parcela->saldo;
+                            $parcela->emprestimo->banco->save();
+
+
                             // Quitar a parcela atual
                             $valor -= $parcela->saldo;
                             $parcela->saldo = 0;
                             $parcela->dt_baixa = $horario;
+
+
                         } else {
+
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = sprintf(
+                                'Baixa parcial automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                $parcela->id,
+                                $parcela->emprestimo_id,
+                                $parcela->emprestimo->client->nome_completo,
+                                $pix['pagador']['nome']
+                            );
+                            $movimentacaoFinanceira['tipomov'] = 'E';
+                            $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $valor;
+
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                            # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                            $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
+                            $parcela->emprestimo->banco->save();
+
                             // Reduzir o saldo da parcela atual
                             $parcela->saldo -= $valor;
                             $valor = 0;
@@ -2260,27 +2307,7 @@ class EmprestimoController extends Controller
 
                         # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
 
-                        $movimentacaoFinanceira = [];
-                        $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
-                        $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
-                        $movimentacaoFinanceira['descricao'] = sprintf(
-                            'Baixa automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                            $proximaParcela->id,
-                            $proximaParcela->emprestimo_id,
-                            $proximaParcela->emprestimo->client->nome_completo,
-                            $pix['pagador']['nome']
-                        );
-                        $movimentacaoFinanceira['tipomov'] = 'E';
-                        $movimentacaoFinanceira['parcela_id'] = $proximaParcela->id;
-                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        $movimentacaoFinanceira['valor'] = $valorInsert;
 
-                        Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                        # ADICIONANDO O VALOR NO SALDO DO BANCO
-
-                        $proximaParcela->emprestimo->banco->saldo = $proximaParcela->emprestimo->banco->saldo + $valorInsert;
-                        $proximaParcela->emprestimo->banco->save();
 
                         // $movimentacaoFinanceira = [];
                         // $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
@@ -2324,6 +2351,7 @@ class EmprestimoController extends Controller
                             }
                         }
                     }
+
                 }
             }
         }
@@ -2843,7 +2871,7 @@ class EmprestimoController extends Controller
                 Log::debug("Cobrar amanha parcela: $parcela");
             }
 
-            if($parcelas->count() > 0 && $ultimaLocalizacao){
+            if ($parcelas->count() > 0 && $ultimaLocalizacao) {
                 CobrarAmanhaUltimaLocalizacao::create([
                     'user_id' => $user->id,
                     'parcela_id' => $parcelas[0]->id,
@@ -2851,7 +2879,6 @@ class EmprestimoController extends Controller
                     'longitude' => $ultimaLocalizacao->longitude,
                     'company_id' => $request->header('company-id')
                 ]);
-
             }
 
             DB::commit();
@@ -2865,7 +2892,7 @@ class EmprestimoController extends Controller
             return response()->json(['message' => 'Cobrança atualizada com sucesso.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Erro cobrar amanha". $e->getMessage());
+            Log::error("Erro cobrar amanha" . $e->getMessage());
 
             return response()->json([
                 "message" => "Erro ao mudar cobrança da parcela do Emprestimo.",
