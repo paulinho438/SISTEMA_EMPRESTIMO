@@ -171,7 +171,7 @@ class BancoController extends Controller
                 //EMPRESTIMOS MENSAL
                 if (count($parcela->emprestimo->parcelas) == 1) {
 
-                    if(!$parcela->emprestimo->pagamentominimo || !$parcela->emprestimo->pagamentosaldopendente) {
+                    if (!$parcela->emprestimo->pagamentominimo || !$parcela->emprestimo->pagamentosaldopendente) {
                         Log::debug("Processando emprestimo mensal - parcela ID {$parcela->id} NA0 FOI PROCESSADA, PAGAMENTO MINIMO OU SALDO PENDENTE NÃO ENCONTRADO");
                         continue;
                     }
@@ -247,11 +247,10 @@ class BancoController extends Controller
                             $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentominimo->save();
                         }
-                    }else{
+                    } else {
                         $parcela->dt_baixa = date('Y-m-d');
                         $parcela->save();
                     }
-
                 } else {
                     $valor = $parcela->valor_recebido;
 
@@ -300,18 +299,20 @@ class BancoController extends Controller
 
                             $parcela->saldo -= $valor;
                             $valor = 0;
+
+                            $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                            if ($response->successful()) {
+                                $parcela->identificador = $response->json()['txid'];
+                                $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->save();
+                            }
                         }
 
                         $parcela->valor_recebido = 0;
                         $parcela->save();
 
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
 
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
 
                         if ($parcela->emprestimo->quitacao && $parcela->emprestimo->quitacao->chave_pix) {
 
@@ -425,7 +426,7 @@ class BancoController extends Controller
                             $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentominimo->save();
                         }
-                    }else{
+                    } else {
                         $parcela->dt_baixa = date('Y-m-d');
                         $parcela->save();
                     }
@@ -478,18 +479,20 @@ class BancoController extends Controller
 
                             $parcela->saldo -= $valor;
                             $valor = 0;
+
+                            $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                            if ($response->successful()) {
+                                $parcela->identificador = $response->json()['txid'];
+                                $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                                $parcela->save();
+                            }
                         }
 
                         $parcela->valor_recebido_pix = 0;
                         $parcela->save();
 
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
 
-                        if ($response->successful()) {
-                            $parcela->identificador = $response->json()['txid'];
-                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                            $parcela->save();
-                        }
 
 
 
