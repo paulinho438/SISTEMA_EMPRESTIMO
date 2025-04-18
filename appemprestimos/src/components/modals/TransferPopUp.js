@@ -42,53 +42,99 @@ export default function TransferPopUp(props) {
     setLoading(true);
     let newParcelas = [];
     // Defina a data inicial
-    const dataLanc = valores?.dt_lancamento ? new Date(valores.dt_lancamento.split('/').reverse().join('-')) : new Date();
+    const dataLanc = valores?.dt_lancamento
+      ? new Date(valores.dt_lancamento.split('/').reverse().join('-'))
+      : new Date();
 
-    const dataInicial = valores?.dt_lancamento ? new Date(valores.dt_lancamento.split('/').reverse().join('-')) : new Date();
+    const dataInicial = valores?.dt_lancamento
+      ? new Date(valores.dt_lancamento.split('/').reverse().join('-'))
+      : new Date();
 
     dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
 
     // Array para armazenar as parcelas
     const parcelas = [];
 
-    // Loop para gerar 25 parcelas
-    for (let i = 0; i < valores?.parcela; i++) {
-      parcela = {};
-      parcela.parcela = 1 + i;
-      parcela.parcela = parcela.parcela.toString().padStart(3, '0');
-      parcela.valor = parseFloat(
-        valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
-      );
-      parcela.saldo = parseFloat(
-        valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
-      );
-      parcela.dt_lancamento = valores?.dt_lancamento;
+    if (valores?.parcela == 1) {
+      // Loop para gerar 25 parcelas
+      for (let i = 0; i < valores?.parcela; i++) {
+        parcela = {};
+        parcela.parcela = 1 + i;
+        parcela.parcela = parcela.parcela.toString().padStart(3, '0');
+        parcela.valor = parseFloat(
+          valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
+        );
+        parcela.saldo = parseFloat(
+          valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
+        );
+        parcela.dt_lancamento = valores?.dt_lancamento;
 
-      dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
+        dataInicial.setDate(dataInicial.getDate() +valores?.intervalo);
 
-      // Verifica se o dia da semana é sábado (6) ou domingo (0)
-      // Se for, adiciona mais um dia até encontrar um dia útil (segunda a sexta)
-      if (valores?.cobranca == '1') {
-        while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
+        // Verifica se o dia da semana é sábado (6) ou domingo (0)
+        // Se for, adiciona mais um dia até encontrar um dia útil (segunda a sexta)
+        if (valores?.cobranca == '1') {
+          while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
+            dataInicial.setDate(dataInicial.getDate() + 1);
+          }
+        } else if (valores?.cobranca == '2') {
+          while (dataInicial.getDay() === 0) {
+            dataInicial.setDate(dataInicial.getDate() + 1);
+          }
+        }
+
+        parcela.venc = formatarDataParaString(dataInicial);
+
+        if (isFeriado(dataInicial)) {
           dataInicial.setDate(dataInicial.getDate() + 1);
         }
-      } else if (valores?.cobranca == '2') {
-        while (dataInicial.getDay() === 0) {
+
+        parcela.venc_real = formatarDataParaString(dataInicial);
+
+        parcelas.push(formatarDataParaString(new Date(dataInicial)));
+
+        newParcelas.push(parcela);
+      }
+    } else {
+      // Loop para gerar 25 parcelas
+      for (let i = 0; i < valores?.parcela; i++) {
+        parcela = {};
+        parcela.parcela = 1 + i;
+        parcela.parcela = parcela.parcela.toString().padStart(3, '0');
+        parcela.valor = parseFloat(
+          valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
+        );
+        parcela.saldo = parseFloat(
+          valores?.mensalidade.replace(/[^\d,-]/g, '').replace(',', '.'),
+        );
+        parcela.dt_lancamento = valores?.dt_lancamento;
+
+        dataInicial.setDate(dataInicial.getDate() + +valores?.intervalo);
+
+        // Verifica se o dia da semana é sábado (6) ou domingo (0)
+        // Se for, adiciona mais um dia até encontrar um dia útil (segunda a sexta)
+        if (valores?.cobranca == '1') {
+          while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
+            dataInicial.setDate(dataInicial.getDate() + 1);
+          }
+        } else if (valores?.cobranca == '2') {
+          while (dataInicial.getDay() === 0) {
+            dataInicial.setDate(dataInicial.getDate() + 1);
+          }
+        }
+
+        parcela.venc = formatarDataParaString(dataInicial);
+
+        if (isFeriado(dataInicial)) {
           dataInicial.setDate(dataInicial.getDate() + 1);
         }
+
+        parcela.venc_real = formatarDataParaString(dataInicial);
+
+        parcelas.push(formatarDataParaString(new Date(dataInicial)));
+
+        newParcelas.push(parcela);
       }
-
-      parcela.venc = formatarDataParaString(dataInicial);
-
-      if (isFeriado(dataInicial)) {
-        dataInicial.setDate(dataInicial.getDate() + 1);
-      }
-
-      parcela.venc_real = formatarDataParaString(dataInicial);
-
-      parcelas.push(formatarDataParaString(new Date(dataInicial)));
-
-      newParcelas.push(parcela);
     }
 
     const client = {};
@@ -119,7 +165,6 @@ export default function TransferPopUp(props) {
     client.costcenter = {id: valores?.costcenter.id};
     client.consultor = {id: valores?.consultor.id};
     client.parcelas = newParcelas;
-
 
     onPressClose();
     const res = await api.saveEmprestimo(client);
