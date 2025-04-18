@@ -120,6 +120,9 @@ export default {
                             dataInicial.setDate(dataInicial.getDate() + 1);
                         }
                     }
+					if (this.isFeriado(dataInicial)) {
+						dataInicial.setDate(dataInicial.getDate() + 1);
+					}
                 }
 
                 parcela.venc_real = this.formatarDataParaString(new Date(dataInicial));
