@@ -2150,14 +2150,10 @@ class EmprestimoController extends Controller
                         $qtAtrasadas = 1;
                         $qtAtrasadas += $parcela->atrasadas;
 
-                        $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
-                        $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+                        $dataInicial = Carbon::parse($parcela->venc_real);
 
-                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+                        $parcela->venc_real = $dataInicial->copy()->addMonth();
 
-                        $diferencaEmMeses++;
-
-                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                         $parcela->save();
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $pagamento->emprestimo->banco->document, $parcela->identificador);
