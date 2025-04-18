@@ -1985,10 +1985,9 @@ class EmprestimoController extends Controller
                         $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                         $dataFinalCarbon = Carbon::parse($parcela->venc_real);
 
-                        $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+                        $dataInicial = Carbon::parse($parcela->venc_real);
 
-                        $diferencaEmMeses++;
-                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                        $parcela->venc_real = $dataInicial->copy()->addMonth();
 
                         $response = $this->bcodexService->criarCobranca($minimo->valor, $parcela->emprestimo->banco->document);
 
@@ -2245,8 +2244,6 @@ class EmprestimoController extends Controller
                             $valor -= $parcela->saldo;
                             $parcela->saldo = 0;
                             $parcela->dt_baixa = $horario;
-
-
                         } else {
 
                             $movimentacaoFinanceira = [];
@@ -2351,7 +2348,6 @@ class EmprestimoController extends Controller
                             }
                         }
                     }
-
                 }
             }
         }

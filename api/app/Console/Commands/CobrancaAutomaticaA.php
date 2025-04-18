@@ -61,8 +61,6 @@ class CobrancaAutomaticaA extends Command
         //$parcelas = Parcela::where('id', 23167)->get();
         foreach ($parcelas as $parcela) {
             $this->processarParcela($parcela);
-
-
         }
         Log::info("Cobranca Automatica A finalizada");
         return 0;
