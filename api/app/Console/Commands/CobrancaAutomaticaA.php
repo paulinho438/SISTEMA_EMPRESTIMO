@@ -50,11 +50,12 @@ class CobrancaAutomaticaA extends Command
         // Pegar parcelas atrasadas
         $parcelasQuery = Parcela::whereNull('dt_baixa');
 
-        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
-            $parcelasQuery->where('atrasadas', '>', 0);
-        } else {
-            $parcelasQuery->whereDate('venc_real', $today);
-        }
+        // if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+        //     $parcelasQuery->where('atrasadas', '>', 0);
+        // } else {
+        //     $parcelasQuery->whereDate('venc_real', $today);
+        // }
+        $parcelasQuery->where('atrasadas', '>', 0);
         $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
         $count = count($parcelas);
         Log::info("Cobranca Automatica A quantidade de clientes: {$count}");
