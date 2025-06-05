@@ -107,6 +107,7 @@ class CobrancaAutomaticaA extends Command
         ];
 
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        Log::info("MENSAGEM ENVIADA: " . $telefone);
         sleep(4);
         if($parcela->emprestimo->company->mensagem_audio) {
             if($parcela->atrasadas > 0) {

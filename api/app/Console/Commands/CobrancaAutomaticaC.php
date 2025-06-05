@@ -16,6 +16,7 @@ use Efi\EfiPay;
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 use Carbon\Carbon;
 
@@ -106,6 +107,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             ];
 
                             $response = Http::asJson()->post($baseUrl, $data);
+                            Log::info("MENSAGEM ENVIADA: " . $telefone);
                             sleep(4);
                             if($parcela->emprestimo->company->mensagem_audio) {
                                 if ($parcela->atrasadas > 0) {

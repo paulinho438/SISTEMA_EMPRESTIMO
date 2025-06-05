@@ -117,6 +117,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 "mensagem" => $frase
                             ];
                             $response = Http::asJson()->post($baseUrl, $data);
+                            Log::info("MENSAGEM ENVIADA: " . $telefone);
                             sleep(4);
                             if($parcela->emprestimo->company->mensagem_audio) {
                                 if($parcela->atrasadas > 0) {
