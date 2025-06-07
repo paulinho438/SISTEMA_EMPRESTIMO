@@ -327,8 +327,7 @@ class EmprestimoController extends Controller
                     return true;
                 }
 
-                return $dataProtesto &&
-                    Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
             })
             ->values();
 
