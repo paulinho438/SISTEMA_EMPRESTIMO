@@ -76,7 +76,7 @@ class CobrancaAutomaticaB extends Command
                     return true;
                 }
 
-                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
             });
         }
 

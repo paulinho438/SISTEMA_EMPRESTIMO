@@ -56,6 +56,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('cobranca:AutomaticaC')->dailyAt('16:30');
 
         $schedule->command('rotinas:BackupClientes')->dailyAt('00:00');
+
+        $schedule->command('protestar:Emprestimo')->dailyAt('08:00');
+
     }
 
     /**
