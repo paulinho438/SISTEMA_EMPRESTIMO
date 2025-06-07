@@ -58,13 +58,16 @@ class RecalcularParcelas extends Command
             ->whereNull('dt_baixa')
             ->whereDate('updated_at', '!=', Carbon::today())
             ->with('emprestimo')
-            ->orderByDesc('id') // 👈 ordenação antes do get()
+            ->orderByDesc('id')
             ->get()
             ->filter(function ($parcela) {
                 $dataProtesto = optional($parcela->emprestimo)->data_protesto;
 
-                return $dataProtesto &&
-                    Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+                if( !$dataProtesto) {
+                    return true;
+                }
+
+                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
             })
             ->values();
 
