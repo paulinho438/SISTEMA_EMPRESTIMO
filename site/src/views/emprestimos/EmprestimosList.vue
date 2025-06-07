@@ -147,7 +147,7 @@ export default {
                 });
             }
 
-            if(this.permissionsService.hasPermissions('view_emprestimos_sensitive') && data.protesto == 0){
+            if(data.protesto == 0){
                 contextMenuItems.push({
                     label: 'Protestar Emprestimo',
                     icon: 'pi pi-lock',
