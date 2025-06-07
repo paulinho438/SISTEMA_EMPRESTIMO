@@ -2312,6 +2312,28 @@ class EmprestimoController extends Controller
 
                     $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)->whereNull('dt_baixa')->first();
 
+                    $movimentacaoFinanceira = [];
+                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                    $movimentacaoFinanceira['descricao'] = sprintf(
+                        'Pagamento personalizado Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                        $pagamento->id,
+                        $parcela->emprestimo_id,
+                        $parcela->emprestimo->client->nome_completo,
+                        $pix['pagador']['nome']
+                    );
+                    $movimentacaoFinanceira['tipomov'] = 'E';
+                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                    $movimentacaoFinanceira['valor'] = $valor;
+
+                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                    # ADICIONANDO O VALOR NO SALDO DO BANCO
+
+                    $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $valor;
+                    $parcela->emprestimo->banco->save();
+
                     $parcela->saldo -= $valor;
                     $parcela->save();
 
@@ -2343,6 +2365,8 @@ class EmprestimoController extends Controller
                         $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
                         $pagamento->emprestimo->pagamentosaldopendente->save();
+
+
 
                         $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, $pagamento->emprestimo->pagamentosaldopendente->identificador);
 
