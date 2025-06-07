@@ -121,7 +121,7 @@ export default {
                 case 'Protesto':
                     return 'p-button-rounded p-button-warning';
                 case 'Protestado':
-                    return 'p-button-rounded p-button-warning';
+                    return 'p-button-rounded p-button-success';
                 default:
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
