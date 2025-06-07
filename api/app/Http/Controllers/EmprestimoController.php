@@ -313,7 +313,9 @@ class EmprestimoController extends Controller
             ->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
 
-                return $emprestimo && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+                return $emprestimo &&
+                       !is_null($emprestimo->deve_cobrar_hoje) &&
+                       Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
             })
             ->unique('emprestimo_id')
             ->values();
