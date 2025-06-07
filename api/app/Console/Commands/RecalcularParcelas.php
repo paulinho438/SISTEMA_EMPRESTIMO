@@ -59,7 +59,10 @@ class RecalcularParcelas extends Command
         $inicioQuery = microtime(true);
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->whereNull('dt_baixa')
-            ->whereDate('ult_dt_processamento_rotina', '!=', Carbon::today())
+            ->where(function ($query) {
+                $query->whereNull('ult_dt_processamento_rotina')
+                      ->orWhereDate('ult_dt_processamento_rotina', '!=', Carbon::today());
+            })
             ->with('emprestimo')
             ->orderByDesc('id')
             ->take(300)
