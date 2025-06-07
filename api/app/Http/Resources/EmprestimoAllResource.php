@@ -55,6 +55,7 @@ class EmprestimoAllResource extends JsonResource
             // "pagamentosaldopendente" => new PagamentoSaldoPendenteResource($this->pagamentosaldopendente),
             "parcelas_pagas" => $parcelas_pagas,
             "status" => $this->getStatus(),
+            "protesto" => $this->protesto,
             "telefone_empresa" => $this->company->numero_contato,
         ];
     }
