@@ -384,6 +384,7 @@ class EmprestimoController extends Controller
     {
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->whereNull('dt_baixa')
+            ->whereNotNull('identificador')
             ->where(function ($query) {
                 $query->whereNull('ult_dt_processamento_rotina')
                       ->orWhereDate('ult_dt_processamento_rotina', '!=', Carbon::today());
