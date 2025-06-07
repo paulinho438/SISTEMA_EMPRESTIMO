@@ -39,7 +39,7 @@ class BcodexService
         throw new \Exception('Falha no login: ' . $response->body());
     }
 
-    public function criarCobranca(float $valor, string $document, string $txId)
+    public function criarCobranca(float $valor, string $document, ?string $txId = null)
     {
         if($valor) {
             $modalidadeAlteracao = $txId == null ? 0 : 1;
