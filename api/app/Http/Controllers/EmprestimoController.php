@@ -301,22 +301,21 @@ class EmprestimoController extends Controller
 
         $parcelasQuery = Parcela::whereNull('dt_baixa');
 
-        // if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
-        //     $parcelasQuery->where('atrasadas', '>', 0);
-        // } else {
-        //     $parcelasQuery->whereDate('venc_real', $today);
-        // }
-
-        $parcelas = $parcelasQuery
-            ->with('emprestimo')
-            ->get()
-            ->filter(function ($parcela) use ($todayHoje) {
+        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+            $parcelasQuery->where('atrasadas', '>', 0);
+        } else {
+            $parcelasQuery->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
 
                 return $emprestimo &&
                        !is_null($emprestimo->deve_cobrar_hoje) &&
                        Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
-            })
+            });
+        }
+
+        $parcelas = $parcelasQuery
+            ->with('emprestimo')
+            ->get()
             ->unique('emprestimo_id')
             ->values();
 
