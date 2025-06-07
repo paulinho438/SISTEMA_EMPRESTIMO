@@ -377,7 +377,7 @@ class RecalcularParcelas extends Command
     {
         $parcelaPesquisa = Parcela::find($parcela->id);
 
-        if ($parcelaPesquisa->dt_baixa !== null || $parcelaPesquisa->dt_baixa !== '') {
+        if ($parcelaPesquisa->dt_baixa !== null) {
             Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
             return false;
         }
