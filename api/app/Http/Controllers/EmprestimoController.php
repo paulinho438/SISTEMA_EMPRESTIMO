@@ -257,7 +257,8 @@ class EmprestimoController extends Controller
 
     public function emprestimosAptosAProtesto()
     {
-        $emprestimos = Emprestimo::whereHas('parcelas', function ($query) {
+        $emprestimos = Emprestimo::where('protesto', 0)
+        ->whereHas('parcelas', function ($query) {
             $query->whereNull('dt_baixa')
                 ->where('atrasadas', '>', 14);
         })
@@ -283,6 +284,12 @@ class EmprestimoController extends Controller
                 return true;
             })
             ->values();
+
+        foreach ($emprestimos as $emprestimo) {
+            $emprestimo->protesto = 1;
+            $emprestimo->data_protesto = date('Y-m-d');
+            $emprestimo->save();
+        }
 
         return $emprestimos;
     }
