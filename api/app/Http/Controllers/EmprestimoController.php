@@ -260,6 +260,25 @@ class EmprestimoController extends Controller
         );
     }
 
+
+
+    public function emprestimosAptosARefinanciar()
+    {
+        $emprestimos = Emprestimo::withCount([
+            'parcelas as total_parcelas',
+            'parcelas as parcelas_baixadas_count' => function ($query) {
+                $query->whereNotNull('dt_baixa');
+            }
+        ])
+        ->whereDoesntHave('parcelas', function ($query) {
+            $query->where('atrasadas', '>', 0);
+        })
+        ->havingRaw('parcelas_baixadas_count >= total_parcelas * 0.8')
+        ->get();
+
+        return $emprestimos;
+    }
+
     public function emprestimosAptosAProtesto()
     {
         $emprestimos = Emprestimo::where('protesto', 0)

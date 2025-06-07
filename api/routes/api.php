@@ -73,6 +73,8 @@ Route::post('/manutencao/aplicar_multa_parcela/{id}', [EmprestimoController::cla
 Route::post('/manutencao/buscar_clientes_cobrados/', [EmprestimoController::class, 'buscarClientesCobrados']);
 Route::post('/manutencao/buscar_parcelas_pendentes/', [EmprestimoController::class, 'buscarParcelasPendentes']);
 Route::post('/manutencao/emprestimos_aptos_a_protesto/', [EmprestimoController::class, 'emprestimosAptosAProtesto']);
+Route::post('/manutencao/emprestimos_aptos_a_refinanciar/', [EmprestimoController::class, 'emprestimosAptosARefinanciar']);
+
 
 
 
