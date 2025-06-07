@@ -74,7 +74,7 @@ class BcodexService
 
             try {
                 if ($modalidadeAlteracao == 0) {
-                    $response = Http::withHeaders([
+                    $response = Http::timeout(45)->withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->put($url, $data);
@@ -84,7 +84,7 @@ class BcodexService
                         $sucesso = false;
                     }
                 } else {
-                    $response = Http::withHeaders([
+                    $response = Http::timeout(45)->withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->patch($url, $data);
@@ -104,7 +104,7 @@ class BcodexService
             if(!$sucesso) {
                 $txId = bin2hex(random_bytes(16));
                 $url = "{$this->baseUrl}/cob/{$txId}";
-                $response = Http::withHeaders([
+                $response = Http::timeout(45)->withHeaders([
                     'Content-Type' => 'application/json',
                     'Authorization' => 'Bearer ' . $accessToken,
                 ])->put($url, $data);
@@ -113,6 +113,7 @@ class BcodexService
                     Log::error('Erro ao criar cobrança: ' . $response->body());
                     return false;
                 }
+                return $response;
             }
         }
         return false;

@@ -65,7 +65,7 @@ class RecalcularParcelas extends Command
             })
             ->with('emprestimo')
             ->orderByDesc('id')
-            ->take(300)
+            ->take(20)
             ->get()
             ->filter(function ($parcela) {
                 $protesto = optional($parcela->emprestimo)->protesto;
