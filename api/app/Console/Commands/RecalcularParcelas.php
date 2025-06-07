@@ -63,13 +63,27 @@ class RecalcularParcelas extends Command
             ->filter(function ($parcela) {
                 $dataProtesto = optional($parcela->emprestimo)->data_protesto;
 
-                if( !$dataProtesto) {
+                if (!$dataProtesto) {
                     return true;
                 }
 
                 return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
             })
             ->values();
+
+        $hoje = Carbon::today();
+
+        foreach ($parcelasVencidas as $parcela) {
+            if ($parcela->emprestimo) {
+                $emprestimo = $parcela->emprestimo;
+
+                // Atualiza apenas se não for a data atual (evita update desnecessário)
+                if ($emprestimo->deve_cobrar_hoje !== $hoje->toDateString()) {
+                    $emprestimo->deve_cobrar_hoje = $hoje;
+                    $emprestimo->save();
+                }
+            }
+        }
 
         $bcodexService = new BcodexService();
 
@@ -99,6 +113,11 @@ class RecalcularParcelas extends Command
 
 
                 if ($parcela->emprestimo->banco->wallet) {
+
+                    if (!self::podeProcessarParcela($parcela)) {
+                        continue;
+                    };
+
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
                     Log::info(message: "Recalculo: Alterando cobranca da parcela $parcela->id do emprestimo $parcela->emprestimo_id no valor de $parcela->saldo txid: $txId");
@@ -344,5 +363,17 @@ class RecalcularParcelas extends Command
         }
 
         return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
+    }
+
+    private static function podeProcessarParcela($parcela)
+    {
+        $parcelaPesquisa = Parcela::find($parcela->id);
+
+        if ($parcelaPesquisa->dt_baixa !== null || $parcelaPesquisa->dt_baixa !== '') {
+            Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
+            return false;
+        }
+
+        return true;
     }
 }

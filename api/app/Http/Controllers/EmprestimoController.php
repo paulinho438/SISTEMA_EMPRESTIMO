@@ -297,9 +297,8 @@ class EmprestimoController extends Controller
             return 0;
         }
 
-        $todayHoje = Carbon::today();
+        $todayHoje = now();
 
-        // Pegar parcelas atrasadas
         $parcelasQuery = Parcela::whereNull('dt_baixa');
 
         if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
@@ -307,7 +306,16 @@ class EmprestimoController extends Controller
         } else {
             $parcelasQuery->whereDate('venc_real', $today);
         }
-        $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
+
+        $parcelas = $parcelasQuery
+            ->with('emprestimo')
+            ->get()
+            ->filter(function ($parcela) use ($today) {
+                $emprestimo = $parcela->emprestimo;
+                return $emprestimo && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($today);
+            })
+            ->unique('emprestimo_id')
+            ->values();
 
         return $parcelas;
     }

@@ -45,9 +45,8 @@ class CobrancaAutomaticaA extends Command
             return 0;
         }
 
-        $todayHoje = Carbon::today();
+        $todayHoje = now();
 
-        // Pegar parcelas atrasadas
         $parcelasQuery = Parcela::whereNull('dt_baixa');
 
         if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
@@ -55,7 +54,17 @@ class CobrancaAutomaticaA extends Command
         } else {
             $parcelasQuery->whereDate('venc_real', $today);
         }
-        $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
+
+        $parcelas = $parcelasQuery
+            ->with('emprestimo')
+            ->get()
+            ->filter(function ($parcela) use ($today) {
+                $emprestimo = $parcela->emprestimo;
+                return $emprestimo && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($today);
+            })
+            ->unique('emprestimo_id')
+            ->values();
+
         $count = count($parcelas);
         Log::info("Cobranca Automatica A quantidade de clientes: {$count}");
         //$parcelas = Parcela::where('id', 23167)->get();
@@ -101,7 +110,6 @@ class CobrancaAutomaticaA extends Command
         }
 
         return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
-
     }
 
     private function enviarMensagem($parcela)

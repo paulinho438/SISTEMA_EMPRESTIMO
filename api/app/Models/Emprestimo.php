@@ -24,7 +24,8 @@ class Emprestimo extends Model
         'mensagem_renovacao',
         'liberar_minimo',
         'protesto',
-        'data_protesto'
+        'data_protesto',
+        'deve_cobrar_hoje'
     ];
 
     public function company()
