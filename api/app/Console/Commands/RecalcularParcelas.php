@@ -55,21 +55,9 @@ class RecalcularParcelas extends Command
         Log::info("Recalculando as Parcelas em Atrasos");
 
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
-            ->whereNull('dt_baixa')
+            ->where('dt_baixa', null)
             ->whereDate('updated_at', '!=', Carbon::today())
-            ->with('emprestimo')
-            ->orderByDesc('id')
-            ->get()
-            ->filter(function ($parcela) {
-                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
-
-                if (!$dataProtesto) {
-                    return true;
-                }
-
-                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
-            })
-            ->values();
+            ->get();
 
         $hoje = Carbon::today();
 
