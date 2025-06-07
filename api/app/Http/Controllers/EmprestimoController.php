@@ -399,7 +399,10 @@ class EmprestimoController extends Controller
             })
             ->values();
 
-        return $parcelasVencidas;
+        return [
+            'count' => $parcelasVencidas->count(),
+            'parcelas' => ParcelaResource::collection($parcelasVencidas),
+        ];
     }
 
     public function searchFornecedor(Request $request)
