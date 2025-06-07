@@ -288,6 +288,30 @@ class EmprestimoController extends Controller
         return FeriadoEmprestimoResource::collection(Feriado::where('company_id', $request->header('company-id'))->orderBy('id', 'desc')->get());
     }
 
+    public function buscarClientesCobrados()
+    {
+        $today = Carbon::today()->toDateString();
+        $isHoliday = Feriado::where('data_feriado', $today)->exists();
+
+        if ($isHoliday) {
+            return 0;
+        }
+
+        $todayHoje = Carbon::today();
+
+        // Pegar parcelas atrasadas
+        $parcelasQuery = Parcela::whereNull('dt_baixa');
+
+        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+            $parcelasQuery->where('atrasadas', '>', 0);
+        } else {
+            $parcelasQuery->whereDate('venc_real', $today);
+        }
+        $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
+
+        return $parcelas;
+    }
+
     public function searchFornecedor(Request $request)
     {
 

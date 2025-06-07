@@ -70,6 +70,8 @@ Route::post('/webhook/retorno_pagamento', [EmprestimoController::class, 'webhook
 Route::post('/manutencao/corrigir_pix', [EmprestimoController::class, 'corrigirPix']);
 Route::post('/manutencao/corrigir_pix_parcela', [EmprestimoController::class, 'corrigirValoresPix']);
 Route::post('/manutencao/aplicar_multa_parcela/{id}', [EmprestimoController::class, 'aplicarMultaParcela']);
+Route::post('/manutencao/buscar_clientes_cobrados/', [EmprestimoController::class, 'buscarClientesCobrados']);
+
 
 
 Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataCorte']);
