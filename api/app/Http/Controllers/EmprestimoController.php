@@ -388,19 +388,19 @@ class EmprestimoController extends Controller
             ->with('emprestimo')
             ->orderByDesc('id') // 👈 ordenação antes do get()
             ->get()
-            ->filter(function ($parcela) {
-                $protesto = optional($parcela->emprestimo)->protesto;
+            // ->filter(function ($parcela) {
+            //     $protesto = optional($parcela->emprestimo)->protesto;
 
-                if (!$protesto) {
-                    return true;
-                }
+            //     if (!$protesto) {
+            //         return true;
+            //     }
 
-                if($protesto == 0) {
-                    return true;
-                }
-                return false;
+            //     if($protesto == 0) {
+            //         return true;
+            //     }
+            //     return false;
 
-            })
+            // })
             ->values();
 
         return [
