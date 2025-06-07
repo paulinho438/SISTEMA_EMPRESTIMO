@@ -55,9 +55,18 @@ class RecalcularParcelas extends Command
         Log::info("Recalculando as Parcelas em Atrasos");
 
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
-            ->where('dt_baixa', null)
+            ->whereNull('dt_baixa')
             ->whereDate('updated_at', '!=', Carbon::today())
-            ->get();
+            ->with('emprestimo')
+            ->orderByDesc('id') // 👈 ordenação antes do get()
+            ->get()
+            ->filter(function ($parcela) {
+                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
+
+                return $dataProtesto &&
+                    Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+            })
+            ->values();
 
         $bcodexService = new BcodexService();
 
@@ -102,7 +111,7 @@ class RecalcularParcelas extends Command
                         $parcela->identificador = $response->json()['txid'];
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->save();
-                    }else{
+                    } else {
                         Log::info("Não deu certo, parcela $parcela->id no valor de $parcela->saldo txid: $txId");
                         continue;
                     }
@@ -323,5 +332,14 @@ class RecalcularParcelas extends Command
         } catch (\Exception $e) {
             print_r($e->getMessage());
         }
+    }
+
+    private function emprestimoEmProtesto($parcela)
+    {
+        if (!$parcela->emprestimo || !$parcela->emprestimo->data_protesto) {
+            return false;
+        }
+
+        return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
     }
 }

@@ -258,6 +258,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('/emprestimo/baixadesconto/{id}', [EmprestimoController::class, 'baixaDesconto']);
     Route::post('/emprestimo/refinanciamento/{id}', [EmprestimoController::class, 'refinanciamento']);
+    Route::post('/emprestimo/setar_protesto_emprestimo/{id}', [EmprestimoController::class, 'setarProtestoEmprestimo']);
     Route::post('/emprestimo/search/fornecedor', [EmprestimoController::class, 'searchFornecedor']);
     Route::post('/emprestimo/search/cliente', [EmprestimoController::class, 'searchCliente']);
     Route::post('/emprestimo/search/banco', [EmprestimoController::class, 'searchBanco']);

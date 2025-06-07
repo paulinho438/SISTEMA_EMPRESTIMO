@@ -317,7 +317,15 @@ class EmprestimoController extends Controller
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->whereNull('dt_baixa')
             ->whereDate('updated_at', '!=', Carbon::today())
+            ->with('emprestimo')
+            ->orderByDesc('id') // 👈 ordenação antes do get()
             ->get()
+            ->filter(function ($parcela) {
+                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
+
+                return $dataProtesto &&
+                    Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+            })
             ->values();
 
         return $parcelasVencidas;
@@ -1543,6 +1551,43 @@ class EmprestimoController extends Controller
 
             return response()->json([
                 "message" => "Erro ao editar o Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function setarProtestoEmprestimo(Request $request, $id)
+    {
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $emprestimo = Emprestimo::find($id);
+
+            if ($emprestimo) {
+                $emprestimo->protesto = 1;
+                $emprestimo->data_protesto = date('Y-m-d');
+                $emprestimo->save();
+            }
+
+            DB::commit();
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' protestou o emprestimo: ' . $id,
+                'operation' => 'index'
+            ]);
+
+            return response()->json(['message' => 'Emprestimo marcado para protesto com sucesso.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao protestar o emprestimo.",
                 "error" => $e->getMessage()
             ], Response::HTTP_FORBIDDEN);
         }

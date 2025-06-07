@@ -72,6 +72,10 @@ class CobrancaAutomaticaA extends Command
             return;
         }
 
+        if ($this->emprestimoEmProtesto($parcela)) {
+            return;
+        }
+
         try {
             $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
@@ -88,6 +92,16 @@ class CobrancaAutomaticaA extends Command
         return isset($parcela->emprestimo->company->whatsapp) &&
             $parcela->emprestimo->contaspagar &&
             $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado";
+    }
+
+    private function emprestimoEmProtesto($parcela)
+    {
+        if (!$parcela->emprestimo || !$parcela->emprestimo->data_protesto) {
+            return false;
+        }
+
+        return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
+
     }
 
     private function enviarMensagem($parcela)
@@ -108,8 +122,8 @@ class CobrancaAutomaticaA extends Command
         Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
         Log::info("MENSAGEM ENVIADA: " . $telefone);
         sleep(4);
-        if($parcela->emprestimo->company->mensagem_audio) {
-            if($parcela->atrasadas > 0) {
+        if ($parcela->emprestimo->company->mensagem_audio) {
+            if ($parcela->atrasadas > 0) {
                 $baseUrl = $parcela->emprestimo->company->whatsapp;
                 $tipo = "0";
                 switch ($parcela->atrasadas) {
@@ -133,7 +147,7 @@ class CobrancaAutomaticaA extends Command
                         break;
                 }
 
-                if($tipo != "0"){
+                if ($tipo != "0") {
                     $data2 = [
                         "numero" => "55" . $telefone,
                         "nomeCliente" => $parcela->emprestimo->client->nome_completo,
@@ -147,8 +161,8 @@ class CobrancaAutomaticaA extends Command
 
         //identificar se o emprestimo é mensal
         //identificar se é a primeira cobranca
-        if(count($parcela->emprestimo->parcelas) == 1) {
-            if($parcela->atrasadas == 0){
+        if (count($parcela->emprestimo->parcelas) == 1) {
+            if ($parcela->atrasadas == 0) {
                 $data3 = [
                     "numero" => "55" . $telefone,
                     "nomeCliente" => "Sistema",
@@ -158,7 +172,6 @@ class CobrancaAutomaticaA extends Command
                 Http::asJson()->post("$baseUrl/enviar-audio", $data3);
             }
         }
-
     }
 
     private function montarMensagem($parcela, $saudacao)

@@ -69,6 +69,10 @@ class CobrancaAutomaticaC extends Command
 
         $r = [];
         foreach ($parcelas as $parcela) {
+            if ($this->emprestimoEmProtesto($parcela)) {
+                continue;
+            }
+
             if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
 
                 try {
@@ -195,5 +199,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         return null;
+    }
+
+    private function emprestimoEmProtesto($parcela)
+    {
+        if (!$parcela->emprestimo || !$parcela->emprestimo->data_protesto) {
+            return false;
+        }
+
+        return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
+
     }
 }
