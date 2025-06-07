@@ -301,14 +301,14 @@ class EmprestimoController extends Controller
 
         $parcelasQuery = Parcela::whereNull('dt_baixa')->with('emprestimo');
 
-        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelasQuery->where('atrasadas', '>', 0);
         }
 
         $parcelas = $parcelasQuery->get();
 
         // Se for sábado ou domingo, filtrar após o get()
-        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
 
