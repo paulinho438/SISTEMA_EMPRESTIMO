@@ -257,18 +257,41 @@ class EmprestimoController extends Controller
 
     public function emprestimosAptosAProtesto()
     {
-        $emprestimos = Emprestimo::whereHas('parcelas', function ($query) {
-                $query->select(DB::raw(1))
-                    ->whereRaw('parcelas.emprestimo_id = emprestimos.id')
-                    ->orderByDesc('id') // ou 'vencimento' se preferir
-                    ->limit(1)
-                    ->whereNull('dt_baixa')
-                    ->where('atrasadas', '>', 14);
+        $emprestimos = Emprestimo::where('is_active', true)
+            ->with(['parcelas' => function ($query) {
+                $query->orderByDesc('id'); // ou 'vencimento'
+            }])
+            ->get()
+            ->filter(function ($emprestimo) {
+                $ultimaParcela = $emprestimo->parcelas->first();
+
+                if (!$ultimaParcela) {
+                    return false;
+                }
+
+                // A última parcela precisa estar sem baixa e com atrasadas > 14
+                if (!is_null($ultimaParcela->dt_baixa)) {
+                    return false;
+                }
+
+                if ((int)$ultimaParcela->atrasadas <= 14) {
+                    return false;
+                }
+
+                // A data_protesto precisa estar ausente ou ser mais recente que 14 dias atrás
+                $dataProtesto = optional($emprestimo)->data_protesto;
+
+                if ($dataProtesto && Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14))) {
+                    return false;
+                }
+
+                return true;
             })
-            ->get();
+            ->values();
 
         return $emprestimos;
     }
+
 
     public function parcelasParaExtorno(Request $request)
     {
