@@ -257,8 +257,12 @@ class EmprestimoController extends Controller
 
     public function emprestimosAptosAProtesto()
     {
-        $emprestimos = Emprestimo::with(['parcelas' => function ($query) {
-                $query->orderByDesc('id'); // ou 'vencimento'
+        $emprestimos = Emprestimo::whereHas('parcelas', function ($query) {
+            $query->whereNull('dt_baixa')
+                ->where('atrasadas', '>', 14);
+        })
+            ->with(['parcelas' => function ($query) {
+                $query->orderByDesc('id');
             }])
             ->get()
             ->filter(function ($emprestimo) {
@@ -268,7 +272,6 @@ class EmprestimoController extends Controller
                     return false;
                 }
 
-                // A última parcela precisa estar sem baixa e com atrasadas > 14
                 if (!is_null($ultimaParcela->dt_baixa)) {
                     return false;
                 }
@@ -276,6 +279,13 @@ class EmprestimoController extends Controller
                 if ((int)$ultimaParcela->atrasadas <= 14) {
                     return false;
                 }
+
+                $dataProtesto = optional($emprestimo)->data_protesto;
+
+                if ($dataProtesto && Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14))) {
+                    return false;
+                }
+
                 return true;
             })
             ->values();
