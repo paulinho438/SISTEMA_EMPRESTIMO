@@ -262,7 +262,7 @@ class EmprestimoController extends Controller
                     ->whereRaw('parcelas.emprestimo_id = emprestimos.id')
                     ->orderByDesc('id') // ou 'vencimento' se preferir
                     ->limit(1)
-                    ->isNull('dt_baixa')
+                    ->whereNull('dt_baixa')
                     ->where('atrasadas', '>', 14);
             })
             ->get();
