@@ -299,25 +299,27 @@ class EmprestimoController extends Controller
 
         $todayHoje = now();
 
-        $parcelasQuery = Parcela::whereNull('dt_baixa');
+        $parcelasQuery = Parcela::whereNull('dt_baixa')->with('emprestimo');
 
         if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelasQuery->where('atrasadas', '>', 0);
-        } else {
-            $parcelasQuery->filter(function ($parcela) use ($todayHoje) {
+        }
+
+        $parcelas = $parcelasQuery->get();
+
+        // Se for sábado ou domingo, filtrar após o get()
+        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+            $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
 
                 return $emprestimo &&
-                       !is_null($emprestimo->deve_cobrar_hoje) &&
-                       Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+                    !is_null($emprestimo->deve_cobrar_hoje) &&
+                    Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
             });
         }
 
-        $parcelas = $parcelasQuery
-            ->with('emprestimo')
-            ->get()
-            ->unique('emprestimo_id')
-            ->values();
+        // Remover duplicados e resetar índices
+        $parcelas = $parcelas->unique('emprestimo_id')->values();
 
         return $parcelas;
     }
@@ -333,7 +335,7 @@ class EmprestimoController extends Controller
             ->filter(function ($parcela) {
                 $dataProtesto = optional($parcela->emprestimo)->data_protesto;
 
-                if( !$dataProtesto) {
+                if (!$dataProtesto) {
                     return true;
                 }
 
