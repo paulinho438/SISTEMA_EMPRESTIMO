@@ -55,9 +55,21 @@ class RecalcularParcelas extends Command
         Log::info("Recalculando as Parcelas em Atrasos");
 
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
-            ->where('dt_baixa', null)
+            ->whereNull('dt_baixa')
             ->whereDate('updated_at', '!=', Carbon::today())
-            ->get();
+            ->with('emprestimo')
+            ->orderByDesc('id')
+            ->get()
+            ->filter(function ($parcela) {
+                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
+
+                if (!$dataProtesto) {
+                    return true;
+                }
+
+                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+            })
+            ->values();
 
         $hoje = Carbon::today();
 
@@ -163,16 +175,24 @@ class RecalcularParcelas extends Command
 
                     $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
 
-                    $parcela->emprestimo->pagamentosaldopendente->save();
-                    $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
-                    Log::info(message: "Alterando saldo pendente da parcela $parcela->id no valor de {$parcela->emprestimo->pagamentosaldopendente->valor} txid: $txId");
-                    if ($response->successful()) {
-                        Log::info(message: 'Saldo pendente alterada com sucesso');
-                        $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                        $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                    if($parcela->emprestimo->pagamentosaldopendente->valor <= 0) {
+                        Log::info(message: "Saldo pendente da parcela $parcela->id já está zerado, não será alterado.");
+
+                    }else{
                         $parcela->emprestimo->pagamentosaldopendente->save();
+                        $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
+
+                        $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
+                        Log::info(message: "Alterando saldo pendente da parcela $parcela->id no valor de {$parcela->emprestimo->pagamentosaldopendente->valor} txid: $txId");
+                        if ($response->successful()) {
+                            Log::info(message: 'Saldo pendente alterada com sucesso');
+                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentosaldopendente->save();
+                        }
                     }
+
+
                 }
             }
         }
