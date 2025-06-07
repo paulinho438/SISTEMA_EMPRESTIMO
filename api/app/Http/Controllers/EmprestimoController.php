@@ -310,9 +310,10 @@ class EmprestimoController extends Controller
         $parcelas = $parcelasQuery
             ->with('emprestimo')
             ->get()
-            ->filter(function ($parcela) use ($today) {
+            ->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
-                return $emprestimo && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($today);
+
+                return $emprestimo && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
             })
             ->unique('emprestimo_id')
             ->values();
