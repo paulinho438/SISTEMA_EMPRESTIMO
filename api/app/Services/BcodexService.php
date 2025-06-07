@@ -76,10 +76,16 @@ class BcodexService
             try {
                 if ($modalidadeAlteracao == 0) {
 
+                    Log::info($url);
+                    Log::info($accessToken);
+                    Log::info(json_encode($data));
+
                     $response = Http::timeout(45)->withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->put($url, $data);
+
+
 
                     $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
                     Log::info("CHAMADA BCODE  - Tempo para chamar: {$duracaoAtualizacao}s");
