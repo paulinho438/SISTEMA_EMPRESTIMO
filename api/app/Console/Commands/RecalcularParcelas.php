@@ -47,62 +47,62 @@ class RecalcularParcelas extends Command
      *
      * @return int
      */
-    public function handle()
+    public function handle(): void
     {
+        $inicioTotal = microtime(true); // Marca o início da execução total
 
         $this->info('Recalculando as Parcelas em Atrasos');
+        $processo = strtoupper(substr(str_shuffle('abcdefghijklmnopqrstuvwxyz'), 0, 5));
 
-        Log::info("Recalculando as Parcelas em Atrasos");
+        Log::info("PROCESSO N: $processo - Início do processo");
 
+        $inicioQuery = microtime(true);
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->whereNull('dt_baixa')
-            ->whereDate('updated_at', '!=', Carbon::today())
+            ->whereDate('ult_dt_processamento_rotina', '!=', Carbon::today())
             ->with('emprestimo')
             ->orderByDesc('id')
+            ->take(300)
             ->get()
             ->filter(function ($parcela) {
-                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
-
-                if (!$dataProtesto) {
-                    return true;
-                }
-
-                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
+                $protesto = optional($parcela->emprestimo)->protesto;
+                return !$protesto || $protesto == 0;
             })
             ->values();
+        $duracaoQuery = round(microtime(true) - $inicioQuery, 4);
+        Log::info("PROCESSO N: $processo - Tempo para carregar parcelas vencidas: {$duracaoQuery}s");
 
         $hoje = Carbon::today();
 
+        $inicioAtualizacao = microtime(true);
         foreach ($parcelasVencidas as $parcela) {
             if ($parcela->emprestimo) {
                 $emprestimo = $parcela->emprestimo;
 
-                // Atualiza apenas se não for a data atual (evita update desnecessário)
                 if ($emprestimo->deve_cobrar_hoje !== $hoje->toDateString()) {
                     $emprestimo->deve_cobrar_hoje = $hoje;
                     $emprestimo->save();
                 }
             }
+
+            $parcela->ult_dt_processamento_rotina = $hoje;
+            $parcela->save();
         }
+        $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
+        Log::info("PROCESSO N: $processo - Tempo para atualizar parcelas: {$duracaoAtualizacao}s");
 
         $bcodexService = new BcodexService();
 
         $qtClientes = count($parcelasVencidas);
-        Log::info("Processando $qtClientes clientes");
+        Log::info("PROCESSO N: $processo - Processando $qtClientes clientes");
 
-        // Faça algo com as parcelas vencidas, por exemplo, exiba-as
-        foreach ($parcelasVencidas as $parcela) {
+        foreach ($parcelasVencidas as $index => $parcela) {
+            $inicioCliente = microtime(true);
 
             if ($parcela->emprestimo && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
                 $valorJuros = 0;
-
-
-                echo "<npre>" . $parcela->emprestimo->parcelas[0]->totalPendente() . "</pre>";
-
                 $juros = $parcela->emprestimo->company->juros ?? 1;
-
                 $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros  / 100), 2, '.', '');
-
                 $novoValor = $valorJuros + $parcela->saldo;
 
                 if (count($parcela->emprestimo->parcelas) == 1) {
@@ -110,94 +110,90 @@ class RecalcularParcelas extends Command
                     $valorJuros = (1 * $parcela->saldo / 100);
                 }
 
-
-
                 if ($parcela->emprestimo->banco->wallet) {
-
                     if (!self::podeProcessarParcela($parcela)) {
                         continue;
-                    };
+                    }
 
-                    $txId = $parcela->identificador ? $parcela->identificador : null;
-                    echo "txId: $txId parcelaId: { $parcela->id }";
-                    Log::info(message: "Recalculo: Alterando cobranca da parcela $parcela->id do emprestimo $parcela->emprestimo_id no valor de $parcela->saldo txid: $txId");
+                    $txId = $parcela->identificador ?: null;
+                    Log::info("PROCESSO N: $processo - Recalculo: Alterando parcela {$parcela->id} (processando " . ($index + 1) . " de $qtClientes)");
+
+
+                    $inicioPix = microtime(true);
                     $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
+                    $duracaoPix = round(microtime(true) - $inicioPix, 4);
 
                     if ($response->successful()) {
-                        Log::info("Parcela alterada com sucesso");
                         $newTxId = $response->json()['txid'];
-                        echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
                         $parcela->saldo = $novoValor;
                         $parcela->venc_real = date('Y-m-d');
-                        $parcela->atrasadas = $parcela->atrasadas + 1;
-                        $parcela->identificador = $response->json()['txid'];
+                        $parcela->atrasadas += 1;
+                        $parcela->identificador = $newTxId;
                         $parcela->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->save();
+                        Log::info("PROCESSO N: $processo - Parcela {$parcela->id} atualizada com sucesso em {$duracaoPix}s");
                     } else {
-                        Log::info("Não deu certo, parcela $parcela->id no valor de $parcela->saldo txid: $txId");
-                        continue;
+                        Log::info("PROCESSO N: $processo - Erro ao atualizar parcela {$parcela->id} em {$duracaoPix}s");
                     }
                 }
 
+                // Quitação
                 if ($parcela->emprestimo->quitacao) {
-
                     $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                     $parcela->emprestimo->quitacao->save();
-                    $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
+
+                    $txId = $parcela->emprestimo->quitacao->identificador ?: null;
                     $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
-                    Log::info(message: "Alterando quitacao da parcela $parcela->id quitacao: {$parcela->emprestimo->quitacao->id} txid: $txId");
+
                     if ($response->successful()) {
-                        Log::info('Quitacao alterada com sucesso');
                         $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                         $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                         $parcela->emprestimo->quitacao->save();
                     }
                 }
 
+                // Pagamento mínimo
                 if ($parcela->emprestimo->pagamentominimo) {
                     $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
-
                     $parcela->emprestimo->pagamentominimo->save();
-                    $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
+
+                    $txId = $parcela->emprestimo->pagamentominimo->identificador ?: null;
                     $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $txId);
-                    Log::info(message: "Alterando pagamento minimo da parcela $parcela->id no valor de {$parcela->emprestimo->pagamentominimo->valor} txid: $txId");
 
                     if ($response->successful()) {
-                        Log::info(message: 'Pagamento minimo alterada com sucesso');
                         $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                         $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->pagamentominimo->save();
                     }
                 }
 
+                // Pagamento saldo pendente
                 if ($parcela->emprestimo->pagamentosaldopendente) {
-
                     $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
 
-                    if($parcela->emprestimo->pagamentosaldopendente->valor <= 0) {
-                        Log::info(message: "Saldo pendente da parcela $parcela->id já está zerado, não será alterado.");
-
-                    }else{
+                    if ($parcela->emprestimo->pagamentosaldopendente->valor > 0) {
                         $parcela->emprestimo->pagamentosaldopendente->save();
-                        $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
 
+                        $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ?: null;
                         $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
-                        Log::info(message: "Alterando saldo pendente da parcela $parcela->id no valor de {$parcela->emprestimo->pagamentosaldopendente->valor} txid: $txId");
+
                         if ($response->successful()) {
-                            Log::info(message: 'Saldo pendente alterada com sucesso');
                             $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                             $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentosaldopendente->save();
                         }
+                    } else {
+                        Log::info("PROCESSO N: $processo - Saldo pendente zerado para parcela {$parcela->id}");
                     }
-
-
                 }
             }
+
+            $duracaoCliente = round(microtime(true) - $inicioCliente, 4);
+            Log::info("PROCESSO N: $processo - Tempo para processar parcela {$parcela->id}: {$duracaoCliente}s");
         }
 
-        exit;
+        $duracaoTotal = round(microtime(true) - $inicioTotal, 4);
+        Log::info("PROCESSO N: $processo - Tempo total de execução: {$duracaoTotal}s");
     }
 
     public function gerarPix($dados)
