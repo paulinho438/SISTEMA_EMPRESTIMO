@@ -405,7 +405,7 @@ class EmprestimoController extends Controller
 
         return [
             'count' => $parcelasVencidas->count(),
-            'parcelas' => ParcelaResource::collection($parcelasVencidas),
+            'parcelas' => $parcelasVencidas,
         ];
     }
 
