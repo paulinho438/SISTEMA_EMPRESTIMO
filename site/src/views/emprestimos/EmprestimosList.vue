@@ -151,13 +151,13 @@ export default {
                 });
             }
 
-            if(data.protesto == 0){
-                contextMenuItems.push({
-                    label: 'Protestar Emprestimo',
-                    icon: 'pi pi-lock',
-                    command: () => this.protestarEmprestimo(data.id)
-                });
-            }
+            // if(data.protesto == 0){
+            //     contextMenuItems.push({
+            //         label: 'Protestar Emprestimo',
+            //         icon: 'pi pi-lock',
+            //         command: () => this.protestarEmprestimo(data.id)
+            //     });
+            // }
 
             return contextMenuItems;
         },
