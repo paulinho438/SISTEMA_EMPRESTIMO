@@ -120,7 +120,8 @@ export default {
                     return 'p-button-rounded p-button-warning';
                 case 'Protesto':
                     return 'p-button-rounded p-button-warning';
-
+                case 'Protestado':
+                    return 'p-button-rounded p-button-warning';
                 default:
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
@@ -154,13 +155,13 @@ export default {
                 });
             }
 
-            // if(data.protesto == 0){
-            //     contextMenuItems.push({
-            //         label: 'Protestar Emprestimo',
-            //         icon: 'pi pi-lock',
-            //         command: () => this.protestarEmprestimo(data.id)
-            //     });
-            // }
+            if(data.protesto == 1){
+                contextMenuItems.push({
+                    label: 'Protestar Emprestimo',
+                    icon: 'pi pi-lock',
+                    command: () => this.protestarEmprestimo(data.id)
+                });
+            }
 
             return contextMenuItems;
         },

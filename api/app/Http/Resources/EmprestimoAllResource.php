@@ -96,7 +96,11 @@ class EmprestimoAllResource extends JsonResource
             $status = 'Pago';
         }
 
-        if($this->protesto) {
+        if($this->protesto == 2) {
+            $status = 'Protestado';
+        }
+
+        if($this->protesto == 1) {
             $status = 'Protesto';
         }
 

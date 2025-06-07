@@ -150,6 +150,7 @@ class EmprestimoController extends Controller
                     $q->whereRaw("(
                         CASE
                             WHEN emprestimos.protesto = 1 THEN 'Protesto'
+                            WHEN emprestimos.protesto = 2 THEN 'Protestado'
                             WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 0 THEN
                                 CASE
                                     WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) = (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Vencido'
@@ -262,10 +263,10 @@ class EmprestimoController extends Controller
     public function emprestimosAptosAProtesto()
     {
         $emprestimos = Emprestimo::where('protesto', 0)
-        ->whereHas('parcelas', function ($query) {
-            $query->whereNull('dt_baixa')
-                ->where('atrasadas', '>', 14);
-        })
+            ->whereHas('parcelas', function ($query) {
+                $query->whereNull('dt_baixa')
+                    ->where('atrasadas', '>', 14);
+            })
             ->with(['parcelas' => function ($query) {
                 $query->orderByDesc('id');
             }])
@@ -1639,10 +1640,18 @@ class EmprestimoController extends Controller
             $emprestimo = Emprestimo::find($id);
 
             if ($emprestimo) {
-                $emprestimo->protesto = 1;
-                $emprestimo->data_protesto = date('Y-m-d');
+                $emprestimo->protesto = 2;
                 $emprestimo->save();
             }
+
+            $movimentacaoFinanceira = [];
+            $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
+            $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+            $movimentacaoFinanceira['descricao'] = 'Protesto do Empréstimo Nº ' . $emprestimo->id;
+            $movimentacaoFinanceira['tipomov'] = 'S';
+            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+            $movimentacaoFinanceira['valor'] = 0;
+            Movimentacaofinanceira::create($movimentacaoFinanceira);
 
             DB::commit();
 
