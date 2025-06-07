@@ -389,11 +389,17 @@ class EmprestimoController extends Controller
             ->orderByDesc('id') // 👈 ordenação antes do get()
             ->get()
             ->filter(function ($parcela) {
-                if($parcela->emprestimo->protesto == 1) {
-                    return true; // Ignora parcelas de empréstimos já protestados
-                }else{
-                    return false;
+                $protesto = optional($parcela->emprestimo)->protesto;
+
+                if (!$protesto) {
+                    return true;
                 }
+
+                if($protesto == 0) {
+                    return true;
+                }
+                return false;
+
             })
             ->values();
 
