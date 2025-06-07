@@ -56,7 +56,6 @@ class RecalcularParcelas extends Command
 
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->whereNull('dt_baixa')
-            ->whereDate('updated_at', '!=', Carbon::today())
             ->with('emprestimo')
             ->orderByDesc('id')
             ->get()
