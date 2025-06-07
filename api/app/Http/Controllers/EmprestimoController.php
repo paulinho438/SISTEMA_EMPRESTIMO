@@ -301,11 +301,11 @@ class EmprestimoController extends Controller
 
         $parcelasQuery = Parcela::whereNull('dt_baixa');
 
-        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
-            $parcelasQuery->where('atrasadas', '>', 0);
-        } else {
-            $parcelasQuery->whereDate('venc_real', $today);
-        }
+        // if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+        //     $parcelasQuery->where('atrasadas', '>', 0);
+        // } else {
+        //     $parcelasQuery->whereDate('venc_real', $today);
+        // }
 
         $parcelas = $parcelasQuery
             ->with('emprestimo')
