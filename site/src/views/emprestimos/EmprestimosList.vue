@@ -118,6 +118,9 @@ export default {
                     return 'p-button-rounded p-button-info mr-2 mb-2';
                 case 'Muito Atrasado':
                     return 'p-button-rounded p-button-warning';
+                case 'Protesto':
+                    return 'p-button-rounded p-button-warning';
+
                 default:
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
@@ -337,7 +340,7 @@ export default {
                                 <Button type="button" icon="pi pi-filter-slash" label="Clear" class="p-button-outlined mb-2" @click="clearFilter()" />
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search" />
-                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" @input="getEmprestimos"/>
+                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..." style="width: 100%" @input="getEmprestimos" />
                                 </span>
                             </div>
                         </template>

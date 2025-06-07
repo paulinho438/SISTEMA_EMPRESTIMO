@@ -97,7 +97,7 @@ class EmprestimoAllResource extends JsonResource
         }
 
         if($this->protesto) {
-            $status = 'Protestado';
+            $status = 'Protesto';
         }
 
         return $status;
