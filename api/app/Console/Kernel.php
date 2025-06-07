@@ -59,6 +59,8 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('protestar:Emprestimo')->dailyAt('08:00');
 
+        $schedule->command('rotina:envioMensagemRenovacao')->everyTenMinutes()->withoutOverlapping();
+
     }
 
     /**
