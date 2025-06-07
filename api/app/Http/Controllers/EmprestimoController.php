@@ -318,8 +318,7 @@ class EmprestimoController extends Controller
             ->whereNull('dt_baixa')
             ->whereDate('updated_at', '!=', Carbon::today())
             ->get()
-            ->values()       // reorganiza os índices
-            ->toArray();     // converte para array
+            ->values();
 
         return $parcelasVencidas;
     }
