@@ -265,6 +265,8 @@ class EmprestimoController extends Controller
                     ->where('atrasadas', '>', 14);
             })
             ->get();
+
+        return $emprestimos;
     }
 
     public function parcelasParaExtorno(Request $request)
