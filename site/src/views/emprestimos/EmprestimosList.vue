@@ -49,6 +49,10 @@ export default {
                     icon: 'pi pi-trash'
                 },
                 {
+                    label: 'Protestar Emprestimo',
+                    icon: 'pi pi-lock'
+                },
+                {
                     separator: true
                 },
                 {
