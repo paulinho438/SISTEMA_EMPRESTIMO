@@ -2171,7 +2171,13 @@ class EmprestimoController extends Controller
                             $movimentacaoFinanceira = [];
                             $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
                             $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                            $movimentacaoFinanceira['descricao'] = 'Pagamento Minimo da parcela Nº ' . $parcela->parcela . ' do emprestimo n° ' . $parcela->emprestimo_id;
+                            $movimentacaoFinanceira['descricao'] = sprintf(
+                            'Pagamento Minimo da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                            $parcela->id,
+                            $parcela->emprestimo_id,
+                            $parcela->emprestimo->client->nome_completo,
+                            $pix['pagador']['nome']
+                        );
                             $movimentacaoFinanceira['tipomov'] = 'E';
                             $movimentacaoFinanceira['parcela_id'] = $parcela->id;
                             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
