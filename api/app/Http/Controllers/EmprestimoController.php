@@ -389,13 +389,11 @@ class EmprestimoController extends Controller
             ->orderByDesc('id') // 👈 ordenação antes do get()
             ->get()
             ->filter(function ($parcela) {
-                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
-
-                if (!$dataProtesto) {
-                    return true;
+                if($parcela->emprestimo->protesto == 1) {
+                    return true; // Ignora parcelas de empréstimos já protestados
+                }else{
+                    return false;
                 }
-
-                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
             })
             ->values();
 
