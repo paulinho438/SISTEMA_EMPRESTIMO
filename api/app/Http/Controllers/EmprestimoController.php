@@ -273,7 +273,7 @@ class EmprestimoController extends Controller
         ->whereDoesntHave('parcelas', function ($query) {
             $query->where('atrasadas', '>', 0);
         })
-        ->havingRaw('parcelas_baixadas_count >= total_parcelas * 0.8')
+        ->havingRaw('parcelas_baixadas_count = total_parcelas * 0.8')
         ->get();
 
         return $emprestimos;
