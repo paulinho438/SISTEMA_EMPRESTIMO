@@ -101,7 +101,7 @@ class RecalcularParcelas extends Command
                 if ($parcela->emprestimo->banco->wallet) {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
-                    Log::info(message: "Alterando cobranca da parcela $parcela->id no valor de $parcela->saldo txid: $txId");
+                    Log::info(message: "Recalculo: Alterando cobranca da parcela $parcela->id do emprestimo $parcela->emprestimo_id no valor de $parcela->saldo txid: $txId");
                     $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
 
                     if ($response->successful()) {
