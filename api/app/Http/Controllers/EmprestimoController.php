@@ -149,13 +149,17 @@ class EmprestimoController extends Controller
                 $q->where(function ($q) use ($status) {
                     $q->whereRaw("(
                         CASE
+                            WHEN emprestimos.protesto = 1 THEN 'Protesto'
                             WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 0 THEN
                                 CASE
                                     WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) = (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Vencido'
-                                    WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 4 OR (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) / (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) > 0.5 THEN 'Muito Atrasado'
+                                    WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 4 OR
+                                         (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) * 1.0 /
+                                         (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) > 0.5 THEN 'Muito Atrasado'
                                     ELSE 'Atrasado'
                                 END
-                            WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NOT NULL) = (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Pago'
+                            WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NOT NULL) =
+                                 (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Pago'
                             ELSE 'Em Dias'
                         END
                     ) LIKE ?", ["%{$status}%"]);
