@@ -51,24 +51,46 @@ class CobrancaAutomaticaB extends Command
 
 
         $today = Carbon::today()->toDateString();
-        // Verificando se hoje é um feriado
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
 
-        $parcelas = collect(); // Coleção vazia se hoje for um feriado
-
-        if (!$isHoliday) {
-            $todayHoje = Carbon::today();
-
-            // Pegar parcelas atrasadas
-            $parcelasQuery = Parcela::whereNull('dt_baixa');
-
-            if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
-                $parcelasQuery->where('atrasadas', '>', 0);
-            }else{
-                $parcelasQuery->whereDate('venc_real', $today);
-            }
-            $parcelas = $parcelasQuery->get()->unique('emprestimo_id');
+        if ($isHoliday) {
+            return 0;
         }
+
+        $todayHoje = now();
+
+        $parcelasQuery = Parcela::whereNull('dt_baixa')->with('emprestimo');
+
+        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+            $parcelasQuery->where('atrasadas', '>', 0);
+        }
+
+        $parcelas = $parcelasQuery->get();
+
+        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+            $parcelas = $parcelas->filter(function ($parcela) {
+                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
+
+                if (!$dataProtesto) {
+                    return true;
+                }
+
+                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+            });
+        }
+
+        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+            $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
+                $emprestimo = $parcela->emprestimo;
+
+                return $emprestimo &&
+                    !is_null($emprestimo->deve_cobrar_hoje) &&
+                    Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+            });
+        }
+
+        // Remover duplicados e resetar índices
+        $parcelas = $parcelas->unique('emprestimo_id')->values();
 
 
 
