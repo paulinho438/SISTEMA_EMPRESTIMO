@@ -71,13 +71,19 @@ class BcodexService
 
             $url = "{$this->baseUrl}/cob/{$txId}";
             $accessToken = $this->login();
+            $inicioAtualizacao = microtime(true);
 
             try {
                 if ($modalidadeAlteracao == 0) {
+
                     $response = Http::timeout(45)->withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->put($url, $data);
+
+                    $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
+                    Log::info("CHAMADA BCODE  - Tempo para chamar: {$duracaoAtualizacao}s");
+
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
                     if (!$response->successful()) {
                         Log::error('Erro ao criar cobrança: ' . $response->body());
@@ -88,6 +94,8 @@ class BcodexService
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->patch($url, $data);
+                    $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
+                    Log::info("CHAMADA BCODE  - Tempo para chamar: {$duracaoAtualizacao}s");
                     if (!$response->successful()) {
                         Log::error('Erro ao criar cobrança: ' . $response->body());
                         $sucesso = false;
@@ -101,6 +109,7 @@ class BcodexService
                 $sucesso = false;
             }
 
+            $inicioAtualizacao = microtime(true);
             if(!$sucesso) {
                 $txId = bin2hex(random_bytes(16));
                 $url = "{$this->baseUrl}/cob/{$txId}";
@@ -108,6 +117,8 @@ class BcodexService
                     'Content-Type' => 'application/json',
                     'Authorization' => 'Bearer ' . $accessToken,
                 ])->put($url, $data);
+                $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
+                    Log::info("CHAMADA BCODE  - Tempo para chamar: {$duracaoAtualizacao}s");
                 ControleBcodex::create(['identificador' => $response->json()['txid']]);
                 if (!$response->successful()) {
                     Log::error('Erro ao criar cobrança: ' . $response->body());
