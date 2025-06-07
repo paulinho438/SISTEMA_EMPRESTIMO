@@ -323,6 +323,10 @@ class EmprestimoController extends Controller
             ->filter(function ($parcela) {
                 $dataProtesto = optional($parcela->emprestimo)->data_protesto;
 
+                if( !$dataProtesto) {
+                    return true;
+                }
+
                 return $dataProtesto &&
                     Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
             })
