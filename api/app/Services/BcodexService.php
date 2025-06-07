@@ -76,11 +76,7 @@ class BcodexService
             try {
                 if ($modalidadeAlteracao == 0) {
 
-                    Log::info($url);
-                    Log::info($accessToken);
-                    Log::info(json_encode($data));
-
-                    $response = Http::timeout(45)->withHeaders([
+                    $response = Http::withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->put($url, $data);
@@ -96,10 +92,7 @@ class BcodexService
                         $sucesso = false;
                     }
                 } else {
-                    Log::info($url);
-                    Log::info($accessToken);
-                    Log::info(json_encode($data));
-                    $response = Http::timeout(45)->withHeaders([
+                    $response = Http::withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
                     ])->patch($url, $data);
@@ -122,7 +115,7 @@ class BcodexService
             if(!$sucesso) {
                 $txId = bin2hex(random_bytes(16));
                 $url = "{$this->baseUrl}/cob/{$txId}";
-                $response = Http::timeout(45)->withHeaders([
+                $response = Http::withHeaders([
                     'Content-Type' => 'application/json',
                     'Authorization' => 'Bearer ' . $accessToken,
                 ])->put($url, $data);
