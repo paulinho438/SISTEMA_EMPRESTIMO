@@ -384,22 +384,14 @@ class EmprestimoController extends Controller
     {
         $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
             ->whereNull('dt_baixa')
-            ->whereDate('updated_at', '!=', Carbon::today())
+            ->whereDate('ult_dt_processamento_rotina', '!=', Carbon::today())
             ->with('emprestimo')
-            ->orderByDesc('id') // 👈 ordenação antes do get()
+            ->orderByDesc('id')
+            ->take(300)
             ->get()
             ->filter(function ($parcela) {
                 $protesto = optional($parcela->emprestimo)->protesto;
-
-                if (!$protesto) {
-                    return true;
-                }
-
-                if($protesto == 0) {
-                    return true;
-                }
-                return false;
-
+                return !$protesto || $protesto == 0;
             })
             ->values();
 
