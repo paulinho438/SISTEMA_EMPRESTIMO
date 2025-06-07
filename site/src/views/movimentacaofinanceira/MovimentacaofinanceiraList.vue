@@ -383,6 +383,7 @@ export default {
                                     :class="{
                                         'text-red': data.descricao.includes('Baixa com desconto no'),
                                         'text-green-500': data.descricao.includes('Refinanciamento'),
+                                        'text-roxo': data.descricao.includes('protestou'),
                                         'text-blue-500': data.descricao.includes('baixa manual')
                                     }"
                                 >
@@ -429,5 +430,9 @@ export default {
 
 .text-red {
     color: red;
+}
+
+.text-roxo {
+    color: rgb(123, 17, 210);
 }
 </style>
