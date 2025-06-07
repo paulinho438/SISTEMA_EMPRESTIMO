@@ -96,6 +96,9 @@ class BcodexService
                         $sucesso = false;
                     }
                 } else {
+                    Log::info($url);
+                    Log::info($accessToken);
+                    Log::info(json_encode($data));
                     $response = Http::timeout(45)->withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . $accessToken,
