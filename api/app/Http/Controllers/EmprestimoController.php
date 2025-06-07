@@ -280,12 +280,6 @@ class EmprestimoController extends Controller
                     return false;
                 }
 
-                $dataProtesto = optional($emprestimo)->data_protesto;
-
-                if ($dataProtesto && Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14))) {
-                    return false;
-                }
-
                 return true;
             })
             ->values();
