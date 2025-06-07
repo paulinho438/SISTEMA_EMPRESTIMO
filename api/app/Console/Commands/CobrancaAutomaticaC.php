@@ -61,6 +61,7 @@ class CobrancaAutomaticaC extends Command
             $parcelasQuery->where('atrasadas', '>', 0);
         }
 
+        $parcelasQuery->orderByDesc('id');
         $parcelas = $parcelasQuery->get();
 
         if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
