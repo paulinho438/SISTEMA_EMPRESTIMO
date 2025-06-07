@@ -301,7 +301,7 @@ class EmprestimoController extends Controller
 
         $parcelasQuery = Parcela::whereNull('dt_baixa');
 
-        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
+        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelasQuery->where('atrasadas', '>', 0);
         } else {
             $parcelasQuery->filter(function ($parcela) use ($todayHoje) {
