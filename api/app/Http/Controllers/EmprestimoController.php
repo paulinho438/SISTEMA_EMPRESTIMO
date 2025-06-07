@@ -312,6 +312,15 @@ class EmprestimoController extends Controller
         return $parcelas;
     }
 
+    public function buscarParcelasPendentes(){
+        $parcelasVencidas = Parcela::where('venc_real', '<', Carbon::now()->subDay())
+        ->where('dt_baixa', null)
+        ->whereDate('updated_at', '!=', Carbon::today())
+        ->get();
+
+        return $parcelasVencidas;
+    }
+
     public function searchFornecedor(Request $request)
     {
 

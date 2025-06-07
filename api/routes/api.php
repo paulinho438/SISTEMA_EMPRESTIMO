@@ -71,6 +71,8 @@ Route::post('/manutencao/corrigir_pix', [EmprestimoController::class, 'corrigirP
 Route::post('/manutencao/corrigir_pix_parcela', [EmprestimoController::class, 'corrigirValoresPix']);
 Route::post('/manutencao/aplicar_multa_parcela/{id}', [EmprestimoController::class, 'aplicarMultaParcela']);
 Route::post('/manutencao/buscar_clientes_cobrados/', [EmprestimoController::class, 'buscarClientesCobrados']);
+Route::post('/manutencao/buscar_parcelas_pendentes/', [EmprestimoController::class, 'buscarParcelasPendentes']);
+
 
 
 
