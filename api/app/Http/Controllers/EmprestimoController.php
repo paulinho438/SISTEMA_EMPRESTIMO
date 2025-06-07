@@ -307,7 +307,18 @@ class EmprestimoController extends Controller
 
         $parcelas = $parcelasQuery->get();
 
-        // Se for sábado ou domingo, filtrar após o get()
+        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+            $parcelas = $parcelas->filter(function ($parcela) {
+                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
+
+                if (!$dataProtesto) {
+                    return true;
+                }
+
+                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14));
+            });
+        }
+
         if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
