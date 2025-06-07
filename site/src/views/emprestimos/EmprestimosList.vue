@@ -121,7 +121,7 @@ export default {
                 case 'Protesto':
                     return 'p-button-rounded p-button-warning';
                 case 'Protestado':
-                    return 'p-button-rounded p-button-success text-roxo';
+                    return 'p-button-rounded p-button-success bg-roxo';
                 default:
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
@@ -566,7 +566,7 @@ export default {
     color: red;
 }
 
-.text-roxo {
+.bg-roxo {
     background-color: rgb(123, 17, 210);
 }
 </style>
