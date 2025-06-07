@@ -147,6 +147,14 @@ export default {
                 });
             }
 
+            if(this.permissionsService.hasPermissions('view_emprestimos_sensitive') && data.protesto == 0){
+                contextMenuItems.push({
+                    label: 'Protestar Emprestimo',
+                    icon: 'pi pi-lock',
+                    command: () => this.protestarEmprestimo(data.id)
+                });
+            }
+
             return contextMenuItems;
         },
         formatValorReal(r) {
@@ -230,6 +238,31 @@ export default {
 
             this.emprestimoService
                 .delete(permissionId)
+                .then((e) => {
+                    console.log(e);
+                    this.toast.add({
+                        severity: ToastSeverity.SUCCESS,
+                        detail: e?.data?.message,
+                        life: 3000
+                    });
+                    this.getEmprestimos();
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: UtilService.message(error.response.data),
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        protestarEmprestimo(permissionId) {
+            this.loading = true;
+
+            this.emprestimoService
+                .protestarEmprestimo(permissionId)
                 .then((e) => {
                     console.log(e);
                     this.toast.add({
