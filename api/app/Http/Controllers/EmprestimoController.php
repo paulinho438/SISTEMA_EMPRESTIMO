@@ -270,6 +270,7 @@ class EmprestimoController extends Controller
                 $query->whereNotNull('dt_baixa');
             }
         ])
+        ->whereNull('dt_envio_mensagem_renovacao')
         ->whereDoesntHave('parcelas', function ($query) {
             $query->where('atrasadas', '>', 0);
         })
