@@ -257,17 +257,16 @@ class EmprestimoController extends Controller
 
     public function emprestimosAptosAProtesto()
     {
-        $emprestimos = Emprestimo::whereHas('parcelas', function ($query) {
+        $emprestimos = Emprestimo::where('is_active', true)
+            ->where('click_count', 1)
+            ->whereHas('parcelas', function ($query) {
                 $query->select(DB::raw(1))
                     ->whereRaw('parcelas.emprestimo_id = emprestimos.id')
                     ->orderByDesc('id') // ou 'vencimento' se preferir
                     ->limit(1)
-                    ->where('atrasadas', '>', 1);
+                    ->where('qt_vencimento', '>', 14);
             })
             ->get();
-
-
-        return $emprestimos;
     }
 
     public function parcelasParaExtorno(Request $request)
