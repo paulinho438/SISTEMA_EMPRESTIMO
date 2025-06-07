@@ -257,8 +257,7 @@ class EmprestimoController extends Controller
 
     public function emprestimosAptosAProtesto()
     {
-        $emprestimos = Emprestimo::where('is_active', true)
-            ->with(['parcelas' => function ($query) {
+        $emprestimos = Emprestimo::with(['parcelas' => function ($query) {
                 $query->orderByDesc('id'); // ou 'vencimento'
             }])
             ->get()
@@ -277,14 +276,6 @@ class EmprestimoController extends Controller
                 if ((int)$ultimaParcela->atrasadas <= 14) {
                     return false;
                 }
-
-                // A data_protesto precisa estar ausente ou ser mais recente que 14 dias atrás
-                $dataProtesto = optional($emprestimo)->data_protesto;
-
-                if ($dataProtesto && Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(14))) {
-                    return false;
-                }
-
                 return true;
             })
             ->values();
