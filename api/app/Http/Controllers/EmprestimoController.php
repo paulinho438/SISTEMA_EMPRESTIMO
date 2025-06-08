@@ -212,6 +212,8 @@ class EmprestimoController extends Controller
             });
         }
 
+        dd($request->all());
+
         if ($request->has('porcentagem')) {
             $porcentagemFilter = $request->get('porcentagem');
             $matchMode = $porcentagemFilter['matchMode'] ?? null;
