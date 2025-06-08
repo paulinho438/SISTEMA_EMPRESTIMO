@@ -212,20 +212,11 @@ class EmprestimoController extends Controller
             });
         }
 
-        dd($request->all());
+        if ($request->has('porcent_min')) {
+            $min = (float) $request->get('porcent_min');
+            $max = (float) $request->get('porcent_max');
 
-        if ($request->has('porcentagem')) {
-            $porcentagemFilter = $request->get('porcentagem');
-            $matchMode = $porcentagemFilter['matchMode'] ?? null;
-            $values = $porcentagemFilter['value'] ?? null;
-
-            dd($matchMode, $values);
-
-            if ($matchMode === 'between' && is_array($values) && count($values) === 2) {
-                $min = (float) $values[0];
-                $max = (float) $values[1];
-
-                $query->whereRaw("
+            $query->whereRaw("
                     (
                         SELECT
                             CASE
@@ -236,7 +227,6 @@ class EmprestimoController extends Controller
                         WHERE parcelas.emprestimo_id = emprestimos.id
                     ) BETWEEN ? AND ?
                 ", [$min, $max]);
-            }
         }
 
         // Retorna a coleção paginada
@@ -297,12 +287,12 @@ class EmprestimoController extends Controller
                 $query->whereNotNull('dt_baixa');
             }
         ])
-        ->whereNull('dt_envio_mensagem_renovacao')
-        ->whereDoesntHave('parcelas', function ($query) {
-            $query->where('atrasadas', '>', 0);
-        })
-        ->havingRaw('parcelas_baixadas_count = total_parcelas * 0.8')
-        ->get();
+            ->whereNull('dt_envio_mensagem_renovacao')
+            ->whereDoesntHave('parcelas', function ($query) {
+                $query->where('atrasadas', '>', 0);
+            })
+            ->havingRaw('parcelas_baixadas_count = total_parcelas * 0.8')
+            ->get();
 
         return $emprestimos;
     }
@@ -889,7 +879,7 @@ class EmprestimoController extends Controller
 
             $valorPagamento = 0;
 
-            if($emprestimo->valor_deposito > 0) {
+            if ($emprestimo->valor_deposito > 0) {
                 $valorPagamento = $emprestimo->valor_deposito;
             } else {
                 $valorPagamento = $emprestimo->valor;

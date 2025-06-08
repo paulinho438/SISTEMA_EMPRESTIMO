@@ -155,7 +155,7 @@ export default {
                 });
             }
 
-            if(data.protesto == 1){
+            if (data.protesto == 1) {
                 contextMenuItems.push({
                     label: 'Protestar Emprestimo',
                     icon: 'pi pi-lock',
@@ -200,6 +200,12 @@ export default {
                     params[key] = constraint.value;
                 }
             });
+
+            // Filtros específicos como 'porcentagem'
+            if (this.filters.porcentagem?.value?.[0]) {
+                params['porcent_min'] = this.filters.porcentagem?.value?.[0];
+                params['porcent_max'] = this.filters.porcentagem?.value?.[1];
+            }
 
             // Adiciona o filtro global aos parâmetros
             if (this.filters.global.value) {
@@ -570,4 +576,3 @@ export default {
     background-color: rgb(123, 17, 210);
 }
 </style>
-
