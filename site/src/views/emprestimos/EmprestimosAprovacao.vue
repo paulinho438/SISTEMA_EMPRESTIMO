@@ -445,7 +445,7 @@ export default {
                             <Chip :label="client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></Chip>
                         </div>
                         <div v-if="client?.valor_deposito != null" class="field col-12 md:col-3">
-                            <label for="firstname2">Valor do Emprestimo</label>
+                            <label for="firstname2">Valor a depositar</label>
                             <Chip :label="client?.valor_deposito?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></Chip>
                         </div>
                         <div class="field col-12 md:col-3">
