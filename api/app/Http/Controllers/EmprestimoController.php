@@ -711,6 +711,120 @@ class EmprestimoController extends Controller
         return $emprestimoAdd;
     }
 
+    public function insertRenovacao(Request $request)
+    {
+
+        $array = ['error' => ''];
+
+        $dados = $request->all();
+
+        $emprestimoAdd = [];
+
+        $emprestimoAdd['dt_lancamento'] = Carbon::createFromFormat('d/m/Y', $dados['dt_lancamento'])->format('Y-m-d');
+        $emprestimoAdd['valor'] = $dados['valor'];
+        $emprestimoAdd['lucro'] = $dados['lucro'];
+        $emprestimoAdd['juros'] = $dados['juros'];
+        $emprestimoAdd['costcenter_id'] = $dados['costcenter']['id'];
+        $emprestimoAdd['banco_id'] = $dados['banco']['id'];
+        $emprestimoAdd['client_id'] = $dados['cliente']['id'];
+        $emprestimoAdd['user_id'] = $dados['consultor']['id'];
+        $emprestimoAdd['company_id'] = $request->header('company-id');
+        $emprestimoAdd['liberar_minimo'] = 1;
+
+        $emprestimoAdd = Emprestimo::create($emprestimoAdd);
+
+        if ($emprestimoAdd) {
+
+            $contaspagar = [];
+            $contaspagar['banco_id'] = $dados['banco']['id'];
+            $contaspagar['emprestimo_id'] = $emprestimoAdd->id;
+            $contaspagar['costcenter_id'] = $dados['costcenter']['id'];
+            $contaspagar['status'] = 'Aguardando Pagamento';
+            $contaspagar['tipodoc'] = 'Empréstimo';
+            $contaspagar['lanc'] = date('Y-m-d');
+            $contaspagar['venc'] = date('Y-m-d');
+            $contaspagar['valor'] = $dados['valor_deposito'];
+            $contaspagar['descricao'] = 'Renovação 80% Emprestimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
+            $contaspagar['company_id'] = $request->header('company-id');
+            Contaspagar::create($contaspagar);
+        }
+
+        $pegarUltimaParcela = $dados['parcelas'];
+        end($pegarUltimaParcela);
+        $ultimaParcela = current($pegarUltimaParcela);
+
+        foreach ($dados['parcelas'] as $parcela) {
+
+            $addParcela = [];
+            $addParcela['emprestimo_id'] = $emprestimoAdd->id;
+            $addParcela['dt_lancamento'] = date('Y-m-d');
+            $addParcela['parcela'] = $parcela['parcela'];
+            $addParcela['valor'] = $parcela['valor'];
+            $addParcela['saldo'] = $parcela['saldo'];
+            $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
+            $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+
+            $parcela = Parcela::create($addParcela);
+
+            if ($parcela) {
+                $contasreceber = [];
+                $contasreceber['company_id'] = $request->header('company-id');
+                $contasreceber['parcela_id'] = $parcela->id;
+                $contasreceber['client_id'] = $dados['cliente']['id'];
+                $contasreceber['banco_id'] = $dados['banco']['id'];
+                $contasreceber['descricao'] = 'Parcela N° ' . $parcela->parcela . ' do Emprestimo N° ' . $emprestimoAdd->id;
+                $contasreceber['status'] = 'Aguardando Pagamento';
+                $contasreceber['tipodoc'] = 'Empréstimo';
+                $contasreceber['lanc'] = $parcela->dt_lancamento;
+                $contasreceber['venc'] = $parcela->venc_real;
+                $contasreceber['valor'] = $parcela->valor;
+
+                Contasreceber::create($contasreceber);
+            }
+        }
+
+        if ($dados['banco']['wallet'] == 1) {
+
+            $quitacao = [];
+            $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+            $quitacao['valor'] = $emprestimoAdd->parcelas[0]->totalPendente();
+            $quitacao['saldo'] = $emprestimoAdd->parcelas[0]->totalPendente();
+
+            //API COBRANCA B.CODEX
+            // $response = $this->bcodexService->criarCobranca(
+            //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
+            // );
+
+            // if ($response->successful()) {
+            //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
+            //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
+            // }
+
+            Quitacao::create($quitacao);
+        }
+
+        if ($dados['banco']['wallet'] == 1 && count($dados['parcelas']) == 1) {
+
+            $pagamentoMinimo = [];
+            $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
+            $pagamentoMinimo['valor'] = ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor']);
+
+            //API COBRANCA B.CODEX
+            // $response = $this->bcodexService->criarCobranca($emprestimoAdd->parcelas[0]->totalPendente());
+
+            // if ($response->successful()) {
+            //     $quitacao['identificador'] = $response->json()['txid'];
+            //     $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
+            // }
+
+            PagamentoMinimo::create($pagamentoMinimo);
+        }
+
+        ProcessarPixJob::dispatch($emprestimoAdd, $this->bcodexService, null);
+
+        return $emprestimoAdd;
+    }
+
     public function pagamentoTransferencia(Request $request, $id)
     {
 
@@ -1642,6 +1756,60 @@ class EmprestimoController extends Controller
             DB::commit();
 
             return response()->json(['message' => 'Refinanciamento realizado com sucesso.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao editar o Emprestimo.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
+    public function renovacao(Request $request, $id)
+    {
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $user = auth()->user();
+
+            $emprestimo = Emprestimo::find($id);
+
+            if ($emprestimo) {
+                $dataHoje = date('Y-m-d');
+
+                foreach ($emprestimo->parcelas as $parcela) {
+                    if (!$parcela->dt_baixa) {
+                        $parcela->dt_baixa = $dataHoje;
+                        $parcela->saldo = 0;
+                        $parcela->save();
+
+                        if ($parcela->contasreceber) {
+                            $parcela->contasreceber->status = 'Pago';
+                            $parcela->contasreceber->dt_baixa = $dataHoje;
+                            $parcela->contasreceber->forma_recebto = 'RENOVACAO';
+                            $parcela->contasreceber->save();
+                        }
+                    }
+                }
+
+                // $movimentacaoFinanceira = [];
+                // $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
+                // $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+                // $movimentacaoFinanceira['descricao'] = 'Renovação 80% Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
+                // $movimentacaoFinanceira['tipomov'] = 'E';
+                // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                // $movimentacaoFinanceira['valor'] = $request->saldo;
+
+                // Movimentacaofinanceira::create($movimentacaoFinanceira);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Renovacao realizado com sucesso.']);
         } catch (\Exception $e) {
             DB::rollBack();
 

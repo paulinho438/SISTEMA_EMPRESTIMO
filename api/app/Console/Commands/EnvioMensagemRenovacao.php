@@ -109,7 +109,7 @@ Agora já é possível renovar seu empréstimo!
 O valor liberado hoje é de R$ {$valorLiberado}.
 Descontando o saldo devedor de R$ {$saldoDevedor} das parcelas pendentes, o valor líquido de R$ {$valorLiquido} será creditado diretamente na sua conta.
 
-✅ Deseja renovar agora?
+✅ Deseja renovar?
 ";
         return $saudacaoTexto . $fraseInicial;
     }

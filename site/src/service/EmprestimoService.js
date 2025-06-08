@@ -34,8 +34,16 @@ export default class EmprestimoService {
         return await axios.post(`${apiPath}/emprestimorefinanciamento`, permissions);
 	};
 
+	saveRenovacao = async (permissions) => {
+        return await axios.post(`${apiPath}/emprestimorenovacao`, permissions);
+	};
+
 	refinanciamento = async (id, saldo) => {
 		return await axios.post(`${apiPath}/emprestimo/refinanciamento/${id}`, { saldo: saldo });
+	};
+
+	renovacao = async (id, valor, valor_deposito) => {
+		return await axios.post(`${apiPath}/emprestimo/renovacao/${id}`, { valor: valor, valor_deposito: valor_deposito });
 	};
 
 	baixaDesconto = async (id, valor, saldo) => {

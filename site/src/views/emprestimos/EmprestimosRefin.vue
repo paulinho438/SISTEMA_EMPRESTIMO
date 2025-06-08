@@ -83,10 +83,6 @@ export default {
         gerarParcelas() {
             let parcela = {};
             // Defina a data inicial
-            if(!this.dropdownMinimoValue){
-                alert('Selecione se pode efetuar o pagamento minimo.')
-                return;
-            }
 
             if(!this.dropdownValue){
                 alert('Selecione a opção de cobrança.')
@@ -146,7 +142,7 @@ export default {
             this.emprestimo.liberar_minimo = this.dropdownMinimoValue?.code;
 
 
-            this.$emit('saveInfoEmprestimo', this.emprestimo);
+            this.$emit('saveInfoRenovacao', this.emprestimo);
 
             this.visibleRight = false;
         },
@@ -396,7 +392,7 @@ export default {
             </div>
             <div class="p-fluid formgrid grid">
                 <div class="field col-12 md:col-12">
-                    <Button ref="popup" @click="gerarParcelas" icon="pi pi-check" label="Refinanciar" class="mr-2"></Button>
+                    <Button ref="popup" @click="gerarParcelas" icon="pi pi-check" label="Renovar" class="mr-2"></Button>
                 </div>
             </div>
         </div>
