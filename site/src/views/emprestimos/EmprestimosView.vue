@@ -462,7 +462,7 @@ export default {
                     @saveParcela="saveNewParcela"
                     @eliminarParcelas="eliminarParcelasModal"
                     @saveInfoRenovacao="saveInfoDaRenovacao"
-                    v-if="true"
+                    v-if="this.client.dt_envio_mensagem_renovacao != null"
                 />
 
                 <EmprestimoAdd

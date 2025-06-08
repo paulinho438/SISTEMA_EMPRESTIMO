@@ -58,6 +58,7 @@ class EmprestimoResource extends JsonResource
             "parcelas_pagas" => $parcelas_pagas,
             "status" => $this->getStatus(),
             "telefone_empresa" => $this->company->numero_contato,
+            "dt_envio_mensagem_renovacao" => $this->dt_envio_mensagem_renovacao
         ];
     }
 
