@@ -231,9 +231,21 @@ class EmprestimoController extends Controller
                         FROM parcelas
                         WHERE parcelas.emprestimo_id = emprestimos.id
                     ) BETWEEN ? AND ?
-                ", [$min, $max]);
+                ", [68, 100]);
             }
         }
+
+        $query->whereRaw("
+                    (
+                        SELECT
+                            CASE
+                                WHEN SUM(parcelas.valor) = 0 THEN 0
+                                ELSE ROUND(SUM(CASE WHEN parcelas.dt_baixa IS NOT NULL THEN parcelas.valor ELSE 0 END) * 100 / SUM(parcelas.valor), 2)
+                            END
+                        FROM parcelas
+                        WHERE parcelas.emprestimo_id = emprestimos.id
+                    ) BETWEEN ? AND ?
+                ", [68, 100]);
 
         // Retorna a coleção paginada
         return EmprestimoAllResource::collection($query->paginate($perPage));
