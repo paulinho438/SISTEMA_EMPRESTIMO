@@ -214,26 +214,24 @@ class EmprestimoController extends Controller
 
         if ($request->has('porcentagem')) {
             $porcentagemFilter = $request->input('porcentagem');
-
             $matchMode = $porcentagemFilter['matchMode'] ?? null;
             $values = $porcentagemFilter['value'] ?? null;
 
             if ($matchMode === 'between' && is_array($values) && count($values) === 2) {
-                $min = (float)$values[0];
-                $max = (float)$values[1];
+                $min = (float) $values[0];
+                $max = (float) $values[1];
 
-                $query->whereHas('parcelas', function ($q) use ($min, $max) {
-                    // Não filtra aqui, apenas garante que existam parcelas
-                })->where(function ($q) use ($min, $max) {
-                    $q->whereRaw("(
-                        SELECT CASE
-                            WHEN SUM(valor) = 0 THEN 0
-                            ELSE ROUND(SUM(CASE WHEN dt_baixa IS NOT NULL THEN valor ELSE 0 END) * 100 / SUM(valor), 2)
-                        END AS porcentagem_pago
+                $query->whereRaw("
+                    (
+                        SELECT
+                            CASE
+                                WHEN SUM(parcelas.valor) = 0 THEN 0
+                                ELSE ROUND(SUM(CASE WHEN parcelas.dt_baixa IS NOT NULL THEN parcelas.valor ELSE 0 END) * 100 / SUM(parcelas.valor), 2)
+                            END
                         FROM parcelas
-                        WHERE emprestimos.id = parcelas.emprestimo_id
-                    ) BETWEEN ? AND ?", [$min, $max]);
-                });
+                        WHERE parcelas.emprestimo_id = emprestimos.id
+                    ) BETWEEN ? AND ?
+                ", [$min, $max]);
             }
         }
 
