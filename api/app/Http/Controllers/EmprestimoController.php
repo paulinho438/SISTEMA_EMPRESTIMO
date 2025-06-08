@@ -217,6 +217,8 @@ class EmprestimoController extends Controller
             $matchMode = $porcentagemFilter['matchMode'] ?? null;
             $values = $porcentagemFilter['value'] ?? null;
 
+            dd($matchMode, $values);
+
             if ($matchMode === 'between' && is_array($values) && count($values) === 2) {
                 $min = (float) $values[0];
                 $max = (float) $values[1];
@@ -231,21 +233,9 @@ class EmprestimoController extends Controller
                         FROM parcelas
                         WHERE parcelas.emprestimo_id = emprestimos.id
                     ) BETWEEN ? AND ?
-                ", [68, 100]);
+                ", [$min, $max]);
             }
         }
-
-        $query->whereRaw("
-                    (
-                        SELECT
-                            CASE
-                                WHEN SUM(parcelas.valor) = 0 THEN 0
-                                ELSE ROUND(SUM(CASE WHEN parcelas.dt_baixa IS NOT NULL THEN parcelas.valor ELSE 0 END) * 100 / SUM(parcelas.valor), 2)
-                            END
-                        FROM parcelas
-                        WHERE parcelas.emprestimo_id = emprestimos.id
-                    ) BETWEEN ? AND ?
-                ", [68, 100]);
 
         // Retorna a coleção paginada
         return EmprestimoAllResource::collection($query->paginate($perPage));
