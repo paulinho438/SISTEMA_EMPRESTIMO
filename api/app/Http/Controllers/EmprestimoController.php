@@ -722,6 +722,7 @@ class EmprestimoController extends Controller
 
         $emprestimoAdd['dt_lancamento'] = Carbon::createFromFormat('d/m/Y', $dados['dt_lancamento'])->format('Y-m-d');
         $emprestimoAdd['valor'] = $dados['valor'];
+        $emprestimoAdd['valor_deposito'] = $dados['valor_deposito'];
         $emprestimoAdd['lucro'] = $dados['lucro'];
         $emprestimoAdd['juros'] = $dados['juros'];
         $emprestimoAdd['costcenter_id'] = $dados['costcenter']['id'];

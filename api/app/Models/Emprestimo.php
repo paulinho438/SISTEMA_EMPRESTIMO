@@ -13,6 +13,7 @@ class Emprestimo extends Model
     protected $fillable = [
         'dt_lancamento',
         'valor',
+        'valor_deposito',
         'lucro',
         'juros',
         'costcenter_id',
