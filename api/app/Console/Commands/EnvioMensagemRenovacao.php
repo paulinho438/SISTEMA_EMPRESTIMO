@@ -95,14 +95,21 @@ class EnvioMensagemRenovacao extends Command
 
     private function montarMensagem($emprestimo, $saudacao)
     {
+        $saldoDevedor = $emprestimo->parcelas->whereNull('dt_baixa')->sum('valor');
+        $valorLiberado = $emprestimo->valor + 100;
+        $valorLiquido = $valorLiberado - $saldoDevedor;
+
         $saudacaoTexto = "{$saudacao}, " . $emprestimo->client->nome_completo . "!";
         $fraseInicial = "
 
-Informo que o seu empréstimo está com 80% das parcelas pagas, ou seja, já pode ser renovado.
+Temos uma ótima notícia para você 🎉
 
-Para renovar, basta enviar mensagem para a nossa equipe.
+Agora já é possível renovar seu empréstimo!
 
-O valor liberado para renovação é de R$ e o saldo atual pendente é de R$ , a renovação será feita com o saldo atual pendente.
+O valor liberado hoje é de R$ {$valorLiberado}.
+Descontando o saldo devedor de R$ {$saldoDevedor} das parcelas pendentes, o valor líquido de R$ {$valorLiquido} será creditado diretamente na sua conta.
+
+✅ Deseja renovar agora?
 ";
         return $saudacaoTexto . $fraseInicial;
     }

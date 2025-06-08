@@ -7,6 +7,7 @@ import UtilService from '@/service/UtilService';
 import EmprestimoParcelas from '../parcelas/Parcelas.vue';
 import skeletonEmprestimos from '../skeleton/SkeletonEmprestimos.vue';
 import EmprestimoAdd from '../emprestimos/EmprestimosAdd.vue';
+import EmprestimosRefin from '../emprestimos/EmprestimosRefin.vue';
 import EmprestimoRecalc from '../emprestimos/EmprestimosRecalc.vue';
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
 
@@ -29,6 +30,7 @@ export default {
 		skeletonEmprestimos,
 		EmprestimoAdd,
 		EmprestimoRecalc,
+		EmprestimosRefin
 	},
 	data() {
 		return {
@@ -369,6 +371,11 @@ export default {
 
 				<EmprestimoRecalc :address="this.client" :oldCicom="this.oldClient" :loading="loading"
 					:parcela="this.parcelas[0]" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave"
+					@changeLoading="changeLoading" @saveParcela="saveNewParcela" @eliminarParcelas="eliminarParcelasModal"
+					@saveInfoEmprestimo="saveInfoDoEmprestimo" v-if="true" />
+
+				<EmprestimosRefin :address="this.client" :oldCicom="this.oldClient" :loading="loading"
+					:parcela="this.parcelas[0]" :emprestimoFront="this.emprestimo" @updateCicom="clearCicom" @addCityBeforeSave="addCityBeforeSave"
 					@changeLoading="changeLoading" @saveParcela="saveNewParcela" @eliminarParcelas="eliminarParcelasModal"
 					@saveInfoEmprestimo="saveInfoDoEmprestimo" v-if="true" />
 

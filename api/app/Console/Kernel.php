@@ -23,6 +23,8 @@ class Kernel extends ConsoleKernel
         Commands\CobrancaAutomaticaA::class,
         Commands\CobrancaAutomaticaB::class,
         Commands\CobrancaAutomaticaC::class,
+        Commands\EnvioMensagemRenovacao::class,
+        Commands\MensagemAutomaticaRenovacao::class,
         Commands\BackupClientes::class,
     ];
 
