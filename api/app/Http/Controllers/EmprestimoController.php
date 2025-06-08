@@ -851,11 +851,21 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
+
+
             if ($emprestimo->contaspagar->status == 'Pagamento Efetuado') {
                 return response()->json([
                     "message" => "Pagamento já efetuado.",
                     "error" => ""
                 ], Response::HTTP_FORBIDDEN);
+            }
+
+            $valorPagamento = 0;
+
+            if($emprestimo->valor_deposito > 0) {
+                $valorPagamento = $emprestimo->valor_deposito;
+            } else {
+                $valorPagamento = $emprestimo->valor;
             }
 
             if ($emprestimo->banco->wallet == 1) {
@@ -866,12 +876,12 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
+                $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
 
                 if ($response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
-                        $response = $this->bcodexService->realizarPagamentoPix(($emprestimo->valor * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
+                        $response = $this->bcodexService->realizarPagamentoPix(($valorPagamento * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
 
                         if (!$response->successful()) {
                             return response()->json([
@@ -890,7 +900,7 @@ class EmprestimoController extends Controller
                         $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
 
                         $dados = [
-                            'valor' => $emprestimo->valor,
+                            'valor' => $valorPagamento,
                             'tipo_transferencia' => 'PIX',
                             'descricao' => 'Transferência realizada com sucesso',
                             'destino_nome' => $array['response']['creditParty']['name'],

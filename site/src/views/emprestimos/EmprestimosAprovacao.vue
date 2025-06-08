@@ -111,6 +111,14 @@ export default {
         },
         realizarTransferencia() {
             this.loadingFullScreen = true;
+            let valor = 0;
+
+            if(this.client?.valor_deposito) {
+                valor = this.client.valor_deposito;
+            } else if (this.client?.valor) {
+                valor = this.client.valor;
+            }
+
             if (this.route.params?.id) {
                 if (this.banco.wallet) {
                     console.log('chamou');
@@ -118,7 +126,7 @@ export default {
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
                             this.loadingFullScreen = false;
-                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
+                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
                             this.displayConfirmation = true;
 
                             // this.confirmPopup.require({
@@ -435,6 +443,10 @@ export default {
                         <div class="field col-12 md:col-3">
                             <label for="firstname2">Valor do Emprestimo</label>
                             <Chip :label="client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></Chip>
+                        </div>
+                        <div v-if="client?.valor_deposito != null" class="field col-12 md:col-3">
+                            <label for="firstname2">Valor do Emprestimo</label>
+                            <Chip :label="client?.valor_deposito?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm"></Chip>
                         </div>
                         <div class="field col-12 md:col-3">
                             <label for="firstname2">Lucro Previsto</label>
