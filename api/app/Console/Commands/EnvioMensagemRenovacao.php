@@ -45,7 +45,7 @@ class EnvioMensagemRenovacao extends Command
         ])
         ->whereNull('dt_envio_mensagem_renovacao')
         ->whereDoesntHave('parcelas', function ($query) {
-            $query->where('atrasadas', '>', 0);
+            $query->where('atrasadas', '>', 2);
         })
         ->havingRaw('parcelas_baixadas_count = total_parcelas * 0.8')
         ->get();
