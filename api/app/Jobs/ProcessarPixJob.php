@@ -86,7 +86,10 @@ class ProcessarPixJob implements ShouldQueue
                 }
             }
 
-
+            $valor = $this->emprestimo->valor;
+            if ($this->emprestimo->valor_deposito > 0) {
+                $valor = $this->emprestimo->valor_deposito;
+            }
 
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $this->emprestimo->banco->id;
@@ -103,7 +106,7 @@ class ProcessarPixJob implements ShouldQueue
             }
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $this->emprestimo->valor;
+            $movimentacaoFinanceira['valor'] = $valor;
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
