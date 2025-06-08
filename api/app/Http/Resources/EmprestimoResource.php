@@ -38,6 +38,7 @@ class EmprestimoResource extends JsonResource
             "id" => $this->id,
             "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
             "valor" => $this->valor,
+            "valor_deposito" => $this->valor_deposito,
             "lucro" => $this->lucro,
             "juros" => $this->juros,
             "cliente_cadastrado" => $this->client->nome_usuario_criacao,
