@@ -111,7 +111,7 @@ class ProcessarPixJob implements ShouldQueue
             Movimentacaofinanceira::create($movimentacaoFinanceira);
 
             if ($this->comprovante) {
-                $this->emprestimo->banco->saldo -= $this->emprestimo->valor;
+                $this->emprestimo->banco->saldo -= $valor;
                 $this->emprestimo->banco->save();
             }
 
