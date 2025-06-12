@@ -2201,22 +2201,22 @@ class EmprestimoController extends Controller
     {
         $data = $request->json()->all();
 
-        // // Nome do arquivo
-        // $file = 'webhookcobranca.txt';
+        // Nome do arquivo
+        $file = 'webhookcobranca.txt';
 
-        // // Verifica se o arquivo existe, se não, cria-o
-        // if (!Storage::exists($file)) {
-        //     Storage::put($file, '');
-        // }
+        // Verifica se o arquivo existe, se não, cria-o
+        if (!Storage::exists($file)) {
+            Storage::put($file, '');
+        }
 
-        // // Lê o conteúdo atual do arquivo
-        // $current = Storage::get($file);
+        // Lê o conteúdo atual do arquivo
+        $current = Storage::get($file);
 
-        // // Adiciona os novos dados ao conteúdo atual
-        // $current .= json_encode($data) . PHP_EOL;
+        // Adiciona os novos dados ao conteúdo atual
+        $current .= json_encode($data) . PHP_EOL;
 
-        // // Salva o conteúdo atualizado no arquivo
-        // Storage::put($file, $current);
+        // Salva o conteúdo atualizado no arquivo
+        Storage::put($file, $current);
 
         //REFERENTE A PARCELAS
         if (isset($data['pix']) && is_array($data['pix'])) {
@@ -2280,7 +2280,7 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                             $parcela->emprestimo->quitacao->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, $parcela->emprestimo->quitacao->identificador);
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
 
                             if ($response->successful()) {
                                 $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -2299,7 +2299,7 @@ class EmprestimoController extends Controller
 
                             $proximaParcela->emprestimo->pagamentosaldopendente->save();
 
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, $proximaParcela->emprestimo->pagamentosaldopendente->identificador);
+                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
 
                             if ($response->successful()) {
                                 $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
@@ -2366,7 +2366,7 @@ class EmprestimoController extends Controller
 
                         $parcela->venc_real = $dataInicial->copy()->addMonth();
 
-                        $response = $this->bcodexService->criarCobranca($minimo->valor, $parcela->emprestimo->banco->document);
+                        $response = $this->bcodexService->criarCobranca($minimo->valor, $parcela->emprestimo->banco->document, null);
 
                         if ($response->successful()) {
                             $minimo->identificador = $response->json()['txid'];
@@ -2407,7 +2407,7 @@ class EmprestimoController extends Controller
 
                                 $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                                 $parcela->emprestimo->quitacao->save();
-                                $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $parcela->emprestimo->quitacao->identificador);
+                                $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, null);
 
                                 if ($response->successful()) {
                                     $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -2423,7 +2423,7 @@ class EmprestimoController extends Controller
 
                                 $parcela->emprestimo->pagamentominimo->save();
 
-                                $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
+                                $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document, null);
 
                                 if ($response->successful()) {
                                     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
@@ -2439,7 +2439,7 @@ class EmprestimoController extends Controller
 
                             $parcela->emprestimo->pagamentosaldopendente->save();
 
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentosaldopendente->identificador);
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, null);
 
                             if ($response->successful()) {
                                 $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
@@ -2567,7 +2567,7 @@ class EmprestimoController extends Controller
 
                         $parcela->save();
 
-                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $pagamento->emprestimo->banco->document, $parcela->identificador);
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $pagamento->emprestimo->banco->document, null);
 
                         if ($response->successful()) {
                             $parcela->identificador = $response->json()['txid'];
@@ -2581,7 +2581,7 @@ class EmprestimoController extends Controller
 
 
 
-                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, $pagamento->emprestimo->pagamentosaldopendente->identificador);
+                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, null);
 
                         if ($response->successful()) {
                             $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
@@ -2593,7 +2593,7 @@ class EmprestimoController extends Controller
 
                         $pagamento->emprestimo->pagamentominimo->save();
 
-                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document, $pagamento->emprestimo->pagamentominimo->identificador);
+                        $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document, null);
 
                         if ($response->successful()) {
                             $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
@@ -2696,7 +2696,7 @@ class EmprestimoController extends Controller
                         $pagamento->valor = $proximaParcela->saldo;
                         $pagamento->save();
 
-                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document);
+                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document, null);
 
                         if ($response->successful()) {
                             $pagamento->identificador = $response->json()['txid'];
@@ -2733,7 +2733,7 @@ class EmprestimoController extends Controller
                             $parcela->emprestimo->quitacao->save();
 
                             $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, $txId);
+                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
 
                             if ($response->successful()) {
                                 $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
@@ -2748,7 +2748,7 @@ class EmprestimoController extends Controller
 
                             $proximaParcela->emprestimo->pagamentosaldopendente->save();
                             $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, $txId);
+                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
 
                             if ($response->successful()) {
                                 $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
