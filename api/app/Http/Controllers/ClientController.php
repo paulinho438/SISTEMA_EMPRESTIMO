@@ -439,7 +439,8 @@ class ClientController extends Controller
             ->get();
 
         return response()->json([
-            'emprestimos' => $emprestimos
+            'emprestimos' => $emprestimos,
+            'client' => $user
         ]);
     }
 
