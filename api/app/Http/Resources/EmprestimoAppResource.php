@@ -3,10 +3,12 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
+
 use App\Models\Emprestimo;
 use DateTime;
 
-class EmprestimoResource extends JsonResource
+class EmprestimoAppResource extends JsonResource
 {
     public function porcent($vl1, $vl2)
     {
@@ -58,7 +60,8 @@ class EmprestimoResource extends JsonResource
             "parcelas_pagas" => $parcelas_pagas,
             "status" => $this->getStatus(),
             "telefone_empresa" => $this->company->numero_contato,
-            "dt_envio_mensagem_renovacao" => $this->dt_envio_mensagem_renovacao
+            "dt_envio_mensagem_renovacao" => $this->dt_envio_mensagem_renovacao,
+            "historico_formatado" => $this->formatHistorico(),
         ];
     }
 
@@ -105,6 +108,52 @@ class EmprestimoResource extends JsonResource
     {
         return $x > 5;
     }
+
+    private function formatHistorico()
+{
+    $totalParcelas = count($this->parcelas);
+    $historico = [];
+
+    foreach ($this->parcelas->sortBy('parcela') as $index => $parcela) {
+        $numero = intval($parcela->parcela);
+        $sub = "{$numero} de {$totalParcelas} meses";
+        $data = Carbon::parse($parcela->venc_real)->format('d M');
+        $valor = number_format($parcela->valor, 2, ',', '.');
+
+        if ($parcela->dt_baixa) {
+            $historico[] = [
+                'title' => 'Mensalidade paga',
+                'sub' => $sub,
+                'data' => strtoupper($data),
+                'valor' => "R$ {$valor}",
+                'riscado' => false,
+                'tag' => true,
+                'isPago' => true,
+            ];
+        } else {
+            $historico[] = [
+                'title' => 'Mensalidade pendente',
+                'sub' => $sub,
+                'data' => strtoupper($data),
+                'valor' => "R$ {$valor}",
+                'riscado' => false,
+                'tag' => false,
+                'noAvancar' => true,
+            ];
+        }
+    }
+
+    // Adiciona o evento de início do empréstimo
+    $historico[] = [
+        'title' => 'Início do empréstimo realizado',
+        'sub' => 'Plano #' . $this->id,
+        'data' => strtoupper(Carbon::parse($this->dt_lancamento)->format('d M')),
+        'icon' => 'login',
+        'noValor' => true,
+    ];
+
+    return $historico;
+}
 
 
 }

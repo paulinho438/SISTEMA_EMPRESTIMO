@@ -1,77 +1,100 @@
-import React, {useEffect, useState, useCallback, useMemo} from 'react';
-
-import {View, ScrollView, StyleSheet, Text} from 'react-native';
-import {Card, Button, List, Avatar} from 'react-native-paper';
-import {StackNav, TabNav} from '../../navigation/navigationKeys';
-import {useNavigation} from '@react-navigation/native';
-import api from '../../services/api';
-
+import React, { useEffect, useState } from 'react';
 import {
-  authToken,
-  authCompany,
-  user,
-  permissions,
-  removeAuthToken,
-  getUser,
-} from '../../utils/asyncStorage';
+  View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { Card, Button, List, Avatar } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { StackNav } from '../../navigation/navigationKeys';
+import api from '../../services/api';
+import { getUser } from '../../utils/asyncStorage';
 
 const HomeClienteScreen = () => {
   const navigation = useNavigation();
 
-  const [company, setCompany] = useState(null);
   const [user, setUser] = useState(null);
   const [emp, setEmp] = useState(null);
-  const [clientesOrig, setClientesOrig] = useState([]);
-  const [location, setLocation] = useState(null);
-  const [tipoCliente, setTipoCliente] = useState('');
-  const [search, setSearch] = useState('');
-  const [permissoesHoje, setPermissoesHoje] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [enabled, setEnabled] = useState(false);
 
-  const [enviandoLocalizacao, setEnviandoLocalizacao] = useState(false);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const [resumoFinanceiro, setResumoFinanceiro] = useState(null);
-
-  useEffect(async () => {
+  const loadData = async () => {
+    setLoading(true);
     const userReq = await getUser();
     setUser(userReq);
     await getInformacoesEmprestimo();
-  }, []);
-
-  const moveToDetalhesEmprestimos = () => {
-    navigation.navigate(StackNav.DetalhesEmprestimos);
+    setLoading(false);
   };
 
-  const getInformacoesEmprestimo = async position => {
-    let emp = await api.getInformacoesEmprestimo();
-    if(emp.emprestimos.length > 0) {
-      setEmp(emp.emprestimos[0]);
+  const getInformacoesEmprestimo = async () => {
+    const response = await api.getInformacoesEmprestimo();
+    if (response.emprestimos.length > 0) {
+      setEmp(response.emprestimos[0]);
     }
   };
 
-  function formatarParaReal(valor) {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const formatarParaReal = valor => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2,
     }).format(valor);
+  };
+
+  const moveToDetalhesEmprestimos = () => {
+    navigation.navigate(StackNav.DetalhesEmprestimos, {
+      emprestimo: emp,
+      user: user,
+    });
+  };
+
+  const moveToAcompanharMensalidades = () => {
+    navigation.navigate(StackNav.AcompanharMensalidades, {
+      emprestimo: emp,
+      user: user,
+    });
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#fcbf49" />
+      </View>
+    );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#fcbf49']} />
+      }
+    >
       <Header user={user} />
       <Text style={styles.sectionTitle}>Seu plano</Text>
 
       <Card style={styles.planCard}>
         <Card.Title
-          title = { '#' + (emp?.id ?? '0000') }
+          title={'#' + (emp?.id ?? '0000')}
           left={props => (
             <Avatar.Icon
               {...props}
               size={30}
               icon="currency-usd"
-              style={{backgroundColor: 'black'}}
+              style={{ backgroundColor: 'black' }}
             />
           )}
           right={props => (
@@ -79,12 +102,14 @@ const HomeClienteScreen = () => {
           )}
         />
         <Card.Content>
-          <Text style={styles.planValue}>{ formatarParaReal(emp?.valor ?? 0) }</Text>
-          <Text style={styles.monthlyFee}>Mensalidade de { formatarParaReal( emp?.parcelas[0].valor ?? 0 ) } </Text>
+          <Text style={styles.planValue}>{formatarParaReal(emp?.valor ?? 0)}</Text>
+          <Text style={styles.monthlyFee}>
+            Mensalidade de {emp?.parcelas?.[0]?.valor}
+          </Text>
         </Card.Content>
         <Card.Actions>
           <Button onPress={moveToDetalhesEmprestimos} mode="outlined">
-            Ver detalhes{' '}
+            Ver detalhes
           </Button>
         </Card.Actions>
       </Card>
@@ -98,27 +123,21 @@ const HomeClienteScreen = () => {
             titleStyle={styles.title}
             description="área de pagamentos"
             descriptionStyle={styles.description}
-            left={props => (
-              <List.Icon {...props} icon="currency-usd" color="#000" />
-            )}
-            right={props => (
-              <List.Icon {...props} icon="chevron-right" color="#aaa" />
-            )}
-            onPress={() => console.log('Acessar benefícios pressed')}
+            left={props => <List.Icon {...props} icon="currency-usd" color="#000" />}
+            right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
+            onPress={moveToAcompanharMensalidades}
           />
         </View>
 
-        <View style={styles.cardItem}>
+        {/* <View style={styles.cardItem}>
           <List.Item
             title="Acessar benefícios"
             titleStyle={styles.title}
             description="AGE benefícios"
             descriptionStyle={styles.description}
             left={props => <List.Icon {...props} icon="gift" color="#000" />}
-            right={props => (
-              <List.Icon {...props} icon="chevron-right" color="#aaa" />
-            )}
-            onPress={() => console.log('Acessar benefícios pressed')}
+            right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
+            onPress={() => console.log('Ir para benefícios')}
           />
         </View>
 
@@ -131,27 +150,36 @@ const HomeClienteScreen = () => {
             left={props => (
               <List.Icon {...props} icon="account-multiple-plus" color="#000" />
             )}
-            right={props => (
-              <List.Icon {...props} icon="chevron-right" color="#aaa" />
-            )}
-            onPress={() => console.log('Acessar benefícios pressed')}
+            right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
+            onPress={() => console.log('Ir para recomendação')}
           />
-        </View>
+        </View> */}
       </List.Section>
     </ScrollView>
   );
 };
 
+const Header = ({ user }) => (
+  <View style={styles.headerContainer}>
+    <View style={styles.headerContent}>
+      <Text style={styles.logo}>
+        AG<Text style={styles.dot}>E</Text>
+      </Text>
+      <Text style={styles.greeting}>Olá, {user?.nome_completo}</Text>
+    </View>
+    <View style={styles.curvedCorner} />
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
   },
-  greeting: {
-    marginLeft: 20,
-    marginTop: 40,
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 4,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   sectionTitle: {
     marginLeft: 20,
@@ -186,7 +214,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginHorizontal: 16,
     marginVertical: 8,
-    elevation: 0, // sem sombra
+    elevation: 0,
   },
   title: {
     fontWeight: 'bold',
@@ -212,7 +240,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   dot: {
-    color: '#fcbf49', // amarelo do "i"
+    color: '#fcbf49',
   },
   greeting: {
     fontSize: 18,
@@ -223,43 +251,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#fcbf49', // amarelo da imagem
+    backgroundColor: '#fcbf49',
     width: 150,
     height: 150,
     borderBottomLeftRadius: 150,
     zIndex: 0,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: 10,
-  },
-  menuIcon: {
-    margin: 0,
   },
 });
-
-function Header({user}) {
-  return (
-    <View style={styles.headerContainer}>
-      {/* Logo e título */}
-      <View style={styles.headerContent}>
-        <Text style={styles.logo}>
-          AG<Text style={styles.dot}>E</Text>
-        </Text>
-        <Text style={styles.greeting}>Olá, {user?.nome_completo}</Text>
-      </View>
-
-      {/* Canto superior direito com a curva e os três pontos */}
-      <View style={styles.curvedCorner}>
-        {/* <IconButton
-          icon="dots-vertical"
-          size={20}
-          iconColor="#000"
-          style={styles.menuIcon}
-          onPress={() => {}}
-        /> */}
-      </View>
-    </View>
-  );
-}
 
 export default HomeClienteScreen;

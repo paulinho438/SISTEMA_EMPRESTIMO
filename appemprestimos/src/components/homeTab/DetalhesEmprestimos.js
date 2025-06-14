@@ -1,11 +1,19 @@
 import React from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { IconButton, Divider, useTheme } from 'react-native-paper';
-import Svg, { Circle } from 'react-native-svg';
+import {
+  View,
+  StyleSheet,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import {IconButton, Divider, useTheme} from 'react-native-paper';
+import Svg, {Circle} from 'react-native-svg';
+import {useRoute} from '@react-navigation/native';
 
-
-const DetalhesEmprestimos = ({ navigation }) => {
+const DetalhesEmprestimos = ({navigation}) => {
   const theme = useTheme();
+  const route = useRoute();
+  const {emprestimo, user} = route.params;
 
   const dados = {
     plano: '#0001',
@@ -19,42 +27,76 @@ const DetalhesEmprestimos = ({ navigation }) => {
     mensalidade: 1219,
   };
 
-  const restante = dados.valorCredito + dados.valorCredito * (dados.taxa / 100) - dados.valorPago;
+  function formatarParaReal(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+    }).format(valor);
+  }
+
+  const restante =
+    dados.valorCredito +
+    dados.valorCredito * (dados.taxa / 100) -
+    dados.valorPago;
   const percentualPago = ((dados.mesesPagos / dados.prazo) * 100).toFixed(0);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
         <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
-        <ProgressCircle percentage={30} />
+        <ProgressCircle
+          percentage={
+            emprestimo?.parcelas?.length
+              ? (emprestimo.parcelas_pagas.length /
+                  emprestimo.parcelas.length) *
+                100
+              : 0
+          }
+        />
       </View>
 
       {/* Plano e grupo */}
-      <Text style={styles.subTitle}>Plano {dados.plano} | Grupo {dados.grupo}</Text>
+      <Text style={styles.subTitle}>
+        Plano #{emprestimo?.id} | Cliente {user?.nome_completo}
+      </Text>
 
       {/* Valor já pago */}
       <Text style={styles.label}>Você já pagou</Text>
-      <Text style={styles.valorPago}>R$ {dados.valorPago.toLocaleString('pt-BR')}</Text>
-      <Text style={styles.detalhesPagos}>
-        {dados.mesesPagos} de {dados.prazo} meses
+      <Text style={styles.valorPago}>
+        {formatarParaReal(emprestimo?.saldo_total_parcelas_pagas)}
       </Text>
       <Text style={styles.detalhesPagos}>
-        A pagar: R$ {restante.toLocaleString('pt-BR')}
+        {emprestimo?.parcelas_pagas.length.toString().padStart(3, '0')} de{' '}
+        {emprestimo?.parcelas.length.toString().padStart(3, '0')} meses
+      </Text>
+      <Text style={styles.detalhesPagos}>
+        A pagar: {formatarParaReal(emprestimo?.saldoareceber)}
       </Text>
 
       {/* Informações financeiras */}
       <Divider style={styles.divider} />
-      <Item label="Valor do crédito" valor={`R$ ${dados.valorCredito.toLocaleString('pt-BR')}`} />
-      <Item label="Prazo" valor={`${dados.prazo} meses`} />
-      <Item label="Mensalidade" valor={`R$ ${dados.mensalidade.toLocaleString('pt-BR')}`} />
+      <Item
+        label="Valor do crédito"
+        valor={`${formatarParaReal(emprestimo?.valor)}`}
+      />
+      <Item
+        label="Prazo"
+        valor={`${emprestimo?.parcelas.length
+          .toString()
+          .padStart(3, '0')} meses`}
+      />
+      <Item label="Mensalidade" valor={`${emprestimo?.parcelas[0].valor}`} />
 
       {/* Botão de dúvidas */}
     </ScrollView>
   );
 };
 
-const Item = ({ label, valor }) => (
+const Item = ({label, valor}) => (
   <View style={styles.itemContainer}>
     <Text style={styles.itemLabel}>{label}</Text>
     <Text style={styles.itemValue}>{valor}</Text>
@@ -153,13 +195,13 @@ const styles = StyleSheet.create({
   },
 });
 
-const ProgressCircle = ({ percentage = 0, size = 50, strokeWidth = 4 }) => {
+const ProgressCircle = ({percentage = 0, size = 50, strokeWidth = 4}) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - percentage / 100);
 
   return (
-    <View style={[styles.containerPorcent, { width: size, height: size }]}>
+    <View style={[styles.containerPorcent, {width: size, height: size}]}>
       <Svg width={size} height={size}>
         {/* Background circle */}
         <Circle

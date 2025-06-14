@@ -15,7 +15,8 @@ use Illuminate\Validation\Rule;
 use DateTime;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ParcelaResource;
-use App\Http\Resources\EmprestimoResource;
+use App\Http\Resources\EmprestimoAppResource;
+
 
 use Illuminate\Support\Carbon;
 
@@ -441,7 +442,7 @@ class ClientController extends Controller
             ->get();
 
         return response()->json([
-            'emprestimos' => EmprestimoResource::collection($emprestimos),
+            'emprestimos' => EmprestimoAppResource::collection($emprestimos),
             'client' => $user
         ]);
     }
