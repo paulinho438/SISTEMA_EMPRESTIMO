@@ -44,7 +44,6 @@ class AuthClienteController extends Controller
 
 
             $array['token'] = $token;
-            $array['user'] = auth('clientes')->user();
             $array['user'] = new LoginClienteResource(auth('clientes')->user());
 
 
