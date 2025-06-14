@@ -9,8 +9,12 @@ import {
 import {IconButton} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 
+import {useRoute} from '@react-navigation/native';
+
 const AcompanharMensalidades = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const {emprestimo, user} = route.params;
 
   const historico = [
     {
@@ -66,10 +70,12 @@ const AcompanharMensalidades = () => {
       </View>
 
       {/* Título */}
-      <Text style={styles.subtitle}>AGE #7269</Text>
-      <Text style={styles.valorTotal}>R$ 8.000</Text>
-      <Text style={styles.mensalidade}>Mensalidade de R$ 318,45</Text>
-      <Text style={styles.progresso}>3 de 36 meses</Text>
+      <Text style={styles.subtitle}>AGE #{emprestimo.codigo_emprestimo}</Text>
+      <Text style={styles.valorTotal}>R$ {emprestimo.valor_total}</Text>
+      <Text style={styles.mensalidade}>
+        Mensalidade de R$ {emprestimo.mensalidade}
+      </Text>
+      <Text style={styles.progresso}>{emprestimo.progresso_meses}</Text>
 
       {/* Botões rápidos */}
       <View style={styles.actionRow}>
@@ -79,21 +85,36 @@ const AcompanharMensalidades = () => {
       {/* Histórico */}
       <Text style={styles.historicoTitle}>Histórico</Text>
 
-      {historico.map((item, index) => (
+      {emprestimo?.historico_formatado.map((item, index) => (
         <TouchableOpacity
           key={index}
-          style={{...styles.itemContainer, paddingBottom: item.noAvancar ? 0 : 20}}>
+          style={{
+            ...styles.itemContainer,
+            paddingBottom: item.noAvancar ? 0 : 20,
+          }}>
           <View style={styles.itemIcon}>
             <IconButton
               icon={item.icon || 'circle-slice-8'}
               size={20}
-              iconColor={item.isPago ? "#0BA090"  : "#000"  }
+              iconColor={item.isPago ? '#0BA090' : '#000'}
               style={{margin: 0}}
             />
           </View>
           <View style={styles.itemText}>
-            <Text style={[styles.itemTitle, item.isPago && {textDecorationLine: 'line-through'}]}>{item.title}</Text>
-            <Text style={[styles.itemSub, item.isPago && {textDecorationLine: 'line-through'}]}>{item.sub}</Text>
+            <Text
+              style={[
+                styles.itemTitle,
+                item.isPago && {textDecorationLine: 'line-through'},
+              ]}>
+              {item.title}
+            </Text>
+            <Text
+              style={[
+                styles.itemSub,
+                item.isPago && {textDecorationLine: 'line-through'},
+              ]}>
+              {item.sub}
+            </Text>
           </View>
           <View style={{...styles.itemRight}}>
             <Text style={styles.itemDate}>{item.data}</Text>

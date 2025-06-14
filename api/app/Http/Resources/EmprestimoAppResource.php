@@ -35,6 +35,9 @@ class EmprestimoAppResource extends JsonResource
         $saldo_total_parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->sum('valor');
         $parcelas_vencidas = ParcelaResource::collection($parcelas->where('dt_baixa', null));
         $parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->values()->all();
+        $totalParcelas = $this->parcelas->count();
+        $parcelasPagas = $this->parcelas->whereNotNull('dt_baixa')->count();
+        $mensalidade = $this->parcelas->first() ? $this->parcelas->first()->valor : 0;
 
         return [
             "id" => $this->id,
@@ -62,6 +65,10 @@ class EmprestimoAppResource extends JsonResource
             "telefone_empresa" => $this->company->numero_contato,
             "dt_envio_mensagem_renovacao" => $this->dt_envio_mensagem_renovacao,
             "historico_formatado" => $this->formatHistorico(),
+            "codigo_emprestimo" => $this->id,
+            "valor_total" => number_format($this->valor, 2, ',', '.'),
+            "mensalidade" => number_format($mensalidade, 2, ',', '.'),
+            "progresso_meses" => "{$parcelasPagas} de {$totalParcelas} meses",
         ];
     }
 
@@ -110,50 +117,48 @@ class EmprestimoAppResource extends JsonResource
     }
 
     private function formatHistorico()
-{
-    $totalParcelas = count($this->parcelas);
-    $historico = [];
+    {
+        $totalParcelas = count($this->parcelas);
+        $historico = [];
 
-    foreach ($this->parcelas->sortBy('parcela') as $index => $parcela) {
-        $numero = intval($parcela->parcela);
-        $sub = "{$numero} de {$totalParcelas} meses";
-        $data = Carbon::parse($parcela->venc_real)->format('d M');
-        $valor = number_format($parcela->valor, 2, ',', '.');
+        foreach ($this->parcelas->sortBy('parcela') as $index => $parcela) {
+            $numero = intval($parcela->parcela);
+            $sub = "{$numero} de {$totalParcelas} meses";
+            $data = Carbon::parse($parcela->venc_real)->format('d M');
+            $valor = number_format($parcela->valor, 2, ',', '.');
 
-        if ($parcela->dt_baixa) {
-            $historico[] = [
-                'title' => 'Mensalidade paga',
-                'sub' => $sub,
-                'data' => strtoupper($data),
-                'valor' => "R$ {$valor}",
-                'riscado' => false,
-                'tag' => true,
-                'isPago' => true,
-            ];
-        } else {
-            $historico[] = [
-                'title' => 'Mensalidade pendente',
-                'sub' => $sub,
-                'data' => strtoupper($data),
-                'valor' => "R$ {$valor}",
-                'riscado' => false,
-                'tag' => false,
-                'noAvancar' => true,
-            ];
+            if ($parcela->dt_baixa) {
+                $historico[] = [
+                    'title' => 'Mensalidade paga',
+                    'sub' => $sub,
+                    'data' => strtoupper($data),
+                    'valor' => "R$ {$valor}",
+                    'riscado' => false,
+                    'tag' => true,
+                    'isPago' => true,
+                ];
+            } else {
+                $historico[] = [
+                    'title' => 'Mensalidade pendente',
+                    'sub' => $sub,
+                    'data' => strtoupper($data),
+                    'valor' => "R$ {$valor}",
+                    'riscado' => false,
+                    'tag' => false,
+                    'noAvancar' => true,
+                ];
+            }
         }
+
+        // Adiciona o evento de início do empréstimo
+        $historico[] = [
+            'title' => 'Início do empréstimo realizado',
+            'sub' => 'Plano #' . $this->id,
+            'data' => strtoupper(Carbon::parse($this->dt_lancamento)->format('d M')),
+            'icon' => 'login',
+            'noValor' => true,
+        ];
+
+        return $historico;
     }
-
-    // Adiciona o evento de início do empréstimo
-    $historico[] = [
-        'title' => 'Início do empréstimo realizado',
-        'sub' => 'Plano #' . $this->id,
-        'data' => strtoupper(Carbon::parse($this->dt_lancamento)->format('d M')),
-        'icon' => 'login',
-        'noValor' => true,
-    ];
-
-    return $historico;
-}
-
-
 }
