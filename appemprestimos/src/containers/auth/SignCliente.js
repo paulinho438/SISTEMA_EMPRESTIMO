@@ -46,7 +46,7 @@ export default function SignCliente({navigation}) {
     if (email === '' || changeValue === '') {
       Alert.alert(strings.PleaseFill);
     } else {
-      let result = await api.login(email, changeValue);
+      let result = await api.loginCliente(email, changeValue);
       if(result.error === '') {
         if(result.user.companies.length == 0){
             Alert.alert('Você não está cadastrado em nenhuma empresa.');

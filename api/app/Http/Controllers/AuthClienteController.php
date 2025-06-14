@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\UsersToken;
 use Symfony\Component\HttpFoundation\Response;
 
-use App\Http\Resources\LoginResource;
+use App\Http\Resources\LoginClienteResource;
 
 use App\Models\User;
 
@@ -45,6 +45,8 @@ class AuthClienteController extends Controller
 
             $array['token'] = $token;
             $array['user'] = auth('clientes')->user();
+            $array['user'] = new LoginClienteResource(auth('clientes')->user());
+
 
             if (auth('clientes')->user()->status == 'I') {
                 return response()->json([

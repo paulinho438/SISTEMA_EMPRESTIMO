@@ -105,10 +105,20 @@ export default {
         return json;
     },
     login: async (usuario, password) => {
-        
         try {
       
             let json = await request('post', '/auth/login', {usuario, password});
+            console.log(json)
+            return json;
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            throw error; // Se desejar tratar o erro posteriormente no chamador da função
+        }
+    },
+    loginCliente: async (usuario, password) => {
+        try {
+      
+            let json = await request('post', '/auth_cliente/login', {usuario, password});
             console.log(json)
             return json;
         } catch (error) {
