@@ -45,9 +45,18 @@ const HomeClienteScreen = () => {
 
   const getInformacoesEmprestimo = async position => {
     let emp = await api.getInformacoesEmprestimo();
-    setEmp(emp);
-
+    if(emp.emprestimos.length > 0) {
+      setEmp(emp.emprestimos[0]);
+    }
   };
+
+  function formatarParaReal(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+    }).format(valor);
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -56,7 +65,7 @@ const HomeClienteScreen = () => {
 
       <Card style={styles.planCard}>
         <Card.Title
-          title="#0000"
+          title = { '#' + (emp?.id ?? '0000') }
           left={props => (
             <Avatar.Icon
               {...props}
@@ -70,8 +79,8 @@ const HomeClienteScreen = () => {
           )}
         />
         <Card.Content>
-          <Text style={styles.planValue}>R$ 100.000</Text>
-          <Text style={styles.monthlyFee}>Mensalidade de R$ 1.219,00</Text>
+          <Text style={styles.planValue}>{ formatarParaReal(emp?.valor ?? 0) }</Text>
+          <Text style={styles.monthlyFee}>Mensalidade de { formatarParaReal( emp?.parcelas[0].valor ?? 0 ) } </Text>
         </Card.Content>
         <Card.Actions>
           <Button onPress={moveToDetalhesEmprestimos} mode="outlined">
