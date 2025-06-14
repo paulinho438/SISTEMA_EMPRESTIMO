@@ -3,20 +3,21 @@
 namespace App\Models;
 
 use App\Models\Permgroup;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class Client extends Model
+class Client extends Authenticatable implements JWTSubject
 {
+    use HasFactory, SoftDeletes;
+
     public $table = 'clients';
 
     protected $hidden = [
         'password'
     ];
-
-    use SoftDeletes;
 
     protected $fillable = [
         'nome_completo',
@@ -33,9 +34,23 @@ class Client extends Model
         'limit',
         'company_id',
         'pix_cliente',
-        'nome_usuario_criacao'
+        'nome_usuario_criacao',
+        'usuario',
+        'password'
     ];
 
+    // JWT Implementation
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
+    // Relationships
     public function address()
     {
         return $this->hasMany(Address::class);
@@ -46,8 +61,8 @@ class Client extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function emprestimos() {
+    public function emprestimos()
+    {
         return $this->belongsTo(Emprestimo::class, 'id', 'client_id');
     }
-
 }

@@ -25,7 +25,8 @@ use App\Http\Controllers\{
     GestaoController,
     LogController,
     PlanosController,
-    LocacaoController
+    LocacaoController,
+    AuthClienteController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -87,6 +88,7 @@ Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataC
 
 
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, 'infoEmprestimoFront']);
 Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class, 'personalizarPagamento']);

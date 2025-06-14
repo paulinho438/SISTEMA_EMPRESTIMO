@@ -49,6 +49,11 @@ return [
             'driver' => 'jwt',
             'provider' => 'users',
             'hash' => false,
+        ],
+        'clientes' => [
+            'driver' => 'jwt',
+            'provider' => 'clients',
+            'hash' => false,
         ]
     ],
 
@@ -77,6 +82,10 @@ return [
         'aplicativo' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+        'clients' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Client::class,
         ],
 
         // 'users' => [
