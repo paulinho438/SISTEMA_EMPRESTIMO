@@ -431,10 +431,10 @@ class ClientController extends Controller
         $emprestimos = $user->emprestimos()
             ->where('company_id', $request->header('company-id'))
             ->whereHas('parcelas', function ($query) {
-                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
+                $query->whereNotNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
             })
             ->with(['parcelas' => function ($query) {
-                $query->whereNull('dt_baixa'); // Carrega apenas parcelas pendentes
+                $query->whereNotNull('dt_baixa'); // Carrega apenas parcelas pendentes
             }])
             ->get();
 
