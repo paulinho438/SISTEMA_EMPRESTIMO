@@ -3,6 +3,8 @@ import OnBoarding from '../containers/OnBoarding';
 import AuthNavigation from './type/AuthNavigation';
 import TabNavigation from './type/TabNavigation';
 import SignIn from '../containers/auth/SignIn';
+import SignCliente from '../containers/auth/SignCliente';
+import TipoUsuario from '../containers/auth/TipoUsuario';
 import PassRecovery from '../containers/auth/PassRecovery';
 import OtpAuth from '../containers/auth/OtpAuth';
 import VerifyIdentity from '../containers/auth/VerifyIdentity';
@@ -103,6 +105,8 @@ export const StackRoute = {
 };
 
 export const AuthRoute = {
+  TipoUsuario,
+  SignCliente,
   SignIn,
   PassRecovery,
   OtpAuth,

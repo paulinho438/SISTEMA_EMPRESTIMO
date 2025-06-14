@@ -15,6 +15,17 @@ const AuthNavigation = ({navigation}) => {
   return (
     <Stack.Navigator>
       <Stack.Screen
+        name={AuthNav.TipoUsuario}
+        component={AuthRoute.TipoUsuario}
+        options={{headerShown: false}}
+      />
+      
+      <Stack.Screen
+        name={AuthNav.SignCliente}
+        component={AuthRoute.SignCliente}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
         name={AuthNav.SignIn}
         component={AuthRoute.SignIn}
         options={{headerShown: false}}

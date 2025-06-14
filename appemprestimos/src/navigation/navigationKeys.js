@@ -42,7 +42,9 @@ export const StackNav = {
 };
 
 export const AuthNav = {
+  TipoUsuario: 'TipoUsuario',
   SignIn: 'SignIn',
+  SignCliente: 'SignCliente',
   PassRecovery: 'PassRecovery',
   OtpAuth: 'OtpAuth',
   VerifyIdentity: 'VerifyIdentity',
