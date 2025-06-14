@@ -44,6 +44,7 @@ class AuthClienteController extends Controller
 
 
             $array['token'] = $token;
+            $array['user'] = auth('clientes')->user();
 
             if (auth('clientes')->user()->status == 'I') {
                 return response()->json([
