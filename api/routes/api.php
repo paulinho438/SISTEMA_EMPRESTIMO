@@ -150,6 +150,8 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/cliente/{id}', [ClientController::class, 'update']);
     Route::post('/cliente', [ClientController::class, 'insert']);
 
+    Route::post('/clientes/app/emprestimos_andamento', [ClientController::class, 'buscarEmprestimosAndamento']);
+
     Route::get('/gestao/usuariosempresa/{id}', [GestaoController::class, 'getAllUsuariosEmpresa']);
 
     Route::get('/usuariocompanies', [UsuarioController::class, 'allCompany']);

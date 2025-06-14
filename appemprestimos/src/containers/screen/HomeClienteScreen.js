@@ -4,6 +4,7 @@ import {View, ScrollView, StyleSheet, Text} from 'react-native';
 import {Card, Button, List, Avatar} from 'react-native-paper';
 import {StackNav, TabNav} from '../../navigation/navigationKeys';
 import {useNavigation} from '@react-navigation/native';
+import api from '../../services/api';
 
 import {
   authToken,
@@ -16,10 +17,10 @@ import {
 
 const HomeClienteScreen = () => {
   const navigation = useNavigation();
-  
+
   const [company, setCompany] = useState(null);
   const [user, setUser] = useState(null);
-  const [clientes, setClientes] = useState([]);
+  const [emp, setEmp] = useState(null);
   const [clientesOrig, setClientesOrig] = useState([]);
   const [location, setLocation] = useState(null);
   const [tipoCliente, setTipoCliente] = useState('');
@@ -35,11 +36,18 @@ const HomeClienteScreen = () => {
   useEffect(async () => {
     const userReq = await getUser();
     setUser(userReq);
+    await getInformacoesEmprestimo();
   }, []);
 
   const moveToDetalhesEmprestimos = () => {
     navigation.navigate(StackNav.DetalhesEmprestimos);
-  }
+  };
+
+  const getInformacoesEmprestimo = async position => {
+    let emp = await api.getInformacoesEmprestimo();
+    setEmp(emp);
+
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -66,7 +74,9 @@ const HomeClienteScreen = () => {
           <Text style={styles.monthlyFee}>Mensalidade de R$ 1.219,00</Text>
         </Card.Content>
         <Card.Actions>
-          <Button onPress={moveToDetalhesEmprestimos} mode="outlined">Ver detalhes </Button>
+          <Button onPress={moveToDetalhesEmprestimos} mode="outlined">
+            Ver detalhes{' '}
+          </Button>
         </Card.Actions>
       </Card>
 

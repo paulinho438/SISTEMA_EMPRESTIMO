@@ -233,6 +233,11 @@ export default {
         let json = await request('get', '/cobranca/atrasadas', {}, token);
         return json;
     },
+    getInformacoesEmprestimo: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/clientes/app/emprestimos_andamento', {}, token);
+        return json;
+    },
     getResumoFinanceiro: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/dashboard/info-conta', {}, token);

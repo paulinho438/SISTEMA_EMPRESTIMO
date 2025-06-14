@@ -422,6 +422,27 @@ class ClientController extends Controller
         }
     }
 
+    public function buscarEmprestimosAndamento(Request $request)
+    {
+        $user = auth('clientes')->user();
+
+        $array = ['error' => ''];
+
+        $emprestimos = $user->emprestimos()
+            ->where('company_id', $request->header('company-id'))
+            ->whereHas('parcelas', function ($query) {
+                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
+            })
+            ->with(['parcelas' => function ($query) {
+                $query->whereNull('dt_baixa'); // Carrega apenas parcelas pendentes
+            }])
+            ->get();
+
+        return response()->json([
+            'emprestimos' => $emprestimos
+        ]);
+    }
+
     public function update(Request $request, $id)
     {
 
