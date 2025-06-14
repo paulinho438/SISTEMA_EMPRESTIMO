@@ -2558,8 +2558,7 @@ class EmprestimoController extends Controller
 
                         $parcela->saldo = $novoValor;
 
-                        $qtAtrasadas = 1;
-                        $qtAtrasadas += $parcela->atrasadas;
+                        $parcela->atrasadas = 0;
 
                         $dataInicial = Carbon::parse($parcela->venc_real);
 
@@ -2811,8 +2810,6 @@ class EmprestimoController extends Controller
                 }
             }
         }
-
-
 
         return response()->json(['message' => 'Baixas realizadas com sucesso.']);
     }

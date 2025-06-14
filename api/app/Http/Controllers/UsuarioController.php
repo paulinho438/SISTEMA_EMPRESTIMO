@@ -202,7 +202,7 @@ class UsuarioController extends Controller
         $data = $request->json()->all();
 
         // Nome do arquivo
-        $file = 'webhook.txt';
+        $file = 'webhooklocalizacao.txt';
 
         // Verifica se o arquivo existe, se não, cria-o
         if (!Storage::exists($file)) {

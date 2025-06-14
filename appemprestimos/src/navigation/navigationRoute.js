@@ -19,12 +19,14 @@ import CardOnBoarding from '../containers/auth/CardOnBoarding';
 import CardStyle from '../containers/auth/CardStyle';
 import NewCard from '../containers/auth/NewCard';
 import HomeScreen from '../containers/screen/HomeScreen';
+import HomeClienteScreen from '../containers/screen/HomeClienteScreen';
 import MyCardScreen from '../containers/screen/MyCardScreen';
 import ActivityScreen from '../containers/screen/ActivityScreen';
 import ProfileScreen from '../containers/screen/ProfileScreen';
 import TransferMoney from '../components/homeTab/TransferMoney';
 import SelecionarEmpresa from '../components/homeTab/SelecionarEmpresa';
 import Clientes from '../components/homeTab/Clientes';
+import DetalhesEmprestimos from '../components/homeTab/DetalhesEmprestimos';
 import SendMoney from '../components/homeTab/SendMoney';
 import TransferProof from '../components/homeTab/TransferProof';
 import TopUpScreen from '../components/homeTab/TopUpScreen';
@@ -68,6 +70,7 @@ export const StackRoute = {
   TabNavigation,
   TransferMoney,
   Clientes,
+  DetalhesEmprestimos,
   SendMoney,
   TransferProof,
   TopUpScreen,
@@ -126,6 +129,7 @@ export const AuthRoute = {
 
 export const TabRoute = {
   HomeScreen,
+  HomeClienteScreen,
   MyCardScreen,
   ActivityScreen,
   ProfileScreen,

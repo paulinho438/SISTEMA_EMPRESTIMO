@@ -5,6 +5,7 @@ export const StackNav = {
   TabNavigation: 'TabNavigation',
   TransferMoney: 'TransferMoney',
   Clientes: 'Clientes',
+  DetalhesEmprestimos: 'DetalhesEmprestimos',
   SendMoney: 'SendMoney',
   TransferProof: 'TransferProof',
   TopUpScreen: 'TopUpScreen',
@@ -63,6 +64,7 @@ export const AuthNav = {
 
 export const TabNav = {
   HomeScreen: 'HomeScreen',
+  HomeClienteScreen: 'HomeClienteScreen',
   MyCardScreen: 'MyCardScreen',
   ActivityScreen: 'ActivityScreen',
   ProfileScreen: 'ProfileScreen'

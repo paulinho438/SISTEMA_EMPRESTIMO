@@ -170,7 +170,7 @@ export default function TipoUsuario({navigation}) {
 
             <CButton
               text={'Cliente'}
-              ParentLoginBtn={localStyles.ParentSignIn}
+              ParentLoginBtn={localStyles.ParentSignInGreen}
               onPress={acessarLoginCliente}
             />
           </View>
@@ -222,6 +222,12 @@ const localStyles = StyleSheet.create({
     ...styles.center,
     borderRadius: moderateScale(16),
     width: moderateScale(334),
+  },
+  ParentSignInGreen: {
+    ...styles.center,
+    borderRadius: moderateScale(16),
+    width: moderateScale(334),
+    backgroundColor: colors.Green,
   },
   mainOr: {
     ...styles.center,

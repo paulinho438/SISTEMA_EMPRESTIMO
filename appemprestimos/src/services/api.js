@@ -41,7 +41,7 @@ const request = async (method, endpoint, params, token = null) => {
     }
 
     // Imprimir o comando curl no console
-    console.log(curlCommand);
+    console.log('CURL: ',curlCommand);
 
     // Fazer a requisição
     let req = await fetch(fullUrl, { method, headers, body });

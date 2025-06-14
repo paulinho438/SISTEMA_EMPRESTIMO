@@ -18,7 +18,7 @@ import CTextInput from '../../components/common/CTextInput';
 import CButton from '../../components/common/CButton';
 import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
-import {authToken, authCompany, user, permissions} from '../../utils/asyncStorage';
+import {authToken, authCompany, user, permissions, tipoCliente} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
@@ -47,6 +47,8 @@ export default function SignCliente({navigation}) {
       Alert.alert(strings.PleaseFill);
     } else {
       let result = await api.loginCliente(email, changeValue);
+      await tipoCliente('cliente');
+      
       if(result.error === '') {
         if(result.user.companies.length == 0){
             Alert.alert('Você não está cadastrado em nenhuma empresa.');
@@ -188,29 +190,9 @@ export default function SignCliente({navigation}) {
               ParentLoginBtn={localStyles.ParentSignIn}
               onPress={onPressSignIn}
             />
-
             
           </View>
         </KeyBoardAvoidWrapper>
-        {/* <View style={localStyles.NoHaveAcc}>
-          <CText color={colors.black} type={'B16'}>
-            {strings.NoHaveAcc}
-          </CText>
-
-          <TouchableOpacity onPress={moveToSignUp}>
-            <CText
-              color={colors.black}
-              type={'B16'}
-              style={localStyles.SignUpTxt}>
-              {strings.SignUp}
-            </CText>
-          </TouchableOpacity>
-        </View> */}
-        {/* <View style={localStyles.rjemprestimos}>
-          <CText color={colors.black} type={'B14'}>
-            RJ EMPRESTIMOS
-          </CText>
-        </View> */}
       </View>
     </SafeAreaView>
   );

@@ -10,10 +10,17 @@ import CButton from '../common/CButton';
 import {StackNav, TabNav} from '../../navigation/navigationKeys';
 import {useNavigation} from '@react-navigation/native';
 
+import {authToken, authCompany, user, permissions, removeAuthToken, removeTipoCliente} from '../../utils/asyncStorage';
+
 export default function LogOut() {
   const navigation = useNavigation();
 
-  const moveToSignIn = () => {
+  const moveToSignIn = async () => {
+
+    await removeAuthToken();
+
+    await removeTipoCliente();
+
     navigation.reset({
       index: 0,
       routes: [{name: StackNav.AuthNavigation}],

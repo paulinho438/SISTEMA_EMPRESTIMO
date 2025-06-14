@@ -1,62 +1,64 @@
-import React from 'react';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {TabNav} from '../navigationKeys';
-import {TabRoute} from '../navigationRoute';
+import React, { useEffect, useState } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
-  BlackActivity,
-  BlackCreditCard,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from 'react-native';
+import {
   BlackHome,
-  BlackUser,
-  Scan,
-  SilverActivity,
-  SilverCreditCard,
   SilverHome,
+  BlackUser,
   SilverUser,
 } from '../../assets/svgs';
-import {colors} from '../../themes/colors';
-import {StyleSheet} from 'react-native';
-import {moderateScale} from '../../common/constant';
+import { TabNav } from '../navigationKeys';
+import { TabRoute } from '../navigationRoute';
+import { colors } from '../../themes/colors';
+import { getTipoCliente } from '../../utils/asyncStorage';
 
 const Tab = createBottomTabNavigator();
 
 const TabNavigation = () => {
+  const [tipo, setTipo] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const tipoUsuario = await getTipoCliente();
+      setTipo(tipoUsuario);
+    })();
+  }, []);
+
+  if (!tipo) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary || '#000'} />
+      </View>
+    );
+  }
+
   return (
     <Tab.Navigator>
       <Tab.Screen
-        name={TabNav.HomeScreen}
-        component={TabRoute.HomeScreen}
+        name={
+          tipo === 'cliente'
+            ? TabNav.HomeClienteScreen
+            : TabNav.HomeScreen
+        }
+        component={
+          tipo === 'cliente'
+            ? TabRoute.HomeClienteScreen
+            : TabRoute.HomeScreen
+        }
         options={{
           headerShown: false,
           tabBarLabel: 'Home',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
-          tabBarIcon: ({focused}) => (focused ? <BlackHome /> : <SilverHome />),
+          tabBarIcon: ({ focused }) =>
+            focused ? <BlackHome /> : <SilverHome />,
         }}
       />
-      {/* <Tab.Screen
-        name={TabNav.MyCardScreen}
-        component={TabRoute.MyCardScreen}
-        options={{
-          headerShown: false,
-          tabBarLabel: 'Emprestimo',
-          tabBarActiveTintColor: colors.black,
-          tabBarInactiveTintColor: colors.tabColor,
-          tabBarIcon: ({focused}) =>
-            focused ? <BlackCreditCard /> : <SilverCreditCard />,
-        }}
-      />
-      <Tab.Screen
-        name={TabNav.ActivityScreen}
-        component={TabRoute.ActivityScreen}
-        options={{
-          headerShown: false,
-          tabBarLabel: 'Log',
-          tabBarActiveTintColor: colors.black,
-          tabBarInactiveTintColor: colors.tabColor,
-          tabBarIcon: ({focused}) =>
-            focused ? <BlackActivity /> : <SilverActivity />,
-        }}
-      /> */}
       <Tab.Screen
         name={TabNav.ProfileScreen}
         component={TabRoute.ProfileScreen}
@@ -65,16 +67,20 @@ const TabNavigation = () => {
           tabBarLabel: 'Perfil',
           tabBarActiveTintColor: colors.black,
           tabBarInactiveTintColor: colors.tabColor,
-          tabBarIcon: ({focused}) => (focused ? <BlackUser /> : <SilverUser />),
+          tabBarIcon: ({ focused }) =>
+            focused ? <BlackUser /> : <SilverUser />,
         }}
       />
     </Tab.Navigator>
   );
 };
 
-const localStyles = StyleSheet.create({
-  ScanImg: {
-    top: moderateScale(7),
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
 });
 

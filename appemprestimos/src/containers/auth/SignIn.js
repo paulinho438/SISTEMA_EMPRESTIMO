@@ -18,7 +18,7 @@ import CTextInput from '../../components/common/CTextInput';
 import CButton from '../../components/common/CButton';
 import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
-import {authToken, authCompany, user, permissions} from '../../utils/asyncStorage';
+import {authToken, authCompany, user, permissions, tipoCliente} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
@@ -47,6 +47,7 @@ export default function SignIn({navigation}) {
       Alert.alert(strings.PleaseFill);
     } else {
       let result = await api.login(email, changeValue);
+      await tipoCliente('funcionario');
       if(result.error === '') {
         if(result.user.companies.length == 0){
             Alert.alert('Você não está cadastrado em nenhuma empresa.');
