@@ -96,6 +96,9 @@ Route::post('/parcela/{id}/gerarpixpagamentoparcela', [EmprestimoController::cla
 Route::post('/parcela/{id}/gerarpixpagamentoquitacao', [EmprestimoController::class, 'gerarPixPagamentoQuitacao']);
 Route::post('/parcela/{id}/gerarpixpagamentosaldopendente', [EmprestimoController::class, 'gerarPixPagamentoSaldoPendente']);
 
+Route::middleware('auth:clientes')->group(function () {
+    Route::get('/clientes/app/emprestimos_andamento', [ClientController::class, 'buscarEmprestimosAndamento']);
+});
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/info-conta', [DashboardController::class, 'infoConta']);
@@ -150,7 +153,6 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/cliente/{id}', [ClientController::class, 'update']);
     Route::post('/cliente', [ClientController::class, 'insert']);
 
-    Route::get('/clientes/app/emprestimos_andamento', [ClientController::class, 'buscarEmprestimosAndamento']);
 
     Route::get('/gestao/usuariosempresa/{id}', [GestaoController::class, 'getAllUsuariosEmpresa']);
 
