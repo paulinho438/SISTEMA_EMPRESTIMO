@@ -210,7 +210,7 @@ class ClientController extends Controller
             ->get();
 
         $lastLocations = $localizacoes->map(function ($localizacao) {
-            $descricao = "FUNC. COBRAR AMANHA - Usuário : {$localizacao->user->nome_completo}  Empréstimo: {$localizacao->parcela->emprestimo->id} Cliente: {$localizacao->parcela->emprestimo->client->nome_completo} Data e hora: ".Carbon::parse($localizacao->created_at)->format('d/m/Y H:i:s');
+            $descricao = "FUNC. COBRAR AMANHA - Usuário : {$localizacao->user->nome_completo}  Empréstimo: {$localizacao->parcela->emprestimo->id} Cliente: {$localizacao->parcela->emprestimo->client->nome_completo} Data e hora: " . Carbon::parse($localizacao->created_at)->format('d/m/Y H:i:s');
             return [
                 'descricao' => $descricao,
                 'latitude' => $localizacao->latitude,
@@ -434,14 +434,9 @@ class ClientController extends Controller
         $emprestimos = $user->emprestimos()
             ->where('company_id', $request->header('company-id'))
             ->whereHas('parcelas', function ($query) {
-                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
+                $query->whereNull('dt_baixa'); // Garante que só trará empréstimos com parcelas pendentes
             })
-            ->with(['parcelas' => function ($query) {
-                $query->whereNull('dt_baixa'); // Carrega apenas parcelas pendentes
-            }])
-            ->with(['parcelas' => function ($query) {
-                $query->whereNotNull('dt_baixa'); // Carrega apenas parcelas pendentes
-            }])
+            ->with('parcelas') // Carrega TODAS as parcelas (sem filtros)
             ->get();
 
         return response()->json([
