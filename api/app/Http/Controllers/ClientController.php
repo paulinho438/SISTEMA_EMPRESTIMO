@@ -616,7 +616,7 @@ class ClientController extends Controller
 
             self::enviarMensagemUsuarioApp($EditClient, 'Olá ' . $EditClient->nome_completo . ', seu acesso ao aplicativo foi criado com sucesso! Seu usuário é: ' . $cpf . ' e sua senha é: ' . $senha4Digit . '.');
 
-            return response()->json(['message' => 'Mensagens enviadas com sucesso.',
+            return response()->json(['message' => 'Usuário criado com sucesso. Os dados de login foram enviados para o usuário por mensagem.',
                 'usuario' => $array['usuario'],
                 'senha' => $senha4Digit,
             ]);
