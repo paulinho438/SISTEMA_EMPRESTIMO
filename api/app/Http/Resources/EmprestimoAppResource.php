@@ -121,7 +121,7 @@ class EmprestimoAppResource extends JsonResource
         $totalParcelas = count($this->parcelas);
         $historico = [];
 
-        foreach ($this->parcelas->sortBy('parcela') as $index => $parcela) {
+        foreach ($this->parcelas as $index => $parcela) {
             $numero = intval($parcela->parcela);
             $sub = "{$numero} de {$totalParcelas} meses";
             $data = Carbon::parse($parcela->venc_real)->format('d M');

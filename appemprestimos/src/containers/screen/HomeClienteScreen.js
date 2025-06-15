@@ -106,7 +106,10 @@ const HomeClienteScreen = () => {
             />
           )}
           right={props => (
-            <Text style={styles.paymentStatus}>Pagamento em dia</Text>
+            <Text style={{
+              ...styles.paymentStatus,
+              color: emp?.status === 'Em Dias' || emp?.status === 'Pago' ? 'green' : 'red'
+            }}>{emp?.status}</Text>
           )}
         />
         <Card.Content>
