@@ -9,6 +9,8 @@ import {
 import {IconButton} from 'react-native-paper';
 import {useNavigation} from '@react-navigation/native';
 
+import { StackNav } from '../../navigation/navigationKeys';
+
 import {useRoute} from '@react-navigation/native';
 
 const AcompanharMensalidades = () => {
@@ -62,6 +64,13 @@ const AcompanharMensalidades = () => {
     },
   ];
 
+  const moveToPixParcela = (parcela) => {
+    navigation.navigate(StackNav.PixParcela, {
+      emprestimo: emprestimo,
+      parcela: parcela
+    });
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -88,6 +97,7 @@ const AcompanharMensalidades = () => {
       {emprestimo?.historico_formatado.map((item, index) => (
         <TouchableOpacity
           key={index}
+          onPress={() => item.noAvancar ? moveToPixParcela(item) : null}
           style={{
             ...styles.itemContainer,
             paddingBottom: item.noAvancar ? 0 : 20,

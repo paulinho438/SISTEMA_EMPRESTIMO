@@ -7,6 +7,7 @@ export const StackNav = {
   Clientes: 'Clientes',
   DetalhesEmprestimos: 'DetalhesEmprestimos',
   AcompanharMensalidades: 'AcompanharMensalidades',
+  PixParcela: 'PixParcela',
   SendMoney: 'SendMoney',
   TransferProof: 'TransferProof',
   TopUpScreen: 'TopUpScreen',

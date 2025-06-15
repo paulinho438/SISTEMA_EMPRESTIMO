@@ -28,6 +28,7 @@ import SelecionarEmpresa from '../components/homeTab/SelecionarEmpresa';
 import Clientes from '../components/homeTab/Clientes';
 import DetalhesEmprestimos from '../components/homeTab/DetalhesEmprestimos';
 import AcompanharMensalidades from '../components/homeTab/AcompanharMensalidades';
+import PixParcela from '../components/homeTab/PixParcela';
 import SendMoney from '../components/homeTab/SendMoney';
 import TransferProof from '../components/homeTab/TransferProof';
 import TopUpScreen from '../components/homeTab/TopUpScreen';
@@ -73,6 +74,7 @@ export const StackRoute = {
   Clientes,
   DetalhesEmprestimos,
   AcompanharMensalidades,
+  PixParcela,
   SendMoney,
   TransferProof,
   TopUpScreen,

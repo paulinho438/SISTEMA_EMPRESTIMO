@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   ScrollView,
@@ -21,9 +22,16 @@ const HomeClienteScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        loadData();
+      };
+      fetchData();
+      return () => {
+      };
+    }, [])
+  );
 
   const loadData = async () => {
     setLoading(true);

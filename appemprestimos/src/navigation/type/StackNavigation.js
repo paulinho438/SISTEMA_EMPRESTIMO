@@ -50,6 +50,11 @@ const StackNavigation = () => {
         component={StackRoute.AcompanharMensalidades}
         options={{headerShown: false}}
       />
+       <Stack.Screen
+        name={StackNav.PixParcela}
+        component={StackRoute.PixParcela}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name={StackNav.SendMoney}
         component={StackRoute.SendMoney}
