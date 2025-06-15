@@ -271,7 +271,8 @@ class ClientController extends Controller
                 'user_id' => $user->id,
                 'user_name' => $user->nome_completo,
                 'latitude' => $location->latitude,
-                'longitude' => $location->longitude
+                'longitude' => $location->longitude,
+                'created_at' => $location->created_at->format('d/m/Y H:i:s')
             ];
         });
 
