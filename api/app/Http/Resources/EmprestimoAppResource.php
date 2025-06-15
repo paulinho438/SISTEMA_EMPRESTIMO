@@ -125,7 +125,7 @@ class EmprestimoAppResource extends JsonResource
             $numero = intval($parcela->parcela);
             $sub = "{$numero} de {$totalParcelas} meses";
             $data = Carbon::parse($parcela->venc_real)->format('d M');
-            $venc_real = Carbon::parse($parcela->venc_real)->format('dd/MM/yyyy');
+            $venc_real = Carbon::parse($parcela->venc_real)->format('d/M/y');
             $valor = number_format($parcela->valor, 2, ',', '.');
 
             if ($parcela->dt_baixa) {
