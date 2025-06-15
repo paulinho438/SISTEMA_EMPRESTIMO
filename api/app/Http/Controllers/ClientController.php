@@ -568,6 +568,65 @@ class ClientController extends Controller
         }
     }
 
+    public function enviarAcessoApp(Request $request, $id)
+    {
+
+        DB::beginTransaction();
+
+        try {
+            $array = ['error' => ''];
+
+            $senha4Digit = rand(1000, 9999);
+
+            $EditClient = Client::find($id);
+
+            if (!$EditClient) {
+                return response()->json([
+                    "message" => "Cliente não encontrado."
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $cpf = $EditClient->cpf;
+            $cpf = preg_replace('/\D/', '', $cpf);
+
+            if ($EditClient->usuario) {
+                $cpf = $EditClient->usuario;
+            } else {
+                $exists = Client::where('usuario', $cpf)->exists();
+                if ($exists) {
+                    $nome = $EditClient->nome_completo;
+                    // Quebra em partes e transforma em minúsculas
+                    $partes = explode(' ', strtolower(trim($nome)));
+                    // Conta as partes
+                    $primeiro = $partes[0];
+                    $ultimo = count($partes) > 1 ? end($partes) : null;
+                    // Monta o nome de usuário
+                    $cpf = $ultimo ? "{$primeiro}.{$ultimo}" : $primeiro;
+                }
+            }
+
+            $EditClient->usuario = $cpf;
+            $EditClient->password = password_hash($senha4Digit, PASSWORD_DEFAULT);
+            $EditClient->save();
+
+            DB::commit();
+
+            $array['usuario']['login'] = $cpf;
+            $array['usuario']['senha'] = $senha4Digit;
+
+            self::enviarMensagemUsuarioApp($EditClient, 'Olá ' . $EditClient->nome_completo . ', seu acesso ao aplicativo foi criado com sucesso! Seu usuário é: ' . $cpf . ' e sua senha é: ' . $senha4Digit . '.');
+
+            return $array;
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                "message" => "Erro ao criar usuário do cliente.",
+                "error" => $e->getMessage()
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
 
 
     public function delete(Request $r, $id)
@@ -630,7 +689,34 @@ class ClientController extends Controller
                     ];
 
                     $response = Http::asJson()->post($baseUrl, $data);
-                    sleep(8);
+                }
+            }
+        } catch (\Throwable $th) {
+            dd($th);
+        }
+
+        return true;
+    }
+
+    public function enviarMensagemUsuarioApp($cliente, $frase)
+    {
+        try {
+
+            $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
+
+            if ($response->successful()) {
+                $r = $response->json();
+                if ($r['loggedIn']) {
+
+                    $telefone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
+                    $baseUrl = $cliente->emprestimos->company->whatsapp . '/enviar-mensagem';
+
+                    $data = [
+                        "numero" => "55" . $telefone,
+                        "mensagem" => $frase
+                    ];
+
+                    $response = Http::asJson()->post($baseUrl, $data);
                 }
             }
         } catch (\Throwable $th) {
