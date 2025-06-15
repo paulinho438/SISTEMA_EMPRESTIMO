@@ -258,7 +258,7 @@ class ClientController extends Controller
         $companyIds = $user->companies->pluck('id')->toArray();
 
         // Filtra os clientes da(s) empresa(s) com pelo menos uma localização
-        $clientes = Client::whereHas('companies', function ($query) use ($companyIds) {
+        $clientes = Client::whereHas('company', function ($query) use ($companyIds) {
             $query->whereIn('id', $companyIds);
         })
             ->whereHas('locations')
