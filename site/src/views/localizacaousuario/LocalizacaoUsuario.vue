@@ -679,7 +679,7 @@ export default {
                     <div class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="consultor">Clientes</label>
-                            <Dropdown v-model="form.localizacaoCliente" :options="localizacaoClientes" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um cliente" />
+                            <Dropdown v-model="form.localizacaoCliente" :options="localizacaoClientes" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um cliente" filter/>
                         </div>
                     </div>
                     <div v-if="passos >= 4" class="col-12 md:col-2">
