@@ -59,7 +59,7 @@ const PixParcela = () => {
               <Text style={styles.pixCode} numberOfLines={1}>
                 {parcela.chave_pix}
               </Text>
-              <Text style={styles.pixVencimento}>Vence em {vencimento}</Text>
+              <Text style={styles.pixVencimento}>Vence em {parcela.data}</Text>
             </View>
             <IconButton icon="content-copy" onPress={copiarCodigo} />
           </View>

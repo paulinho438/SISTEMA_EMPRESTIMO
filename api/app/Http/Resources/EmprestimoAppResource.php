@@ -125,6 +125,7 @@ class EmprestimoAppResource extends JsonResource
             $numero = intval($parcela->parcela);
             $sub = "{$numero} de {$totalParcelas} meses";
             $data = Carbon::parse($parcela->venc_real)->format('d M');
+            $venc_real = Carbon::parse($parcela->venc_real)->format('dd/MM/yyyy');
             $valor = number_format($parcela->valor, 2, ',', '.');
 
             if ($parcela->dt_baixa) {
@@ -142,6 +143,7 @@ class EmprestimoAppResource extends JsonResource
                     'title' => 'Mensalidade pendente',
                     'sub' => $sub,
                     'data' => strtoupper($data),
+                    'vencimento' => $venc_real,
                     'valor' => "R$ {$valor}",
                     'riscado' => false,
                     'tag' => false,
