@@ -17,6 +17,7 @@ import api from '../../services/api';
 import {getUser} from '../../utils/asyncStorage';
 import Geolocation from 'react-native-geolocation-service';
 import BackgroundGeolocation from 'react-native-background-geolocation';
+import {authToken, authCompany, user, permissions, removeAuthToken, removeTipoCliente} from '../../utils/asyncStorage';
 
 const HomeClienteScreen = () => {
   const navigation = useNavigation();
@@ -128,6 +129,15 @@ const HomeClienteScreen = () => {
     const response = await api.getInformacoesEmprestimo();
     if (response.emprestimos.length > 0) {
       setEmp(response.emprestimos[0]);
+    } else {
+      await removeAuthToken();
+
+      await removeTipoCliente();
+
+      navigation.reset({
+        index: 0,
+        routes: [{name: StackNav.AuthNavigation}],
+      });
     }
   };
 
