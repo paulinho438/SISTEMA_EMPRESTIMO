@@ -152,7 +152,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/cliente/{id}/delete', [ClientController::class, 'delete']);
     Route::put('/cliente/{id}', [ClientController::class, 'update']);
     Route::post('/cliente', [ClientController::class, 'insert']);
-    Route::put('/cliente/{id}/enviar_acesso_app', [ClientController::class, 'enviarAcessoApp']);
+    Route::get('/cliente/{id}/enviar_acesso_app', [ClientController::class, 'enviarAcessoApp']);
 
 
     Route::get('/gestao/usuariosempresa/{id}', [GestaoController::class, 'getAllUsuariosEmpresa']);

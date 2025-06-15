@@ -12,6 +12,10 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/cliente/${id}`);
 	};
 
+	criarUsuarioAPP = async (id) => {
+		return await axios.get(`${apiPath}/cliente/${id}/enviar_acesso_app`);
+	};
+
     getAll = async () => {
 		return await axios.get(`${apiPath}/cliente`);
 	};

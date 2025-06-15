@@ -116,6 +116,31 @@ export default {
                     this.loading = false;
                 });
         },
+        criarUsuario(permissionId) {
+            this.loading = true;
+
+            this.clientService
+                .criarUsuarioAPP(permissionId)
+                .then((e) => {
+                    console.log(e);
+                    this.toast.add({
+                        severity: ToastSeverity.SUCCESS,
+                        detail: e?.data?.message,
+                        life: 3000
+                    });
+                    this.getClientes();
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error?.data?.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
         clearFilter() {
             this.initFilters();
         }
@@ -255,6 +280,19 @@ export default {
                                     :icon="icons.FILE_EXCEL"
                                     v-tooltip.top="'Excluir'"
                                     @click.prevent="deleteCategory(slotProps.data.id)"
+                                />
+                            </template>
+                        </Column>
+                        <Column field="edit" header="Gerar usuário" :sortable="false" class="w-1">
+                            <template #body="slotProps">
+                                <Button
+                                    v-if="!slotProps.data.standard"
+                                    class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0"
+                                    type="button"
+                                    :disabled="slotProps.data.total_users > 0"
+                                    :icon="icons.USER"
+                                    v-tooltip.top="'Criar Usuário APP'"
+                                    @click.prevent="criarUsuario(slotProps.data.id)"
                                 />
                             </template>
                         </Column>
