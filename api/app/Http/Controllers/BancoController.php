@@ -202,6 +202,7 @@ class BancoController extends Controller
                             $diferencaEmMeses++;
                             $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                             $parcela->atrasadas = 0;
+                            $parcela->valor_recebido_pix = 0;
                             $parcela->save();
                         } else {
                             continue;
@@ -216,6 +217,10 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                         $movimentacaoFinanceira['valor'] = $valor;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        $parcela->saldo += $parcela->emprestimo->lucro;
+                        $parcela->save();
+
                         continue;
                     }
 
