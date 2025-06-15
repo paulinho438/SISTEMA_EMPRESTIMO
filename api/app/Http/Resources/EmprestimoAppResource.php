@@ -145,7 +145,7 @@ class EmprestimoAppResource extends JsonResource
                     'valor' => "R$ {$valor}",
                     'riscado' => false,
                     'tag' => false,
-                    'chave_pix' => $parcela->chave_pix,
+                    'chave_pix' => ($parcela->chave_pix != null) ? $parcela->chave_pix : $parcela->emprestimo->banco->chavepix,
                     'noAvancar' => true,
                 ];
             }
