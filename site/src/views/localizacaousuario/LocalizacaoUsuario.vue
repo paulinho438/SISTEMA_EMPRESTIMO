@@ -180,23 +180,23 @@ export default {
         getLog() {
             this.loading = true;
 
-            this.logService
-                .getAll()
-                .then((response) => {
-                    this.Log = response.data;
-                    this.LogReal = response.data;
-                    this.setLastWeekDates();
-                })
-                .catch((error) => {
-                    this.toast.add({
-                        severity: ToastSeverity.ERROR,
-                        detail: error.message,
-                        life: 3000
-                    });
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
+            // this.logService
+            //     .getAll()
+            //     .then((response) => {
+            //         this.Log = response.data;
+            //         this.LogReal = response.data;
+            //         this.setLastWeekDates();
+            //     })
+            //     .catch((error) => {
+            //         this.toast.add({
+            //             severity: ToastSeverity.ERROR,
+            //             detail: error.message,
+            //             life: 3000
+            //         });
+            //     })
+            //     .finally(() => {
+            //         this.loading = false;
+            //     });
         },
 
         getClientes() {
