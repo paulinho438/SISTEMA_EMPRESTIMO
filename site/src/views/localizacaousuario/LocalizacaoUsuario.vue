@@ -271,7 +271,7 @@ export default {
                                 position: { lat: Number(item.latitude), lng: Number(item.longitude) },
                                 title: `${item.user_name}`,
                                 icon: {
-                                    url: `/images/motoboy.png`,
+                                    url: `/images/cliente.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
                                 }
                             }
@@ -301,7 +301,7 @@ export default {
                         return {
                             options: {
                                 position: { lat: Number(item.latitude), lng: Number(item.longitude) },
-                                title: `${item.user_name}`,
+                                title: `${item.user_name} Última atualização : ${item.created_at}`,
                                 icon: {
                                     url: `/images/motoboy.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
@@ -501,6 +501,24 @@ export default {
                 // this.stopFetchingConsultores();
                 this.getRotaConsultor();
             }
+
+            if (this.form.localizacaoCliente != null) {
+                console.log('localizacaoCliente', this.form.localizacaoCliente);
+                console.log('localizacaoClientes', this.localizacaoClientes);
+
+                const localizacao = this.localizacaoClientes.find((item) => item.user_id === this.form.localizacaoCliente);
+
+                if (localizacao) {
+                    //console.log('Localização encontrada:', localizacao);
+                    this.center = latLng(localizacao.latitude, localizacao.longitude);
+
+                    // exemplo: centralizar o mapa
+                } else {
+                    console.log('Localização não encontrada para o cliente selecionado.');
+                }
+            }
+            // this.center = latLng(this.occurrence.latitude, this.occurrence.longitude);
+
             this.getPontosCobrarAmanha();
             this.getClientes();
         },
@@ -660,6 +678,12 @@ export default {
                             <Dropdown v-model="form.consultor" :options="consultores" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um consultor" />
                         </div>
                     </div>
+                    <div class="col-12 md:col-2">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <label for="consultor">Clientes</label>
+                            <Dropdown v-model="form.localizacaoCliente" :options="localizacaoClientes" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um cliente" />
+                        </div>
+                    </div>
                     <div v-if="passos >= 4" class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="consultor">CEP</label>
@@ -679,6 +703,8 @@ export default {
 
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in cobraramanhaMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
+
+                        <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in localizacaoClientesMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
 
                         <Polyline v-for="(path, index) in flightPaths" :key="index" :options="path" />
                     </GoogleMap>
