@@ -165,6 +165,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/cobranca/atrasadas', [ClientController::class, 'parcelasAtrasadas']);
     Route::get('/mapa/clientes', [ClientController::class, 'mapaClientes']);
     Route::get('/mapa/consultor', [ClientController::class, 'mapaConsultor']);
+    Route::get('/mapa/localizacao_clientes', [ClientController::class, 'mapaLocalizacaoClientes']);
     Route::post('/mapa/cobraramanha', [ClientController::class, 'mapaCobrarAmanha']);
     Route::post('/mapa/rotaconsultor', [ClientController::class, 'mapaRotaConsultor']);
 

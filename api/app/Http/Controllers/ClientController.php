@@ -250,6 +250,36 @@ class ClientController extends Controller
         return response()->json($lastLocations);
     }
 
+    public function mapaLocalizacaoClientes(Request $request)
+    {
+        $user = auth()->user();
+
+        // IDs das empresas às quais o usuário pertence
+        $companyIds = $user->companies->pluck('id')->toArray();
+
+        // Filtra os clientes da(s) empresa(s) com pelo menos uma localização
+        $clientes = Client::whereHas('companies', function ($query) use ($companyIds) {
+            $query->whereIn('id', $companyIds);
+        })
+            ->whereHas('locations')
+            ->get();
+
+        $lastLocations = $clientes->map(function ($user) {
+            $location = $user->locations()->latest('id')->first();
+
+            return [
+                'user_id' => $user->id,
+                'user_name' => $user->nome_completo,
+                'latitude' => $location->latitude,
+                'longitude' => $location->longitude
+            ];
+        });
+
+        return response()->json($lastLocations);
+    }
+
+
+
     public function mapaRotaConsultor(Request $request)
     {
         $dados = $request->all();

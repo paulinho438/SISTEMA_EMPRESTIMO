@@ -65,4 +65,9 @@ class Client extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(Emprestimo::class, 'id', 'client_id');
     }
+
+    public function locations()
+    {
+        return $this->hasMany(ClientLocation::class);
+    }
 }
