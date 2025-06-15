@@ -182,7 +182,7 @@ class BancoController extends Controller
                         if ($valor > $lucro) {
                             $novaParcela = $parcela->emprestimo->valor - ($valor - $lucro);
                             $parcela->saldo = $novaParcela;
-                            $parcela->valor_recebido_pix = 0;
+                            $parcela->valor_recebido = 0;
                             $parcela->atrasadas = 0;
                             $parcela->save();
 
@@ -202,7 +202,7 @@ class BancoController extends Controller
                             $diferencaEmMeses++;
                             $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                             $parcela->atrasadas = 0;
-                            $parcela->valor_recebido_pix = 0;
+                            $parcela->valor_recebido = 0;
                             $parcela->save();
                         } else {
                             continue;
