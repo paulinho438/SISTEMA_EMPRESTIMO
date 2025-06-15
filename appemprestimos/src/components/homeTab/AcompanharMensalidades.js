@@ -86,10 +86,10 @@ const AcompanharMensalidades = () => {
       </Text>
       <Text style={styles.progresso}>{emprestimo.progresso_meses}</Text>
 
-      {/* Botões rápidos */}
+      {/* Botões rápidos
       <View style={styles.actionRow}>
         <QuickAction icon="currency-usd" label="Mensalidades" />
-      </View>
+      </View> */}
 
       {/* Histórico */}
       <Text style={styles.historicoTitle}>Histórico</Text>

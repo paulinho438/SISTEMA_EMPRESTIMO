@@ -39,7 +39,7 @@ const DetalhesEmprestimos = ({navigation}) => {
     dados.valorCredito +
     dados.valorCredito * (dados.taxa / 100) -
     dados.valorPago;
-  const percentualPago = ((dados.mesesPagos / dados.prazo) * 100).toFixed(0);
+  const percentualPago = ((dados.mesesPagos / dados.prazo) * 100).toFixed(1);
 
   return (
     <ScrollView
@@ -51,9 +51,9 @@ const DetalhesEmprestimos = ({navigation}) => {
         <ProgressCircle
           percentage={
             emprestimo?.parcelas?.length
-              ? (emprestimo.parcelas_pagas.length /
-                  emprestimo.parcelas.length) *
-                100
+              ? Math.floor(
+                (emprestimo.parcelas_pagas.length / emprestimo.parcelas.length) * 100
+              )
               : 0
           }
         />

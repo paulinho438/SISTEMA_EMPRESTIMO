@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   View,
   ScrollView,
@@ -8,11 +8,11 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { Card, Button, List, Avatar } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import { StackNav } from '../../navigation/navigationKeys';
+import {Card, Button, List, Avatar} from 'react-native-paper';
+import {useNavigation} from '@react-navigation/native';
+import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
-import { getUser } from '../../utils/asyncStorage';
+import {getUser} from '../../utils/asyncStorage';
 
 const HomeClienteScreen = () => {
   const navigation = useNavigation();
@@ -28,9 +28,8 @@ const HomeClienteScreen = () => {
         loadData();
       };
       fetchData();
-      return () => {
-      };
-    }, [])
+      return () => {};
+    }, []),
   );
 
   const loadData = async () => {
@@ -84,13 +83,40 @@ const HomeClienteScreen = () => {
     );
   }
 
+  const moveToPixQuitacao = () => {
+    navigation.navigate(StackNav.PixParcela, {
+      emprestimo: emp,
+      parcela: {
+        chave_pix: emp?.quitacao?.chave_pix,
+        valor: emp?.quitacao?.valor,
+        title: 'Quitar Empréstimo',
+        msgPagamento: 'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
+      },
+    });
+  };
+
+  const moveToPixSaldoPendente = () => {
+    navigation.navigate(StackNav.PixParcela, {
+      emprestimo: emp,
+      parcela: {
+        chave_pix: emp?.pagamentosaldopendente?.chave_pix,
+        valor: emp?.pagamentosaldopendente?.valor,
+        title: 'Saldo Pendente',
+        msgPagamento: 'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
+      },
+    });
+  };
+
   return (
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#fcbf49']} />
-      }
-    >
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#fcbf49']}
+        />
+      }>
       <Header user={user} />
       <Text style={styles.sectionTitle}>Seu plano</Text>
 
@@ -102,18 +128,26 @@ const HomeClienteScreen = () => {
               {...props}
               size={30}
               icon="currency-usd"
-              style={{ backgroundColor: 'black' }}
+              style={{backgroundColor: 'black'}}
             />
           )}
           right={props => (
-            <Text style={{
-              ...styles.paymentStatus,
-              color: emp?.status === 'Em Dias' || emp?.status === 'Pago' ? 'green' : 'red'
-            }}>{emp?.status}</Text>
+            <Text
+              style={{
+                ...styles.paymentStatus,
+                color:
+                  emp?.status === 'Em Dias' || emp?.status === 'Pago'
+                    ? 'green'
+                    : 'red',
+              }}>
+              {emp?.status}
+            </Text>
           )}
         />
         <Card.Content>
-          <Text style={styles.planValue}>{formatarParaReal(emp?.valor ?? 0)}</Text>
+          <Text style={styles.planValue}>
+            {formatarParaReal(emp?.valor ?? 0)}
+          </Text>
           <Text style={styles.monthlyFee}>
             Mensalidade de {emp?.parcelas?.[0]?.valor}
           </Text>
@@ -132,13 +166,71 @@ const HomeClienteScreen = () => {
           <List.Item
             title="Acompanhar mensalidades"
             titleStyle={styles.title}
-            description="área de pagamentos"
+            description="Área de pagamentos"
             descriptionStyle={styles.description}
-            left={props => <List.Icon {...props} icon="currency-usd" color="#000" />}
-            right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
+            left={props => (
+              <List.Icon {...props} icon="currency-usd" color="#000" />
+            )}
+            right={props => (
+              <List.Icon {...props} icon="chevron-right" color="#aaa" />
+            )}
             onPress={moveToAcompanharMensalidades}
           />
         </View>
+
+        {emp?.pagamentosaldopendente != null && (
+          <View style={styles.cardItem}>
+            <List.Item
+              title="Saldo pendente"
+              titleStyle={styles.title}
+              description="Realizar pagamento do saldo pendente do empréstimo"
+              descriptionStyle={styles.description}
+              left={props => (
+                <List.Icon {...props} icon="currency-usd" color="#000" />
+              )}
+              right={props => (
+                <List.Icon {...props} icon="chevron-right" color="#aaa" />
+              )}
+              onPress={moveToPixSaldoPendente}
+            />
+          </View>
+        )}
+
+        {emp?.quitacao != null && (
+          <View style={styles.cardItem}>
+            <List.Item
+              title="Quitar empréstimo"
+              titleStyle={styles.title}
+              description="Realizar pagamento do saldo total do empréstimo"
+              descriptionStyle={styles.description}
+              left={props => (
+                <List.Icon {...props} icon="currency-usd" color="#000" />
+              )}
+              right={props => (
+                <List.Icon {...props} icon="chevron-right" color="#aaa" />
+              )}
+              onPress={moveToPixQuitacao}
+            />
+          </View>
+        )}
+
+        {emp?.pagamentominimo != null && (
+          <View style={styles.cardItem}>
+            <List.Item
+              title="Pagamento minimo"
+              titleStyle={styles.title}
+              description="Realizar pagamento mínimo do empréstimo"
+              descriptionStyle={styles.description}
+              left={props => (
+                <List.Icon {...props} icon="currency-usd" color="#000" />
+              )}
+              right={props => (
+                <List.Icon {...props} icon="chevron-right" color="#aaa" />
+              )}
+              onPress={moveToAcompanharMensalidades}
+            />
+          </View>
+        )}
 
         {/* <View style={styles.cardItem}>
           <List.Item
@@ -170,7 +262,7 @@ const HomeClienteScreen = () => {
   );
 };
 
-const Header = ({ user }) => (
+const Header = ({user}) => (
   <View style={styles.headerContainer}>
     <View style={styles.headerContent}>
       <Text style={styles.logo}>
