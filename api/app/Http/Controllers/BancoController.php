@@ -371,7 +371,7 @@ class BancoController extends Controller
                             $parcela->atrasadas = 0;
                             $parcela->save();
 
-                            $parcela->emprestimo->lucro = ($porcentagem / 100) * $novaParcela;
+                            $parcela->emprestimo->lucro = ($parcela->emprestimo->juros / 100) * $novaParcela;
                             $parcela->emprestimo->save();
 
                             $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
