@@ -436,11 +436,11 @@ class ClientController extends Controller
             ->whereHas('parcelas', function ($query) {
                 $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
             })
-            ->whereHas('parcelas', function ($query) {
-                $query->whereNotNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
-            })
             ->with(['parcelas' => function ($query) {
                 $query->whereNull('dt_baixa'); // Carrega apenas parcelas pendentes
+            }])
+            ->with(['parcelas' => function ($query) {
+                $query->whereNotNull('dt_baixa'); // Carrega apenas parcelas pendentes
             }])
             ->get();
 
