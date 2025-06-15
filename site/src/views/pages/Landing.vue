@@ -176,7 +176,7 @@ export default {
             </section>
 
             <!-- Pagamento Mínimo -->
-            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo" class="payment-section">
+            <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
                 <h2>Pagamento Mínimo - Juros</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
                 <button class="btn-primary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })  }}</button>
