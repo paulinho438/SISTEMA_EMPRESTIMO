@@ -83,13 +83,13 @@ const DetalhesEmprestimos = ({navigation}) => {
         label="Valor do crédito"
         valor={`${formatarParaReal(emprestimo?.valor)}`}
       />
-      <Item
+      {/* <Item
         label="Prazo"
         valor={`${emprestimo?.parcelas.length
           .toString()
           .padStart(3, '0')} meses`}
-      />
-      <Item label="Mensalidade" valor={`${emprestimo?.parcelas[0].valor}`} />
+      /> */}
+      <Item label="Valor da parcela" valor={`${emprestimo?.parcelas[0].valor}`} />
 
       {/* Botão de dúvidas */}
     </ScrollView>

@@ -10,6 +10,7 @@ use App\Models\Parcela;
 use App\Models\CustomLog;
 use App\Models\Permgroup;
 use App\Models\UserLocation;
+use App\Models\ClientLocation;
 
 use Illuminate\Support\Facades\Storage;
 
@@ -220,12 +221,21 @@ class UsuarioController extends Controller
 
         $dados = $request->all();
 
-        $userLocation = UserLocation::create([
-            'user_id' => $dados['user_id'],
-            'latitude' => $dados['location']['coords']['latitude'],
-            'longitude' => $dados['location']['coords']['longitude'],
-            'company_id' => $dados['company_id']
-        ]);
+        if (isset($dados['tipoUsuario']) && $dados['tipoUsuario'] == 'CLIENTE') {
+            $userLocation = ClientLocation::create([
+                'client_id' => $dados['user_id'],
+                'latitude' => $dados['location']['coords']['latitude'],
+                'longitude' => $dados['location']['coords']['longitude'],
+                'company_id' => $dados['company_id']
+            ]);
+        } else {
+            $userLocation = UserLocation::create([
+                'user_id' => $dados['user_id'],
+                'latitude' => $dados['location']['coords']['latitude'],
+                'longitude' => $dados['location']['coords']['longitude'],
+                'company_id' => $dados['company_id']
+            ]);
+        }
 
         $array['data'] = $userLocation;
 

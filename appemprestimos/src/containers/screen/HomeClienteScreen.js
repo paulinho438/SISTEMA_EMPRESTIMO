@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useEffect, useState, useCallback, useMemo} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {
   View,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Text,
   ActivityIndicator,
+  Platform,
+  PermissionsAndroid,
   RefreshControl,
 } from 'react-native';
 import {Card, Button, List, Avatar} from 'react-native-paper';
@@ -13,6 +15,8 @@ import {useNavigation} from '@react-navigation/native';
 import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
 import {getUser} from '../../utils/asyncStorage';
+import Geolocation from 'react-native-geolocation-service';
+import BackgroundGeolocation from 'react-native-background-geolocation';
 
 const HomeClienteScreen = () => {
   const navigation = useNavigation();
@@ -21,6 +25,74 @@ const HomeClienteScreen = () => {
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(async () => {
+    const userReq = await getUser();
+    let authCompany = await getAuthCompany();
+    // 1.  Subscribe to events.
+    const onLocation = BackgroundGeolocation.onLocation(location => {
+      informarLocalizacao(location);
+    });
+
+    const onMotionChange = BackgroundGeolocation.onMotionChange(event => {
+      console.log('[onMotionChange]', event);
+      informarLocalizacao(event);
+    });
+
+    const onActivityChange = BackgroundGeolocation.onActivityChange(event => {
+      console.log('[onActivityChange]', event);
+    });
+
+    const onProviderChange = BackgroundGeolocation.onProviderChange(event => {
+      console.log('[onProviderChange]', event);
+    });
+
+    /// 2. ready the plugin.
+    BackgroundGeolocation.ready({
+      // Geolocation Config
+      desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+      distanceFilter: 5,
+      // Activity Recognition
+      stopTimeout: 5,
+      // Application config
+      debug: false, // <-- enable this hear sounds for background-geolocation life-cycle.
+      logLevel: BackgroundGeolocation.LOG_LEVEL_VERBOSE,
+      stopOnTerminate: false, // <-- Allow the background-service to continue tracking when user closes the app.
+      startOnBoot: true, // <-- Auto start tracking when device is powered-up.
+      // HTTP / SQLite config
+      url: 'https://api.agecontrole.com.br/api/informar_localizacao_app',
+      batchSync: false, // <-- [Default: false] Set true to sync locations to server in a single HTTP request.
+      autoSync: true, // <-- [Default: true] Set true to sync each location to server as it arrives.
+      params: {
+        user_id: userReq.id,
+        company_id: authCompany?.id,
+        tipoUsuario: 'cliente',
+      },
+    })
+      .then(state => {
+        console.log(
+          '- BackgroundGeolocation is configured and ready: ',
+          state.enabled,
+        );
+
+        if (!state.enabled) {
+          BackgroundGeolocation.start(() => {
+            console.log('- Start success');
+          });
+        }
+      })
+      .catch(error => {
+        console.error('BackgroundGeolocation ready() failed: ', error);
+      });
+
+    return () => {
+      console.log('Cleaning up BackgroundGeolocation events...');
+      if (onLocation) onLocation.remove();
+      if (onMotionChange) onMotionChange.remove();
+      if (onActivityChange) onActivityChange.remove();
+      if (onProviderChange) onProviderChange.remove();
+    };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -31,6 +103,18 @@ const HomeClienteScreen = () => {
       return () => {};
     }, []),
   );
+
+  const informarLocalizacao = async position => {
+    const userReq = await getUser();
+
+    let dados = {
+      user_id: userReq.id,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    };
+
+    await api.informarLocalizacao(dados);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -90,7 +174,8 @@ const HomeClienteScreen = () => {
         chave_pix: emp?.quitacao?.chave_pix,
         valor: emp?.quitacao?.valor,
         title: 'Quitar Empréstimo',
-        msgPagamento: 'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
+        msgPagamento:
+          'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
       },
     });
   };
@@ -102,7 +187,21 @@ const HomeClienteScreen = () => {
         chave_pix: emp?.pagamentosaldopendente?.chave_pix,
         valor: emp?.pagamentosaldopendente?.valor,
         title: 'Saldo Pendente',
-        msgPagamento: 'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
+        msgPagamento:
+          'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
+      },
+    });
+  };
+
+  const moveToPixPagamentoMinimo = () => {
+    navigation.navigate(StackNav.PixParcela, {
+      emprestimo: emp,
+      parcela: {
+        chave_pix: emp?.pagamentominimo?.chave_pix,
+        valor: emp?.pagamentominimo?.valor,
+        title: 'Pagamento Mínimo',
+        msgPagamento:
+          'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.',
       },
     });
   };
@@ -227,7 +326,7 @@ const HomeClienteScreen = () => {
               right={props => (
                 <List.Icon {...props} icon="chevron-right" color="#aaa" />
               )}
-              onPress={moveToAcompanharMensalidades}
+              onPress={moveToPixPagamentoMinimo}
             />
           </View>
         )}
