@@ -296,8 +296,6 @@ export default {
                     this.localizacaoClientes = response.data.filter((item) => item.latitude && item.longitude);
 
                     this.localizacaoClientesMarkers = response.data.map((item) => {
-                        const iconUrl = this.getIconUrl(0);
-
                         return {
                             options: {
                                 position: { lat: Number(item.latitude), lng: Number(item.longitude) },
