@@ -19,7 +19,7 @@ export default {
             router: useRouter(),
             icons: PrimeIcons,
             toast: useToast(),
-			externoService: new ExternoService(),
+            externoService: new ExternoService()
         };
     },
     components: {
@@ -33,7 +33,7 @@ export default {
                 position: this.center,
                 icon: {
                     url: `/images/marker_50_50.png`,
-                    title: this.textoReferencia,
+                    title: this.textoReferencia
                 }
             };
         }
@@ -62,6 +62,8 @@ export default {
             markers: [],
             consultoresMarkers: [],
             consultores: [],
+            localizacaoClientesMarkers: [],
+            localizacaoClientes: [],
             cobraramanhaMarkers: [],
             cobraramanha: [],
             rotaconsultor: [],
@@ -126,13 +128,13 @@ export default {
     },
     methods: {
         setCenter() {
-			if (this.occurrence?.latitude != '') {
-				this.center = latLng(this.occurrence.latitude, this.occurrence.longitude);
+            if (this.occurrence?.latitude != '') {
+                this.center = latLng(this.occurrence.latitude, this.occurrence.longitude);
                 this.textoReferencia = 'Ponto de Pesquisa.';
                 this.stopFetchingConsultores();
                 this.markers = [];
-			}
-		},
+            }
+        },
         startFetchingConsultores() {
             this.intervalId = setInterval(() => {
                 this.getConsultores();
@@ -259,10 +261,41 @@ export default {
             this.logService
                 .getAllConsultorMaps()
                 .then((response) => {
-                    this.consultores = response.data.filter(item => item.latitude && item.longitude);
-
+                    this.consultores = response.data.filter((item) => item.latitude && item.longitude);
 
                     this.consultoresMarkers = response.data.map((item) => {
+                        const iconUrl = this.getIconUrl(0);
+
+                        return {
+                            options: {
+                                position: { lat: Number(item.latitude), lng: Number(item.longitude) },
+                                title: `${item.user_name}`,
+                                icon: {
+                                    url: `/images/motoboy.png`,
+                                    scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
+                                }
+                            }
+                        };
+                    });
+                    this.passos++;
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: error.message,
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+
+            this.logService
+                .getLocalizacaoClientes()
+                .then((response) => {
+                    this.localizacaoClientes = response.data.filter((item) => item.latitude && item.longitude);
+
+                    this.localizacaoClientesMarkers = response.data.map((item) => {
                         const iconUrl = this.getIconUrl(0);
 
                         return {
@@ -297,8 +330,7 @@ export default {
             this.logService
                 .getAllCobrarAmanhaMaps(data)
                 .then((response) => {
-                    this.cobraramanha = response.data.filter(item => item.latitude && item.longitude);
-
+                    this.cobraramanha = response.data.filter((item) => item.latitude && item.longitude);
 
                     this.cobraramanhaMarkers = response.data.map((item) => {
                         const iconUrl = this.getIconUrl(0);
@@ -329,16 +361,14 @@ export default {
         },
         getDistanceInMeters(lat1, lon1, lat2, lon2) {
             const R = 6371e3; // Raio da Terra em metros
-            const toRad = x => x * Math.PI / 180;
+            const toRad = (x) => (x * Math.PI) / 180;
 
             const φ1 = toRad(lat1);
             const φ2 = toRad(lat2);
             const Δφ = toRad(lat2 - lat1);
             const Δλ = toRad(lon2 - lon1);
 
-            const a = Math.sin(Δφ / 2) ** 2 +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ / 2) ** 2;
+            const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
             return R * c;
@@ -356,26 +386,21 @@ export default {
                 .then((response) => {
                     this.rotaconsultor = response.data;
 
-                    let locations = this.rotaconsultor.filter(
-                        (location) => location.latitude && location.longitude
-                    );
+                    let locations = this.rotaconsultor.filter((location) => location.latitude && location.longitude);
 
                     let routes = [];
                     let currentRoute = [];
 
                     const getDistanceInMeters = (lat1, lon1, lat2, lon2) => {
                         const R = 6371e3; // Raio da Terra em metros
-                        const toRad = (x) => x * Math.PI / 180;
+                        const toRad = (x) => (x * Math.PI) / 180;
 
                         const φ1 = toRad(lat1);
                         const φ2 = toRad(lat2);
                         const Δφ = toRad(lat2 - lat1);
                         const Δλ = toRad(lon2 - lon1);
 
-                        const a =
-                            Math.sin(Δφ / 2) ** 2 +
-                            Math.cos(φ1) * Math.cos(φ2) *
-                            Math.sin(Δλ / 2) ** 2;
+                        const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
                         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
                         return R * c;
@@ -406,7 +431,7 @@ export default {
                     }
 
                     // flightPaths agora será um array de paths
-                    this.flightPaths = routes.map(route => ({
+                    this.flightPaths = routes.map((route) => ({
                         path: route,
                         geodesic: true,
                         strokeColor: '#FF0000',
@@ -575,37 +600,34 @@ export default {
         this.startFetchingConsultores();
     },
     watch: {
-		cep(cepVemDoFormulario) {
-            console.log('cep', cepVemDoFormulario)
-			if (cepVemDoFormulario == "") {
-				return;
-			}
+        cep(cepVemDoFormulario) {
+            console.log('cep', cepVemDoFormulario);
+            if (cepVemDoFormulario == '') {
+                return;
+            }
 
-			if (cepVemDoFormulario.substr(8) != "_") {
-				this.occurrence.cep = cepVemDoFormulario;
+            if (cepVemDoFormulario.substr(8) != '_') {
+                this.occurrence.cep = cepVemDoFormulario;
 
-				this.externoService.getEndereco(cepVemDoFormulario).then((data) => {
-					this.occurrence.address = data.logradouro;
-					this.occurrence.neighborhood = data.bairro;
-					this.occurrence.city = data.localidade;
-					this.occurrence.number = '';
-					this.occurrence.complement = '';
-				});
+                this.externoService.getEndereco(cepVemDoFormulario).then((data) => {
+                    this.occurrence.address = data.logradouro;
+                    this.occurrence.neighborhood = data.bairro;
+                    this.occurrence.city = data.localidade;
+                    this.occurrence.number = '';
+                    this.occurrence.complement = '';
+                });
 
-				this.externoService.getLatLong(cepVemDoFormulario).then((data) => {
-					if (data.status == "OK") {
+                this.externoService.getLatLong(cepVemDoFormulario).then((data) => {
+                    if (data.status == 'OK') {
+                        this.occurrence.latitude = data.results[0].geometry.viewport.northeast.lat;
+                        this.occurrence.longitude = data.results[0].geometry.viewport.northeast.lng;
 
-						this.occurrence.latitude 	= data.results[0].geometry.viewport.northeast.lat;
-						this.occurrence.longitude 	= data.results[0].geometry.viewport.northeast.lng;
-
-						this.setCenter()
-
-					}
-				});
-			}
-		},
-		
-	}
+                        this.setCenter();
+                    }
+                });
+            }
+        }
+    }
 };
 </script>
 
@@ -638,10 +660,10 @@ export default {
                             <Dropdown v-model="form.consultor" :options="consultores" optionLabel="user_name" optionValue="user_id" placeholder="Selecione um consultor" />
                         </div>
                     </div>
-                    <div v-if="passos >= 3" class="col-12 md:col-2">
+                    <div v-if="passos >= 4" class="col-12 md:col-2">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="consultor">CEP</label>
-                            <InputMask id="inputmask" mask="99999-999" :modelValue="occurrence?.cep" v-model.trim="cep" ></InputMask>
+                            <InputMask id="inputmask" mask="99999-999" :modelValue="occurrence?.cep" v-model.trim="cep"></InputMask>
                         </div>
                     </div>
                     <div class="col-12 md:col-2">
@@ -658,11 +680,7 @@ export default {
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in cobraramanhaMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
 
-                        <Polyline
-                            v-for="(path, index) in flightPaths"
-                            :key="index"
-                            :options="path"
-                        />
+                        <Polyline v-for="(path, index) in flightPaths" :key="index" :options="path" />
                     </GoogleMap>
                 </div>
             </div>

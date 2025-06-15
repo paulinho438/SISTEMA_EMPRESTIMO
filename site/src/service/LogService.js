@@ -18,6 +18,10 @@ export default class LogService {
         return await axios.get(`${apiPath}/mapa/consultor`);
     };
 
+    getLocalizacaoClientes = async () => {
+        return await axios.get(`${apiPath}/mapa/localizacao_clientes`);
+    };
+
     getAllClientsMaps = async () => {
         return await axios.get(`${apiPath}/mapa/localizacao_clientes`);
     };
