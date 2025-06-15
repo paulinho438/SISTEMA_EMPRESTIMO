@@ -449,6 +449,10 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                         $movimentacaoFinanceira['valor'] = $valor;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        $parcela->saldo += $parcela->emprestimo->lucro;
+                        $parcela->save();
+
                         continue;
                     }
 
