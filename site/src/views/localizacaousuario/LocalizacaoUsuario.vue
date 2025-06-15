@@ -271,7 +271,7 @@ export default {
                                 position: { lat: Number(item.latitude), lng: Number(item.longitude) },
                                 title: `${item.user_name}`,
                                 icon: {
-                                    url: `/images/cliente.png`,
+                                    url: `/images/motoboy.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
                                 }
                             }
@@ -303,7 +303,7 @@ export default {
                                 position: { lat: Number(item.latitude), lng: Number(item.longitude) },
                                 title: `${item.user_name} Última atualização : ${item.created_at}`,
                                 icon: {
-                                    url: `/images/motoboy.png`,
+                                    url: `/images/cliente.png`,
                                     scaledSize: new google.maps.Size(42, 42) // Tamanho do ícone
                                 }
                             }
