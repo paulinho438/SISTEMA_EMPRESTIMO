@@ -49,8 +49,7 @@ const PixParcela = () => {
         <View style={styles.instructionBox}>
           <Text style={styles.instructionTitle}>Pague usando o código Pix</Text>
           <Text style={styles.instructionText}>
-            Copie o código Pix e pague no aplicativo do seu banco. O pagamento é
-            confirmado na hora.
+            {parcela.msgPagamento}
           </Text>
 
           {/* Código Pix Box */}

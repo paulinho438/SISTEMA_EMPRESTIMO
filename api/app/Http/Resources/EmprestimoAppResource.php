@@ -146,6 +146,9 @@ class EmprestimoAppResource extends JsonResource
                     'riscado' => false,
                     'tag' => false,
                     'chave_pix' => ($parcela->chave_pix != null) ? $parcela->chave_pix : $parcela->emprestimo->banco->chavepix,
+                    'msgPagamento' => ($parcela->chave_pix != null)
+                    ? 'Copie o código Pix e pague no aplicativo do seu banco. O pagamento é confirmado na hora.'
+                    : "Faça o pagamento de R$ {$valor} para a chave pix abaixo e envie o comprovante para o nosso whatsapp.",
                     'noAvancar' => true,
                 ];
             }
