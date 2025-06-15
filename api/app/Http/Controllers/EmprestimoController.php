@@ -959,6 +959,8 @@ class EmprestimoController extends Controller
 
                 $emprestimo->banco->saldo -= $emprestimo->valor;
                 $emprestimo->banco->save();
+
+                $this->envioMensagem($emprestimo->parcelas[0]);
             }
 
             $this->custom_log->create([
@@ -980,12 +982,86 @@ class EmprestimoController extends Controller
         }
     }
 
+    public function envioMensagem($parcela)
+    {
+        if (isset($parcela->emprestimo->company->whatsapp)) {
+            try {
+                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+
+                if ($response->successful()) {
+                    $r = $response->json();
+                    if ($r['loggedIn']) {
+
+                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+
+                        $saudacao = self::obterSaudacao();
+
+                        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
+
+                        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                        $fraseInicial = "
+
+Relatório de Parcelas Pendentes:
+
+Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
+
+https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
+
+📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
+";
+
+
+                        $frase = $saudacaoTexto . $fraseInicial;
+
+                        $data = [
+                            "numero" => "55" . $telefone,
+                            "mensagem" => $frase
+                        ];
+
+                        $response = Http::asJson()->post($baseUrl, $data);
+                        sleep(2);
+                    }
+                }
+            } catch (\Throwable $th) {
+                dd($th);
+            }
+        }
+    }
+
+    function encontrarPrimeiraParcelaPendente($parcelas)
+    {
+        foreach ($parcelas as $parcela) {
+            if ($parcela->dt_baixa === '' || $parcela->dt_baixa === null) {
+                return $parcela;
+            }
+        }
+
+        return null;
+    }
+
     function mascararString($string)
     {
         $primeirosTres = substr($string, 0, 3);
         $ultimosDois = substr($string, -2);
         $mascarado = '***' . substr($string, 3, -2) . '**';
         return $mascarado;
+    }
+
+    function obterSaudacao()
+    {
+        $hora = date('H');
+        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌤️ Tenha um excelente dia'];
+        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌤️ Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌤️ Espero que sua noite esteja ótima'];
+
+        if ($hora < 12) {
+            return $saudacoesManha[array_rand($saudacoesManha)];
+        } elseif ($hora < 18) {
+            return $saudacoesTarde[array_rand($saudacoesTarde)];
+        } else {
+            return $saudacoesNoite[array_rand($saudacoesNoite)];
+        }
     }
 
     public function pagamentoTransferenciaTituloAPagarConsultar(Request $request, $id)
