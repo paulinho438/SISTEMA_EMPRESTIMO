@@ -171,6 +171,54 @@ class BancoController extends Controller
                 //EMPRESTIMOS MENSAL
                 if (count($parcela->emprestimo->parcelas) == 1) {
 
+                    $valor = $parcela->valor_recebido;
+
+                    if ($parcela->emprestimo->banco->wallet == 0) {
+
+                        $lucro = $parcela->emprestimo->lucro;
+
+                        $novaParcela = 0;
+
+                        if ($valor > $lucro) {
+                            $novaParcela = $parcela->emprestimo->valor - ($valor - $lucro);
+                            $parcela->saldo = $novaParcela;
+                            $parcela->valor_recebido_pix = 0;
+                            $parcela->atrasadas = 0;
+                            $parcela->save();
+
+                            $parcela->emprestimo->lucro = ($parcela->emprestimo->juros / 100) * $novaParcela;
+                            $parcela->emprestimo->save();
+
+                            $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                            $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+                            $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+                            $diferencaEmMeses++;
+                            $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                            $parcela->save();
+                        } else if ($valor == $lucro) {
+                            $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                            $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+                            $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+                            $diferencaEmMeses++;
+                            $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                            $parcela->atrasadas = 0;
+                            $parcela->save();
+                        } else {
+                            continue;
+                        }
+
+                        // MOVIMENTACAO FINANCEIRA
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+                        continue;
+                    }
+
                     if (!$parcela->emprestimo->pagamentominimo || !$parcela->emprestimo->pagamentosaldopendente) {
                         Log::debug("Processando emprestimo mensal - parcela ID {$parcela->id} NA0 FOI PROCESSADA, PAGAMENTO MINIMO OU SALDO PENDENTE NÃO ENCONTRADO");
                         continue;
@@ -388,7 +436,7 @@ class BancoController extends Controller
                             $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                             $parcela->atrasadas = 0;
                             $parcela->save();
-                        }else{
+                        } else {
                             continue;
                         }
 
