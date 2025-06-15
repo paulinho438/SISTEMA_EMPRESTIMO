@@ -696,7 +696,7 @@ export default {
                 </div>
                 <div class="mt-3">
                     <GoogleMap ref="mapRef" :api-key="mapKey.trim()" :zoom="zoom" :center="center" @click="onMapClick" @load="onMapLoad" style="width: 100%; height: 500px">
-                        <Marker :options="markerOptions"></Marker>
+                        <!-- <Marker :options="markerOptions"></Marker> -->
                         <Marker v-for="(marker, index) in markers" :key="index" :options="marker.options" :title="marker.title"></Marker>
 
                         <Marker v-if="flightPath.path.length == 0" v-for="(marker, index) in consultoresMarkers" :key="index" :options="marker.options" :title="marker.title"></Marker>
