@@ -356,6 +356,64 @@ class BancoController extends Controller
 
                 if (count($parcela->emprestimo->parcelas) == 1) {
                     $valor = $parcela->valor_recebido_pix;
+
+                    if ($parcela->emprestimo->banco->wallet == 0) {
+                        $valor1 = $parcela->emprestimo->lucro;
+                        $valor2 = $parcela->saldo - $valor1;
+
+                        $porcentagem = ($valor1 / $valor2);
+
+                        $parcela->saldo -= $valor;
+                        $parcela->valor_recebido_pix = 0;
+                        $parcela->save();
+
+                        if ($parcela->saldo != 0) {
+
+
+                            $novoAntigo = $parcela->saldo;
+                            $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
+
+                            $parcela->atrasadas = 0;
+                            $parcela->saldo = $novoValor;
+
+                            $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
+                            $dataFinalCarbon = Carbon::parse($parcela->venc_real);
+
+                            $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
+
+                            $diferencaEmMeses++;
+
+                            $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                            $parcela->save();
+
+                            // MOVIMENTACAO FINANCEIRA
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
+                            $movimentacaoFinanceira['tipomov'] = 'E';
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $valor;
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                        } else {
+
+                            // MOVIMENTACAO FINANCEIRA
+                            $movimentacaoFinanceira = [];
+                            $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                            $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                            $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
+                            $movimentacaoFinanceira['tipomov'] = 'E';
+                            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                            $movimentacaoFinanceira['valor'] = $valor;
+                            Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                            $parcela->dt_baixa = date('Y-m-d');
+                            $parcela->save();
+                        }
+                        continue;
+                    }
+
                     $valor1 = $parcela->emprestimo->pagamentominimo->valor;
                     $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
 
