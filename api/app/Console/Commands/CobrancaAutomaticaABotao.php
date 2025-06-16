@@ -65,6 +65,7 @@ class CobrancaAutomaticaABotao extends Command
                 ->whereHas('emprestimo', function ($query) use ($pressed) {
                     $query->where('company_id', $pressed->company_id);
                 })
+                ->orderByDesc('id')
                 ->get()->unique('emprestimo_id');
 
 
