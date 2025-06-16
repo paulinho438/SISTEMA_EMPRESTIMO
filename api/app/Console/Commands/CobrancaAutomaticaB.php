@@ -84,9 +84,14 @@ class CobrancaAutomaticaB extends Command
             $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
 
-                return $emprestimo &&
+                $deveCobrarHoje = $emprestimo &&
                     !is_null($emprestimo->deve_cobrar_hoje) &&
                     Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+
+                $vencimentoHoje = $parcela->venc_real &&
+                    Carbon::parse($parcela->venc_real)->isSameDay($todayHoje);
+
+                return $deveCobrarHoje || $vencimentoHoje;
             });
         }
 
