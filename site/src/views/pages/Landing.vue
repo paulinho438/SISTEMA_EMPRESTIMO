@@ -140,7 +140,7 @@ export default {
 
         <main>
             <!-- Parcela do Dia -->
-            <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix" class="payment-section">
+            <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
                 <h2>Valor Pendente do Dia {{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
@@ -149,7 +149,7 @@ export default {
                 <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
-            <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix" class="payment-section">
+            <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
                 <h2>Valor Pendente do Dia {{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
@@ -179,7 +179,7 @@ export default {
             <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1" class="payment-section">
                 <h2>Pagamento Mínimo - Juros</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.lucro.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })  }}</button>
+                <button class="btn-primary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.lucro?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })  }}</button>
             </section>
 
             <section v-if="this.products?.data?.emprestimo?.pagamentominimo" class="payment-section">
