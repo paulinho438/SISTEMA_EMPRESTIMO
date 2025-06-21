@@ -53,8 +53,7 @@ class NotasController extends Controller
 
         $validator = Validator::make($request->all(), [
             'conteudo' => 'required',
-            'emprestimo_id' => 'required',
-            'client_id' => 'required'
+            'emprestimo_id' => 'required'
         ]);
 
         $dados = $request->all();

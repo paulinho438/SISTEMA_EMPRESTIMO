@@ -1,9 +1,8 @@
-import {StyleSheet, View, Image, Text, Linking, Alert, ScrollView, Modal, TextInput, FlatList} from 'react-native';
+import {StyleSheet, View, Text, Alert, ScrollView, Modal, TextInput, FlatList} from 'react-native';
 import React, {useState} from 'react';
 import ActionSheet from 'react-native-actions-sheet';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import images from '../../assets/images/index';
 import {moderateScale} from '../../common/constant';
 import {styles} from '../../themes/index';
 import CText from '../common/CText';
@@ -21,29 +20,46 @@ export default function InfoNotas(props) {
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
 
-  const [notasLocais, setNotasLocais] = useState([]);
   const [novaNota, setNovaNota] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
 
-  const adicionarNota = () => {
+  const adicionarNota = async () => {
     if (!novaNota.trim()) {
       Alert.alert('Nota vazia', 'Digite alguma coisa antes de salvar.');
       return;
     }
-    const nova = {id: Date.now().toString(), texto: novaNota};
-    setNotasLocais([...notasLocais, nova]);
-    setNovaNota('');
-    setModalVisible(false);
+
+    try {
+      await api.gravarNota({
+        emprestimo_id: clientes?.emprestimo_id,
+        conteudo: novaNota.trim(),
+      });
+
+      Alert.alert('Nota salva com sucesso!');
+      setNovaNota('');
+      setModalVisible(false);
+      getNotas();
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Erro', 'Não foi possível salvar a nota.');
+    }
   };
 
   const excluirNota = (id) => {
-    Alert.alert('Excluir nota', 'Tem certeza que deseja excluir esta nota?', [
+    Alert.alert('Excluir nota', 'Deseja excluir esta nota?', [
       {text: 'Cancelar', style: 'cancel'},
       {
         text: 'Excluir',
         style: 'destructive',
-        onPress: () => {
-          setNotasLocais(notasLocais.filter((n) => n.id !== id));
+        onPress: async () => {
+          try {
+            await api.excluitNota(id);
+            Alert.alert('Nota excluída com sucesso!');
+            getNotas();
+          } catch (error) {
+            console.error(error);
+            Alert.alert('Erro', 'Não foi possível excluir a nota.');
+          }
         },
       },
     ]);
@@ -51,7 +67,7 @@ export default function InfoNotas(props) {
 
   const renderNota = ({item}) => (
     <View style={localStyles.notaContainer}>
-      <CText color={colors.black} type="M14">{item.texto}</CText>
+      <CText color={colors.black} type="M14">{item.conteudo}</CText>
       <Community
         name="trash-can-outline"
         size={24}
@@ -79,10 +95,10 @@ export default function InfoNotas(props) {
             </View>
 
             <FlatList
-              data={notasLocais}
-              keyExtractor={(item) => item.id}
+              data={notas}
+              keyExtractor={(item) => item.id.toString()}
               renderItem={renderNota}
-              ListEmptyComponent={<CText color={colors.gray}>Nenhuma nota adicionada.</CText>}
+              ListEmptyComponent={<CText color={colors.gray}>Nenhuma nota cadastrada.</CText>}
               style={{marginTop: moderateScale(20)}}
             />
 

@@ -286,7 +286,7 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
             <CButton
               onPress={moveToInfoAbrirNotasModel}
               ChildLoginBtn={localStyles.ChildSkipBtn}
-              text={'Notas\n3 cadastradas'}
+              text={`Notas\n${notas?.length ?? 0} cadastradas`}
               containerStyle={localStyles.buttonContainer}
               RightIcon={() => (
                 <Community

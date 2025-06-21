@@ -180,9 +180,9 @@ export default {
         return json;
     },
 
-    gravarNota: async (id, dados) => {
+    gravarNota: async (dados) => {
         let token = await getAuthToken();
-        await request('post', `/notas/${id}`, dados, token);
+        await request('post', `/notas`, dados, token);
         return true;
     },
 
