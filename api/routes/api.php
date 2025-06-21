@@ -26,7 +26,8 @@ use App\Http\Controllers\{
     LogController,
     PlanosController,
     LocacaoController,
-    AuthClienteController
+    AuthClienteController,
+    WebhookTesteController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
