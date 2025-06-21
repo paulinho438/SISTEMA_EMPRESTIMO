@@ -27,7 +27,8 @@ use App\Http\Controllers\{
     PlanosController,
     LocacaoController,
     AuthClienteController,
-    WebhookTesteController
+    WebhookTesteController,
+    NotasController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -146,6 +147,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/saqueconsulta/{id}', [BancoController::class, 'saqueConsulta']);
     Route::post('/efetuarsaque/{id}', [BancoController::class, 'efetuarSaque']);
     Route::post('/fechamentocaixa/{id}', [BancoController::class, 'fechamentoCaixa']);
+
+    Route::post('/notas', [NotasController::class, 'insert']);
+    Route::get('/notas/{id}', [NotasController::class, 'all']);
+    Route::get('/notas/{id}/delete', [NotasController::class, 'delete']);
 
 
     Route::get('/clientesdisponiveis', [ClientController::class, 'clientesDisponiveis']);

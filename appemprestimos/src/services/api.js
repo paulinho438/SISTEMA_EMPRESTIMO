@@ -180,6 +180,24 @@ export default {
         return json;
     },
 
+    gravarNota: async (id, dados) => {
+        let token = await getAuthToken();
+        await request('post', `/notas/${id}`, dados, token);
+        return true;
+    },
+
+    excluitNota: async (id) => {
+        let token = await getAuthToken();
+        await request('get', `/notas/${id}/delete`, {}, token);
+        return true;
+    },
+
+    buscarTodasNotas: async (id) => {
+        let token = await getAuthToken();
+        await request('get', `/notas/${id}`, {}, token);
+        return true;
+    },
+
     cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao, pix) => {
         let token = await getAuthToken();
         console.log('cadasro', {
