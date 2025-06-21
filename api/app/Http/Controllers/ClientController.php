@@ -447,6 +447,38 @@ class ClientController extends Controller
                 Address::create($item);
             }
 
+            $senha4Digit = rand(1000, 9999);
+
+            $cpf = $newGroup->cpf;
+            $cpf = preg_replace('/\D/', '', $cpf);
+
+            if ($newGroup->usuario) {
+                $cpf = $newGroup->usuario;
+            } else {
+                $exists = Client::where('usuario', $cpf)->exists();
+                if ($exists) {
+                    $nome = $newGroup->nome_completo;
+                    // Quebra em partes e transforma em minúsculas
+                    $partes = explode(' ', strtolower(trim($nome)));
+                    // Conta as partes
+                    $primeiro = $partes[0];
+                    $ultimo = count($partes) > 1 ? end($partes) : null;
+                    // Monta o nome de usuário
+                    $cpf = $ultimo ? "{$primeiro}.{$ultimo}" : $primeiro;
+                }
+            }
+
+            $newGroup->usuario = $cpf;
+            $newGroup->password = password_hash($senha4Digit, PASSWORD_DEFAULT);
+            $newGroup->save();
+
+            DB::commit();
+
+            $array['usuario']['login'] = $cpf;
+            $array['usuario']['senha'] = $senha4Digit;
+
+            self::enviarMensagemUsuarioApp($newGroup, 'Olá ' . $newGroup->nome_completo . ', seu acesso ao aplicativo foi criado com sucesso! Seu usuário é: ' . $cpf . ' e sua senha é: ' . $senha4Digit . '.');
+
             return $array;
         } else {
             return response()->json([
