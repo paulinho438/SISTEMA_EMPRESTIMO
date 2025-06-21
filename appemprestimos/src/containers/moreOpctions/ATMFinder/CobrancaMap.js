@@ -43,6 +43,7 @@ export default function ATMDetails({navigation, route}) {
     useCallback(() => {
       getInfo();
       getLocalizacaoCliente();
+      getTodasNotas();
     }, []),
   );
 
@@ -63,6 +64,19 @@ export default function ATMDetails({navigation, route}) {
     try {
       const reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
       setParcelas(reqClientes.data);
+    } catch (error) {
+      console.error('Erro ao obter informações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTodasNotas = async () => {
+    setLoading(true);
+    try {
+      console.log('teste',  clientes);
+      const reqClientes = await api.buscarTodasNotas(clientes.emprestimo_id);
+      setNotas(reqClientes);
     } catch (error) {
       console.error('Erro ao obter informações:', error);
     } finally {
