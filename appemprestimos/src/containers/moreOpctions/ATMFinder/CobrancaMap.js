@@ -23,11 +23,13 @@ import InfoParcelas from '../../../components/modals/InfoParcelas';
 import api from '../../../services/api';
 import FullScreenLoader from '../../../components/FullScreenLoader';
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
+import {TextAlign} from '@shopify/react-native-skia';
 
 export default function ATMDetails({navigation, route}) {
   const {clientes} = route.params;
   const [empty, nonEmpty] = useState('');
   const [parcelas, setParcelas] = useState([]);
+  const [localizacaoCliente, setLocalizacaoCliente] = useState(null);
   const [loading, setLoading] = useState(false);
   const Search = useRef(null);
   const Info = useRef(null);
@@ -35,7 +37,8 @@ export default function ATMDetails({navigation, route}) {
   useFocusEffect(
     useCallback(() => {
       getInfo();
-    }, [])
+      getLocalizacaoCliente();
+    }, []),
   );
 
   const getInfo = async () => {
@@ -43,6 +46,18 @@ export default function ATMDetails({navigation, route}) {
     try {
       const reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
       setParcelas(reqClientes.data);
+    } catch (error) {
+      console.error('Erro ao obter informações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLocalizacaoCliente = async () => {
+    setLoading(true);
+    try {
+      const reqClientes = await api.getLocalizacaoClienteApp(clientes.id);
+      setLocalizacaoCliente(reqClientes.data);
     } catch (error) {
       console.error('Erro ao obter informações:', error);
     } finally {
@@ -75,19 +90,30 @@ export default function ATMDetails({navigation, route}) {
     let telefone = clientes.telefone_celular_1.replace(/\D/g, '');
     if (!telefone.startsWith('55')) telefone = `55${telefone}`;
     if (telefone.length < 12) {
-      Alert.alert('Número de telefone inválido', 'Verifique o formato do número.');
+      Alert.alert(
+        'Número de telefone inválido',
+        'Verifique o formato do número.',
+      );
       return;
     }
-    const url = `whatsapp://send?phone=${telefone}&text=${encodeURIComponent(montarStringParcelas(parcelas))}`;
+    const url = `whatsapp://send?phone=${telefone}&text=${encodeURIComponent(
+      montarStringParcelas(parcelas),
+    )}`;
     Linking.openURL(url).catch(() => Alert.alert('Erro ao abrir WhatsApp'));
   };
+  
 
   const openGoogleMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${clientes.latitude},${clientes.longitude}`;
     Linking.openURL(url).catch(() => Alert.alert('Erro ao abrir Google Maps'));
   };
 
-  const montarStringParcelas = (parcelas) => {
+  const openClienteGoogleMaps = () => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${clientes.latitude},${clientes.longitude}`;
+    Linking.openURL(url).catch(() => Alert.alert('Erro ao abrir Google Maps'));
+  };
+
+  const montarStringParcelas = parcelas => {
     const fraseInicial = `
 Relatório de Parcelas:
   
@@ -104,7 +130,8 @@ Segue abaixo as parcelas pendentes.
 
     const parcelasString = parcelas
       .filter(item => item.atrasadas > 0 && !item.dt_baixa)
-      .map(item => `
+      .map(
+        item => `
 Data: ${item.venc}
 Parcela: ${item.parcela}
 Atrasos: ${item.atrasadas}
@@ -114,7 +141,9 @@ Pago: R$ ${item.total_pago_parcela}
 PIX: ${item.chave_pix || 'Não Contém'}
 Status: Pendente
 RESTANTE: R$ ${item.saldo.toFixed(2)}
-`).join('\n\n');
+`,
+      )
+      .join('\n\n');
 
     return fraseInicial + parcelasString;
   };
@@ -125,10 +154,19 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
       <SafeAreaView style={localStyles.main}>
         <View style={styles.ph20}>
           <View style={localStyles.parentComponent}>
-            <TouchableOpacity style={localStyles.parentMaterial} onPress={backToMore}>
-              <Material name={'arrow-back-ios'} size={24} color={colors.white} style={localStyles.vectorSty} />
+            <TouchableOpacity
+              style={localStyles.parentMaterial}
+              onPress={backToMore}>
+              <Material
+                name={'arrow-back-ios'}
+                size={24}
+                color={colors.white}
+                style={localStyles.vectorSty}
+              />
             </TouchableOpacity>
-            <CText type={'B18'} color={colors.white}>Cobrança</CText>
+            <CText type={'B18'} color={colors.white}>
+              Cobrança
+            </CText>
           </View>
         </View>
         <View>
@@ -137,18 +175,74 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
             <View style={localStyles.outerContainer}>
               <Image style={localStyles.iconSty} source={images.AGE} />
               <View style={{gap: moderateScale(4)}}>
-                <CText color={colors.black} type={'B16'}>{clientes.nome_cliente}</CText>
-                <CText color={colors.black} type={'M12'}>{clientes.endereco}</CText>
+                <CText color={colors.black} type={'B16'}>
+                  {clientes.nome_cliente}
+                </CText>
+                <CText color={colors.black} type={'M12'}>
+                  {clientes.endereco}
+                </CText>
               </View>
             </View>
-            <CButton onPress={openGoogleMaps} text={'Abrir no waze'} containerStyle={localStyles.buttonContainer} RightIcon={() => <Community size={24} name={'waze'} color={colors.white} />} />
-            <CButton onPress={openWhatsApp} text={'Ir para o Whatsapp'} containerStyle={localStyles.buttonContainer} RightIcon={() => <Community size={24} name={'whatsapp'} color={colors.white} />} />
-            <CButton onPress={cobrarAmanha} text={'Cobrar Amanha'} containerStyle={localStyles.buttonContainer} RightIcon={() => <Community size={24} name={'arrow-u-right-top'} color={colors.white} />} />
-            <CButton onPress={moveToInfoModel} text={'Informações das Parcelas'} containerStyle={localStyles.buttonContainer} RightIcon={() => <Community size={24} name={'account-cash-outline'} color={colors.white} />} />
+            <CButton
+              onPress={openGoogleMaps}
+              text={'Abrir no waze'}
+              containerStyle={localStyles.buttonContainer}
+              RightIcon={() => (
+                <Community size={24} name={'waze'} color={colors.white} />
+              )}
+            />
+            <CButton
+              onPress={openClienteGoogleMaps}
+              ChildLoginBtn={localStyles.ChildSkipBtn}
+              text={
+                'Localização do Cliente\nÚltima atualização: 21/06/2025 11:17'
+              }
+              containerStyle={localStyles.buttonContainerCliente}
+              RightIcon={() => (
+                <Community size={24} name={'waze'} color={colors.white} />
+              )}
+            />
+            <CButton
+              onPress={openWhatsApp}
+              text={'Ir para o Whatsapp'}
+              containerStyle={localStyles.buttonContainer}
+              RightIcon={() => (
+                <Community size={24} name={'whatsapp'} color={colors.white} />
+              )}
+            />
+            <CButton
+              onPress={cobrarAmanha}
+              text={'Cobrar Amanha'}
+              containerStyle={localStyles.buttonContainer}
+              RightIcon={() => (
+                <Community
+                  size={24}
+                  name={'arrow-u-right-top'}
+                  color={colors.white}
+                />
+              )}
+            />
+            <CButton
+              onPress={moveToInfoModel}
+              text={'Informações das Parcelas'}
+              containerStyle={localStyles.buttonContainer}
+              RightIcon={() => (
+                <Community
+                  size={24}
+                  name={'account-cash-outline'}
+                  color={colors.white}
+                />
+              )}
+            />
           </View>
         </View>
         <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
-        <InfoParcelas sheetRef={Info} parcelas={parcelas} clientes={clientes} getInfo={getInfo} />
+        <InfoParcelas
+          sheetRef={Info}
+          parcelas={parcelas}
+          clientes={clientes}
+          getInfo={getInfo}
+        />
       </SafeAreaView>
     </KeyBoardAvoidWrapper>
   );
@@ -207,5 +301,16 @@ const localStyles = StyleSheet.create({
     ...styles.ph20,
     ...styles.mt0,
     width: moderateScale(295),
+  },
+  buttonContainerCliente: {
+    ...styles.flexRow,
+    ...styles.justifyBetween,
+    ...styles.ph20,
+    ...styles.mt0,
+    width: moderateScale(295),
+  },
+  ChildSkipBtn: {
+    textAlign: 'start',
+    fontSize: moderateScale(11),
   },
 });

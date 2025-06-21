@@ -94,6 +94,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/parcela/{id}/infoemprestimofront', [EmprestimoController::class, 'infoEmprestimoFront']);
+Route::post('/parcela/{id}/infoClienteLocalizacao', [EmprestimoController::class, 'infoClienteLocalizacao']);
 Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class, 'personalizarPagamento']);
 Route::post('/parcela/{id}/gerarpixpagamentoparcela', [EmprestimoController::class, 'gerarPixPagamentoParcela']);
 Route::post('/parcela/{id}/gerarpixpagamentoquitacao', [EmprestimoController::class, 'gerarPixPagamentoQuitacao']);

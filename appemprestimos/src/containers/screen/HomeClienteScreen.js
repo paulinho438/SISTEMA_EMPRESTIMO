@@ -14,16 +14,13 @@ import {Card, Button, List, Avatar} from 'react-native-paper';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
-import {getUser} from '../../utils/asyncStorage';
 import Geolocation from 'react-native-geolocation-service';
 import BackgroundGeolocation from 'react-native-background-geolocation';
+
 import {
-  authToken,
-  authCompany,
-  user,
-  permissions,
-  removeAuthToken,
-  removeTipoCliente,
+  getAuthCompany,
+  getUser,
+  getPermissions,
 } from '../../utils/asyncStorage';
 
 const HomeClienteScreen = ({navigation}) => {
@@ -94,6 +91,15 @@ const HomeClienteScreen = ({navigation}) => {
   useEffect(async () => {
     const userReq = await getUser();
     let authCompany = await getAuthCompany();
+
+    console.log(
+      'Iniciando BackgroundGeolocation com usuário:',
+      userReq
+    );
+
+    console.log(
+      'Iniciando BackgroundGeolocation com empresa:',
+      authCompany);
     // 1.  Subscribe to events.
     const onLocation = BackgroundGeolocation.onLocation(location => {
       informarLocalizacao(location);

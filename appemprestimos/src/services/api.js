@@ -223,6 +223,11 @@ export default {
         let json = await request('post', `/parcela/${id}/infoemprestimo`, {}, token);
         return json;
     },
+    getLocalizacaoClienteApp: async (id, dt) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/parcela/${id}/infoClienteLocalizacao`, {}, token);
+        return json;
+    },
     getAllClientes: async () => {
         let token = await getAuthToken();
         let json = await request('get', '/cliente', {}, token);

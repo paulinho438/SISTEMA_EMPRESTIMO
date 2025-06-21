@@ -28,6 +28,9 @@ use App\Traits\VerificarPermissao;
 use App\Models\PagamentoPersonalizado;
 use App\Models\Bank;
 use App\Models\Deposito;
+use App\Models\ClientLocation;
+
+
 
 use App\Services\BcodexService;
 
@@ -2044,6 +2047,29 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
 
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
+    }
+
+    public function infoClienteLocalizacao(Request $request, $id)
+    {
+
+        $array = ['error' => '', 'data' => []];
+
+        $user = auth()->user();
+
+
+        $parcela = Parcela::find($id);
+
+
+        $localizacao = ClientLocation::where('client_id', $parcela->emprestimo->client->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+
+        if ($localizacao) {
+            return $localizacao;
+        }
+
+        return null;
     }
 
     public function gerarPixPagamentoSaldoPendente(Request $request, $id)
