@@ -34,6 +34,7 @@ class EmprestimoLandingPageResource extends JsonResource
             "valor" => $this->valor,
             "lucro" => $this->lucro,
             "juros" => $this->juros,
+            "liberar_minimo" => $this->liberar_minimo,
             "saldoareceber" => $saldoareceber,
             "parcelas" => ParcelaResource::collection($parcelas->sortBy('parcela')),
             "quitacao" => new QuitacaoResource($this->quitacao),

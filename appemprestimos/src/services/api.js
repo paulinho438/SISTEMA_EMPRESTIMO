@@ -194,8 +194,8 @@ export default {
 
     buscarTodasNotas: async (id) => {
         let token = await getAuthToken();
-        await request('get', `/notas/${id}`, {}, token);
-        return true;
+        let json =  await request('get', `/notas/${id}`, {}, token);
+        return json;
     },
 
     cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao, pix) => {

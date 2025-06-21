@@ -59,22 +59,9 @@ export default function ATMDetails({navigation, route}) {
     }
   };
 
-  const getNotas = async () => {
-    setLoading(true);
-    try {
-      const reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
-      setParcelas(reqClientes.data);
-    } catch (error) {
-      console.error('Erro ao obter informações:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getTodasNotas = async () => {
     setLoading(true);
     try {
-      console.log('teste',  clientes);
       const reqClientes = await api.buscarTodasNotas(clientes.emprestimo_id);
       setNotas(reqClientes);
     } catch (error) {
@@ -311,7 +298,7 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
           parcelas={parcelas}
           clientes={clientes}
           notas={notas}
-          getInfo={getNotas}
+          getNotas={getTodasNotas}
         />
       </SafeAreaView>
     </KeyBoardAvoidWrapper>

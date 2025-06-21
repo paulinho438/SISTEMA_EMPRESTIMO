@@ -1,4 +1,13 @@
-import {StyleSheet, View, Text, Alert, ScrollView, Modal, TextInput, FlatList} from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Alert,
+  ScrollView,
+  Modal,
+  TextInput,
+  FlatList,
+} from 'react-native';
 import React, {useState} from 'react';
 import ActionSheet from 'react-native-actions-sheet';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -14,8 +23,13 @@ import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
 import Saldo from './Saldo';
 
-export default function InfoNotas(props) {
-  let {sheetRef, parcelas, clientes, notas, getNotas} = props;
+export default function InfoNotas({
+  sheetRef,
+  parcelas,
+  clientes,
+  notas,
+  getNotas = () => {},
+}) {
   const navigation = useNavigation();
   const [visible, setVisible] = useState(false);
   const [cliente, setCliente] = useState({});
@@ -25,7 +39,7 @@ export default function InfoNotas(props) {
 
   const adicionarNota = async () => {
     if (!novaNota.trim()) {
-      Alert.alert('Nota vazia', 'Digite alguma coisa antes de salvar.');
+      Alert.alert('Nota vazia', 'Digite algo.');
       return;
     }
 
@@ -45,7 +59,7 @@ export default function InfoNotas(props) {
     }
   };
 
-  const excluirNota = (id) => {
+  const excluirNota = id => {
     Alert.alert('Excluir nota', 'Deseja excluir esta nota?', [
       {text: 'Cancelar', style: 'cancel'},
       {
@@ -66,39 +80,63 @@ export default function InfoNotas(props) {
   };
 
   const renderNota = ({item}) => (
-    <View style={localStyles.notaContainer}>
-      <CText color={colors.black} type="M14">{item.conteudo}</CText>
-      <Community
-        name="trash-can-outline"
-        size={24}
-        color={colors.red}
-        onPress={() => excluirNota(item.id)}
-      />
+    <View style={localStyles.notaContainerPrimary}>
+      <View style={localStyles.notaContainer}>
+        <CText color={colors.black} type="M14">
+          {item.conteudo}
+        </CText>
+        <Community
+          name="trash-can-outline"
+          size={24}
+          color={colors.red}
+          onPress={() => excluirNota(item.id)}
+        />
+      </View>
+      <View style={localStyles.notaContainer}>
+        <CText color={colors.black} type="M14">
+          {item.created_at
+            ? new Date(item.created_at).toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : ''}
+        </CText>
+      </View>
     </View>
   );
 
   return (
     <View>
       <ActionSheet containerStyle={localStyles.actionSheet} ref={sheetRef}>
-        <TouchableOpacity style={localStyles.parentDepEnd} onPress={() => sheetRef.current?.hide()}>
+        <TouchableOpacity
+          style={localStyles.parentDepEnd}
+          onPress={() => sheetRef.current?.hide()}>
           <Community size={40} name={'close'} color={colors.black} />
         </TouchableOpacity>
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={localStyles.mainContainer}>
-
             <View style={localStyles.outerComponent}>
               <View style={{gap: moderateScale(7)}}>
-                <CText color={colors.black} type={'B24'}>Notas do Cliente</CText>
-                <CText color={colors.black} type={'M16'}>Adicione ou exclua observações manuais</CText>
+                <CText color={colors.black} type={'B24'}>
+                  Notas do Cliente
+                </CText>
+                <CText color={colors.black} type={'M16'}>
+                  Adicione ou exclua observações manuais
+                </CText>
               </View>
             </View>
 
             <FlatList
               data={notas}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={item => item.id.toString()}
               renderItem={renderNota}
-              ListEmptyComponent={<CText color={colors.gray}>Nenhuma nota cadastrada.</CText>}
+              ListEmptyComponent={
+                <CText color={colors.gray}>Nenhuma nota cadastrada.</CText>
+              }
               style={{marginTop: moderateScale(20)}}
             />
 
@@ -118,7 +156,9 @@ export default function InfoNotas(props) {
         onRequestClose={() => setModalVisible(false)}>
         <View style={localStyles.modalOverlay}>
           <View style={localStyles.modalContainer}>
-            <CText type="B16" color={colors.black}>Digite sua nota:</CText>
+            <CText type="B16" color={colors.black}>
+              Digite sua nota:
+            </CText>
             <TextInput
               style={localStyles.input}
               placeholder="Ex: Cobrar cliente amanhã"
@@ -130,7 +170,10 @@ export default function InfoNotas(props) {
             <CButton
               text="Cancelar"
               onPress={() => setModalVisible(false)}
-              containerStyle={{backgroundColor: colors.red, marginTop: moderateScale(10)}}
+              containerStyle={{
+                backgroundColor: colors.red,
+                marginTop: moderateScale(10),
+              }}
             />
           </View>
         </View>
@@ -152,8 +195,13 @@ const localStyles = StyleSheet.create({
     ...styles.alignCenter,
     ...styles.justifyBetween,
   },
+  notaContainerPrimary: {
+    backgroundColor: colors.GreyScale,
+    marginBottom: moderateScale(10),
+    borderRadius: 8,
+  },
   notaContainer: {
-    backgroundColor: colors.bgGray,
+    backgroundColor: colors.GreyScale,
     padding: moderateScale(12),
     borderRadius: 8,
     marginBottom: moderateScale(10),
@@ -186,6 +234,6 @@ const localStyles = StyleSheet.create({
     ...styles.alignEnd,
     ...styles.mr25,
     ...styles.mt30,
-    ...styles.mb20
+    ...styles.mb20,
   },
 });
