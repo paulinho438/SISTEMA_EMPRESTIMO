@@ -2069,7 +2069,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             return $localizacao;
         }
 
-        return null;
+        return response()->json([
+            "message" => "Usuário não tem localização registrada.",
+            "error" => ''
+        ], Response::HTTP_FORBIDDEN);
     }
 
     public function gerarPixPagamentoSaldoPendente(Request $request, $id)

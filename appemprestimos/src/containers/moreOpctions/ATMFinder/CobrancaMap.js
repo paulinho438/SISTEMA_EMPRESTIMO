@@ -57,9 +57,10 @@ export default function ATMDetails({navigation, route}) {
     setLoading(true);
     try {
       const reqClientes = await api.getLocalizacaoClienteApp(clientes.id);
-      setLocalizacaoCliente(reqClientes.data);
+      console.log('Localização do cliente:', reqClientes);
+      setLocalizacaoCliente(reqClientes);
     } catch (error) {
-      console.error('Erro ao obter informações:', error);
+      console.error('Erro ao obter informaçõessss:', error);
     } finally {
       setLoading(false);
     }
