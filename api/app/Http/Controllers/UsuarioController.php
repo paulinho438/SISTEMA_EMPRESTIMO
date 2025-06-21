@@ -221,7 +221,7 @@ class UsuarioController extends Controller
 
         $dados = $request->all();
 
-        if (isset($dados['tipoUsuario']) && $dados['tipoUsuario'] == 'CLIENTE') {
+        if (isset($dados['tipoUsuario']) && $dados['tipoUsuario'] == 'cliente') {
             $userLocation = ClientLocation::create([
                 'client_id' => $dados['user_id'],
                 'latitude' => $dados['location']['coords']['latitude'],

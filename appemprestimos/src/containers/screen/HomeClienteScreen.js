@@ -129,7 +129,7 @@ const HomeClienteScreen = ({navigation}) => {
       batchSync: false, // <-- [Default: false] Set true to sync locations to server in a single HTTP request.
       autoSync: true, // <-- [Default: true] Set true to sync each location to server as it arrives.
       params: {
-        user_id: userReq.id,
+        user_id: userReq?.id,
         company_id: authCompany?.id,
         tipoUsuario: 'cliente',
       },

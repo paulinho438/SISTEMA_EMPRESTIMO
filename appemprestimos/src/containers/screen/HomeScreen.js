@@ -69,7 +69,10 @@ export default function HomeScreen({navigation}) {
     return unsubscribe;
   }, [navigation, route.params?.onNavigateBack]);
 
-  
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
 
   useEffect( async () => {
     console.log('entrou');
