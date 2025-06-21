@@ -7,6 +7,7 @@ import {
   Image,
   Linking,
   Alert,
+  Dimensions
 } from 'react-native';
 import Material from 'react-native-vector-icons/MaterialIcons';
 import Community from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -20,19 +21,23 @@ import CButton from '../../../components/common/CButton';
 import KeyBoardAvoidWrapper from '../../../components/common/KeyBoardAvoidWrapper';
 import Location from '../../../components/modals/Location';
 import InfoParcelas from '../../../components/modals/InfoParcelas';
+import InfoNotas from '../../../components/modals/InfoNotas';
 import api from '../../../services/api';
 import FullScreenLoader from '../../../components/FullScreenLoader';
 import {StackNav, TabNav} from '../../../navigation/navigationKeys';
 import {TextAlign} from '@shopify/react-native-skia';
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 export default function ATMDetails({navigation, route}) {
   const {clientes} = route.params;
   const [empty, nonEmpty] = useState('');
   const [parcelas, setParcelas] = useState([]);
   const [localizacaoCliente, setLocalizacaoCliente] = useState(null);
+  const [notas, setNotas] = useState(null);
   const [loading, setLoading] = useState(false);
   const Search = useRef(null);
   const Info = useRef(null);
+  const InfoAbrirNotas = useRef(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,11 +58,24 @@ export default function ATMDetails({navigation, route}) {
     }
   };
 
+  const getNotas = async () => {
+    setLoading(true);
+    try {
+      const reqClientes = await api.getParcelasInfoEmprestimo(clientes.id);
+      setParcelas(reqClientes.data);
+    } catch (error) {
+      console.error('Erro ao obter informações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getLocalizacaoCliente = async () => {
     setLoading(true);
     try {
       const reqClientes = await api.getLocalizacaoClienteApp(clientes.id);
-      console.log('Localização do cliente:', reqClientes);
+      if (reqClientes?.error)
+        console.log('Localização do cliente:', reqClientes);
       setLocalizacaoCliente(reqClientes);
     } catch (error) {
       console.error('Erro ao obter informaçõessss:', error);
@@ -66,7 +84,24 @@ export default function ATMDetails({navigation, route}) {
     }
   };
 
+  function gerarFraseLocalizacao(dataISO) {
+    if (!dataISO)
+      return 'Localização do Cliente\nÚltima atualização: --/--/---- --:--';
+
+    const date = new Date(dataISO);
+
+    const dia = String(date.getDate()).padStart(2, '0');
+    const mes = String(date.getMonth() + 1).padStart(2, '0'); // Janeiro = 0
+    const ano = date.getFullYear();
+    const hora = String(date.getHours()).padStart(2, '0');
+    const minutos = String(date.getMinutes()).padStart(2, '0');
+
+    return `Localização do Cliente\nÚltima atualização: ${dia}/${mes}/${ano} ${hora}:${minutos}`;
+  }
+
   const moveToInfoModel = () => Info.current.show();
+  const moveToInfoAbrirNotasModel = () => InfoAbrirNotas.current.show();
+
   const backToMore = () => navigation.navigate(TabNav.HomeScreen);
 
   const obterDataAtual = () => {
@@ -102,7 +137,6 @@ export default function ATMDetails({navigation, route}) {
     )}`;
     Linking.openURL(url).catch(() => Alert.alert('Erro ao abrir WhatsApp'));
   };
-  
 
   const openGoogleMaps = () => {
     const url = `https://www.google.com/maps/search/?api=1&query=${clientes.latitude},${clientes.longitude}`;
@@ -110,7 +144,7 @@ export default function ATMDetails({navigation, route}) {
   };
 
   const openClienteGoogleMaps = () => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${clientes.latitude},${clientes.longitude}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${localizacaoCliente?.latitude},${localizacaoCliente?.longitude}`;
     Linking.openURL(url).catch(() => Alert.alert('Erro ao abrir Google Maps'));
   };
 
@@ -192,17 +226,17 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
                 <Community size={24} name={'waze'} color={colors.white} />
               )}
             />
-            <CButton
-              onPress={openClienteGoogleMaps}
-              ChildLoginBtn={localStyles.ChildSkipBtn}
-              text={
-                'Localização do Cliente\nÚltima atualização: 21/06/2025 11:17'
-              }
-              containerStyle={localStyles.buttonContainerCliente}
-              RightIcon={() => (
-                <Community size={24} name={'waze'} color={colors.white} />
-              )}
-            />
+            {localizacaoCliente && (
+              <CButton
+                onPress={openClienteGoogleMaps}
+                ChildLoginBtn={localStyles.ChildSkipBtn}
+                text={gerarFraseLocalizacao(localizacaoCliente?.created_at)}
+                containerStyle={localStyles.buttonContainerCliente}
+                RightIcon={() => (
+                  <Community size={24} name={'waze'} color={colors.white} />
+                )}
+              />
+            )}
             <CButton
               onPress={openWhatsApp}
               text={'Ir para o Whatsapp'}
@@ -235,6 +269,20 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
                 />
               )}
             />
+            <CButton
+              onPress={moveToInfoAbrirNotasModel}
+              ChildLoginBtn={localStyles.ChildSkipBtn}
+              text={'Notas\n3 cadastradas'}
+              containerStyle={localStyles.buttonContainer}
+              RightIcon={() => (
+                <Community
+                  size={24}
+                  name={'account-cash-outline'}
+                  color={colors.white}
+                />
+              )}
+            />
+            
           </View>
         </View>
         <Location sheetRef={Search} cliente={clientes} parcelas={parcelas} />
@@ -243,6 +291,13 @@ RESTANTE: R$ ${item.saldo.toFixed(2)}
           parcelas={parcelas}
           clientes={clientes}
           getInfo={getInfo}
+        />
+        <InfoNotas
+          sheetRef={InfoAbrirNotas}
+          parcelas={parcelas}
+          clientes={clientes}
+          notas={notas}
+          getInfo={getNotas}
         />
       </SafeAreaView>
     </KeyBoardAvoidWrapper>
@@ -271,8 +326,8 @@ const localStyles = StyleSheet.create({
   },
   imgSty: {
     backgroundColor: colors.white,
-    width: moderateScale(375),
-    height: moderateScale(600),
+    width: screenWidth,
+    height: screenHeight - moderateScale(80),
   },
   outerComponent: {
     ...styles.p10,
@@ -312,6 +367,6 @@ const localStyles = StyleSheet.create({
   },
   ChildSkipBtn: {
     textAlign: 'start',
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(12),
   },
 });
