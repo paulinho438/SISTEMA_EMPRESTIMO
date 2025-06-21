@@ -473,7 +473,6 @@ class ClientController extends Controller
             $newGroup->save();
 
             DB::commit();
-
             $array['usuario']['login'] = $cpf;
             $array['usuario']['senha'] = $senha4Digit;
 
