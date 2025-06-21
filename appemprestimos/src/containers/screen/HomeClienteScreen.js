@@ -11,21 +11,85 @@ import {
   RefreshControl,
 } from 'react-native';
 import {Card, Button, List, Avatar} from 'react-native-paper';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {StackNav} from '../../navigation/navigationKeys';
 import api from '../../services/api';
 import {getUser} from '../../utils/asyncStorage';
 import Geolocation from 'react-native-geolocation-service';
 import BackgroundGeolocation from 'react-native-background-geolocation';
-import {authToken, authCompany, user, permissions, removeAuthToken, removeTipoCliente} from '../../utils/asyncStorage';
+import {
+  authToken,
+  authCompany,
+  user,
+  permissions,
+  removeAuthToken,
+  removeTipoCliente,
+} from '../../utils/asyncStorage';
 
-const HomeClienteScreen = () => {
-  const navigation = useNavigation();
+const HomeClienteScreen = ({navigation}) => {
+  const route = useRoute();
 
   const [user, setUser] = useState(null);
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      requestLocationPermission();
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params?.onNavigateBack]);
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);    
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'ios') {
+      const auth = await Geolocation.requestAuthorization('whenInUse');
+      if (auth === 'granted') {
+      } else {
+        console.log('Location permission denied on iOS');
+      }
+      return;
+    }
+
+    // Solicita primeiro a permissão de localização fina
+    const grantedFine = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      {
+        title: 'Permissão de Localização',
+        message:
+          'Precisamos da sua localização para o app funcionar corretamente',
+        buttonNeutral: 'Perguntar depois',
+        buttonNegative: 'Cancelar',
+        buttonPositive: 'OK',
+      },
+    );
+
+    if (grantedFine !== PermissionsAndroid.RESULTS.GRANTED) {
+      console.log('Permissão de localização negada');
+      return;
+    }
+
+    // Após `ACCESS_FINE_LOCATION`, solicita `ACCESS_BACKGROUND_LOCATION`
+    const grantedBackground = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
+      {
+        title: 'Permissão de Localização em Background',
+        message: 'Precisamos da sua localização mesmo com o app fechado',
+        buttonNeutral: 'Perguntar depois',
+        buttonNegative: 'Cancelar',
+        buttonPositive: 'OK',
+      },
+    );
+
+    if (grantedBackground !== PermissionsAndroid.RESULTS.GRANTED) {
+      console.log('Permissão de localização em background negada');
+    }
+  };
 
   useEffect(async () => {
     const userReq = await getUser();
@@ -129,15 +193,6 @@ const HomeClienteScreen = () => {
     const response = await api.getInformacoesEmprestimo();
     if (response.emprestimos.length > 0) {
       setEmp(response.emprestimos[0]);
-    } else {
-      await removeAuthToken();
-
-      await removeTipoCliente();
-
-      navigation.reset({
-        index: 0,
-        routes: [{name: StackNav.AuthNavigation}],
-      });
     }
   };
 
@@ -257,116 +312,125 @@ const HomeClienteScreen = () => {
           <Text style={styles.planValue}>
             {formatarParaReal(emp?.valor ?? 0)}
           </Text>
-          <Text style={styles.monthlyFee}>
+          {emp && (
+            <Text style={styles.monthlyFee}>
             Mensalidade de {emp?.parcelas?.[0]?.valor}
           </Text>
+          )}
+          
         </Card.Content>
         <Card.Actions>
-          <Button onPress={moveToDetalhesEmprestimos} mode="outlined">
-            Ver detalhes
-          </Button>
+          {emp && (
+            <Button onPress={moveToDetalhesEmprestimos} mode="outlined">
+              Ver detalhes
+            </Button>
+          )}
         </Card.Actions>
       </Card>
 
-      <Text style={styles.sectionTitle}>Você também pode</Text>
+      {emp && (
+        <>
+          <Text style={styles.sectionTitle}>Você também pode</Text>
 
-      <List.Section>
-        <View style={styles.cardItem}>
-          <List.Item
-            title="Acompanhar mensalidades"
-            titleStyle={styles.title}
-            description="Área de pagamentos"
-            descriptionStyle={styles.description}
-            left={props => (
-              <List.Icon {...props} icon="currency-usd" color="#000" />
+          <List.Section>
+            <View style={styles.cardItem}>
+              <List.Item
+                title="Acompanhar mensalidades"
+                titleStyle={styles.title}
+                description="Área de pagamentos"
+                descriptionStyle={styles.description}
+                left={props => (
+                  <List.Icon {...props} icon="currency-usd" color="#000" />
+                )}
+                right={props => (
+                  <List.Icon {...props} icon="chevron-right" color="#aaa" />
+                )}
+                onPress={moveToAcompanharMensalidades}
+              />
+            </View>
+
+            {emp?.pagamentosaldopendente != null && (
+              <View style={styles.cardItem}>
+                <List.Item
+                  title="Saldo pendente"
+                  titleStyle={styles.title}
+                  description="Realizar pagamento do saldo pendente do empréstimo"
+                  descriptionStyle={styles.description}
+                  left={props => (
+                    <List.Icon {...props} icon="currency-usd" color="#000" />
+                  )}
+                  right={props => (
+                    <List.Icon {...props} icon="chevron-right" color="#aaa" />
+                  )}
+                  onPress={moveToPixSaldoPendente}
+                />
+              </View>
             )}
-            right={props => (
-              <List.Icon {...props} icon="chevron-right" color="#aaa" />
+
+            {emp?.quitacao != null && (
+              <View style={styles.cardItem}>
+                <List.Item
+                  title="Quitar empréstimo"
+                  titleStyle={styles.title}
+                  description="Realizar pagamento do saldo total do empréstimo"
+                  descriptionStyle={styles.description}
+                  left={props => (
+                    <List.Icon {...props} icon="currency-usd" color="#000" />
+                  )}
+                  right={props => (
+                    <List.Icon {...props} icon="chevron-right" color="#aaa" />
+                  )}
+                  onPress={moveToPixQuitacao}
+                />
+              </View>
             )}
-            onPress={moveToAcompanharMensalidades}
-          />
-        </View>
 
-        {emp?.pagamentosaldopendente != null && (
-          <View style={styles.cardItem}>
-            <List.Item
-              title="Saldo pendente"
-              titleStyle={styles.title}
-              description="Realizar pagamento do saldo pendente do empréstimo"
-              descriptionStyle={styles.description}
-              left={props => (
-                <List.Icon {...props} icon="currency-usd" color="#000" />
-              )}
-              right={props => (
-                <List.Icon {...props} icon="chevron-right" color="#aaa" />
-              )}
-              onPress={moveToPixSaldoPendente}
-            />
-          </View>
-        )}
-
-        {emp?.quitacao != null && (
-          <View style={styles.cardItem}>
-            <List.Item
-              title="Quitar empréstimo"
-              titleStyle={styles.title}
-              description="Realizar pagamento do saldo total do empréstimo"
-              descriptionStyle={styles.description}
-              left={props => (
-                <List.Icon {...props} icon="currency-usd" color="#000" />
-              )}
-              right={props => (
-                <List.Icon {...props} icon="chevron-right" color="#aaa" />
-              )}
-              onPress={moveToPixQuitacao}
-            />
-          </View>
-        )}
-
-        {emp?.pagamentominimo != null && (
-          <View style={styles.cardItem}>
-            <List.Item
-              title="Pagamento minimo"
-              titleStyle={styles.title}
-              description="Realizar pagamento mínimo do empréstimo"
-              descriptionStyle={styles.description}
-              left={props => (
-                <List.Icon {...props} icon="currency-usd" color="#000" />
-              )}
-              right={props => (
-                <List.Icon {...props} icon="chevron-right" color="#aaa" />
-              )}
-              onPress={moveToPixPagamentoMinimo}
-            />
-          </View>
-        )}
-
-        {/* <View style={styles.cardItem}>
-          <List.Item
-            title="Acessar benefícios"
-            titleStyle={styles.title}
-            description="AGE benefícios"
-            descriptionStyle={styles.description}
-            left={props => <List.Icon {...props} icon="gift" color="#000" />}
-            right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
-            onPress={() => console.log('Ir para benefícios')}
-          />
-        </View>
-
-        <View style={styles.cardItem}>
-          <List.Item
-            title="Recomendar"
-            titleStyle={styles.title}
-            description="e ganhar R$ 200/indicação"
-            descriptionStyle={styles.description}
-            left={props => (
-              <List.Icon {...props} icon="account-multiple-plus" color="#000" />
+            {emp?.pagamentominimo != null && (
+              <View style={styles.cardItem}>
+                <List.Item
+                  title="Pagamento minimo"
+                  titleStyle={styles.title}
+                  description="Realizar pagamento mínimo do empréstimo"
+                  descriptionStyle={styles.description}
+                  left={props => (
+                    <List.Icon {...props} icon="currency-usd" color="#000" />
+                  )}
+                  right={props => (
+                    <List.Icon {...props} icon="chevron-right" color="#aaa" />
+                  )}
+                  onPress={moveToPixPagamentoMinimo}
+                />
+              </View>
             )}
-            right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
-            onPress={() => console.log('Ir para recomendação')}
-          />
-        </View> */}
-      </List.Section>
+
+            {/* <View style={styles.cardItem}>
+    <List.Item
+      title="Acessar benefícios"
+      titleStyle={styles.title}
+      description="AGE benefícios"
+      descriptionStyle={styles.description}
+      left={props => <List.Icon {...props} icon="gift" color="#000" />}
+      right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
+      onPress={() => console.log('Ir para benefícios')}
+    />
+  </View>
+
+  <View style={styles.cardItem}>
+    <List.Item
+      title="Recomendar"
+      titleStyle={styles.title}
+      description="e ganhar R$ 200/indicação"
+      descriptionStyle={styles.description}
+      left={props => (
+        <List.Icon {...props} icon="account-multiple-plus" color="#000" />
+      )}
+      right={props => <List.Icon {...props} icon="chevron-right" color="#aaa" />}
+      onPress={() => console.log('Ir para recomendação')}
+    />
+  </View> */}
+          </List.Section>
+        </>
+      )}
     </ScrollView>
   );
 };

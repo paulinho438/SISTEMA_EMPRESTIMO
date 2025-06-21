@@ -18,7 +18,13 @@ import CTextInput from '../../components/common/CTextInput';
 import CButton from '../../components/common/CButton';
 import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
-import {authToken, authCompany, user, permissions, tipoCliente} from '../../utils/asyncStorage';
+import {
+  authToken,
+  authCompany,
+  user,
+  permissions,
+  tipoCliente,
+} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
@@ -48,43 +54,30 @@ export default function SignCliente({navigation}) {
     } else {
       let result = await api.loginCliente(email, changeValue);
       await tipoCliente('cliente');
-      
-      if(result.error === '') {
-        if(result.user.companies.length == 0){
-            Alert.alert('Você não está cadastrado em nenhuma empresa.');
-        }else if(result.user.companies.length == 1){
-            await user(result.user);
-            await authToken(result.token);
-            await authCompany(result.user.companies[0]);
-            if(result.user.permissions.length > 0){
-                let res = result.user.permissions.filter(item => item.company_id === result.user.companies[0]['id'])
-                await permissions(res[0]['permissions']);
-            }else{
-              await permissions([]);
-            }
-            navigation.reset({
-                index: 0,
-                routes: [{name: StackNav.TabNavigation}],
-                });
-        }else{
-            await user(result.user);
-            await authToken(result.token);
-            navigation.reset({
-                index: 0,
-                routes: [{
-                  name: AuthNav.SelecionarEmpresa,
-                  params: {
-                    companies: result.user.companies,
-                  }
-                }],
-              });
 
-              await permissions(result.user.permissions);
+      if (result.error === '') {
+        if (result.user.companies.length == 0) {
+          Alert.alert('Você não está cadastrado em nenhuma empresa.');
+        } else {
+          await user(result.user);
+          await authToken(result.token);
+          await authCompany(result.user.companies[0]);
+          if (result.user.permissions.length > 0) {
+            let res = result.user.permissions.filter(
+              item => item.company_id === result.user.companies[0]['id'],
+            );
+            await permissions(res[0]['permissions']);
+          } else {
+            await permissions([]);
+          }
+          navigation.reset({
+            index: 0,
+            routes: [{name: StackNav.TabNavigation}],
+          });
         }
-      }else{
+      } else {
         Alert.alert(result.message);
       }
-
     }
   };
 
@@ -137,7 +130,6 @@ export default function SignCliente({navigation}) {
         <KeyBoardAvoidWrapper>
           <View>
             <SafeAreaView>
-              
               <CText
                 color={colors.black}
                 style={localStyles.hiText}
@@ -190,7 +182,6 @@ export default function SignCliente({navigation}) {
               ParentLoginBtn={localStyles.ParentSignIn}
               onPress={onPressSignIn}
             />
-            
           </View>
         </KeyBoardAvoidWrapper>
       </View>
@@ -259,7 +250,6 @@ const localStyles = StyleSheet.create({
     ...styles.center,
     ...styles.mb40,
     ...styles.flexRow,
-    
   },
   rjemprestimos: {
     ...styles.center,

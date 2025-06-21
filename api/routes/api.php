@@ -49,6 +49,8 @@ Route::get('/testarAutomacaoRenovacao', [CompanyController::class, 'testarAutoma
 
 Route::post('/informar_localizacao_app', [UsuarioController::class, 'informarLocalizacaoApp']);
 
+Route::post('/webhook/teste', [WebhookTesteController::class, 'receber']);
+
 
 
 
