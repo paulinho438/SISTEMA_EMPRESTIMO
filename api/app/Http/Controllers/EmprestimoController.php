@@ -2071,7 +2071,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         return response()->json([
             "message" => "Usuário não tem localização registrada.",
-            "error" => ''
+            "error" => 'Usuário não tem localização registrada.'
         ], Response::HTTP_FORBIDDEN);
     }
 
