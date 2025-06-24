@@ -45,6 +45,7 @@ class ProcessarWebhookCobranca extends Command
     public function __construct(BcodexService $bcodexService)
     {
         $this->bcodexService = $bcodexService;
+        parent::__construct();
     }
 
     /**
