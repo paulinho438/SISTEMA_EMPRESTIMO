@@ -141,21 +141,21 @@ export default {
         <main>
             <!-- Parcela do Dia -->
             <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2>Valor Pendente do Dia {{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2>Valor Pendente do Dia {{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
             <!-- Quitar Empréstimo -->
@@ -227,7 +227,7 @@ export default {
                 </Column>
                 <Column field="saldo" header="Saldo c/ Juros">
                     <template #body="slotProps">
-                        <span :style="{ color: isToday(slotProps.data?.venc_real) ? 'red' : 'black' }">{{ slotProps.data?.saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
+                        <span :style="{ color: isToday(slotProps.data?.venc_real) ? 'red' : 'black' }">{{ slotProps.data?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
                     </template>
                 </Column>
                 <Column v-if="!this.products?.data?.emprestimo?.parcelas.length > 1" field="total_pago_parcela" header="Pago"></Column>
@@ -256,7 +256,7 @@ export default {
         <p class="line-height-3 m-0">Selecione um valor para abater os juros e parte do empréstimo, e o vencimento será prorrogado para o próximo mês, o sistema enviará a chave Pix pelo WhatsApp.</p>
 
         <h2 style="margin-top: 20px; text-align: center">
-            Valor: <b>{{ sliderValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</b>
+            Valor: <b>{{ sliderValue?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</b>
         </h2>
         <Slider style="margin-top: 20px" v-model="sliderValue" :min="this.min" :max="this.max" :step="0.5" />
 
