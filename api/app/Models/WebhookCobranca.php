@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class WebhookCobranca extends Model
+{
+    protected $table = 'webhook_cobranca';
+
+    protected $fillable = [
+        'payload',
+        'processado',
+    ];
+
+    protected $casts = [
+        'payload' => 'array',
+        'processado' => 'boolean',
+    ];
+}

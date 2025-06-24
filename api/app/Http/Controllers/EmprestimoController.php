@@ -29,6 +29,7 @@ use App\Models\PagamentoPersonalizado;
 use App\Models\Bank;
 use App\Models\Deposito;
 use App\Models\ClientLocation;
+use App\Models\WebhookCobranca;
 
 
 
@@ -2070,7 +2071,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         return null;
-
     }
 
     public function gerarPixPagamentoSaldoPendente(Request $request, $id)
@@ -2301,6 +2301,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     }
 
     public function webhookRetornoCobranca(Request $request)
+    {
+        WebhookCobranca::create([
+            'payload' => $request->json()->all()
+        ]);
+
+        return response()->json(['message' => 'Recebido com sucesso']);
+    }
+
+    public function webhookRetornoCobrancaBk(Request $request)
     {
         $data = $request->json()->all();
 
