@@ -537,7 +537,11 @@ class ProcessarWebhookCobranca extends Command
                                     ->first();
                             }
 
-                            $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
+                            $proximaParcela = null;
+
+                            if ($parcela) {
+                                $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
+                            }
 
                             if ($proximaParcela) {
                                 $pagamento->valor = $proximaParcela->saldo;
@@ -552,55 +556,57 @@ class ProcessarWebhookCobranca extends Command
                                 }
                             }
 
-                            if ($proximaParcela->contasreceber) {
-                                $proximaParcela->contasreceber->status = 'Pago';
-                                $proximaParcela->contasreceber->dt_baixa = date('Y-m-d');
-                                $proximaParcela->contasreceber->forma_recebto = 'PIX';
-                                $proximaParcela->contasreceber->save();
+                            if ($proximaParcela) {
+                                if ($proximaParcela->contasreceber) {
+                                    $proximaParcela->contasreceber->status = 'Pago';
+                                    $proximaParcela->contasreceber->dt_baixa = date('Y-m-d');
+                                    $proximaParcela->contasreceber->forma_recebto = 'PIX';
+                                    $proximaParcela->contasreceber->save();
 
-                                # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+                                    # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
 
 
 
-                                // $movimentacaoFinanceira = [];
-                                // $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
-                                // $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
-                                // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $proximaParcela->emprestimo->banco->juros . '% referente a baixa automática via pix da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id;
-                                // $movimentacaoFinanceira['tipomov'] = 'S';
-                                // $movimentacaoFinanceira['proximaParcela_id'] = $proximaParcela->id;
-                                // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                                // $movimentacaoFinanceira['valor'] = $juros;
+                                    // $movimentacaoFinanceira = [];
+                                    // $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
+                                    // $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
+                                    // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $proximaParcela->emprestimo->banco->juros . '% referente a baixa automática via pix da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id;
+                                    // $movimentacaoFinanceira['tipomov'] = 'S';
+                                    // $movimentacaoFinanceira['proximaParcela_id'] = $proximaParcela->id;
+                                    // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                                    // $movimentacaoFinanceira['valor'] = $juros;
 
-                                // Movimentacaofinanceira::create($movimentacaoFinanceira);
+                                    // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                                if ($parcela->emprestimo->quitacao->chave_pix) {
+                                    if ($parcela->emprestimo->quitacao->chave_pix) {
 
-                                    $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                                    $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                                    $parcela->emprestimo->quitacao->save();
-
-                                    $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
-                                    $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
-
-                                    if ($response->successful()) {
-                                        $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                        $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                        $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
+                                        $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
                                         $parcela->emprestimo->quitacao->save();
+
+                                        $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
+                                        $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
+
+                                        if ($response->successful()) {
+                                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                            $parcela->emprestimo->quitacao->save();
+                                        }
                                     }
-                                }
 
-                                if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
+                                    if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
 
-                                    $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
+                                        $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
 
-                                    $proximaParcela->emprestimo->pagamentosaldopendente->save();
-                                    $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
-                                    $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
-
-                                    if ($response->successful()) {
-                                        $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                                        $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                         $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                                        $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
+                                        $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
+
+                                        if ($response->successful()) {
+                                            $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                                            $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                                            $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                                        }
                                     }
                                 }
                             }
