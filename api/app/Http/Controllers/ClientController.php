@@ -737,14 +737,14 @@ class ClientController extends Controller
     {
         try {
 
-            $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
+            $response = Http::get($cliente->company->whatsapp . '/logar');
 
             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $r = $response->json();
                 if ($r['loggedIn']) {
 
                     $telefone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
-                    $baseUrl = $cliente->emprestimos->company->whatsapp . '/enviar-mensagem';
+                    $baseUrl = $cliente->company->whatsapp . '/enviar-mensagem';
 
                     $data = [
                         "numero" => "55" . $telefone,
