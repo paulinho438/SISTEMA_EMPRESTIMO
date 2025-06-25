@@ -130,7 +130,7 @@ class ProcessarWebhookCobranca extends Command
 
                                     $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
 
-                                    if ($response->successful()) {
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                         $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                         $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                         $parcela->emprestimo->quitacao->save();
@@ -149,7 +149,7 @@ class ProcessarWebhookCobranca extends Command
 
                                     $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
 
-                                    if ($response->successful()) {
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                         $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                         $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                         $proximaParcela->emprestimo->pagamentosaldopendente->save();
@@ -216,7 +216,7 @@ class ProcessarWebhookCobranca extends Command
 
                                 $response = $this->bcodexService->criarCobranca($minimo->valor, $parcela->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $minimo->identificador = $response->json()['txid'];
                                     $minimo->chave_pix = $response->json()['pixCopiaECola'];
                                     $minimo->save();
@@ -257,7 +257,7 @@ class ProcessarWebhookCobranca extends Command
                                         $parcela->emprestimo->quitacao->save();
                                         $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, null);
 
-                                        if ($response->successful()) {
+                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                             $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                             $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                             $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
@@ -273,7 +273,7 @@ class ProcessarWebhookCobranca extends Command
 
                                         $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document, null);
 
-                                        if ($response->successful()) {
+                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                             $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                                             $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                                             $parcela->emprestimo->pagamentominimo->save();
@@ -289,7 +289,7 @@ class ProcessarWebhookCobranca extends Command
 
                                     $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, null);
 
-                                    if ($response->successful()) {
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                         $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                         $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                         $parcela->emprestimo->pagamentosaldopendente->save();
@@ -416,7 +416,7 @@ class ProcessarWebhookCobranca extends Command
 
                                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $pagamento->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $parcela->identificador = $response->json()['txid'];
                                     $parcela->chave_pix = $response->json()['pixCopiaECola'];
                                     $parcela->save();
@@ -430,7 +430,7 @@ class ProcessarWebhookCobranca extends Command
 
                                 $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                     $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                     $pagamento->emprestimo->pagamentosaldopendente->save();
@@ -442,7 +442,7 @@ class ProcessarWebhookCobranca extends Command
 
                                 $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                                     $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                                     $pagamento->emprestimo->pagamentominimo->save();
@@ -549,7 +549,7 @@ class ProcessarWebhookCobranca extends Command
 
                                 $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $pagamento->identificador = $response->json()['txid'];
                                     $pagamento->chave_pix = $response->json()['pixCopiaECola'];
                                     $pagamento->save();
@@ -587,7 +587,7 @@ class ProcessarWebhookCobranca extends Command
                                         $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
                                         $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
 
-                                        if ($response->successful()) {
+                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                             $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                             $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                             $parcela->emprestimo->quitacao->save();
@@ -602,7 +602,7 @@ class ProcessarWebhookCobranca extends Command
                                         $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
                                         $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
 
-                                        if ($response->successful()) {
+                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                             $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                             $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                             $proximaParcela->emprestimo->pagamentosaldopendente->save();

@@ -52,7 +52,7 @@ class BancosComSaldoResource extends JsonResource
 
             $response = $bcodexService->consultarSaldo($this->accountId);
 
-            if ($response->successful()) {
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
 
                 return ($response->json()['balance'] / 100);
             }

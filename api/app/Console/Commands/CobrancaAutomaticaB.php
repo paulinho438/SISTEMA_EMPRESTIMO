@@ -115,7 +115,7 @@ class CobrancaAutomaticaB extends Command
 
                     $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $r = $response->json();
                         if ($r['loggedIn']) {
 

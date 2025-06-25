@@ -162,7 +162,7 @@ class ProcessarPixJob implements ShouldQueue
             try {
                 $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     $entidade->identificador = $response->json()['txid'];
                     $entidade->chave_pix = $response->json()['pixCopiaECola'];
                     $entidade->save();
@@ -216,7 +216,7 @@ class ProcessarPixJob implements ShouldQueue
             try {
                 $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     $r = $response->json();
                     if ($r['loggedIn']) {
 
@@ -263,7 +263,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             try {
                 $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     $r = $response->json();
                     if ($r['loggedIn']) {
 
@@ -295,7 +295,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     $r = $response->json();
                     if ($r['loggedIn']) {
 
@@ -341,7 +341,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     $r = $response->json();
                     if ($r['loggedIn']) {
 

@@ -260,7 +260,7 @@ class BancoController extends Controller
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->identificador = $response->json()['txid'];
                             $parcela->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->save();
@@ -273,7 +273,7 @@ class BancoController extends Controller
 
                         $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                             $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentosaldopendente->save();
@@ -295,7 +295,7 @@ class BancoController extends Controller
 
                         $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                             $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentominimo->save();
@@ -355,7 +355,7 @@ class BancoController extends Controller
 
                             $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $parcela->identificador = $response->json()['txid'];
                                 $parcela->chave_pix = $response->json()['pixCopiaECola'];
                                 $parcela->save();
@@ -371,7 +371,7 @@ class BancoController extends Controller
 
                             $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                 $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                 $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
@@ -492,7 +492,7 @@ class BancoController extends Controller
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->identificador = $response->json()['txid'];
                             $parcela->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->save();
@@ -505,7 +505,7 @@ class BancoController extends Controller
 
                         $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentosaldopendente->identificador);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                             $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentosaldopendente->save();
@@ -527,7 +527,7 @@ class BancoController extends Controller
 
                         $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $parcela->emprestimo->pagamentominimo->identificador);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                             $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->emprestimo->pagamentominimo->save();
@@ -588,7 +588,7 @@ class BancoController extends Controller
 
                             $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $parcela->identificador = $response->json()['txid'];
                                 $parcela->chave_pix = $response->json()['pixCopiaECola'];
                                 $parcela->save();
@@ -683,7 +683,7 @@ class BancoController extends Controller
             if ($banco->wallet) {
                 $response = $this->bcodexService->criarCobranca($dados['valor'], $banco->document);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
 
@@ -741,7 +741,7 @@ class BancoController extends Controller
 
                 $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     return $response->json();
                 } else {
                     return response()->json([
@@ -787,7 +787,7 @@ class BancoController extends Controller
 
                 $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
                         $response = $this->bcodexService->realizarPagamentoPix(($dados['valor'] * 100), $banco->accountId, $response->json()['paymentId']);

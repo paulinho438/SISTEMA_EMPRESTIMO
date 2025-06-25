@@ -27,7 +27,7 @@ class BcodexService
             'password' => env('BCODEX_PASSWORD'),
         ]);
 
-        if ($response->successful()) {
+        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             $data = $response->json();
             $accessToken = $data['access_token'];
             $expiresIn = $data['expires_in'];

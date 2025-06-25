@@ -84,7 +84,7 @@ class MensagemAutomaticaRenovacao extends Command
 
             $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
 
-            if ($response->successful()) {
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $r = $response->json();
                 if ($r['loggedIn']) {
 

@@ -711,7 +711,7 @@ class ClientController extends Controller
 
             $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
 
-            if ($response->successful()) {
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $r = $response->json();
                 if ($r['loggedIn']) {
 
@@ -739,7 +739,7 @@ class ClientController extends Controller
 
             $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
 
-            if ($response->successful()) {
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $r = $response->json();
                 if ($r['loggedIn']) {
 

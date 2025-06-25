@@ -350,7 +350,7 @@ Route::middleware('auth:api')->group(function () {
                 ]);
 
                 // Verificar a resposta do endpoint
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     return response()->json(['message' => 'Imagem enviada com sucessos!'], 200);
                 } else {
                     return response()->json([
@@ -402,7 +402,7 @@ Route::middleware('auth:api')->group(function () {
     //     ]);
 
     //     // Verificar a resposta do endpoint
-    //     if ($response->successful()) {
+    //     if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
     //         return response()->json(['message' => 'PDF enviado com sucesso!'], 200);
     //     } else {
     //         return response()->json(['error' => 'Falha ao enviar PDF', 'details' => $response->body()], 500);

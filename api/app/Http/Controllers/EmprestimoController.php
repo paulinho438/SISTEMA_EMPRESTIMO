@@ -101,7 +101,7 @@ class EmprestimoController extends Controller
         $response = $this->bcodexService->criarCobranca(18.00, '55439708000135');
 
         // Retorna a resposta da API externa
-        if ($response->successful()) {
+        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             $response->json()['txid'];
             return response()->json($response->json(), 201);
         }
@@ -546,7 +546,7 @@ class EmprestimoController extends Controller
             //API COBRANCA B.CODEX
             // $response = $this->bcodexService->criarCobranca($addParcela['valor']);
 
-            // if ($response->successful()) {
+            // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             //     $addParcela['identificador'] = $response->json()['txid'];
             //     $addParcela['chave_pix'] = $response->json()['pixCopiaECola'];
             // }
@@ -583,7 +583,7 @@ class EmprestimoController extends Controller
                 //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
                 // );
 
-                // if ($response->successful()) {
+                // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
                 //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
                 // }
@@ -601,7 +601,7 @@ class EmprestimoController extends Controller
             //API COBRANCA B.CODEX
             // $response = $this->bcodexService->criarCobranca($emprestimoAdd->parcelas[0]->totalPendente());
 
-            // if ($response->successful()) {
+            // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             //     $quitacao['identificador'] = $response->json()['txid'];
             //     $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
             // }
@@ -701,7 +701,7 @@ class EmprestimoController extends Controller
             //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
             // );
 
-            // if ($response->successful()) {
+            // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
             //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
             // }
@@ -718,7 +718,7 @@ class EmprestimoController extends Controller
             //API COBRANCA B.CODEX
             // $response = $this->bcodexService->criarCobranca($emprestimoAdd->parcelas[0]->totalPendente());
 
-            // if ($response->successful()) {
+            // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             //     $quitacao['identificador'] = $response->json()['txid'];
             //     $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
             // }
@@ -816,7 +816,7 @@ class EmprestimoController extends Controller
             //     ($emprestimoAdd->parcelas[0]->totalPendente() - $dados['valor'])
             // );
 
-            // if ($response->successful()) {
+            // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             //     $pagamentoMinimo['identificador'] = $response->json()['txid'];
             //     $pagamentoMinimo['chave_pix'] = $response->json()['pixCopiaECola'];
             // }
@@ -833,7 +833,7 @@ class EmprestimoController extends Controller
             //API COBRANCA B.CODEX
             // $response = $this->bcodexService->criarCobranca($emprestimoAdd->parcelas[0]->totalPendente());
 
-            // if ($response->successful()) {
+            // if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
             //     $quitacao['identificador'] = $response->json()['txid'];
             //     $quitacao['chave_pix'] = $response->json()['pixCopiaECola'];
             // }
@@ -896,7 +896,7 @@ class EmprestimoController extends Controller
 
                 $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
                         $response = $this->bcodexService->realizarPagamentoPix(($valorPagamento * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
@@ -992,7 +992,7 @@ class EmprestimoController extends Controller
             try {
                 $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     $r = $response->json();
                     if ($r['loggedIn']) {
 
@@ -1110,7 +1110,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $contaspagar->banco->accountId);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     return $response->json();
                 } else {
                     return response()->json([
@@ -1175,7 +1175,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $contaspagar->banco->accountId);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
                         $response = $this->bcodexService->realizarPagamentoPix(($contaspagar->valor * 100), $contaspagar->banco->accountId, $response->json()['paymentId']);
@@ -1337,7 +1337,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     return $response->json();
                 } else {
                     return response()->json([
@@ -2092,7 +2092,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     //API COBRANCA B.CODEX
                     $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
                         $parcela->identificador = $response->json()['txid'];
@@ -2114,7 +2114,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
                     $parcela->identificador = $response->json()['txid'];
@@ -2156,7 +2156,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     //API COBRANCA B.CODEX
                     $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
                         $parcela->identificador = $response->json()['txid'];
@@ -2178,7 +2178,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
                     $parcela->identificador = $response->json()['txid'];
@@ -2224,7 +2224,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 //API COBRANCA B.CODEX
                 $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
 
-                if ($response->successful()) {
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     ControleBcodex::create(['identificador' => $response->json()['txid']]);
 
                     $parcela->identificador = $response->json()['txid'];
@@ -2265,7 +2265,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             //API COBRANCA B.CODEX
             $response = $this->bcodexService->criarCobranca($dados['valor'], $parcela->emprestimo->banco->document);
 
-            if ($response->successful()) {
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $newPagamento = [];
 
                 $newPagamento['emprestimo_id'] = $parcela->emprestimo_id;
@@ -2394,7 +2394,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                             $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                 $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                 $parcela->emprestimo->quitacao->save();
@@ -2413,7 +2413,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                             $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                 $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                 $proximaParcela->emprestimo->pagamentosaldopendente->save();
@@ -2480,7 +2480,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $response = $this->bcodexService->criarCobranca($minimo->valor, $parcela->emprestimo->banco->document, null);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $minimo->identificador = $response->json()['txid'];
                             $minimo->chave_pix = $response->json()['pixCopiaECola'];
                             $minimo->save();
@@ -2521,7 +2521,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->quitacao->save();
                                 $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                     $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                     $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
@@ -2537,7 +2537,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                                 $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document, null);
 
-                                if ($response->successful()) {
+                                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                     $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                                     $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                                     $parcela->emprestimo->pagamentominimo->save();
@@ -2553,7 +2553,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                             $response = $this->bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, null);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                 $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                 $parcela->emprestimo->pagamentosaldopendente->save();
@@ -2680,7 +2680,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $pagamento->emprestimo->banco->document, null);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $parcela->identificador = $response->json()['txid'];
                             $parcela->chave_pix = $response->json()['pixCopiaECola'];
                             $parcela->save();
@@ -2694,7 +2694,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, null);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $pagamento->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                             $pagamento->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                             $pagamento->emprestimo->pagamentosaldopendente->save();
@@ -2706,7 +2706,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentominimo->valor, $pagamento->emprestimo->banco->document, null);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $pagamento->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                             $pagamento->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                             $pagamento->emprestimo->pagamentominimo->save();
@@ -2809,7 +2809,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document, null);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $pagamento->identificador = $response->json()['txid'];
                             $pagamento->chave_pix = $response->json()['pixCopiaECola'];
                             $pagamento->save();
@@ -2846,7 +2846,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
                             $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                                 $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                 $parcela->emprestimo->quitacao->save();
@@ -2861,7 +2861,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
                             $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
 
-                            if ($response->successful()) {
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                                 $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                                 $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                                 $proximaParcela->emprestimo->pagamentosaldopendente->save();
@@ -2970,7 +2970,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 try {
                     $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $entidade->identificador = $response->json()['txid'];
                         $entidade->chave_pix = $response->json()['pixCopiaECola'];
                         $entidade->save();
@@ -3007,7 +3007,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 try {
                     $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $entidade->identificador = $response->json()['txid'];
                         $entidade->chave_pix = $response->json()['pixCopiaECola'];
                         $entidade->save();
@@ -3044,7 +3044,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 try {
                     $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $entidade->identificador = $response->json()['txid'];
                         $entidade->chave_pix = $response->json()['pixCopiaECola'];
                         $entidade->save();
@@ -3081,7 +3081,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 try {
                     $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $entidade->identificador = $response->json()['txid'];
                         $entidade->chave_pix = $response->json()['pixCopiaECola'];
                         $entidade->save();
@@ -3127,7 +3127,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $txId = $entidade->identificador ? $entidade->identificador : null;
                         $response = $this->bcodexService->criarCobranca($entidade->saldo, $entidade->emprestimo->banco->document, $txId);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $entidade->identificador = $response->json()['txid'];
                             $entidade->chave_pix = $response->json()['pixCopiaECola'];
                             $entidade->save();
@@ -3160,7 +3160,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $txId = $entidade->identificador ? $entidade->identificador : null;
                         $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document, $txId);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $entidade->identificador = $response->json()['txid'];
                             $entidade->chave_pix = $response->json()['pixCopiaECola'];
                             $entidade->save();
@@ -3193,7 +3193,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $txId = $entidade->identificador ? $entidade->identificador : null;
                         $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document, $txId);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $entidade->identificador = $response->json()['txid'];
                             $entidade->chave_pix = $response->json()['pixCopiaECola'];
                             $entidade->save();
@@ -3226,7 +3226,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $txId = $entidade->identificador ? $entidade->identificador : null;
                         $response = $this->bcodexService->criarCobranca($entidade->valor, $entidade->emprestimo->banco->document, $txId);
 
-                        if ($response->successful()) {
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $entidade->identificador = $response->json()['txid'];
                             $entidade->chave_pix = $response->json()['pixCopiaECola'];
                             $entidade->save();
@@ -3300,7 +3300,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     Log::info(message: "Processando cobranca parcela: txId: $txId parcelaId: { $parcela->id }");
                     $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $newTxId = $response->json()['txid'];
                         Log::info(message: "Processando com sucesso cobranca parcela: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
                         echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
@@ -3319,7 +3319,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
                     $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
                         $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
@@ -3335,7 +3335,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
                     $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $txId);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
                         $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->pagamentominimo->save();
@@ -3350,7 +3350,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
                     $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
 
-                    if ($response->successful()) {
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
                         $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
                         $parcela->emprestimo->pagamentosaldopendente->save();
@@ -3626,7 +3626,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-            if ($response->successful()) {
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $r = $response->json();
                 if ($r['loggedIn']) {
 
