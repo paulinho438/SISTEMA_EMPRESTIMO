@@ -2310,6 +2310,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         if (isset($data['pix']) && is_array($data['pix'])) {
             $dados['identificador'] = $data['pix'][0]['txId'];
+            $dados['valor'] = $data['pix'][0]['valor'];
             $dados['qt_identificadores'] = count($data['pix']);
         }
 
@@ -2326,6 +2327,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             if (isset($dado->payload['pix']) && is_array($dado->payload['pix'])) {
                 $dado->identificador = $dado->payload['pix'][0]['txId'];
                 $dado->qt_identificadores = count($dado->payload['pix']);
+                $dado->valor = $dado->payload['pix'][0]['valor'];
                 $dado->save();
             }
         }
