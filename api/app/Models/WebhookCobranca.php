@@ -11,6 +11,8 @@ class WebhookCobranca extends Model
     protected $fillable = [
         'payload',
         'processado',
+        'identificador',
+        'qt_identificadores'
     ];
 
     protected $casts = [

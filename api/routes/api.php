@@ -72,6 +72,7 @@ Route::post('/informar_localizacao', [UsuarioController::class, 'informarLocaliz
 
 Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookRetornoCobranca']);
 Route::post('/webhook/retorno_pagamento', [EmprestimoController::class, 'webhookPagamento']);
+Route::post('/webhook/corrigir_registros_webhook', [EmprestimoController::class, 'corrigirRegistrosWebhook']);
 Route::post('/manutencao/corrigir_pix', [EmprestimoController::class, 'corrigirPix']);
 Route::post('/manutencao/corrigir_pix_parcela', [EmprestimoController::class, 'corrigirValoresPix']);
 Route::post('/manutencao/aplicar_multa_parcela/{id}', [EmprestimoController::class, 'aplicarMultaParcela']);

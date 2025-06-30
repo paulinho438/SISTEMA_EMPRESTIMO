@@ -2302,9 +2302,33 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function webhookRetornoCobranca(Request $request)
     {
-        WebhookCobranca::create([
+        $data = $request->json()->all();
+
+        $dados = [
             'payload' => $request->json()->all()
-        ]);
+        ];
+
+        if (isset($data['pix']) && is_array($data['pix'])) {
+            $dados['identificador'] = $data['pix'][0]['txId'];
+            $dados['qt_identificadores'] = count($data['pix']);
+        }
+
+        WebhookCobranca::create($dados);
+
+        return response()->json(['message' => 'Recebido com sucesso']);
+    }
+
+    public function corrigirRegistrosWebhook()
+    {
+        $dados = WebhookCobranca::all();
+
+        foreach ($dados as $dado) {
+            if (isset($dado->payload['pix']) && is_array($dado->payload['pix'])) {
+                $dado->identificador = $dado->payload['pix'][0]['txId'];
+                $dado->qt_identificadores = count($dado->payload['pix']);
+                $dado->save();
+            }
+        }
 
         return response()->json(['message' => 'Recebido com sucesso']);
     }
