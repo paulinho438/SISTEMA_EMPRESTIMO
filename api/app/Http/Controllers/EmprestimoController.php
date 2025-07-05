@@ -147,7 +147,7 @@ class EmprestimoController extends Controller
 
         if (File::exists($caminhoArquivo)) {
             $conteudo = File::get($caminhoArquivo);
-            $base64 = base64_encode($conteudo);
+            $base64 = 'data:audio/ogg;base64,' . base64_encode($data);
         } else {
             return response()->json([
                 "message" => "Arquivo de audio não encontrado",
