@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CobrarAmanhaUltimaLocalizacao;
+use App\Models\Company;
 use App\Models\UserLocation;
 use Illuminate\Http\Request;
 
@@ -31,6 +32,7 @@ use App\Models\Deposito;
 use App\Models\ClientLocation;
 use App\Models\WebhookCobranca;
 
+use App\Services\WAPIService;
 
 
 use App\Services\BcodexService;
@@ -80,18 +82,45 @@ class EmprestimoController extends Controller
 {
 
     protected $custom_log;
-
     protected $bcodexService;
-
+    protected $wapiService;
 
     use VerificarPermissao;
 
 
-
-    public function __construct(Customlog $custom_log, BcodexService $bcodexService)
+    public function __construct(Customlog $custom_log, BcodexService $bcodexService, WAPIService $wapiService)
     {
         $this->custom_log = $custom_log;
         $this->bcodexService = $bcodexService;
+        $this->wapiService = $wapiService;
+    }
+
+    public function enviarMensagemWAPITeste(Request $request)
+    {
+        $company = Company::find($request->input('company_id'));
+
+        if (!$company) {
+            return response()->json([
+                "message" => "Empresa não existe",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if( is_null($company->token_api_wtz) || is_null($company->instance_id) ) {
+            return response()->json([
+                "message" => "Empresa não tem token da api ou instance_id",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $envio = $this->wapiService->enviarMensagem( $company->token_api_wtz, $company->instance_id, [ "phone" => "5561993305267", "message" => "Teste" ]);
+
+        if (!$envio) {
+            return response()->json([
+                "message" => "Mensagem não enviada",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        return true;
+
     }
 
     public function gerarCobranca(Request $request)
@@ -217,8 +246,8 @@ class EmprestimoController extends Controller
         }
 
         if ($request->has('porcent_min')) {
-            $min = (float) $request->get('porcent_min');
-            $max = (float) $request->get('porcent_max');
+            $min = (float)$request->get('porcent_min');
+            $max = (float)$request->get('porcent_max');
 
             $query->whereRaw("
                     (
@@ -280,7 +309,6 @@ class EmprestimoController extends Controller
             })->get()
         );
     }
-
 
 
     public function emprestimosAptosARefinanciar()
@@ -489,6 +517,7 @@ class EmprestimoController extends Controller
     {
         return BancosComSaldoResource::collection(Banco::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get());
     }
+
     public function insert(Request $request)
     {
 
@@ -870,7 +899,6 @@ class EmprestimoController extends Controller
             $emprestimo = Emprestimo::find($id);
 
 
-
             if ($emprestimo->contaspagar->status == 'Pagamento Efetuado') {
                 return response()->json([
                     "message" => "Pagamento já efetuado.",
@@ -1241,7 +1269,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                     file_get_contents($pngPath), // Conteúdo do arquivo
                                     'comprovante.png' // Nome do arquivo enviado
                                 )->post($contaspagar->company->whatsapp . '/enviar-pdf', [
-                                    'numero' =>  "55" . $telefone,
+                                    'numero' => "55" . $telefone,
                                 ]);
                             } catch (\Exception $e) {
                             }
@@ -1455,7 +1483,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ]);
 
 
-
             DB::commit();
 
             return $array;
@@ -1659,7 +1686,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             // Movimentacaofinanceira::create($movimentacaoFinanceira);
 
 
-
             DB::commit();
 
             $this->custom_log->create([
@@ -1678,6 +1704,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
     }
+
     public function baixaManual(Request $request, $id)
     {
 
@@ -1734,13 +1761,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             //     $editParcela->contasreceber->save();
             // }
 
-            $editParcela->emprestimo->company->caixa_pix +=  $valor_recebido;
+            $editParcela->emprestimo->company->caixa_pix += $valor_recebido;
             $editParcela->emprestimo->company->save();
 
             $editParcela->valor_recebido_pix += $valor_recebido;
             $editParcela->nome_usuario_baixa_pix = auth()->user()->nome_completo;
             $editParcela->save();
-
 
 
             $this->custom_log->create([
@@ -1992,7 +2018,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $editParcela->save();
 
 
-
             $editParcela->emprestimo->company->caixa = $editParcela->emprestimo->company->caixa + $request->valor;
             $editParcela->emprestimo->company->save();
 
@@ -2028,7 +2053,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
 
-
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
 
@@ -2047,7 +2071,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $array['data']['emprestimo'] = new EmprestimoLandingPageResource($parcela->emprestimo);
             return $array;
         }
-
 
 
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
@@ -2140,6 +2163,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
     }
+
     public function gerarPixPagamentoQuitacao(Request $request, $id)
     {
 
@@ -2252,6 +2276,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
     }
+
     public function personalizarPagamento(Request $request, $id)
     {
 
@@ -2695,7 +2720,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
 
                         $novoAntigo = $parcela->saldo;
-                        $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
+                        $novoValor = $novoAntigo + ($novoAntigo * $porcentagem);
 
                         $parcela->saldo = $novoValor;
 
@@ -2718,7 +2743,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
                         $pagamento->emprestimo->pagamentosaldopendente->save();
-
 
 
                         $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, null);
@@ -2852,7 +2876,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         $proximaParcela->contasreceber->save();
 
                         # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
-
 
 
                         // $movimentacaoFinanceira = [];
@@ -3280,12 +3303,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
 
-
-
-
-
-
-
         return $dados;
     }
 
@@ -3310,7 +3327,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 $juros = $parcela->emprestimo->company->juros ?? 1;
 
-                $valorJuros = (float) number_format($parcela->emprestimo->valor * ($juros  / 100), 2, '.', '');
+                $valorJuros = (float)number_format($parcela->emprestimo->valor * ($juros / 100), 2, '.', '');
 
                 $novoValor = $valorJuros + $parcela->saldo;
 
@@ -3443,6 +3460,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
     }
+
     public function delete(Request $r, $id)
     {
         DB::beginTransaction();
@@ -3485,6 +3503,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
     }
+
     public function gerarPixQuitacao($dados)
     {
 

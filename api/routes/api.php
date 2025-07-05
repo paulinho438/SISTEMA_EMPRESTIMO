@@ -53,7 +53,7 @@ Route::post('/informar_localizacao_app', [UsuarioController::class, 'informarLoc
 
 Route::post('/webhook/teste', [WebhookTesteController::class, 'receber']);
 
-
+Route::post('/wapi/envio_mensagem_teste', [EmprestimoController::class, 'enviarMensagemWAPITeste']);
 
 
 Route::get('/setup-teste', function (Request $request) {
