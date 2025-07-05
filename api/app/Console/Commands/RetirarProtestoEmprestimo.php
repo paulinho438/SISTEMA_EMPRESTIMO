@@ -16,6 +16,7 @@ use Efi\EfiPay;
 
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 use Carbon\Carbon;
@@ -67,15 +68,18 @@ class RetirarProtestoEmprestimo extends Command
             ->values();
 
         foreach ($emprestimos as $emprestimo) {
+            Log::info(message: "ROTINA_RETIRAR_PROTESTO: Verificando se emprestimo: $emprestimo->id pode ser retirado de protesto");
             $podeCancelarProtesto = true;
 
             foreach ($emprestimo->parcelas as $parcela) {
                 if(is_null($parcela->dt_baixa) && $parcela->atrasadas >= 14){
                     $podeCancelarProtesto = false;
+                    Log::info(message: "ROTINA_RETIRAR_PROTESTO: Emprestimo: $emprestimo->id não pode ser retirado de protesto, parcela: $parcela->id");
                 }
             }
 
             if($podeCancelarProtesto){
+                Log::info(message: "ROTINA_RETIRAR_PROTESTO: Emprestimo: $emprestimo->id foi retirado de protesto");
                 $emprestimo->protesto = 0;
                 $emprestimo->save();
             }
