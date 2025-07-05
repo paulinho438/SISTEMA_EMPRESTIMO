@@ -3,121 +3,77 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-
 use Illuminate\Support\Facades\Http;
-
 use App\Models\Juros;
 use App\Models\Parcela;
 use App\Models\Feriado;
-
+use App\Services\WAPIService;
+use Illuminate\Support\Facades\File;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
-
 use Illuminate\Support\Facades\DB;
-
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-
 use Carbon\Carbon;
 
 class CobrancaAutomaticaC extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'cobranca:AutomaticaC';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Cobrança automatica das parcelas em atraso';
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
     public function handle()
     {
-
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
         $today = Carbon::today()->toDateString();
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
 
-        if ($isHoliday) {
-            return 0;
-        }
+        if ($isHoliday) return 0;
 
         $todayHoje = now();
 
         $parcelasQuery = Parcela::whereNull('dt_baixa')->with('emprestimo');
 
-        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
             $parcelasQuery->where('atrasadas', '>', 0);
         }
 
         $parcelasQuery->orderByDesc('id');
         $parcelas = $parcelasQuery->get();
 
-        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
             $parcelas = $parcelas->filter(function ($parcela) {
                 $dataProtesto = optional($parcela->emprestimo)->data_protesto;
-
-                if (!$dataProtesto) {
-                    return true;
-                }
-
-                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(value: 1));
+                return !$dataProtesto || !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
             });
-        }
-
-        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        } else {
             $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
-
-                $deveCobrarHoje = $emprestimo &&
-                    !is_null($emprestimo->deve_cobrar_hoje) &&
-                    Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
-
-                $vencimentoHoje = $parcela->venc_real &&
-                    Carbon::parse($parcela->venc_real)->isSameDay($todayHoje);
-
+                $deveCobrarHoje = $emprestimo && $emprestimo->deve_cobrar_hoje && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+                $vencimentoHoje = $parcela->venc_real && Carbon::parse($parcela->venc_real)->isSameDay($todayHoje);
                 return $deveCobrarHoje || $vencimentoHoje;
             });
         }
 
-        // Remover duplicados e resetar índices
         $parcelas = $parcelas->unique('emprestimo_id')->values();
 
-
-        $r = [];
         foreach ($parcelas as $parcela) {
-            if ($this->emprestimoEmProtesto($parcela)) {
-                continue;
-            }
+            if ($this->emprestimoEmProtesto($parcela)) continue;
 
-            if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+            if (isset($parcela->emprestimo->company->whatsapp) &&
+                $parcela->emprestimo->contaspagar &&
+                $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
 
                 try {
-
                     $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $r = $response->json();
-                        if ($r['loggedIn']) {
+                    if ($response->successful() && $response->json()['loggedIn']) {
+                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                        $telefoneCliente = "55" . $telefone;
 
-
-                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-                            $saudacao = self::obterSaudacao();
-                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                            $fraseInicial = "
+                        $saudacao = self::obterSaudacao();
+                        $saudacaoTexto = "$saudacao, " . $parcela->emprestimo->client->nome_completo . "!";
+                        $fraseInicial = "
 
 🤷‍♂️ Última chamada, Ainda não identificamos seu pagamento na data de hoje, lembrando que é até 40 minutos para processar, será aplicado multas e entrará na rota de cobrança caso não tenha pago!
 
@@ -130,65 +86,60 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
 ";
 
-                            $frase = $saudacaoTexto . $fraseInicial;
+                        $frase = $saudacaoTexto . $fraseInicial;
 
-                            $data = [
-                                "numero" => "55" . $telefone,
-                                "mensagem" => $frase
+                        $wapiService = new WAPIService();
+                        $wapiService->enviarMensagem(
+                            $parcela->emprestimo->company->token_api_wtz,
+                            $parcela->emprestimo->company->instance_id,
+                            ["phone" => $telefoneCliente, "message" => $frase]
+                        );
+
+                        sleep(1);
+
+                        if ($parcela->emprestimo->company->mensagem_audio && $parcela->atrasadas > 0) {
+                            $tipo = match ($parcela->atrasadas) {
+                                2 => "1.3", 4 => "2.3", 6 => "3.3",
+                                8 => "4.3", 10 => "5.3", 15 => "6.3",
+                                default => "0"
+                            };
+
+                            $audioMap = [
+                                "1.3" => "mensagem_3_atraso_2d.ogg",
+                                "2.3" => "mensagem_3_atraso_4d.ogg",
+                                "3.3" => "mensagem_3_atraso_6d.ogg",
+                                "4.3" => "mensagem_3_atraso_8d.ogg",
+                                "5.3" => "mensagem_3_atraso_10d.ogg",
+                                "6.3" => "mensagem_3_atraso_15d.ogg"
                             ];
 
-                            $response = Http::asJson()->post($baseUrl, $data);
-                            Log::info("MENSAGEM ENVIADA: " . $telefone);
-                            sleep(4);
-                            if($parcela->emprestimo->company->mensagem_audio) {
-                                if ($parcela->atrasadas > 0) {
-                                    $baseUrl = $parcela->emprestimo->company->whatsapp;
-                                    $tipo = "0";
-                                    switch ($parcela->atrasadas) {
-                                        case 2:
-                                            $tipo = "1.3";
-                                            break;
-                                        case 4:
-                                            $tipo = "2.3";
-                                            break;
-                                        case 6:
-                                            $tipo = "3.3";
-                                            break;
-                                        case 8:
-                                            $tipo = "4.3";
-                                            break;
-                                        case 10:
-                                            $tipo = "5.3";
-                                            break;
-                                        case 15:
-                                            $tipo = "6.3";
-                                            break;
-                                    }
+                            if (isset($audioMap[$tipo])) {
+                                $caminhoArquivo = storage_path("app/public/audios/{$audioMap[$tipo]}");
 
-                                    if ($tipo != "0") {
-                                        $data2 = [
-                                            "numero" => "55" . $telefone,
-                                            "nomeCliente" => $parcela->emprestimo->client->nome_completo,
-                                            "tipo" => $tipo
-                                        ];
+                                if (File::exists($caminhoArquivo)) {
+                                    $conteudo = File::get($caminhoArquivo);
+                                    $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
 
-                                        Http::asJson()->post("$baseUrl/enviar-audio", $data2);
-                                    }
+                                    $wapiService->enviarMensagemAudio(
+                                        $parcela->emprestimo->company->token_api_wtz,
+                                        $parcela->emprestimo->company->instance_id,
+                                        ["phone" => $telefoneCliente, "audio" => $base64]
+                                    );
                                 }
                             }
+                        }
 
-                            //identificar se o emprestimo é mensal
-                            //identificar se é a primeira cobranca
-                            if(count($parcela->emprestimo->parcelas) == 1) {
-                                if($parcela->atrasadas == 0){
-                                    $data3 = [
-                                        "numero" => "55" . $telefone,
-                                        "nomeCliente" => "Sistema",
-                                        "tipo" => "msginfo3"
-                                    ];
+                        if (count($parcela->emprestimo->parcelas) == 1 && $parcela->atrasadas == 0) {
+                            $caminhoArquivo = storage_path("app/public/audios/msginfo3.ogg");
+                            if (File::exists($caminhoArquivo)) {
+                                $conteudo = File::get($caminhoArquivo);
+                                $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
 
-                                    Http::asJson()->post("$baseUrl/enviar-audio", $data3);
-                                }
+                                $wapiService->enviarMensagemAudio(
+                                    $parcela->emprestimo->company->token_api_wtz,
+                                    $parcela->emprestimo->company->instance_id,
+                                    ["phone" => $telefoneCliente, "audio" => $base64]
+                                );
                             }
                         }
                     }
@@ -208,34 +159,24 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌤️ Espero que sua tarde esteja ótima'];
         $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌤️ Espero que sua noite esteja ótima'];
 
-        if ($hora < 12) {
-            return $saudacoesManha[array_rand($saudacoesManha)];
-        } elseif ($hora < 18) {
-            return $saudacoesTarde[array_rand($saudacoesTarde)];
-        } else {
-            return $saudacoesNoite[array_rand($saudacoesNoite)];
-        }
+        if ($hora < 12) return $saudacoesManha[array_rand($saudacoesManha)];
+        if ($hora < 18) return $saudacoesTarde[array_rand($saudacoesTarde)];
+        return $saudacoesNoite[array_rand($saudacoesNoite)];
     }
 
     function encontrarPrimeiraParcelaPendente($parcelas)
     {
-
         foreach ($parcelas as $parcela) {
             if ($parcela->dt_baixa === '' || $parcela->dt_baixa === null) {
                 return $parcela;
             }
         }
-
         return null;
     }
 
     private function emprestimoEmProtesto($parcela)
     {
-        if (!$parcela->emprestimo || !$parcela->emprestimo->data_protesto) {
-            return false;
-        }
-
+        if (!$parcela->emprestimo || !$parcela->emprestimo->data_protesto) return false;
         return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
-
     }
 }
