@@ -11,6 +11,9 @@ use App\Models\Feriado;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
+use App\Services\WAPIService;
+use Illuminate\Support\Facades\File;
+
 class CobrancaAutomaticaA extends Command
 {
     /**
@@ -135,73 +138,96 @@ class CobrancaAutomaticaA extends Command
 
     private function enviarMensagem($parcela)
     {
+        $wapiService = new WAPIService();
+
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-        $baseUrl = $parcela->emprestimo->company->whatsapp;
+        $telefoneCliente = "55" . $telefone;
 
-
+        $company = $parcela->emprestimo->company;
+        $baseUrl = $company->whatsapp;
 
         $saudacao = $this->obterSaudacao();
         $mensagem = $this->montarMensagem($parcela, $saudacao);
 
-        $data = [
-            "numero" => "55" . $telefone,
-            "mensagem" => $mensagem
-        ];
+        if (!is_null($company->token_api_wtz) && !is_null($company->instance_id)) {
+            $wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, [
+                "phone" => $telefoneCliente,
+                "message" => $mensagem
+            ]);
+        }
 
-        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
-        Log::info("MENSAGEM ENVIADA: " . $telefone);
-        sleep(4);
-        if ($parcela->emprestimo->company->mensagem_audio) {
-            if ($parcela->atrasadas > 0) {
-                $baseUrl = $parcela->emprestimo->company->whatsapp;
-                $tipo = "0";
-                switch ($parcela->atrasadas) {
-                    case 2:
-                        $tipo = "1.1";
-                        break;
-                    case 4:
-                        $tipo = "2.1";
-                        break;
-                    case 6:
-                        $tipo = "3.1";
-                        break;
-                    case 8:
-                        $tipo = "4.1";
-                        break;
-                    case 10:
-                        $tipo = "5.1";
-                        break;
-                    case 15:
-                        $tipo = "6.1";
-                        break;
+        sleep(1);
+
+        if ($company->mensagem_audio && $parcela->atrasadas > 0) {
+            $tipo = match ($parcela->atrasadas) {
+                2 => "1.1",
+                4 => "2.1",
+                6 => "3.1",
+                8 => "4.1",
+                10 => "5.1",
+                15 => "6.1",
+                default => "0"
+            };
+
+            if ($tipo !== "0") {
+                $nomeCliente = $parcela->emprestimo->client->nome_completo;
+                $mensagemAudio = match ($tipo) {
+                    "1.1" => "Oi $nomeCliente, escute com atenção o áudio abaixo para ficar bem entendido!",
+                    "2.1", "3.1", "5.1" => "E aí $nomeCliente, olha só vamos organizar sua questão!",
+                    "4.1" => "$nomeCliente, olha só atenção que vamos organizar essa parada agora",
+                    "6.1" => "$nomeCliente, seu caso tá sério mesmo",
+                    default => ""
+                };
+
+                if (!empty($mensagemAudio)) {
+                    $wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, [
+                        "phone" => $telefoneCliente,
+                        "message" => $mensagemAudio
+                    ]);
                 }
 
-                if ($tipo != "0") {
-                    $data2 = [
-                        "numero" => "55" . $telefone,
-                        "nomeCliente" => $parcela->emprestimo->client->nome_completo,
-                        "tipo" => $tipo
-                    ];
+                $nomeArquivo = match ($tipo) {
+                    "1.1" => "mensagem_1_atraso_2d.ogg",
+                    "2.1" => "mensagem_1_atraso_4d.ogg",
+                    "3.1" => "mensagem_1_atraso_6d.ogg",
+                    "4.1" => "mensagem_1_atraso_8d.ogg",
+                    "5.1" => "mensagem_1_atraso_10d.ogg",
+                    "6.1" => "mensagem_1_atraso_15d.ogg",
+                    default => null
+                };
 
-                    Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+                if ($nomeArquivo) {
+                    $caminhoArquivo = storage_path('app/public/audios/' . $nomeArquivo);
+                    if (File::exists($caminhoArquivo)) {
+                        $conteudo = File::get($caminhoArquivo);
+                        $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
+
+                        $wapiService->enviarMensagemAudio($company->token_api_wtz, $company->instance_id, [
+                            "phone" => $telefoneCliente,
+                            "audio" => $base64
+                        ]);
+                    }
                 }
+
+
             }
         }
 
-        //identificar se o emprestimo é mensal
-        //identificar se é a primeira cobranca
-        if (count($parcela->emprestimo->parcelas) == 1) {
-            if ($parcela->atrasadas == 0) {
-                $data3 = [
-                    "numero" => "55" . $telefone,
-                    "nomeCliente" => "Sistema",
-                    "tipo" => "msginfo1"
-                ];
+        // Verifica se é o primeiro pagamento
+        if (count($parcela->emprestimo->parcelas) === 1 && $parcela->atrasadas === 0) {
+            $caminhoArquivo = storage_path('app/public/audios/msginfo1.ogg');
+            if (File::exists($caminhoArquivo)) {
+                $conteudo = File::get($caminhoArquivo);
+                $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
 
-                Http::asJson()->post("$baseUrl/enviar-audio", $data3);
+                $wapiService->enviarMensagemAudio($company->token_api_wtz, $company->instance_id, [
+                    "phone" => $telefoneCliente,
+                    "audio" => $base64
+                ]);
             }
         }
     }
+
 
     private function montarMensagem($parcela, $saudacao)
     {
