@@ -328,15 +328,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $link = 'https://www.youtube.com/watch?v=_DU0IvNHe2Q'; // video sobre mais de 1 parcela
                         }
 
+                        $telefoneCliente = "55" . $telefone;
+                        $company = $parcela->emprestimo->company;
 
-
-                        $data = [
-                            "numero" => "55" . $telefone,
-                            "mensagem" => $link
-                        ];
-
-                        $response = Http::asJson()->post($baseUrl, $data);
-                        sleep(2);
+                        if( !is_null($company->token_api_wtz) && !is_null($company->instance_id) ) {
+                            $this->wapiService->enviarMensagem( $company->token_api_wtz, $company->instance_id, [ "phone" => $telefoneCliente , "message" => $link ]);
+                        }
                     }
                 }
             } catch (\Throwable $th) {
