@@ -59,10 +59,6 @@ class RetirarProtestoEmprestimo extends Command
                     return false;
                 }
 
-                if (!is_null($ultimaParcela->dt_baixa)) {
-                    return false;
-                }
-
                 return true;
             })
             ->values();
