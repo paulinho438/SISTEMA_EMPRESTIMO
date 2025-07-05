@@ -6,6 +6,7 @@ use App\Models\CobrarAmanhaUltimaLocalizacao;
 use App\Models\Company;
 use App\Models\UserLocation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 
 use App\Models\Emprestimo;
