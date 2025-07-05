@@ -81,7 +81,6 @@ class MensagemAutomaticaRenovacao extends Command
                 return;
             }
 
-
             $wapiService = new WAPIService();
             $wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, [
                 "phone" => $telefoneCliente,
