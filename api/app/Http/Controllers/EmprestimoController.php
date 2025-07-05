@@ -6,7 +6,6 @@ use App\Models\CobrarAmanhaUltimaLocalizacao;
 use App\Models\Company;
 use App\Models\UserLocation;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 
 
 use App\Models\Emprestimo;
@@ -34,6 +33,7 @@ use App\Models\ClientLocation;
 use App\Models\WebhookCobranca;
 
 use App\Services\WAPIService;
+use Illuminate\Support\Facades\File;
 
 
 use App\Services\BcodexService;
@@ -84,7 +84,6 @@ class EmprestimoController extends Controller
 
     protected $custom_log;
     protected $bcodexService;
-    protected $wapiService;
 
     use VerificarPermissao;
 

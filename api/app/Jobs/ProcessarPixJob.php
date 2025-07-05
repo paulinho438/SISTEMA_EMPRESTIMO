@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Log;
 use App\Models\CustomLog;
 use App\Models\Movimentacaofinanceira;
 
+use App\Services\WAPIService;
+use Illuminate\Support\Facades\File;
+
 
 
 class ProcessarPixJob implements ShouldQueue
@@ -25,6 +28,7 @@ class ProcessarPixJob implements ShouldQueue
     protected $bcodexService;
 
     protected $comprovante;
+    protected $wapiService;
 
     /**
      * Create a new job instance.
@@ -36,6 +40,7 @@ class ProcessarPixJob implements ShouldQueue
         $this->emprestimo = $emprestimo;
         $this->bcodexService = $bcodexService;
         $this->comprovante = $comprovante;
+        $this->wapiService = new WAPIService();
     }
 
     /**
@@ -70,18 +75,24 @@ class ProcessarPixJob implements ShouldQueue
 
                 // Verificar se o PNG foi gerado
                 if (file_exists($pngPath)) {
-                    try {
-                        $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
-                        // Enviar o PNG gerado para o endpoint
-                        $response = Http::attach(
-                            'arquivo', // Nome do campo no formulário
-                            fopen($pngPath, 'rb'), // Conteúdo do arquivo
-                            'comprovante.png' // Nome do arquivo enviado
-                        )->post($this->emprestimo->company->whatsapp . '/enviar-pdf', [
-                            'numero' =>  "55" . $telefone,
-                        ]);
-                    } catch (\Exception $e) {
-                    }
+                    $base64 = 'data:image/png;base64,' . base64_encode(file_get_contents($pngPath));
+                    $company = $this->emprestimo->company();
+                    $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
+                    $numeroCliente = "55" . $telefone;
+                    $this->wapiService->enviarMensagemImagem( $company->token_api_wtz, $company->instance_id, [ "phone" => $numeroCliente, "image" => $base64 ]);
+
+//                    try {
+//                        $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
+//                        // Enviar o PNG gerado para o endpoint
+//                        $response = Http::attach(
+//                            'arquivo', // Nome do campo no formulário
+//                            fopen($pngPath, 'rb'), // Conteúdo do arquivo
+//                            'comprovante.png' // Nome do arquivo enviado
+//                        )->post($this->emprestimo->company->whatsapp . '/enviar-pdf', [
+//                            'numero' =>  "55" . $telefone,
+//                        ]);
+//                    } catch (\Exception $e) {
+//                    }
                 } else {
                 }
             }
@@ -138,7 +149,22 @@ class ProcessarPixJob implements ShouldQueue
             $this->envioMensagem($this->emprestimo->parcelas[0]);
 
             if ($this->comprovante) {
-                $this->envioAudio($this->emprestimo->parcelas[0]);
+//               $this->envioAudio($this->emprestimo->parcelas[0]);
+
+                $nomeArquivo = 'msginicio.ogg';
+                $caminhoArquivo = storage_path('app/public/audios/' . $nomeArquivo);
+
+                if (File::exists($caminhoArquivo)) {
+
+                    $conteudo = File::get($caminhoArquivo);
+                    $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
+
+                    $company = $this->emprestimo->company();
+                    $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
+                    $numeroCliente = "55" . $telefone;
+
+                    $this->wapiService->enviarMensagemAudio( $company->token_api_wtz, $company->instance_id, [ "phone" => $numeroCliente, "audio" => $base64 ]);
+                }
             }
         } catch (\Exception $e) {
             Log::error('Erro ao processar PIX: ' . $e->getMessage());
@@ -212,23 +238,15 @@ class ProcessarPixJob implements ShouldQueue
 
     public function envioMensagem($parcela)
     {
-        if (isset($parcela->emprestimo->company->whatsapp)) {
-            try {
-                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
 
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    $r = $response->json();
-                    if ($r['loggedIn']) {
+        $saudacao = self::obterSaudacao();
 
-                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-                        $saudacao = self::obterSaudacao();
-
-                        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-
-                        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                        $fraseInicial = "
+        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+        $fraseInicial = "
 
 Relatório de Parcelas Pendentes:
 
@@ -240,20 +258,13 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 ";
 
 
-                        $frase = $saudacaoTexto . $fraseInicial;
+        $frase = $saudacaoTexto . $fraseInicial;
 
-                        $data = [
-                            "numero" => "55" . $telefone,
-                            "mensagem" => $frase
-                        ];
+        $telefoneCliente = "55" . $telefone;
+        $company = $parcela->emprestimo->company();
 
-                        $response = Http::asJson()->post($baseUrl, $data);
-                        sleep(2);
-                    }
-                }
-            } catch (\Throwable $th) {
-                dd($th);
-            }
+        if( !is_null($company->token_api_wtz) && !is_null($company->instance_id) ) {
+            $this->wapiService->enviarMensagem( $company->token_api_wtz, $company->instance_id, [ "phone" => $telefoneCliente , "message" => $frase ]);
         }
     }
 
