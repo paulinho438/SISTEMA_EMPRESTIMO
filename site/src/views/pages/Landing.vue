@@ -8,7 +8,6 @@ import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
 
 import moment from 'moment';
-import FullScreenLoading from "@/components/FullScreenLoading.vue";
 
 export default {
     components: {
