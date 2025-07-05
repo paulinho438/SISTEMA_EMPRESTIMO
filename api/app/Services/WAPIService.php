@@ -33,4 +33,22 @@ class WAPIService
 
         return true;
     }
+
+    public function enviarMensagemAudio(string $token, string $instance_id, array $data)
+    {
+        $url = "{$this->baseUrl}/message/send-audio?instanceId={$instance_id}";
+
+        $accessToken = $token;
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->post($url, $data);
+
+        if (!$response->successful()) {
+            return false;
+        }
+
+        return true;
+    }
 }

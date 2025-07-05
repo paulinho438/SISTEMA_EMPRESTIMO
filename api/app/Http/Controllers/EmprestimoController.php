@@ -123,6 +123,49 @@ class EmprestimoController extends Controller
 
     }
 
+    public function enviarMensagemAudioWAPITeste(Request $request)
+    {
+        $company = Company::find($request->input('company_id'));
+
+        if (!$company) {
+            return response()->json([
+                "message" => "Empresa não existe",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if( is_null($company->token_api_wtz) || is_null($company->instance_id) ) {
+            return response()->json([
+                "message" => "Empresa não tem token da api ou instance_id",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $base64 = null;
+
+        $nomeArquivo = 'mensagem_1_atraso_6d.ogg';
+        $caminhoArquivo = storage_path('app/audios/' . $nomeArquivo);
+
+        if (File::exists($caminhoArquivo)) {
+            $conteudo = File::get($caminhoArquivo);
+            $base64 = base64_encode($conteudo);
+        } else {
+            return response()->json([
+                "message" => "Arquivo de audio não encontrado",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $envio = $this->wapiService->enviarMensagemAudio( $company->token_api_wtz, $company->instance_id, [ "phone" => "5561993305267", "audio" => $base64 ]);
+
+        if (!$envio) {
+            return response()->json([
+                "message" => "Mensagem não enviada",
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        return true;
+
+    }
+
+
     public function gerarCobranca(Request $request)
     {
 
