@@ -2,17 +2,23 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import EmprestimoService from '../../service/EmprestimoService';
+import FullScreenLoading from '@/components/FullScreenLoading.vue';
 import { useToast } from 'primevue/usetoast';
 import { FilterMatchMode, PrimeIcons, ToastSeverity } from 'primevue/api';
 import { useConfirm } from 'primevue/useconfirm';
 
 import moment from 'moment';
+import FullScreenLoading from "@/components/FullScreenLoading.vue";
 
 export default {
+    components: {
+        FullScreenLoading, // Registra o componente
+    },
     data() {
         return {
             router: useRouter(),
             route: useRoute(),
+            loading: ref(false),
             emprestimoService: new EmprestimoService(),
             id_pedido: ref(this.$route.params.id_pedido),
             informacoes: ref(null),
@@ -98,6 +104,7 @@ export default {
     },
 
     beforeMount() {
+        this.loading = true;
         this.emprestimoService
             .infoEmprestimoFront(this.id_pedido)
             .then((response) => {
@@ -118,6 +125,7 @@ export default {
                 let valor = this.max - this.min;
 
                 this.sliderValue = this.min + valor / 2;
+                this.loading = false;
             })
             .catch((error) => {
                 if (error?.response?.status != 422) {
@@ -127,12 +135,14 @@ export default {
                         life: 3000
                     });
                 }
+                this.loading = false;
             });
     }
 };
 </script>
 
 <template>
+    <FullScreenLoading :isLoading="loading" />
     <div class="container">
         <header>
             <h1>Histórico de Parcelas</h1>
