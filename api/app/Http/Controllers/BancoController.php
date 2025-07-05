@@ -454,14 +454,14 @@ class BancoController extends Controller
                             $dataFinalCarbon = Carbon::parse($parcela->venc_real);
                             $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
                             $diferencaEmMeses++;
-                            $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                            $parcela->venc_real = $dataInicialCarbon->copy()->addMonths($diferencaEmMeses);
                             $parcela->save();
                         } else if ($valor == $lucro) {
                             $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                             $dataFinalCarbon = Carbon::parse($parcela->venc_real);
                             $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
                             $diferencaEmMeses++;
-                            $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                            $parcela->venc_real = $dataInicialCarbon->copy()->addMonths($diferencaEmMeses);
                             $parcela->atrasadas = 0;
                             $parcela->valor_recebido_pix = 0;
                             $parcela->save();
@@ -539,7 +539,7 @@ class BancoController extends Controller
 
                         $diferencaEmMeses++;
 
-                        $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
+                        $parcela->venc_real = $dataInicialCarbon->copy()->addMonths($diferencaEmMeses);
                         $parcela->save();
 
                         $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
