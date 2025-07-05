@@ -1847,6 +1847,9 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     }
                 }
 
+                $emprestimo->protesto = 0;
+                $emprestimo->save();
+
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;

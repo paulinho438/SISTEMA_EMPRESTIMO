@@ -6,6 +6,8 @@
       <sourceFolder url="file://$MODULE_DIR$/api/database/factories" isTestSource="false" packagePrefix="Database\Factories\" />
       <sourceFolder url="file://$MODULE_DIR$/api/database/seeders" isTestSource="false" packagePrefix="Database\Seeders\" />
       <sourceFolder url="file://$MODULE_DIR$/api/tests" isTestSource="true" packagePrefix="Tests\" />
+      <excludeFolder url="file://$MODULE_DIR$/api/storage/app" />
+      <excludeFolder url="file://$MODULE_DIR$/api/storage/framework" />
       <excludeFolder url="file://$MODULE_DIR$/api/vendor" />
     </content>
     <orderEntry type="inheritedJdk" />
