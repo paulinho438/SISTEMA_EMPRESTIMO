@@ -19,7 +19,7 @@ yarn-error.log
 /storage/*
 
 # MAS INCLUI OS ÁUDIOS
-!storage/app/audios/
-!storage/app/audios/*.ogg
+!public/storage/app/audios/
+!public/storage/app/audios/*.ogg
 
 
