@@ -142,7 +142,7 @@ class EmprestimoController extends Controller
         $base64 = null;
 
         $nomeArquivo = 'mensagem_1_atraso_6d.ogg';
-        $caminhoArquivo = storage_path('app/audios/' . $nomeArquivo);
+        $caminhoArquivo = storage_path('app/public/audios/' . $nomeArquivo);
 
         if (File::exists($caminhoArquivo)) {
             $conteudo = File::get($caminhoArquivo);
