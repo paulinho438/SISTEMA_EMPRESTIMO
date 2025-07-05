@@ -16,7 +16,7 @@ class WAPIService
         $this->baseUrl = 'https://api.w-api.app/v1';
     }
 
-    public function enviarMensagem(string $token, string $instance_id, string $data)
+    public function enviarMensagem(string $token, string $instance_id, array $data)
     {
         $url = "{$this->baseUrl}/message/send-text?instanceId={$instance_id}";
 
