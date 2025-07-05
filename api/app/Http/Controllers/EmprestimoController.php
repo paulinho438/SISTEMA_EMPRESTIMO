@@ -610,7 +610,7 @@ class EmprestimoController extends Controller
 
             $addParcela = [];
             $addParcela['emprestimo_id'] = $emprestimoAdd->id;
-            $addParcela['dt_lancamento'] = date('Y-m-d');
+            $addParcela['dt_lancamento'] = $emprestimoAdd->dt_lancamento;
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
