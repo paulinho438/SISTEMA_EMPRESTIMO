@@ -27,6 +27,7 @@ class Kernel extends ConsoleKernel
         Commands\MensagemAutomaticaRenovacao::class,
         Commands\BackupClientes::class,
         Commands\ProcessarWebhookCobranca::class,
+        Commands\RetirarProtestoEmprestimo::class
 
     ];
 
@@ -61,6 +62,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('rotinas:BackupClientes')->dailyAt('00:00');
 
         $schedule->command('protestar:Emprestimo')->dailyAt('08:00');
+        $schedule->command('retirarProtesto:Emprestimo')->everyTenMinutes()->withoutOverlapping();
 
         $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
 
