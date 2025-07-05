@@ -157,6 +157,8 @@ class EmprestimoController extends Controller
         $envio = $this->wapiService->enviarMensagemAudio( $company->token_api_wtz, $company->instance_id, [ "phone" => "5561993305267", "audio" => $base64 ]);
 
         if (!$envio) {
+
+            return [ "phone" => "5561993305267", "audio" => $base64 ];
             return response()->json([
                 "message" => "Mensagem não enviada",
             ], Response::HTTP_FORBIDDEN);
