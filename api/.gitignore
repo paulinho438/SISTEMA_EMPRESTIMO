@@ -15,4 +15,11 @@ yarn-error.log
 /.idea
 /.vscode
 
+# IGNORA TUDO DENTRO DE storage
+/storage/*
+
+# MAS INCLUI OS ÁUDIOS
+!storage/app/audios/
+!storage/app/audios/*.ogg
+
 
