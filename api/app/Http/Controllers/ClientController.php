@@ -82,6 +82,9 @@ class ClientController extends Controller
                         $query->where('emprestimos.company_id', $request->header('company-id'));
                     }
                 })
+                ->where(function ($query) use ($request) {
+                    $query->where('emprestimos.protesto', 0);
+                })
                 ->join('emprestimos', 'parcelas.emprestimo_id', '=', 'emprestimos.id')
                 ->join('clients', 'emprestimos.client_id', '=', 'clients.id')
                 ->join('companies', 'emprestimos.company_id', '=', 'companies.id')
