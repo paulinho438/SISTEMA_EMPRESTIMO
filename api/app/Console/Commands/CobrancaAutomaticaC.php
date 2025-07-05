@@ -101,7 +101,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $tipo = match ($parcela->atrasadas) {
                                 2 => "1.3", 4 => "2.3", 6 => "3.3",
                                 8 => "4.3", 10 => "5.3", 15 => "6.3",
-                                default => "0"
+                                default => "1.3"
                             };
 
                             $audioMap = [
