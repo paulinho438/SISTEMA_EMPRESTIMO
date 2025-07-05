@@ -2104,19 +2104,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function infoEmprestimoFront(Request $request, $id)
     {
-
         $array = ['error' => '', 'data' => []];
 
-        $user = auth()->user();
-
-
-        $parcela = Parcela::find($id);
+        $parcela = Parcela::with([
+            'emprestimo.parcelas',
+            'emprestimo.quitacao',
+            'emprestimo.pagamentominimo',
+            'emprestimo.pagamentosaldopendente',
+            'emprestimo.company'
+        ])->find($id);
 
         if ($parcela) {
             $array['data']['emprestimo'] = new EmprestimoLandingPageResource($parcela->emprestimo);
             return $array;
         }
-
 
         return response()->json(['message' => 'Baixa realizada com sucesso.']);
     }
