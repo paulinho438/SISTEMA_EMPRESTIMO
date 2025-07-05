@@ -200,6 +200,7 @@ export default {
         },
         async fecharCaixa() {
             try {
+                this.loading = true;
                 await this.bancoService.fechamentoCaixa(this.banco.id);
 
                 this.toast.add({
@@ -218,6 +219,7 @@ export default {
 
             this.display = false;
             this.valorDesconto = 0;
+            this.loading = false;
         },
         modalFechamento() {
             this.displayFechamento.enabled = !this.displayFechamento.enabled;
