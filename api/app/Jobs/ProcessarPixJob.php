@@ -269,37 +269,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
     }
 
-    public function envioAudio($parcela)
-    {
-        if (isset($parcela->emprestimo->company->whatsapp)) {
-            try {
-                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
-
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    $r = $response->json();
-                    if ($r['loggedIn']) {
-
-                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-audio';
-
-
-                        $data = [
-                            "numero" => "55" . $telefone,
-                            "tipo" => "msginicio",
-                            "nomeCliente" => "Sistema"
-                        ];
-
-                        $response = Http::asJson()->post($baseUrl, $data);
-                        sleep(2);
-                    }
-                }
-            } catch (\Throwable $th) {
-                dd($th);
-            }
-        }
-    }
-
-    public function envioMensagemVideoYoutube($parcela)
+   public function envioMensagemVideoYoutube($parcela)
     {
         if (isset($parcela->emprestimo->company->whatsapp)) {
 

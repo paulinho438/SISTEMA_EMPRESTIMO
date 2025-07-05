@@ -150,6 +150,9 @@ export default function ATMDetails({navigation, route}) {
   };
 
   const montarStringParcelas = parcelas => {
+    if(!parcelas[0]){
+      return '';
+    }
     const fraseInicial = `
 Relatório de Parcelas:
   
