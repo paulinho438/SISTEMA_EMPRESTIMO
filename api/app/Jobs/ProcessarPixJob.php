@@ -75,7 +75,8 @@ class ProcessarPixJob implements ShouldQueue
 
                 // Verificar se o PNG foi gerado
                 if (file_exists($pngPath)) {
-                    $base64 = 'data:image/png;base64,' . base64_encode(file_get_contents($pngPath));
+                    $conteudo = File::get($pngPath);
+                    $base64 = 'data:image/png;base64,' . base64_encode($conteudo);
                     $company = $this->emprestimo->company;
                     $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                     $numeroCliente = "55" . $telefone;
