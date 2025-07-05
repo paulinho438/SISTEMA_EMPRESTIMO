@@ -3,64 +3,35 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-
 use Illuminate\Support\Facades\Http;
-
-use App\Models\Juros;
 use App\Models\Parcela;
 use App\Models\Feriado;
 use App\Models\BotaoCobranca;
-
-use Efi\Exception\EfiException;
-use Efi\EfiPay;
-
-use Illuminate\Support\Facades\DB;
-
-use Illuminate\Support\Str;
-
+use App\Services\WAPIService;
+use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
 
 class CobrancaAutomaticaBBotao extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'cobranca:AutomaticaBBotao';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Cobrança automatica das parcelas em atraso';
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
     public function handle()
     {
-
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
 
         $presseds = BotaoCobranca::where('is_active', true)->where('click_count', 2)->get();
 
         foreach ($presseds as $pressed) {
-            $pressed->update([
-                'is_active' => false
-            ]);
+            $pressed->update(['is_active' => false]);
 
             $today = Carbon::today()->toDateString();
-            // Verificando se hoje é um feriado
             $isHoliday = Feriado::where('data_feriado', $today)->exists();
 
-            $parcelas = collect(); // Coleção vazia se hoje for um feriado
+            $parcelas = collect();
 
             if (!$isHoliday) {
-                $parcelas = Parcela::where('dt_baixa', null)
+                $parcelas = Parcela::whereNull('dt_baixa')
                     ->whereNull('valor_recebido_pix')
                     ->whereNull('valor_recebido')
                     ->whereDate('venc_real', $today)
@@ -68,66 +39,83 @@ class CobrancaAutomaticaBBotao extends Command
                         $query->where('company_id', $pressed->company_id);
                     })
                     ->orderByDesc('id')
-                    ->get()->unique('emprestimo_id');
+                    ->get()
+                    ->unique('emprestimo_id');
             }
 
-
-
-            $r = [];
             foreach ($parcelas as $parcela) {
-
-                if ($parcela->emprestimo->banco->wallet == 0) {
-                    return;
+                if (
+                    $parcela->emprestimo->banco->wallet == 0 ||
+                    !isset($parcela->emprestimo->company->whatsapp) ||
+                    !$parcela->emprestimo->contaspagar ||
+                    $parcela->emprestimo->contaspagar->status !== "Pagamento Efetuado"
+                ) {
+                    continue;
                 }
 
-                if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+                try {
+                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
 
-                    try {
+                    if ($response->successful() && ($r = $response->json()) && $r['loggedIn']) {
+                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                        $telefoneCliente = "55" . $telefone;
+                        $company = $parcela->emprestimo->company;
 
-                        $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+                        $saudacao = self::obterSaudacao();
+                        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                            $r = $response->json();
-                            if ($r['loggedIn']) {
+                        $frase = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!\n\n"
+                            . "🤷‍♂️ Não identificamos seu pagamento na data de hoje, evite multas!\n\n"
+                            . "Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:\n\n"
+                            . "https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}\n\n"
+                            . "📲 Para mais informações WhatsApp {$company->numero_contato}";
 
+                        $wapiService = new WAPIService();
+                        $wapiService->enviarMensagem(
+                            $company->token_api_wtz,
+                            $company->instance_id,
+                            [
+                                "phone" => $telefoneCliente,
+                                "message" => $frase
+                            ]
+                        );
 
-                                $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                                $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+                        sleep(1);
 
-                                $saudacao = self::obterSaudacao();
-
-                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                            $fraseInicial = "
-
-🤷‍♂️ Não identificamos seu pagamento na data de hoje, evite multas!
-
-Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
-
-https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
-
-📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
-";
-
-                            $frase = $saudacaoTexto . $fraseInicial;
-
-                            $data = [
-                                "numero" => "55" . $telefone,
-                                "mensagem" => $frase
+                        if ($company->mensagem_audio && $parcela->atrasadas > 0) {
+                            $audioMap = [
+                                2 => "mensagem_2_atraso_2d.ogg",
+                                4 => "mensagem_2_atraso_4d.ogg",
+                                6 => "mensagem_2_atraso_6d.ogg",
+                                8 => "mensagem_2_atraso_8d.ogg",
+                                10 => "mensagem_2_atraso_10d.ogg",
+                                15 => "mensagem_2_atraso_15d.ogg"
                             ];
 
-                            $response = Http::asJson()->post($baseUrl, $data);
-                                sleep(8);
+                            if (isset($audioMap[$parcela->atrasadas])) {
+                                $nomeArquivo = $audioMap[$parcela->atrasadas];
+                                $caminhoArquivo = storage_path("app/public/audios/{$nomeArquivo}");
+
+                                if (File::exists($caminhoArquivo)) {
+                                    $conteudo = File::get($caminhoArquivo);
+                                    $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
+
+                                    $wapiService->enviarMensagemAudio(
+                                        $company->token_api_wtz,
+                                        $company->instance_id,
+                                        [
+                                            "phone" => $telefoneCliente,
+                                            "audio" => $base64
+                                        ]
+                                    );
+                                }
                             }
                         }
-                    } catch (\Throwable $th) {
-                        dd($th);
                     }
+                } catch (\Throwable $th) {
+                    dd($th);
                 }
             }
-
-            exit;
         }
     }
 
@@ -138,23 +126,18 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌤️ Espero que sua tarde esteja ótima'];
         $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌤️ Espero que sua noite esteja ótima'];
 
-        if ($hora < 12) {
-            return $saudacoesManha[array_rand($saudacoesManha)];
-        } elseif ($hora < 18) {
-            return $saudacoesTarde[array_rand($saudacoesTarde)];
-        } else {
-            return $saudacoesNoite[array_rand($saudacoesNoite)];
-        }
+        if ($hora < 12) return $saudacoesManha[array_rand($saudacoesManha)];
+        if ($hora < 18) return $saudacoesTarde[array_rand($saudacoesTarde)];
+        return $saudacoesNoite[array_rand($saudacoesNoite)];
     }
 
-    function encontrarPrimeiraParcelaPendente($parcelas) {
-
-        foreach($parcelas as $parcela){
-            if($parcela->dt_baixa === '' || $parcela->dt_baixa === null){
+    function encontrarPrimeiraParcelaPendente($parcelas)
+    {
+        foreach ($parcelas as $parcela) {
+            if (empty($parcela->dt_baixa)) {
                 return $parcela;
             }
         }
-
         return null;
     }
 }
