@@ -224,12 +224,18 @@ class BancoController extends Controller
                         continue;
                     }
 
+
+                    $valor = $parcela->valor_recebido;
+
                     if (!$parcela->emprestimo->pagamentominimo || !$parcela->emprestimo->pagamentosaldopendente) {
-                        Log::debug("Processando emprestimo mensal - parcela ID {$parcela->id} NA0 FOI PROCESSADA, PAGAMENTO MINIMO OU SALDO PENDENTE NÃO ENCONTRADO");
+                        //Quando não tiver pagamento minimo quer dizer que o emprestimo foi refinanciado sem opcao de pagamento minimo
+                        //Nesse caso o ray falou para só descontar do saldo e fim
+                        $parcela->saldo -= $valor;
+                        $parcela->valor_recebido = 0;
+                        $parcela->save();
                         continue;
                     }
 
-                    $valor = $parcela->valor_recebido;
                     $valor1 = $parcela->emprestimo->pagamentominimo->valor;
                     $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
 
