@@ -485,6 +485,35 @@ class BancoController extends Controller
                         continue;
                     }
 
+
+                    $valor = $parcela->valor_recebido_pix;
+
+                    if (!$parcela->emprestimo->pagamentominimo || !$parcela->emprestimo->pagamentosaldopendente) {
+                        //Quando não tiver pagamento minimo quer dizer que o emprestimo foi refinanciado sem opcao de pagamento minimo
+                        //Nesse caso o ray falou para só descontar do saldo e fim
+                        $parcela->saldo -= $valor;
+                        $parcela->valor_recebido = 0;
+                        $parcela->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
+
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
+                        continue;
+                    }
+
                     $valor1 = $parcela->emprestimo->pagamentominimo->valor;
                     $valor2 = $parcela->emprestimo->pagamentosaldopendente->valor - $parcela->emprestimo->pagamentominimo->valor;
 
