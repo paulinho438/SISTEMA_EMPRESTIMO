@@ -233,6 +233,23 @@ class BancoController extends Controller
                         $parcela->saldo -= $valor;
                         $parcela->valor_recebido = 0;
                         $parcela->save();
+
+                        $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $parcela->identificador);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
+
+                        $movimentacaoFinanceira = [];
+                        $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                        $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                        $movimentacaoFinanceira['descricao'] = "Fechamento de Caixa - usuário {$parcela->nome_usuario_baixa} realizou a baixa manual da parcela Nº {$parcela->parcela}  do emprestimo mensal n° {$parcela->emprestimo_id} do cliente {$parcela->emprestimo->client->nome_completo}";
+                        $movimentacaoFinanceira['tipomov'] = 'E';
+                        $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                        $movimentacaoFinanceira['valor'] = $valor;
+                        Movimentacaofinanceira::create($movimentacaoFinanceira);
                         continue;
                     }
 
