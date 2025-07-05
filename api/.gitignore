@@ -1,7 +1,6 @@
 /node_modules
 /public/build
 /public/hot
-/storage/*.key
 /vendor
 .env
 .env.backup
@@ -16,14 +15,4 @@ yarn-error.log
 /.idea
 /.vscode
 
-# Ignore storage public files
-/storage/app/public/video.mp4
 
-# Ignore all files in storage/app/public
-/storage/app/public/*
-
-# Ignore all files in storage/app/public
-/storage/app/public/*
-
-# Allow specific video file
-!storage/app/public/video.mp4
