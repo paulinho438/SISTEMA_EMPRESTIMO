@@ -76,7 +76,7 @@ class ProcessarPixJob implements ShouldQueue
                 // Verificar se o PNG foi gerado
                 if (file_exists($pngPath)) {
                     $base64 = 'data:image/png;base64,' . base64_encode(file_get_contents($pngPath));
-                    $company = $this->emprestimo->company();
+                    $company = $this->emprestimo->company;
                     $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                     $numeroCliente = "55" . $telefone;
                     $this->wapiService->enviarMensagemImagem( $company->token_api_wtz, $company->instance_id, [ "phone" => $numeroCliente, "image" => $base64 ]);
@@ -159,7 +159,7 @@ class ProcessarPixJob implements ShouldQueue
                     $conteudo = File::get($caminhoArquivo);
                     $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
 
-                    $company = $this->emprestimo->company();
+                    $company = $this->emprestimo->company;
                     $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                     $numeroCliente = "55" . $telefone;
 
@@ -261,7 +261,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $frase = $saudacaoTexto . $fraseInicial;
 
         $telefoneCliente = "55" . $telefone;
-        $company = $parcela->emprestimo->company();
+        $company = $parcela->emprestimo->company;
 
         if( !is_null($company->token_api_wtz) && !is_null($company->instance_id) ) {
             $this->wapiService->enviarMensagem( $company->token_api_wtz, $company->instance_id, [ "phone" => $telefoneCliente , "message" => $frase ]);
