@@ -650,11 +650,6 @@ class BancoController extends Controller
                         $parcela->valor_recebido_pix = 0;
                         $parcela->save();
 
-
-
-
-
-
                         // Encontrar a próxima parcela
                         $parcela = Parcela::where('emprestimo_id', $parcela->emprestimo_id)
                             ->where('id', '>', $parcela->id)
