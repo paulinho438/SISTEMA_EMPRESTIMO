@@ -669,11 +669,13 @@ class BancoController extends Controller
             return response()->json(['message' => 'Fechamento de Caixa Concluido.']);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erro ao criar cobrança: ' . $e->getMessage());
+            Log::error('Erro ao fechar o Caixa: ' . $e->getMessage() . ' em ' . $e->getFile() . ':' . $e->getLine());
 
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
-                "error" => $e->getMessage()
+                "error" => $e->getMessage(),
+                "file" => $e->getFile(),
+                "line" => $e->getLine()
             ], Response::HTTP_FORBIDDEN);
         }
     }
