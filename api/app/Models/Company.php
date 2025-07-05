@@ -25,7 +25,9 @@ class Company extends Model
         'login',
         'numero_contato',
         'envio_automatico_renovacao',
-        'mensagem_audio'
+        'mensagem_audio',
+        'token_api_wtz',
+        'instance_id'
 
     ];
 
