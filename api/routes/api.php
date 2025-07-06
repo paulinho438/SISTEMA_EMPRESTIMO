@@ -82,6 +82,7 @@ Route::post('/manutencao/buscar_clientes_cobrados/', [EmprestimoController::clas
 Route::post('/manutencao/buscar_parcelas_pendentes/', [EmprestimoController::class, 'buscarParcelasPendentes']);
 Route::post('/manutencao/emprestimos_aptos_a_protesto/', [EmprestimoController::class, 'emprestimosAptosAProtesto']);
 Route::post('/manutencao/emprestimos_aptos_a_refinanciar/', [EmprestimoController::class, 'emprestimosAptosARefinanciar']);
+Route::post('/manutencao/ajustar_data_lancamento_parcelas/', [EmprestimoController::class, 'ajustarDataLancamentoParcelas']);
 
 
 

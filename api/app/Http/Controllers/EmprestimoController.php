@@ -356,6 +356,19 @@ class EmprestimoController extends Controller
     }
 
 
+
+    public function ajustarDataLancamentoParcelas()
+    {
+        $emprestimos = Emprestimo::all();
+        foreach ($emprestimos as $emprestimo) {
+            foreach ($emprestimo->parcelas as $parcela){
+                $parcela->dt_lancamento = $emprestimo->dt_lancamento;
+                $parcela->save();
+            }
+        }
+
+        return true;
+    }
     public function emprestimosAptosARefinanciar()
     {
         $emprestimos = Emprestimo::withCount([
