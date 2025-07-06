@@ -195,6 +195,9 @@ class BancoController extends Controller
                             $diferencaEmMeses++;
                             $parcela->venc_real = Carbon::parse($parcela->dt_lancamento)->addMonths($diferencaEmMeses);
                             $parcela->save();
+
+                            $parcela->saldo += $parcela->emprestimo->lucro;
+                            $parcela->save();
                         } else if ($valor == $lucro) {
                             $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
                             $dataFinalCarbon = Carbon::parse($parcela->venc_real);
@@ -455,6 +458,9 @@ class BancoController extends Controller
                             $diferencaEmMeses = $dataInicialCarbon->diffInMonths($dataFinalCarbon);
                             $diferencaEmMeses++;
                             $parcela->venc_real = $dataInicialCarbon->copy()->addMonths($diferencaEmMeses);
+                            $parcela->save();
+
+                            $parcela->saldo += $parcela->emprestimo->lucro;
                             $parcela->save();
                         } else if ($valor == $lucro) {
                             $dataInicialCarbon = Carbon::parse($parcela->dt_lancamento);
