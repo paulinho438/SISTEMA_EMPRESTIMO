@@ -359,7 +359,10 @@ class EmprestimoController extends Controller
 
     public function ajustarDataLancamentoParcelas()
     {
-        $emprestimos = Emprestimo::orderByDesc('id')->limit(1000)->get();
+        $emprestimos = Emprestimo::orderByDesc('id')
+            ->offset(1000)
+            ->limit(1000)
+            ->get();
         foreach ($emprestimos as $emprestimo) {
             foreach ($emprestimo->parcelas as $parcela){
                 $parcela->dt_lancamento = $emprestimo->dt_lancamento;
