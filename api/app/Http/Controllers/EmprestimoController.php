@@ -462,10 +462,11 @@ class EmprestimoController extends Controller
         if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelasQuery->where('atrasadas', '>', 0);
         }
+
         $parcelasQuery->orderByDesc('id');
         $parcelas = $parcelasQuery->get();
 
-        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelas = $parcelas->filter(function ($parcela) {
                 $dataProtesto = optional($parcela->emprestimo)->data_protesto;
 
@@ -477,13 +478,18 @@ class EmprestimoController extends Controller
             });
         }
 
-        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
+        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
             $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
                 $emprestimo = $parcela->emprestimo;
 
-                return $emprestimo &&
+                $deveCobrarHoje = $emprestimo &&
                     !is_null($emprestimo->deve_cobrar_hoje) &&
                     Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+
+                $vencimentoHoje = $parcela->venc_real &&
+                    Carbon::parse($parcela->venc_real)->isSameDay($todayHoje);
+
+                return $deveCobrarHoje || $vencimentoHoje;
             });
         }
 
