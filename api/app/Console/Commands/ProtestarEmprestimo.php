@@ -66,7 +66,7 @@ class ProtestarEmprestimo extends Command
                     return false;
                 }
 
-                if ((int)$ultimaParcela->atrasadas <= 14) {
+                if ((int)$ultimaParcela->atrasadas <= 21) {
                     return false;
                 }
 

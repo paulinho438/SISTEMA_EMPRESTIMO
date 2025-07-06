@@ -68,7 +68,7 @@ class RetirarProtestoEmprestimo extends Command
             $podeCancelarProtesto = true;
 
             foreach ($emprestimo->parcelas as $parcela) {
-                if(is_null($parcela->dt_baixa) && $parcela->atrasadas >= 14){
+                if(is_null($parcela->dt_baixa) && $parcela->atrasadas >= 21){
                     $podeCancelarProtesto = false;
 //                    Log::info(message: "ROTINA_RETIRAR_PROTESTO: Emprestimo: $emprestimo->id não pode ser retirado de protesto, parcela: $parcela->id");
                 }
