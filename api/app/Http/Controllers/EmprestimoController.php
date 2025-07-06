@@ -105,13 +105,13 @@ class EmprestimoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if( is_null($company->token_api_wtz) || is_null($company->instance_id) ) {
+        if (is_null($company->token_api_wtz) || is_null($company->instance_id)) {
             return response()->json([
                 "message" => "Empresa não tem token da api ou instance_id",
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $envio = $this->wapiService->enviarMensagem( $company->token_api_wtz, $company->instance_id, [ "phone" => "5561993305267", "message" => "Teste" ]);
+        $envio = $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, ["phone" => "5561993305267", "message" => "Teste"]);
 
         if (!$envio) {
             return response()->json([
@@ -133,7 +133,7 @@ class EmprestimoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if( is_null($company->token_api_wtz) || is_null($company->instance_id) ) {
+        if (is_null($company->token_api_wtz) || is_null($company->instance_id)) {
             return response()->json([
                 "message" => "Empresa não tem token da api ou instance_id",
             ], Response::HTTP_FORBIDDEN);
@@ -153,11 +153,11 @@ class EmprestimoController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $envio = $this->wapiService->enviarMensagemAudio( $company->token_api_wtz, $company->instance_id, [ "phone" => "5561993305267", "audio" => $base64 ]);
+        $envio = $this->wapiService->enviarMensagemAudio($company->token_api_wtz, $company->instance_id, ["phone" => "5561993305267", "audio" => $base64]);
 
         if (!$envio) {
 
-            return [ "phone" => "5561993305267", "audio" => $base64 ];
+            return ["phone" => "5561993305267", "audio" => $base64];
             return response()->json([
                 "message" => "Mensagem não enviada",
             ], Response::HTTP_FORBIDDEN);
@@ -1067,23 +1067,15 @@ class EmprestimoController extends Controller
 
     public function envioMensagem($parcela)
     {
-        if (isset($parcela->emprestimo->company->whatsapp)) {
-            try {
-                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
 
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    $r = $response->json();
-                    if ($r['loggedIn']) {
+        $saudacao = self::obterSaudacao();
 
-                        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-                        $saudacao = self::obterSaudacao();
-
-                        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-
-                        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                        $fraseInicial = "
+        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+        $fraseInicial = "
 
 Relatório de Parcelas Pendentes:
 
@@ -1095,21 +1087,14 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 ";
 
 
-                        $frase = $saudacaoTexto . $fraseInicial;
+        $frase = $saudacaoTexto . $fraseInicial;
 
-                        $data = [
-                            "numero" => "55" . $telefone,
-                            "mensagem" => $frase
-                        ];
+        $telefoneCliente = "55" . $telefone;
 
-                        $response = Http::asJson()->post($baseUrl, $data);
-                        sleep(2);
-                    }
-                }
-            } catch (\Throwable $th) {
-                dd($th);
-            }
-        }
+        $company = $parcela->emprestimo->company;
+
+        $envio = $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, ["phone" => $telefoneCliente, "message" => $frase]);
+
     }
 
     function encontrarPrimeiraParcelaPendente($parcelas)
