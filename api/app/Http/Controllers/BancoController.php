@@ -218,7 +218,7 @@ class BancoController extends Controller
                         $movimentacaoFinanceira['valor'] = $valor;
                         Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                        $parcela->saldo += $parcela->emprestimo->lucro;
+                        //$parcela->saldo += $parcela->emprestimo->lucro;
                         $parcela->save();
 
                         continue;
