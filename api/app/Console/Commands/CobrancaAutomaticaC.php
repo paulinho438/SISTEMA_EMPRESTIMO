@@ -60,8 +60,11 @@ class CobrancaAutomaticaC extends Command
         foreach ($parcelas as $parcela) {
             if ($this->emprestimoEmProtesto($parcela)) continue;
 
-            if ($parcela->emprestimo->contaspagar &&
-                $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+            if (
+                $parcela->emprestimo &&
+                $parcela->emprestimo->contaspagar &&
+                $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado"
+            ) {
 
                 $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                 $telefoneCliente = "55" . $telefone;
