@@ -35,44 +35,47 @@ class MensagemAutomaticaRenovacao extends Command
                 continue;
             }
 
-            foreach ($client->emprestimos as $emprestimo) {
-                if (is_object($emprestimo) && isset($emprestimo->mensagem_renovacao) && $emprestimo->mensagem_renovacao == 1) {
-                    continue;
-                }
+            $emprestimo = $client->emprestimos;
 
-                $valorBase = $emprestimo->valor ?? 0;
-                $mensagem = null;
+            if (!is_object($emprestimo)) {
+                continue;
+            }
 
-                $nome = $client->nome_completo;
-                $valorOferta = $valorBase ?? 0;
+            if (isset($emprestimo->mensagem_renovacao) && $emprestimo->mensagem_renovacao == 1) {
+                continue;
+            }
 
-                if (!isset($emprestimo->count_late_parcels)) {
-                    continue; // segurança adicional
-                }
+            if (!isset($emprestimo->count_late_parcels)) {
+                continue;
+            }
 
-                switch (true) {
-                    case ($emprestimo->count_late_parcels <= 2):
-                        $mensagem = "Olá {$nome}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ " . ($valorOferta + 100) . ". Gostaria de contratar?";
-                        break;
+            $valorBase = $emprestimo->valor ?? 0;
+            $valorOferta = $valorBase;
+            $nome = $client->nome_completo;
+            $mensagem = null;
 
-                    case ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5):
-                        $mensagem = "Olá {$nome}, temos um valor pré-aprovado de R$ {$valorOferta} disponível para você. Gostaria de contratar?";
-                        break;
+            switch (true) {
+                case ($emprestimo->count_late_parcels <= 2):
+                    $mensagem = "Olá {$nome}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ " . ($valorOferta + 100) . ". Gostaria de contratar?";
+                    break;
 
-                    case ($emprestimo->count_late_parcels >= 6 && $emprestimo->count_late_parcels <= 10):
-                        $mensagem = "Olá {$nome}, mesmo com pequenos atrasos, você ainda pode renovar com valor de R$ " . max(0, $valorOferta - 100) . ". Interessado?";
-                        break;
+                case ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5):
+                    $mensagem = "Olá {$nome}, temos um valor pré-aprovado de R$ {$valorOferta} disponível para você. Gostaria de contratar?";
+                    break;
 
-                    default:
-                        $mensagem = null;
-                        break;
-                }
+                case ($emprestimo->count_late_parcels >= 6 && $emprestimo->count_late_parcels <= 10):
+                    $mensagem = "Olá {$nome}, mesmo com pequenos atrasos, você ainda pode renovar com valor de R$ " . max(0, $valorOferta - 100) . ". Interessado?";
+                    break;
 
-                if ($mensagem) {
-                    $this->enviarMensagem($client, $emprestimo, $mensagem);
-                    $emprestimo->mensagem_renovacao = 1;
-                    $emprestimo->save();
-                }
+                default:
+                    $mensagem = null;
+                    break;
+            }
+
+            if ($mensagem) {
+                $this->enviarMensagem($client, $emprestimo, $mensagem);
+                $emprestimo->mensagem_renovacao = 1;
+                $emprestimo->save();
             }
         }
 
