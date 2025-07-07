@@ -108,16 +108,7 @@ class CobrancaAutomaticaA extends Command
         if ($this->emprestimoEmProtesto($parcela)) {
             return;
         }
-
-        try {
-            $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
-
-            if ($response->successful() && $response->json()['loggedIn']) {
-                $this->enviarMensagem($parcela);
-            }
-        } catch (\Throwable $th) {
-            Log::error($th);
-        }
+        $this->enviarMensagem($parcela);
     }
 
     private function deveProcessarParcela($parcela)

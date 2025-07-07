@@ -112,26 +112,17 @@ class CobrancaAutomaticaB extends Command
                 continue;
             }
 
-            if (isset($parcela->emprestimo->company->whatsapp) && $parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+            if ($parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
 
-                try {
+                $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+                $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
 
-                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+                $saudacao = self::obterSaudacao();
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $r = $response->json();
-                        if ($r['loggedIn']) {
+                $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
 
-
-                            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                            $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-
-                            $saudacao = self::obterSaudacao();
-
-                            $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-
-                            $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
-                            $fraseInicial = "
+                $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+                $fraseInicial = "
 
 🤷‍♂️ Não identificamos seu pagamento na data de hoje, lembrando que é até 40 minutos para processar se não pagou evite multas!
 
@@ -144,71 +135,46 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
 ";
 
-                            $frase = $saudacaoTexto . $fraseInicial;
+                $frase = $saudacaoTexto . $fraseInicial;
 
-                            $telefoneCliente = "55" . $telefone;
+                $telefoneCliente = "55" . $telefone;
 
-                            $wapiService = new WAPIService();
-                            $wapiService->enviarMensagem(
-                                $parcela->emprestimo->company->token_api_wtz,
-                                $parcela->emprestimo->company->instance_id,
-                                [
-                                    "phone" => $telefoneCliente,
-                                    "message" => $frase
-                                ]
-                            );
+                $wapiService = new WAPIService();
+                $wapiService->enviarMensagem(
+                    $parcela->emprestimo->company->token_api_wtz,
+                    $parcela->emprestimo->company->instance_id,
+                    [
+                        "phone" => $telefoneCliente,
+                        "message" => $frase
+                    ]
+                );
 
-                            sleep(1);
-                            if ($parcela->emprestimo->company->mensagem_audio) {
-                                if ($parcela->atrasadas > 0) {
-                                    $baseUrl = $parcela->emprestimo->company->whatsapp;
-                                    $tipo = "0";
-                                    switch ($parcela->atrasadas) {
-                                        case 2: $tipo = "1.2"; break;
-                                        case 4: $tipo = "2.2"; break;
-                                        case 6: $tipo = "3.2"; break;
-                                        case 8: $tipo = "4.2"; break;
-                                        case 10: $tipo = "5.2"; break;
-                                        case 15: $tipo = "6.2"; break;
-                                    }
+                sleep(1);
+                if ($parcela->emprestimo->company->mensagem_audio) {
+                    if ($parcela->atrasadas > 0) {
+                        $baseUrl = $parcela->emprestimo->company->whatsapp;
+                        $tipo = "0";
+                        switch ($parcela->atrasadas) {
+                            case 2: $tipo = "1.2"; break;
+                            case 4: $tipo = "2.2"; break;
+                            case 6: $tipo = "3.2"; break;
+                            case 8: $tipo = "4.2"; break;
+                            case 10: $tipo = "5.2"; break;
+                            case 15: $tipo = "6.2"; break;
+                        }
 
-                                    if ($tipo != "0") {
-                                        $audioMap = [
-                                            "1.2" => "mensagem_2_atraso_2d.ogg",
-                                            "2.2" => "mensagem_2_atraso_4d.ogg",
-                                            "3.2" => "mensagem_2_atraso_6d.ogg",
-                                            "4.2" => "mensagem_2_atraso_8d.ogg",
-                                            "5.2" => "mensagem_2_atraso_10d.ogg",
-                                            "6.2" => "mensagem_2_atraso_15d.ogg"
-                                        ];
+                        if ($tipo != "0") {
+                            $audioMap = [
+                                "1.2" => "mensagem_2_atraso_2d.ogg",
+                                "2.2" => "mensagem_2_atraso_4d.ogg",
+                                "3.2" => "mensagem_2_atraso_6d.ogg",
+                                "4.2" => "mensagem_2_atraso_8d.ogg",
+                                "5.2" => "mensagem_2_atraso_10d.ogg",
+                                "6.2" => "mensagem_2_atraso_15d.ogg"
+                            ];
 
-                                        if (isset($audioMap[$tipo])) {
-                                            $nomeArquivo = $audioMap[$tipo];
-                                            $caminhoArquivo = storage_path("app/public/audios/{$nomeArquivo}");
-
-                                            if (File::exists($caminhoArquivo)) {
-                                                $conteudo = File::get($caminhoArquivo);
-                                                $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
-
-                                                $wapiService = new WAPIService();
-                                                $wapiService->enviarMensagemAudio(
-                                                    $parcela->emprestimo->company->token_api_wtz,
-                                                    $parcela->emprestimo->company->instance_id,
-                                                    [
-                                                        "phone" => "55" . $telefone,
-                                                        "audio" => $base64
-                                                    ]
-                                                );
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            //identificar se o emprestimo é mensal
-                            //identificar se é a primeira cobranca
-                            if (count($parcela->emprestimo->parcelas) == 1 && $parcela->atrasadas == 0) {
-                                $nomeArquivo = "msginfo2.ogg";
+                            if (isset($audioMap[$tipo])) {
+                                $nomeArquivo = $audioMap[$tipo];
                                 $caminhoArquivo = storage_path("app/public/audios/{$nomeArquivo}");
 
                                 if (File::exists($caminhoArquivo)) {
@@ -228,8 +194,28 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             }
                         }
                     }
-                } catch (\Throwable $th) {
-                    dd($th);
+                }
+
+                //identificar se o emprestimo é mensal
+                //identificar se é a primeira cobranca
+                if (count($parcela->emprestimo->parcelas) == 1 && $parcela->atrasadas == 0) {
+                    $nomeArquivo = "msginfo2.ogg";
+                    $caminhoArquivo = storage_path("app/public/audios/{$nomeArquivo}");
+
+                    if (File::exists($caminhoArquivo)) {
+                        $conteudo = File::get($caminhoArquivo);
+                        $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
+
+                        $wapiService = new WAPIService();
+                        $wapiService->enviarMensagemAudio(
+                            $parcela->emprestimo->company->token_api_wtz,
+                            $parcela->emprestimo->company->instance_id,
+                            [
+                                "phone" => "55" . $telefone,
+                                "audio" => $base64
+                            ]
+                        );
+                    }
                 }
             }
         }
