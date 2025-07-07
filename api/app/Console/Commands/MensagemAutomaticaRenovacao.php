@@ -36,7 +36,7 @@ class MensagemAutomaticaRenovacao extends Command
             }
 
             foreach ($client->emprestimos as $emprestimo) {
-                if ($emprestimo->mensagem_renovacao == 1) {
+                if (is_object($emprestimo) && isset($emprestimo->mensagem_renovacao) && $emprestimo->mensagem_renovacao == 1) {
                     continue;
                 }
 
