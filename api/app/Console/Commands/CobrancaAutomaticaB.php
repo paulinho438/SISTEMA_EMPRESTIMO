@@ -112,7 +112,11 @@ class CobrancaAutomaticaB extends Command
                 continue;
             }
 
-            if ($parcela->emprestimo->contaspagar && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado") {
+            if (
+                $parcela->emprestimo &&
+                $parcela->emprestimo->contaspagar &&
+                $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado"
+            ) {
 
                 $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                 $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
