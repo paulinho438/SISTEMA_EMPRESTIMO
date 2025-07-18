@@ -52,6 +52,24 @@ class WAPIService
         return true;
     }
 
+    public function enviarMensagemVideo(string $token, string $instance_id, array $data)
+    {
+        $url = "{$this->baseUrl}/message/send-video?instanceId={$instance_id}";
+
+        $accessToken = $token;
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->post($url, $data);
+
+        if (!$response->successful()) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function enviarMensagemImagem(string $token, string $instance_id, array $data)
     {
         $url = "{$this->baseUrl}/message/send-image?instanceId={$instance_id}";
