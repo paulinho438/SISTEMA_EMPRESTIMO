@@ -21,5 +21,6 @@ yarn-error.log
 # MAS INCLUI OS ÁUDIOS
 !/storage/app/public/audios/
 !/storage/app/public/audios/*.ogg
+!/storage/app/public/audios/*.mp4
 
 
