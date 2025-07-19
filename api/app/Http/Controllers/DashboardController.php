@@ -47,9 +47,9 @@ class DashboardController extends Controller
 
         // Processa os empréstimos em blocos para evitar estouro de memória
         Emprestimo::where('company_id', $companyId)
-            ->select(['id', 'valor', 'total_pago']) // apenas campos usados
+            ->select(['id', 'valor']) // 🔧 Removido total_pago (accessor)
             ->with(['parcelas' => function ($q) {
-                $q->select(['id', 'emprestimo_id', 'valor', 'valor_pago']); // campos mínimos para totalPendente()
+                $q->select(['id', 'emprestimo_id', 'valor', 'valor_pago']); // Campos usados por totalPendente()
             }])
             ->chunk(100, function ($emprestimos) use (&$totais) {
                 foreach ($emprestimos as $emprestimo) {
@@ -60,7 +60,7 @@ class DashboardController extends Controller
                     }
 
                     $totais['total_ja_investido'] += $emprestimo->valor;
-                    $totais['total_ja_recebido'] += $emprestimo->total_pago;
+                    $totais['total_ja_recebido'] += $emprestimo->total_pago; // ← permitido aqui, pois é um accessor
                     $totais['total_emprestimos']++;
 
                     // Status do empréstimo
@@ -79,6 +79,7 @@ class DashboardController extends Controller
 
         return $totais;
     }
+
 
     private function getStatus($emprestimo)
     {
