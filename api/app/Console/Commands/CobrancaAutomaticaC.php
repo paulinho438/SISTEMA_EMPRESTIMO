@@ -58,6 +58,7 @@ class CobrancaAutomaticaC extends Command
         $parcelas = $parcelas->unique('emprestimo_id')->values();
 
         foreach ($parcelas as $parcela) {
+            sleep(4);
             if ($this->emprestimoEmProtesto($parcela)) continue;
 
             if (!self::podeProcessarParcela($parcela)) {

@@ -96,6 +96,7 @@ class CobrancaAutomaticaA extends Command
 
             if (self::podeProcessarParcela($parcela)) {
                 $this->processarParcela($parcela);
+                sleep(4);
             }
         }
         Log::info("Cobranca Automatica A finalizada");

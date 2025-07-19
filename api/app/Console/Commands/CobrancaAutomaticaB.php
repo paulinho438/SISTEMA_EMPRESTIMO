@@ -107,6 +107,7 @@ class CobrancaAutomaticaB extends Command
         $count = count($parcelas);
         Log::info("Cobranca Automatica B quantidade de clientes: {$count}");
         foreach ($parcelas as $parcela) {
+            sleep(4);
 
             if ($this->emprestimoEmProtesto($parcela)) {
                 continue;

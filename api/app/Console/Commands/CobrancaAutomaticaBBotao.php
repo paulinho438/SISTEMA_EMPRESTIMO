@@ -44,6 +44,7 @@ class CobrancaAutomaticaBBotao extends Command
             }
 
             foreach ($parcelas as $parcela) {
+                sleep(4);
                 if (
                     $parcela->emprestimo->banco->wallet == 0 ||
                     !$parcela->emprestimo->contaspagar ||

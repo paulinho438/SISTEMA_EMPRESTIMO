@@ -40,6 +40,7 @@ class CobrancaAutomaticaABotao extends Command
                 ->unique('emprestimo_id');
 
             foreach ($parcelas as $parcela) {
+                sleep(4);
                 if (
                     $parcela->emprestimo->contaspagar
                     && $parcela->emprestimo->contaspagar->status === "Pagamento Efetuado"

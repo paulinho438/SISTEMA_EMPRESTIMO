@@ -44,6 +44,7 @@ class CobrancaAutomaticaCBotao extends Command
             }
 
             foreach ($parcelas as $parcela) {
+                sleep(4);
                 if (
                     !$parcela->emprestimo->contaspagar ||
                     $parcela->emprestimo->contaspagar->status !== "Pagamento Efetuado"
