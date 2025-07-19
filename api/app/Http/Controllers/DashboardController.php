@@ -30,57 +30,54 @@ class DashboardController extends Controller
     public function infoConta(Request $request)
     {
         $companyId = $request->header('company-id');
-        $emprestimos = Emprestimo::where('company_id', $companyId)->get();
 
-        $totalEmprestimos = $emprestimos->count();
-        $totalEmprestimosAtrasados = 0;
-        $totalEmprestimosPagos = 0;
-        $totalEmprestimosVencidos = 0;
-        $totalEmprestimosEmDias = 0;
-        $totalEmprestimosMuitoAtrasados = 0;
-        $totalJaRecebido = 0;
-        $valorInvestido = 0;
-        $valorAReceber = 0;
-
-        foreach ($emprestimos as $emprestimo) {
-            $valorAReceber += $emprestimo->parcelas[0]->totalPendente();
-            $valorInvestido += $emprestimo->valor;
-            $totalJaRecebido += $emprestimo->total_pago;
-
-            $status = $this->getStatus($emprestimo);
-
-            switch ($status) {
-                case 'Atrasado':
-                    $totalEmprestimosAtrasados++;
-                    break;
-                case 'Pago':
-                    $totalEmprestimosPagos++;
-                    break;
-                case 'Vencido':
-                    $totalEmprestimosVencidos++;
-                    break;
-                case 'Em Dias':
-                    $totalEmprestimosEmDias++;
-                    break;
-                case 'Muito Atrasado':
-                    $totalEmprestimosMuitoAtrasados++;
-                    break;
-            }
-        }
-        $t = Client::where('company_id', $companyId)->count();
-
-        return [
-            'total_clientes' => $t,
-            'total_emprestimos' => $totalEmprestimos,
-            'total_emprestimos_atrasados' => $totalEmprestimosAtrasados,
-            'total_emprestimos_pagos' => $totalEmprestimosPagos,
-            'total_emprestimos_vencidos' => $totalEmprestimosVencidos,
-            'total_emprestimos_em_dias' => $totalEmprestimosEmDias,
-            'total_emprestimos_muito_atrasados' => $totalEmprestimosMuitoAtrasados,
-            'total_ja_recebido' => $totalJaRecebido,
-            'total_ja_investido' => $valorInvestido,
-            'total_a_receber' => $valorAReceber
+        // Inicialização dos acumuladores
+        $totais = [
+            'total_clientes' => Client::where('company_id', $companyId)->count(),
+            'total_emprestimos' => 0,
+            'total_emprestimos_atrasados' => 0,
+            'total_emprestimos_pagos' => 0,
+            'total_emprestimos_vencidos' => 0,
+            'total_emprestimos_em_dias' => 0,
+            'total_emprestimos_muito_atrasados' => 0,
+            'total_ja_recebido' => 0,
+            'total_ja_investido' => 0,
+            'total_a_receber' => 0,
         ];
+
+        // Processa os empréstimos em blocos para evitar estouro de memória
+        Emprestimo::where('company_id', $companyId)
+            ->select(['id', 'valor', 'total_pago']) // apenas campos usados
+            ->with(['parcelas' => function ($q) {
+                $q->select(['id', 'emprestimo_id', 'valor', 'valor_pago']); // campos mínimos para totalPendente()
+            }])
+            ->chunk(100, function ($emprestimos) use (&$totais) {
+                foreach ($emprestimos as $emprestimo) {
+                    $parcela = $emprestimo->parcelas->first();
+
+                    if ($parcela && method_exists($parcela, 'totalPendente')) {
+                        $totais['total_a_receber'] += $parcela->totalPendente();
+                    }
+
+                    $totais['total_ja_investido'] += $emprestimo->valor;
+                    $totais['total_ja_recebido'] += $emprestimo->total_pago;
+                    $totais['total_emprestimos']++;
+
+                    // Status do empréstimo
+                    $status = $this->getStatus($emprestimo);
+
+                    match ($status) {
+                        'Atrasado' => $totais['total_emprestimos_atrasados']++,
+                        'Pago' => $totais['total_emprestimos_pagos']++,
+                        'Vencido' => $totais['total_emprestimos_vencidos']++,
+                        'Em Dias' => $totais['total_emprestimos_em_dias']++,
+                        'Muito Atrasado' => $totais['total_emprestimos_muito_atrasados']++,
+                        default => null
+                    };
+                }
+            });
+
+        return $totais;
     }
 
     private function getStatus($emprestimo)

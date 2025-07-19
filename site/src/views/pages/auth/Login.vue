@@ -81,6 +81,8 @@ export default {
                     });
                 } else if (response.data.user.companies.length == 1) {
                     this.$store.commit('setCompany', response.data.user.companies[0]);
+                    this.$store.commit('setAllPermissions', response.data.user.permissions);
+                    this.$store.commit('setAllCompanies', response.data.user.companies);
 
                     if (response.data.user.permissions.length > 0) {
                         let res = response.data.user.permissions.filter((item) => item.company_id === response.data.user.companies[0]['id']);
@@ -93,6 +95,8 @@ export default {
                     this.router.push({ name: 'dashboard' });
                 } else {
                     this.$store.commit('setPermissions', response.data.user.permissions);
+                    this.$store.commit('setAllPermissions', response.data.user.permissions);
+                    this.$store.commit('setAllCompanies', response.data.user.companies);
                     this.changed = true;
                     this.companies = response.data.user.companies;
                     this.companiesSearch = response.data.user.companies;

@@ -7,6 +7,8 @@ const store = createStore({
 			isAutenticated: false,
 			isCompany: null,
 			permissions: [],
+			companies: [],
+			allPermissions: []
 		};
 	},
 	mutations: {
@@ -18,6 +20,12 @@ const store = createStore({
 		},
 		setPermissions(state, newPermissions){
 			state.permissions = newPermissions;
+		},
+		setAllPermissions(state, all_permissions){
+			state.allPermissions = all_permissions;
+		},
+		setAllCompanies(state, allCompanies){
+			state.companies = allCompanies;
 		}
 		
 	},
@@ -36,6 +44,12 @@ const store = createStore({
 		},
 		permissions(state) {
 			return state.permissions;
+		},
+		companies(state) {
+			return state.companies;
+		},
+		allPermissions(state) {
+			return state.allPermissions;
 		}
 	},
   	plugins: [createPersistedState()],

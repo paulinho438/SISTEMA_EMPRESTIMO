@@ -5,13 +5,25 @@ import AppMenuItem from './AppMenuItem.vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import ClientService from '@/service/ClientService';
+import { useRouter, useRoute } from 'vue-router';
+
+import store from '@/store';
 const confirmPopup = useConfirm();
+
+
+const router = useRouter();
+const route = useRoute();
 
 
 const clientService = new ClientService();
 
 
 const toast = useToast();
+
+const changed = ref(false);
+const selectedTipo = ref('');
+
+const companiesList = ref([]);
 
 
 const model = ref([
@@ -379,6 +391,40 @@ const cobrarTodosClientes = async (event) => {
 
 };
 
+const searchCostcenter = async (event) => {
+    try {
+        console.log(store?.getters?.companies);
+        console.log(event.query.toLowerCase());
+
+        companiesList.value = store?.getters?.companies.filter((company) =>
+            company.company.toLowerCase().includes(event.query.toLowerCase())
+        );
+
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+const changeCompany = async () => {
+    const selected = selectedTipo.value;
+
+    if (selected?.id) {
+        store.commit('setCompany', selected);
+
+        const res = store.getters?.allPermissions.filter(item => item.company_id === selected.id);
+        store.commit('setPermissions', res[0]?.permissions ?? []);
+
+        window.location.reload();
+    } else {
+        toast.add({
+            severity: 'error',
+            summary: 'Atenção',
+            detail: 'Selecione uma empresa!',
+            life: 3000
+        });
+    }
+};
+
 
 </script>
 
@@ -394,6 +440,34 @@ const cobrarTodosClientes = async (event) => {
         <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
         <span>Cobrar Todos Clientes</span>
     </button>
+    <button ref="popup" @click="() => {changed = true}" class="p-link hidden-on-small">
+        <i class="pi pi-link" style="margin-right: 10px"></i>
+        <span>Alterar Empresa</span>
+    </button>
+
+    <Dialog header="Selecione a Empresa" modal class="w-8 mx-8" v-model:visible="changed" :closable="true">
+        <div class="grid flex align-content-center flex-wrap">
+            <div class="col-12 flex align-content-center flex-wrap md:col-2 lg:col-1">
+                <label>Empresa:</label>
+            </div>
+            <div class="col-12 flex align-content-center flex-wrap sm:col-12 md:col-8">
+                <AutoComplete
+                    :modelValue="selectedTipo"
+                    :dropdown="true"
+                    v-model="selectedTipo"
+                    :suggestions="companiesList"
+                    placeholder="Informe o nome da Empresa"
+                    class="w-full"
+                    inputClass="w-full p-inputtext-sm"
+                    @complete="searchCostcenter($event)"
+                    optionLabel="company"
+                />
+            </div>
+            <div class="col-12 flex align-content-center flex-wrap md:col-12 lg:col-3">
+                <Button icon="pi pi-check" label="Entrar" class="p-button-sm p-button-sucess w-full" @click.prevent="changeCompany"  />
+            </div>
+        </div>
+    </Dialog>
 </template>
 
 <style lang="scss" scoped>
