@@ -181,7 +181,7 @@ const changeCompany = async () => {
                 <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
                 <span>Cobrar Todos Clientes</span>
             </button>
-            <button @click="() => {changed = true}" class="p-link hidden-on-small">
+            <button  v-if="store?.getters?.companies.length > 1" @click="() => {changed = true}" class="p-link hidden-on-small">
                 <i class="pi pi-link" style="margin-right: 10px"></i>
                 <span>Alterar Empresa</span>
             </button>
