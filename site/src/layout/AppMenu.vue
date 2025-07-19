@@ -440,7 +440,7 @@ const changeCompany = async () => {
         <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
         <span>Cobrar Todos Clientes</span>
     </button>
-    <button ref="popup" @click="() => {changed = true}" class="p-link hidden-on-small">
+    <button @click="() => {changed = true}" class="p-link hidden-on-small">
         <i class="pi pi-link" style="margin-right: 10px"></i>
         <span>Alterar Empresa</span>
     </button>

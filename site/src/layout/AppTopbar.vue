@@ -7,7 +7,9 @@ import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import ClientService from '@/service/ClientService';
 
+
 import { ToastSeverity } from 'primevue/api';
+import store from "@/store";
 
 const { layoutConfig, onMenuToggle, contextPath } = useLayout();
 
@@ -40,6 +42,13 @@ const topbarMenuClasses = computed(() => {
         'layout-topbar-menu-mobile-active': topbarMenuActive.value
     };
 });
+
+
+const changed = ref(false);
+const selectedTipo = ref('');
+
+const companiesList = ref([]);
+
 
 const bindOutsideClickListener = () => {
     if (!outsideClickListener.value) {
@@ -110,6 +119,40 @@ const cobrarTodosClientes = async (event) => {
 
 };
 
+const searchCostcenter = async (event) => {
+    try {
+        console.log(store?.getters?.companies);
+        console.log(event.query.toLowerCase());
+
+        companiesList.value = store?.getters?.companies.filter((company) =>
+            company.company.toLowerCase().includes(event.query.toLowerCase())
+        );
+
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+const changeCompany = async () => {
+    const selected = selectedTipo.value;
+
+    if (selected?.id) {
+        store.commit('setCompany', selected);
+
+        const res = store.getters?.allPermissions.filter(item => item.company_id === selected.id);
+        store.commit('setPermissions', res[0]?.permissions ?? []);
+
+        window.location.reload();
+    } else {
+        toast.add({
+            severity: 'error',
+            summary: 'Atenção',
+            detail: 'Selecione uma empresa!',
+            life: 3000
+        });
+    }
+};
+
 
 </script>
 
@@ -129,12 +172,18 @@ const cobrarTodosClientes = async (event) => {
                 <span>Logout</span>
             </button>
         </button>
+
+
 		<ConfirmPopup></ConfirmPopup>
 
-        <div style="display: flex; flex: 1; flex-direction: row; justify-content: end">
+        <div style="display: flex; flex: 1; gap: 20px; flex-direction: row; justify-content: end">
             <button ref="popup" @click="confirm($event)" class="p-link hidden-on-small">
                 <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
                 <span>Cobrar Todos Clientes</span>
+            </button>
+            <button @click="() => {changed = true}" class="p-link hidden-on-small">
+                <i class="pi pi-link" style="margin-right: 10px"></i>
+                <span>Alterar Empresa</span>
             </button>
             <div class="hidden-on-small">
             <button @click="logout()" class="p-link layout-topbar-button hidden-on-small" style="margin-left: 10px">
@@ -144,6 +193,30 @@ const cobrarTodosClientes = async (event) => {
         </div>
         </div>
     </div>
+
+    <Dialog header="Selecione a Empresa" modal class="w-8 mx-8" v-model:visible="changed" :closable="true">
+        <div class="grid flex align-content-center flex-wrap">
+            <div class="col-12 flex align-content-center flex-wrap md:col-2 lg:col-1">
+                <label>Empresa:</label>
+            </div>
+            <div class="col-12 flex align-content-center flex-wrap sm:col-12 md:col-8">
+                <AutoComplete
+                    :modelValue="selectedTipo"
+                    :dropdown="true"
+                    v-model="selectedTipo"
+                    :suggestions="companiesList"
+                    placeholder="Informe o nome da Empresa"
+                    class="w-full"
+                    inputClass="w-full p-inputtext-sm"
+                    @complete="searchCostcenter($event)"
+                    optionLabel="company"
+                />
+            </div>
+            <div class="col-12 flex align-content-center flex-wrap md:col-12 lg:col-3">
+                <Button icon="pi pi-check" label="Entrar" class="p-button-sm p-button-sucess w-full" @click.prevent="changeCompany"  />
+            </div>
+        </div>
+    </Dialog>
 </template>
 
 <style lang="scss" scoped>
