@@ -45,7 +45,6 @@ class CobrancaAutomaticaCBotao extends Command
 
             foreach ($parcelas as $parcela) {
                 if (
-                    !isset($parcela->emprestimo->company->whatsapp) ||
                     !$parcela->emprestimo->contaspagar ||
                     $parcela->emprestimo->contaspagar->status !== "Pagamento Efetuado"
                 ) {
@@ -53,9 +52,6 @@ class CobrancaAutomaticaCBotao extends Command
                 }
 
                 try {
-                    $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
-
-                    if ($response->successful() && ($r = $response->json()) && $r['loggedIn']) {
                         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                         $telefoneCliente = "55" . $telefone;
                         $company = $parcela->emprestimo->company;
@@ -111,7 +107,6 @@ class CobrancaAutomaticaCBotao extends Command
                                 }
                             }
                         }
-                    }
                 } catch (\Throwable $th) {
                     dd($th);
                 }
