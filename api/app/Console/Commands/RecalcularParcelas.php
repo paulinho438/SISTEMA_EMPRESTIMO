@@ -125,7 +125,7 @@ class RecalcularParcelas extends Command
 
                     if (!self::podeProcessarParcela($parcela)) {
                         continue;
-                    };
+                    }
 
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";

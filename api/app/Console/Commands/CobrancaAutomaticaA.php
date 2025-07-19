@@ -93,7 +93,10 @@ class CobrancaAutomaticaA extends Command
         Log::info("Cobranca Automatica A quantidade de clientes: {$count}");
         //$parcelas = Parcela::where('id', 23167)->get();
         foreach ($parcelas as $parcela) {
-            $this->processarParcela($parcela);
+
+            if (self::podeProcessarParcela($parcela)) {
+                $this->processarParcela($parcela);
+            }
         }
         Log::info("Cobranca Automatica A finalizada");
         return 0;
@@ -263,5 +266,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         return null;
+    }
+
+    private static function podeProcessarParcela($parcela)
+    {
+        $parcelaPesquisa = Parcela::find($parcela->id);
+
+        if ($parcelaPesquisa->dt_baixa !== null) {
+            Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
+            return false;
+        }
+
+        return true;
     }
 }

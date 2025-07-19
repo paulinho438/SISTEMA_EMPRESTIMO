@@ -112,6 +112,10 @@ class CobrancaAutomaticaB extends Command
                 continue;
             }
 
+            if (!self::podeProcessarParcela($parcela)) {
+                continue;
+            }
+
             if (
                 $parcela->emprestimo &&
                 $parcela->emprestimo->contaspagar &&
@@ -263,5 +267,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
 
+    }
+
+    private static function podeProcessarParcela($parcela)
+    {
+        $parcelaPesquisa = Parcela::find($parcela->id);
+
+        if ($parcelaPesquisa->dt_baixa !== null) {
+            Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
+            return false;
+        }
+
+        return true;
     }
 }
