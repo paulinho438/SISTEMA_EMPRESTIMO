@@ -29,7 +29,8 @@ class Parcela extends Model
         'ult_dt_geracao_pix',
         'nome_usuario_baixa_pix',
         'nome_usuario_baixa',
-        'ult_dt_processamento_rotina'
+        'ult_dt_processamento_rotina',
+        'venc_real_audit'
     ];
 
     public function emprestimo()

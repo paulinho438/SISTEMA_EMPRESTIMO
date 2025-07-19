@@ -638,6 +638,7 @@ class EmprestimoController extends Controller
             $addParcela['saldo'] = $parcela['saldo'];
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+            $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
             //API COBRANCA B.CODEX
             // $response = $this->bcodexService->criarCobranca($addParcela['valor']);
@@ -765,6 +766,7 @@ class EmprestimoController extends Controller
             $addParcela['saldo'] = $parcela['saldo'];
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+            $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
             $parcela = Parcela::create($addParcela);
 
@@ -880,6 +882,7 @@ class EmprestimoController extends Controller
             $addParcela['saldo'] = $parcela['saldo'];
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
+            $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
 
             $parcela = Parcela::create($addParcela);
 

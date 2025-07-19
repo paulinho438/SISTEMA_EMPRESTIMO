@@ -85,8 +85,13 @@ class RecalcularParcelas extends Command
                     $emprestimo->save();
                 }
             }
-             $parcela->atrasadas = $parcela->atrasadas + 1;
-             $parcela->save();
+            $hoje = Carbon::today();
+            $updatedAt = Carbon::parse($parcela->updated_at)->startOfDay();
+
+            if (!$updatedAt->equalTo($hoje)) {
+                $parcela->atrasadas = $parcela->atrasadas + 1;
+                $parcela->save();
+            }
         }
 
         $bcodexService = new BcodexService();
