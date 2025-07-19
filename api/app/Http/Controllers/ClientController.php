@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CobrarAmanhaUltimaLocalizacao;
+use App\Services\WAPIService;
 use Illuminate\Http\Request;
 
 use App\Models\Address;
@@ -712,25 +713,18 @@ class ClientController extends Controller
     {
         try {
 
-            $response = Http::get($cliente->emprestimos->company->whatsapp . '/logar');
+            $telefone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
 
-            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                $r = $response->json();
-                if ($r['loggedIn']) {
-
-                    $telefone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
-                    $baseUrl = $cliente->emprestimos->company->whatsapp . '/enviar-mensagem';
-
-                    $data = [
-                        "numero" => "55" . $telefone,
-                        "mensagem" => $frase
-                    ];
-
-                    $response = Http::asJson()->post($baseUrl, $data);
-                }
-            }
+            $wapiService = new WAPIService();
+            $wapiService->enviarMensagem(
+                $cliente->emprestimo->company->token_api_wtz,
+                $cliente->emprestimo->company->instance_id,
+                [
+                    "phone" => "55" . $telefone,
+                    "message" => $frase
+                ]
+            );
         } catch (\Throwable $th) {
-            dd($th);
         }
 
         return true;
