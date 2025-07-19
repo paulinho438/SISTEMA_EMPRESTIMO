@@ -3728,25 +3728,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         try {
 
-            $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+            $company = $parcela->emprestimo->company;
 
-            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                $r = $response->json();
-                if ($r['loggedIn']) {
-
-                    $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                    $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
-
-                    $data = [
-                        "numero" => "55" . $telefone,
-                        "mensagem" => $frase
-                    ];
-
-                    $response = Http::asJson()->post($baseUrl, $data);
-                }
+            if (is_null($company->token_api_wtz) || is_null($company->instance_id)) {
+                return;
             }
+
+            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+
+            $envio = $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, ["phone" => "55" . $telefone, "message" => $frase]);
+
         } catch (\Throwable $th) {
-            dd($th);
         }
 
         return true;
