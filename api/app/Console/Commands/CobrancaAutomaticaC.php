@@ -188,6 +188,11 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             return false;
         }
 
+        if($parcelaPesquisa->atrasadas == 0){
+            Log::info("Parcela {$parcela->id} não está mais atrasada, não será processada novamente.");
+            return false;
+        }
+
         return true;
     }
 }

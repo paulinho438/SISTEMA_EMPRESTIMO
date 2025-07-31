@@ -30,8 +30,7 @@ import {StackNav} from '../../navigation/navigationKeys';
 import {authCompany, getPermissions, permissions, getCompanies} from '../../utils/asyncStorage';
 import {useFocusEffect} from "@react-navigation/native";
 
-export default function TransferMoney({navigation, route}) {
-  const { companies = null} = route.params;
+export default function AlterarEmpresa({navigation, route}) {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [data, setData] = useState(1);
   const [filterData, setFilterData] = useState(ContactsData);
@@ -42,12 +41,8 @@ export default function TransferMoney({navigation, route}) {
   useFocusEffect(
       React.useCallback(() => {
         async function fetchData() {
-          if(!companies){
             let a = await getCompanies();
             setCompaniesStorage(a);
-          }else{
-            setCompaniesStorage(companies);
-          }
 
         }
         fetchData();
@@ -67,7 +62,7 @@ export default function TransferMoney({navigation, route}) {
 
     await permissions(companyPermissions);
 
-    navigation.navigate(StackNav.TabNavigation);
+    navigation.navigate(StackNav.splash);
   };
 
   const selecionarEmpresa = (company) => {
@@ -76,42 +71,42 @@ export default function TransferMoney({navigation, route}) {
 
   const Cards = ({companyInfo}) => {
     return (
-      <TouchableOpacity style={[
-        localStyles.ParentImg, 
-      ]}  onPress={() => selecionarEmpresa(companyInfo)}>
-        <Image source={images.cardBalance} style={[localStyles.card3Style, (companyInfo.id == selectedCompany?.id) ? localStyles.Selected : null]} />
-        <View style={localStyles.parentNomeEmpresa}>
-          <CText
-              color={colors.white}
-              type={'B18'}
-              style={localStyles.NameEmpresa}>
+        <TouchableOpacity style={[
+          localStyles.ParentImg,
+        ]}  onPress={() => selecionarEmpresa(companyInfo)}>
+          <Image source={images.cardBalance} style={[localStyles.card3Style, (companyInfo.id == selectedCompany?.id) ? localStyles.Selected : null]} />
+          <View style={localStyles.parentNomeEmpresa}>
+            <CText
+                color={colors.white}
+                type={'B18'}
+                style={localStyles.NameEmpresa}>
               {companyInfo?.company}
-          </CText>
-        </View>
-      </TouchableOpacity>
+            </CText>
+          </View>
+        </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={localStyles.main}>
-      <View style={localStyles.mainContainer}>
-        <ScrollView>
-          <CHeader color={colors.black} title='Empresas' />
-          <CText color={colors.black} type={'B18'} style={localStyles.CardTxt}>
-          Escolha uma empresa
-          </CText>
-          <View style={localStyles.ImgParent}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {companiesStorage.map((company, index) => (
-                <Cards key={index} companyInfo={company}  />
-              ))}
-            </ScrollView>
-          </View>
-          
-        </ScrollView>
-      </View>
-      {selectedCompany && <CButton containerStyle={localStyles.ContBtn} onPress={avancarHome} /> }
-    </SafeAreaView>
+      <SafeAreaView style={localStyles.main}>
+        <View style={localStyles.mainContainer}>
+          <ScrollView>
+            <CHeader color={colors.black} title='Empresas' />
+            <CText color={colors.black} type={'B18'} style={localStyles.CardTxt}>
+              Escolha uma empresa
+            </CText>
+            <View style={localStyles.ImgParent}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {companiesStorage.map((company, index) => (
+                    <Cards key={index} companyInfo={company}  />
+                ))}
+              </ScrollView>
+            </View>
+
+          </ScrollView>
+        </View>
+        {selectedCompany && <CButton containerStyle={localStyles.ContBtn} onPress={avancarHome} /> }
+      </SafeAreaView>
   );
 }
 

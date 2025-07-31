@@ -18,7 +18,15 @@ import CTextInput from '../../components/common/CTextInput';
 import CButton from '../../components/common/CButton';
 import {moderateScale} from '../../common/constant';
 import images from '../../assets/images/index';
-import {authToken, authCompany, user, permissions, tipoCliente} from '../../utils/asyncStorage';
+import {
+  authToken,
+  authCompany,
+  user,
+  permissions,
+  tipoCliente,
+  companies,
+  getPermissions
+} from '../../utils/asyncStorage';
 import KeyBoardAvoidWrapper from '../../components/common/KeyBoardAvoidWrapper';
 import {validateEmail, validatePassword} from '../../utils/validation';
 
@@ -41,6 +49,8 @@ export default function SignIn({navigation}) {
 
   const [changeValue, setChangeValue] = useState('');
   const [pass, setPass] = useState(false);
+
+
 
   const onPressSignIn = async () => {
     if (email === '' || changeValue === '') {
@@ -68,6 +78,8 @@ export default function SignIn({navigation}) {
         }else{
             await user(result.user);
             await authToken(result.token);
+            await permissions(result.user.permissions);
+            await companies(result.user.companies);
             navigation.reset({
                 index: 0,
                 routes: [{
@@ -78,7 +90,7 @@ export default function SignIn({navigation}) {
                 }],
               });
 
-              await permissions(result.user.permissions);
+
         }
       }else{
         Alert.alert(result.message);

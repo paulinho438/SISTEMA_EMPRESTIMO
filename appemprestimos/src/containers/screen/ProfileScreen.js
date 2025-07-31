@@ -17,7 +17,7 @@ import {colors} from '../../themes/colors';
 import strings from '../../i18n/strings';
 import CHeader from '../../components/common/CHeader';
 import Material from 'react-native-vector-icons/MaterialIcons';
-import {StackNav} from '../../navigation/navigationKeys';
+import {AuthNav, StackNav} from '../../navigation/navigationKeys';
 import {useFocusEffect} from '@react-navigation/native';
 
 import {
@@ -68,6 +68,10 @@ export default function ProfileScreen({navigation}) {
 
   const moveToLogOut = () => {
     navigation.navigate(StackNav.LogOut);
+  };
+
+  const moveToSelectedEmpresas = () => {
+    navigation.navigate(StackNav.AlterarEmpresa);
   };
 
   const RenderData = ({image, name, onPress}) => {
@@ -148,11 +152,20 @@ export default function ProfileScreen({navigation}) {
             onPress={moveToFQA}
           /> */}
           {/* <RenderData name={strings.Rate} image={images.RateUs} /> */}
+
+          <RenderData
+              onPress={moveToSelectedEmpresas}
+              name='Trocar de empresa'
+              image={images.Switch}
+          />
+
           <RenderData
             onPress={moveToLogOut}
             name={strings.LogOut}
             image={images.user}
           />
+
+
         </View>
       </ScrollView>
     </SafeAreaView>

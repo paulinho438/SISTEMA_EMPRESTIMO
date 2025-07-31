@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ACCESS_TOKEN, ON_BOARDING, AUTH_COMPANY, USER, PERMISSION, TIPOCLIENTE } from '../common/constant';
+import {ACCESS_TOKEN, ON_BOARDING, AUTH_COMPANY, USER, PERMISSION, TIPOCLIENTE, COMPANIES} from '../common/constant';
 
 const StorageValue = async () => {
   let asyncData = await AsyncStorage.multiGet([ON_BOARDING, ACCESS_TOKEN]);
@@ -67,6 +67,17 @@ const permissions = async value => {
   return;
 };
 
+const companies = async value => {
+  const stringData = JSON.stringify(value);
+  await AsyncStorage.setItem(COMPANIES, stringData);
+  return;
+};
+
+const getCompanies = async () => {
+  let req = await AsyncStorage.getItem(COMPANIES);
+  return JSON.parse(req);
+};
+
 const getPermissions = async () => {
   let req = await AsyncStorage.getItem(PERMISSION);
   return JSON.parse(req);
@@ -82,4 +93,4 @@ const removeTipoCliente = async () => {
   return;
 };
 
-export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser, permissions, getPermissions, tipoCliente, getTipoCliente, removeTipoCliente};
+export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser, permissions, getPermissions, tipoCliente, getTipoCliente, removeTipoCliente, companies, getCompanies};

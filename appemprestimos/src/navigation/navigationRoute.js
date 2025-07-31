@@ -62,6 +62,7 @@ import SelectProvider from '../containers/moreOpctions/MobileTopUp/SelectProvide
 import TopUpModal from '../components/modals/TopUpModal';
 import PhoneBook from '../containers/moreOpctions/MobileTopUp/PhoneBook';
 import LogOut from '../components/profileTab/LogOut';
+import AlterarEmpresa from '../components/profileTab/AlterarEmpresa';
 import CadastroCliente from '../containers/auth/CadastroCliente';
 
 
@@ -108,6 +109,7 @@ export const StackRoute = {
   TopUpModal,
   PhoneBook,
   LogOut,
+  AlterarEmpresa,
   CadastroCliente
 };
 

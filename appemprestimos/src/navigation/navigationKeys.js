@@ -41,6 +41,7 @@ export const StackNav = {
   TopUpModal: 'TopUpModal',
   PhoneBook: 'PhoneBook',
   LogOut: 'LogOut',
+  AlterarEmpresa: 'AlterarEmpresa',
   CadastroCliente : 'CadastroCliente'
 };
 

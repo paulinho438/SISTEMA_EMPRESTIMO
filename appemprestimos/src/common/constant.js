@@ -45,4 +45,5 @@ export const AUTH_COMPANY = 'AUTH_COMPANY';
 export const USER = 'USER';
 export const PERMISSION = 'PERMISSION';
 export const TIPOCLIENTE = 'TIPOCLIENTE';
+export const COMPANIES = 'COMPANIES';
 
