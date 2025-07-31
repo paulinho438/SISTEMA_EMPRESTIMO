@@ -225,61 +225,60 @@ class ProcessarWebhookCobranca extends Command
                                 $parcela->atrasadas = 0;
                                 $parcela->save();
 
-                                if ($parcela->contasreceber) {
 
-                                    # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+                                # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
 
-                                    $movimentacaoFinanceira = [];
-                                    $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
-                                    $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
-                                    $movimentacaoFinanceira['descricao'] = sprintf(
-                                        'Pagamento Minimo da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                                        $parcela->id,
-                                        $parcela->emprestimo_id,
-                                        $parcela->emprestimo->client->nome_completo,
-                                        $pix['pagador']['nome']
-                                    );
-                                    $movimentacaoFinanceira['tipomov'] = 'E';
-                                    $movimentacaoFinanceira['parcela_id'] = $parcela->id;
-                                    $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                                    $movimentacaoFinanceira['valor'] = $minimo->valor;
+                                $movimentacaoFinanceira = [];
+                                $movimentacaoFinanceira['banco_id'] = $parcela->emprestimo->banco_id;
+                                $movimentacaoFinanceira['company_id'] = $parcela->emprestimo->company_id;
+                                $movimentacaoFinanceira['descricao'] = sprintf(
+                                    'Pagamento Minimo da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                    $parcela->id,
+                                    $parcela->emprestimo_id,
+                                    $parcela->emprestimo->client->nome_completo,
+                                    $pix['pagador']['nome']
+                                );
+                                $movimentacaoFinanceira['tipomov'] = 'E';
+                                $movimentacaoFinanceira['parcela_id'] = $parcela->id;
+                                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                                $movimentacaoFinanceira['valor'] = $minimo->valor;
 
-                                    Movimentacaofinanceira::create($movimentacaoFinanceira);
+                                Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-                                    # ADICIONANDO O VALOR NO SALDO DO BANCO
+                                # ADICIONANDO O VALOR NO SALDO DO BANCO
 
-                                    $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $minimo->valor;
-                                    $parcela->emprestimo->banco->save();
+                                $parcela->emprestimo->banco->saldo = $parcela->emprestimo->banco->saldo + $minimo->valor;
+                                $parcela->emprestimo->banco->save();
 
-                                    if ($parcela->emprestimo->quitacao) {
+                                if ($parcela->emprestimo->quitacao) {
 
+                                    $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                                    $parcela->emprestimo->quitacao->save();
+                                    $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, null);
+
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                        $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                                        $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
                                         $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                                         $parcela->emprestimo->quitacao->save();
-                                        $response = $this->bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, null);
-
-                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                            $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
-                                            $parcela->emprestimo->quitacao->save();
-                                        }
-                                    }
-
-                                    if ($parcela->emprestimo->pagamentominimo) {
-
-                                        $parcela->emprestimo->pagamentominimo->valor = $juros;
-
-                                        $parcela->emprestimo->pagamentominimo->save();
-
-                                        $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document, null);
-
-                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                                            $parcela->emprestimo->pagamentominimo->save();
-                                        }
                                     }
                                 }
+
+                                if ($parcela->emprestimo->pagamentominimo) {
+
+                                    $parcela->emprestimo->pagamentominimo->valor = $juros;
+
+                                    $parcela->emprestimo->pagamentominimo->save();
+
+                                    $response = $this->bcodexService->criarCobranca($juros, $parcela->emprestimo->banco->document, null);
+
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                        $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                                        $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                                        $parcela->emprestimo->pagamentominimo->save();
+                                    }
+                                }
+
 
                                 if ($parcela->emprestimo->pagamentosaldopendente && $parcela->emprestimo->pagamentosaldopendente->chave_pix) {
 
@@ -402,7 +401,7 @@ class ProcessarWebhookCobranca extends Command
 
 
                                 $novoAntigo = $parcela->saldo;
-                                $novoValor = $novoAntigo  + ($novoAntigo * $porcentagem);
+                                $novoValor = $novoAntigo + ($novoAntigo * $porcentagem);
 
                                 $parcela->saldo = $novoValor;
 
@@ -425,7 +424,6 @@ class ProcessarWebhookCobranca extends Command
                                 $pagamento->emprestimo->pagamentosaldopendente->valor = $parcela->saldo;
 
                                 $pagamento->emprestimo->pagamentosaldopendente->save();
-
 
 
                                 $response = $this->bcodexService->criarCobranca($pagamento->emprestimo->pagamentosaldopendente->valor, $pagamento->emprestimo->banco->document, null);
@@ -564,7 +562,6 @@ class ProcessarWebhookCobranca extends Command
                                     $proximaParcela->contasreceber->save();
 
                                     # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
-
 
 
                                     // $movimentacaoFinanceira = [];
@@ -713,7 +710,6 @@ class ProcessarWebhookCobranca extends Command
     {
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
         $baseUrl = $parcela->emprestimo->company->whatsapp;
-
 
 
         $saudacao = $this->obterSaudacao();
