@@ -30,7 +30,6 @@ class DatabaseSeeder extends Seeder
             CategoriesSeeder::class,
             CostcenterSeeder::class,
             BancoSeeder::class,
-            ParcelaSeeder::class,
             FeriadoSeeder::class,
             JurosSeeder::class
         ]);
