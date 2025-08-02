@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamps();
             $table->unsignedBigInteger('company_id');
             $table->boolean('standard')->default(false);
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
         });
     }
 

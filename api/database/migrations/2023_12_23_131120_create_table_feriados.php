@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('description', 150);
             $table->date('data_feriado');
             $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
         });
     }
 

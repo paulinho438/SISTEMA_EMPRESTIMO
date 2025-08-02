@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreign('client_id')->references('id')->on('clients');
 
             $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
 
             $table->unsignedBigInteger('banco_id')->nullable();
             $table->foreign('banco_id')->references('id')->on('bancos');
