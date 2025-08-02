@@ -13,23 +13,27 @@ class DatabaseSeeder extends Seeder
      * @return void
      */
     public function run()
-    {
-        $this->call([
-            UserSeeder::class,
-            CompanySeeder::class,
-            CompanyUserSeeder::class,
-            PermLinksSeeder::class,
-            PermLinksUserSeeder::class,
-            PermItemsSeeder::class,
-            PermGroupsSeeder::class,
-            CategoriesSeeder::class,
-            EmprestimoSeeder::class,
-            ClientSeeder::class,
-            CostcenterSeeder::class,
-            BancoSeeder::class,
-            ParcelaSeeder::class,
-            FeriadoSeeder::class,
-            JurosSeeder::class
-        ]);
-    }
+{
+    $this->call([
+        UserSeeder::class,
+        CompanySeeder::class,
+        CompanyUserSeeder::class,
+
+        // Esses precisam vir antes de PermLinksSeeder
+        PermItemsSeeder::class,
+        PermGroupsSeeder::class,
+
+        PermLinksSeeder::class,
+        PermLinksUserSeeder::class,
+
+        CategoriesSeeder::class,
+        EmprestimoSeeder::class,
+        ClientSeeder::class,
+        CostcenterSeeder::class,
+        BancoSeeder::class,
+        ParcelaSeeder::class,
+        FeriadoSeeder::class,
+        JurosSeeder::class
+    ]);
+}
 }
