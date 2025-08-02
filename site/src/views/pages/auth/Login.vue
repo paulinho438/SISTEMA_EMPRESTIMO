@@ -190,7 +190,7 @@ export default {
             <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
                 <div class="z-1 w-full surface-card py-8 px-5 sm:px-8" style="border-radius: 53px">
                     <div class="text-center mb-5">
-                        <img src="/images/AGELOGO.png" alt="logo" width="50%" />
+                        <img src="/images/LOGOKROVIA.png"  width="200PX" style="border-radius:10px;" />
                     </div>
                     <div class="text-center mb-5">
                         <span class="text-600 font-medium">Faça login para continuar</span>
