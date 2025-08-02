@@ -25,7 +25,6 @@ return new class extends Migration
             $table->enum('status', ['A', 'I'])->default('A')->comment('Valores válidos ["A","I"]');
             $table->string('status_motivo')->nullable()->comment('Indicar o motivo pelo qual o usuário foi inativo');
             $table->integer('tentativas')->default(0)->comment('Indicar a quantidade de tentativas de login incorreto');
-            $table->foreignId('permgroup_id')->nullable()->default(null)->constrained();
             $table->timestamps();
             $table->softDeletes();
             $table->string('password');
