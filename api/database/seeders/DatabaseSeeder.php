@@ -28,8 +28,6 @@ class DatabaseSeeder extends Seeder
             PermLinksUserSeeder::class,
 
             CategoriesSeeder::class,
-            EmprestimoSeeder::class,
-            ClientSeeder::class,
             CostcenterSeeder::class,
             BancoSeeder::class,
             ParcelaSeeder::class,
