@@ -23,7 +23,7 @@ class CreateLocacaoTable extends Migration
             $table->date('data_pagamento')->nullable();
             $table->decimal('valor', 10, 2);
             $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
         });
     }
 
