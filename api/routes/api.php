@@ -1,8 +1,9 @@
 <?php
 
-use App\Http\Controllers\{
-    AuthController,
+use App\Http\Controllers\{AuthController,
+    CobrancaTesteController,
     CompanyController,
+    PixWebhookController,
     UserController,
     PermgroupController,
     PermitemController,
@@ -28,8 +29,7 @@ use App\Http\Controllers\{
     LocacaoController,
     AuthClienteController,
     WebhookTesteController,
-    NotasController
-};
+    NotasController};
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
 
@@ -55,6 +55,11 @@ Route::post('/webhook/teste', [WebhookTesteController::class, 'receber']);
 
 Route::post('/wapi/envio_mensagem_teste', [EmprestimoController::class, 'enviarMensagemWAPITeste']);
 Route::post('/wapi/envio_mensagem_teste_audio', [EmprestimoController::class, 'enviarMensagemAudioWAPITeste']);
+
+Route::post('/pix/callback/{token}', [PixWebhookController::class, 'handle']);
+
+Route::post('/cobrancas/teste', [CobrancaTesteController::class, 'store']);
+
 
 
 
