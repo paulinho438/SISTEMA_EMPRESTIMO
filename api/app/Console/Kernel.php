@@ -64,7 +64,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('protestar:Emprestimo')->dailyAt('08:00');
         $schedule->command('retirarProtesto:Emprestimo')->everyMinute()->withoutOverlapping();
 
-        $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
+        // $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
 
 
     }
