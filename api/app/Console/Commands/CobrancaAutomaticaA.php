@@ -273,17 +273,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         $parcelaPesquisa = Parcela::find($parcela->id);
 
-        if ($parcelaPesquisa->venc_real->isSameDay(Carbon::today()) && $parcelaPesquisa->dt_baixa == null) {
-            return true;
+        if (count($parcelaPesquisa->emprestimo->parcelas) == 1 && $parcelaPesquisa->atrasadas == 0) {
+
+            if ($parcelaPesquisa->venc_real->isSameDay(Carbon::today()) && $parcelaPesquisa->dt_baixa == null) {
+                return true;
+            }else{
+                return false;   
+            }
         }
 
         if ($parcelaPesquisa->dt_baixa !== null) {
             Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
-            return false;
-        }
-
-        if($parcelaPesquisa->atrasadas == 0){
-            Log::info("Parcela {$parcela->id} não está mais atrasada, não será processada novamente.");
             return false;
         }
 
