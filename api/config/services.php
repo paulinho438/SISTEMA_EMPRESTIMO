@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'mtpay' => [
+        'public_key' => env('MTPAY_PUBLIC_KEY'),
+        'secret_key' => env('MTPAY_SECRET_KEY'),
+    ],
+
 ];
