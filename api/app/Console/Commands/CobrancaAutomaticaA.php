@@ -273,12 +273,18 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         $parcelaPesquisa = Parcela::find($parcela->id);
 
-        if (count($parcelaPesquisa->emprestimo->parcelas) == 1 && $parcelaPesquisa->atrasadas == 0) {
+        $emprestimo = $parcelaPesquisa->emprestimo;
 
+        if (!$emprestimo) {
+            Log::warning("Parcela ID {$parcela->id} não possui empréstimo associado.");
+            return false;
+        }
+
+        if (count($emprestimo->parcelas) == 1 && $parcelaPesquisa->atrasadas == 0) {
             if ($parcelaPesquisa->venc_real->isSameDay(Carbon::today()) && $parcelaPesquisa->dt_baixa == null) {
                 return true;
-            }else{
-                return false;   
+            } else {
+                return false;
             }
         }
 
