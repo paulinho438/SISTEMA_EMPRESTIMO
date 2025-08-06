@@ -15,6 +15,7 @@ class Charge extends Model
         'external_transaction_id',
         'order_id',
         'status',
+        'amount',
         'valor_servico',
         'taxa_cliente',
         'valor_bruto',
