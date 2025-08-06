@@ -28,7 +28,7 @@ class MTPAYService
         $webhookToken  = Str::random(20);
         $taxaGateway   = 0.10; // Valor fixo
         $valorLiquido  = $valorBruto - $taxaCliente - $taxaGateway; // Valor cheio para o cliente
-        $dueDate       = now()->addDay()->toDateString();
+        $dueDate       = now()->addDays(2)->toDateString();
         $callbackUrl   = url("/api/pix/callback/{$webhookToken}");
 
         try {
