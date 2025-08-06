@@ -56,7 +56,7 @@ class CobrancaTesteController extends Controller
                 'tipo'          => 'credit',
                 'descricao'     => 'Simulação de cobrança Pix paga',
                 'referencia_id' => $charge->id,
-                'origem'        => 'teste',
+                'origem'        => 'gateway',
             ]);
 
             $charge->wallet->increment('saldo_atual', $valorLiquidoEmpresa);
@@ -70,7 +70,7 @@ class CobrancaTesteController extends Controller
                     'tipo'          => 'credit',
                     'descricao'     => 'Lucro (taxa cliente - cobrança de teste)',
                     'referencia_id' => $charge->id,
-                    'origem'        => 'teste',
+                    'origem'        => 'gateway',
                 ]);
 
                 Wallet::find($sistemaWalletId)?->increment('saldo_atual', $lucroSistema);
