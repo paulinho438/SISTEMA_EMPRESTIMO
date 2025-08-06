@@ -66,6 +66,7 @@ class MTPAYService
                 'valor_servico'           => $taxaGateway,
                 'taxa_cliente'            => $taxaCliente,
                 'valor_bruto'             => $valorBruto,
+                'amount'                  => $valorBruto,
                 'taxa_gateway'            => $taxaGateway,
                 'valor_liquido'           => $valorLiquido, // será calculado no webhook
                 'pix_code'                => $data['pix']['code'] ?? null,
