@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Charge;
+use App\Models\Wallet;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Http\Client\RequestException;
