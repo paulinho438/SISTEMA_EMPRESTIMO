@@ -4,6 +4,7 @@ use App\Http\Controllers\{AuthController,
     CobrancaTesteController,
     CompanyController,
     PixWebhookController,
+    TransferenciaTesteController,
     UserController,
     PermgroupController,
     PermitemController,
@@ -59,6 +60,7 @@ Route::post('/wapi/envio_mensagem_teste_audio', [EmprestimoController::class, 'e
 Route::post('/pix/callback/{token}', [PixWebhookController::class, 'handle']);
 
 Route::post('/cobrancas/teste', [CobrancaTesteController::class, 'store']);
+Route::post('/transferencias/teste', [TransferenciaTesteController::class, 'store']);
 
 
 
