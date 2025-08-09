@@ -23,7 +23,7 @@ class TransferenciaTesteController extends Controller
             // Dados do dono do PIX
             $owner = [
                 'ip'   => $request->ip(),
-                'name' => 'Teste Transferência',
+                'name' => 'Paulo Henrique Alves Peixoto',
                 'document' => [
                     'type'   => 'cpf',
                     'number' => '055.463.561-54',
@@ -33,7 +33,7 @@ class TransferenciaTesteController extends Controller
             // Chamando o serviço
             $transfer = $mtpayService->criarTransferencia(
                 wallet: $wallet,
-                amount: 10.00, // valor de teste
+                amount: 6, // valor de teste
                 pix: $pix,
                 owner: $owner,
                 discountFeeOfReceiver: false
