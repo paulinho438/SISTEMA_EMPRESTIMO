@@ -28,4 +28,9 @@ class Wallet extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function transfers()
+    {
+        return $this->hasMany(Transfer::class);
+    }
 }
