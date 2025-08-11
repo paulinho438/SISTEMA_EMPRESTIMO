@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\EnviarMensagemWhatsApp;
+use App\Services\WAPIService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use App\Models\Emprestimo;
@@ -61,21 +62,18 @@ class EnvioMensagemRenovacao extends Command
     {
 
         try {
-            $response = Http::get($emprestimo->company->whatsapp . '/logar');
-
-            if ($response->successful() && $response->json()['loggedIn']) {
                 $this->enviarMensagem($emprestimo);
 
                 $emprestimo->dt_envio_mensagem_renovacao = now();
                 $emprestimo->save();
                 Log::info("Mensagem de renovação enviada para o empréstimo ID: {$emprestimo->id}");
-            }
         } catch (\Throwable $th) {
             Log::error($th);
         }
     }
     private function enviarMensagem($emprestimo)
     {
+        $wapiService = new WAPIService();
         $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
         $baseUrl = $emprestimo->company->whatsapp;
 
@@ -84,13 +82,13 @@ class EnvioMensagemRenovacao extends Command
         $saudacao = $this->obterSaudacao();
         $mensagem = $this->montarMensagem($emprestimo, $saudacao);
 
-        $data = [
-            "numero" => "55" . $telefone,
-            "mensagem" => $mensagem
-        ];
+        $company = $emprestimo->company;
+        $telefoneCliente = "55" . $telefone;
 
-        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
-        Log::info("MENSAGEM ENVIADA: " . $telefone);
+        $wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, [
+            "phone" => $telefoneCliente,
+            "message" => $mensagem
+        ]);
     }
 
     private function montarMensagem($emprestimo, $saudacao)

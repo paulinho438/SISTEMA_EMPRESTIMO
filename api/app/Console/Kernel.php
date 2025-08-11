@@ -48,7 +48,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('cobranca:AutomaticaBBotao')->everyMinute();
         $schedule->command('cobranca:AutomaticaCBotao')->everyMinute();
 
-        // $schedule->command('mensagem:AutomaticaRenovacao')->everyMinute();
+        $schedule->command('mensagem:AutomaticaRenovacao')->everyMinute();
         $schedule->command('webhook:baixaBcodex')->everyMinute();
 
         //$schedule->command('recalcular:Parcelas')->dailyAt('00:00');
@@ -64,7 +64,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('protestar:Emprestimo')->dailyAt('07:00');
         $schedule->command('retirarProtesto:Emprestimo')->everyMinute()->withoutOverlapping();
 
-        // $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
+        $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
 
 
     }
