@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->float('juros', 8, 2);
             $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
         });
     }
 

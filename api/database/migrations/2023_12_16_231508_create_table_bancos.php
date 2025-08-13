@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('document')->nullable();
             $table->timestamps();
             $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
         });
     }
 

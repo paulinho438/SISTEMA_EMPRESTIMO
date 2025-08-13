@@ -18,7 +18,7 @@ class CreateDepositoTable extends Migration
             $table->unsignedBigInteger('banco_id');
             $table->foreign('banco_id')->references('id')->on('bancos');
             $table->unsignedBigInteger('company_id');
-            $table->foreign('company_id')->references('id')->on('company');
+            $table->foreign('company_id')->references('id')->on('companies');
             $table->float('valor', 8, 2);
             $table->string('identificador')->nullable();
             $table->date('data_pagamento')->nullable();

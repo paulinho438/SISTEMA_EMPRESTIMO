@@ -1,10 +1,13 @@
 <?php
 
 namespace App\Models;
+
 use App\Models\User;
 use App\Models\Planos;
 use App\Models\Locacao;
 use App\Models\Emprestimo;
+use App\Models\Wallet;
+
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,7 +36,8 @@ class Company extends Model
 
     use HasFactory;
 
-    public function users() {
+    public function users()
+    {
         return $this->belongsToMany(User::class);
     }
 
@@ -60,5 +64,10 @@ class Company extends Model
     public function emprestimos()
     {
         return $this->hasMany(Emprestimo::class);
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
     }
 }

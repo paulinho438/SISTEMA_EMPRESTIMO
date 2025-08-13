@@ -18,16 +18,18 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CompanySeeder::class,
             CompanyUserSeeder::class,
+
+                // Cria as tabelas base
+            PermGroupsSeeder::class,
+            PermItemsSeeder::class,
+
+                // Só agora faz o vínculo
             PermLinksSeeder::class,
             PermLinksUserSeeder::class,
-            PermItemsSeeder::class,
-            PermGroupsSeeder::class,
+
             CategoriesSeeder::class,
-            EmprestimoSeeder::class,
-            ClientSeeder::class,
             CostcenterSeeder::class,
             BancoSeeder::class,
-            ParcelaSeeder::class,
             FeriadoSeeder::class,
             JurosSeeder::class
         ]);

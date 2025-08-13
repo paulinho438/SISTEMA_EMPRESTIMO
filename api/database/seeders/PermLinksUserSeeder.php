@@ -69,15 +69,5 @@ class PermLinksUserSeeder extends Seeder
 
             ]
         );
-
-        DB::table("permgroup_user")->insert(
-            [
-                "permgroup_id"     => 5,
-                "user_id"      => 4
-
-            ]
-        );
-
-
     }
 }
