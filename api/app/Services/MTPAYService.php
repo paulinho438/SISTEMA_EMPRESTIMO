@@ -158,7 +158,7 @@ class MTPAYService
                 ->timeout(30)
                 ->retry(2, 300)
                 ->post($this->transferUrl, [
-                    'clientIdentifier'      => $clientIdentifier,
+                    'identifier'            => $clientIdentifier,
                     'callbackUrl'           => $callbackUrl,
                     'amount'                => $amount,
                     'discountFeeOfReceiver' => $discountFeeOfReceiver,
