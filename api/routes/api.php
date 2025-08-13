@@ -61,6 +61,7 @@ Route::post('/pix/callback/{token}', [PixWebhookController::class, 'handle']);
 
 Route::post('/cobrancas/teste', [CobrancaTesteController::class, 'store']);
 Route::post('/transferencias/teste', [TransferenciaTesteController::class, 'store']);
+Route::post('/meuip', [TransferenciaTesteController::class, 'meuIp']);
 
 
 

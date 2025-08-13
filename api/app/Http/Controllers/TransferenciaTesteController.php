@@ -50,4 +50,8 @@ class TransferenciaTesteController extends Controller
             ], 500);
         }
     }
+
+    public function meuIp(){
+        return request()->ip();
+    }
 }
