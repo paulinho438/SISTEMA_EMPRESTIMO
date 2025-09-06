@@ -183,10 +183,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         $parcelaPesquisa = Parcela::find($parcela->id);
 
-        if ($parcelaPesquisa->venc_real->isSameDay(Carbon::today()) && $parcelaPesquisa->dt_baixa == null) {
-            return true;
-        }
-
         if ($parcelaPesquisa->dt_baixa !== null) {
             Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
             return false;

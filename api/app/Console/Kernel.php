@@ -59,9 +59,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('cobranca:AutomaticaB')->dailyAt('13:00');
         $schedule->command('cobranca:AutomaticaC')->dailyAt('16:30');
 
-        $schedule->command('rotinas:BackupClientes')->dailyAt('00:00');
+        // $schedule->command('rotinas:BackupClientes')->dailyAt('00:00');
 
-        $schedule->command('protestar:Emprestimo')->dailyAt('08:00');
+        $schedule->command('protestar:Emprestimo')->dailyAt('07:00');
         $schedule->command('retirarProtesto:Emprestimo')->everyMinute()->withoutOverlapping();
 
         $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
