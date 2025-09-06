@@ -197,6 +197,16 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             return false;
         }
 
+        $parcelasVerification = Parcela::where('emprestimo_id', $parcela->emprestimo_id)->get();
+
+
+        if (count($parcelasVerification) == 1) {
+
+            if ($parcelaPesquisa->venc_real->greaterThan(Carbon::today())) {
+                return false;
+            }
+        }
+
         return true;
     }
 }

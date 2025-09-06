@@ -203,8 +203,6 @@ class CobrancaAutomaticaA extends Command
                         ]);
                     }
                 }
-
-
             }
         }
 
@@ -273,6 +271,9 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         $parcelaPesquisa = Parcela::find($parcela->id);
 
+        //VERIFICAR SE PARCELA É UNICA
+
+
         if ($parcelaPesquisa->venc_real->isSameDay(Carbon::today()) && $parcelaPesquisa->dt_baixa == null) {
             return true;
         }
@@ -282,9 +283,19 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             return false;
         }
 
-        if($parcelaPesquisa->atrasadas == 0){
+        if ($parcelaPesquisa->atrasadas == 0) {
             Log::info("Parcela {$parcela->id} não está mais atrasada, não será processada novamente.");
             return false;
+        }
+
+        $parcelasVerification = Parcela::where('emprestimo_id', $parcela->emprestimo_id)->get();
+
+
+        if (count($parcelasVerification) == 1) {
+
+            if ($parcelaPesquisa->venc_real->greaterThan(Carbon::today())) {
+                return false;
+            }
         }
 
         return true;
