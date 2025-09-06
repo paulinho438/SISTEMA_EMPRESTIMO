@@ -121,7 +121,6 @@ class EmprestimoController extends Controller
         }
 
         return true;
-
     }
 
     public function enviarMensagemAudioWAPITeste(Request $request)
@@ -165,7 +164,6 @@ class EmprestimoController extends Controller
         }
 
         return true;
-
     }
 
 
@@ -365,7 +363,7 @@ class EmprestimoController extends Controller
             ->limit(1000)
             ->get();
         foreach ($emprestimos as $emprestimo) {
-            foreach ($emprestimo->parcelas as $parcela){
+            foreach ($emprestimo->parcelas as $parcela) {
                 $parcela->dt_lancamento = $emprestimo->dt_lancamento;
                 $parcela->save();
             }
@@ -1114,7 +1112,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $company = $parcela->emprestimo->company;
 
         $envio = $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, ["phone" => $telefoneCliente, "message" => $frase]);
-
     }
 
     function encontrarPrimeiraParcelaPendente($parcelas)
@@ -1198,29 +1195,29 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                     $array['response'] = $response->json();
 
-                        $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
+                    $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
 
-                        $dados = [
-                            'valor' => $contaspagar->valor,
-                            'tipo_transferencia' => 'PIX',
-                            'descricao' => 'Transferência realizada com sucesso',
-                            'destino_nome' => $array['response']['creditParty']['name'],
-                            'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
-                            'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
-                            'destino_instituicao' => $bank->short_name ?? 'Unknown',
-                            'destino_banco' => $bank->code_number ?? '000',
-                            'destino_agencia' => str_pad($array['response']['creditParty']['branch'] ?? 000, 4, '0', STR_PAD_LEFT),
-                            'destino_conta' => substr_replace($array['response']['creditParty']['accountNumber'] ?? 000, '-', -1, 0),
-                            'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
-                            'origem_cnpj' => '52.196.079/0001-71',
-                            'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
-                            'data_hora' => date('d/m/Y H:i:s'),
-                            'id_transacao' => $array['response']['endToEndId'],
-                        ];
+                    $dados = [
+                        'valor' => $contaspagar->valor,
+                        'tipo_transferencia' => 'PIX',
+                        'descricao' => 'Transferência realizada com sucesso',
+                        'destino_nome' => $array['response']['creditParty']['name'],
+                        'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
+                        'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
+                        'destino_instituicao' => $bank->short_name ?? 'Unknown',
+                        'destino_banco' => $bank->code_number ?? '000',
+                        'destino_agencia' => str_pad($array['response']['creditParty']['branch'] ?? 000, 4, '0', STR_PAD_LEFT),
+                        'destino_conta' => substr_replace($array['response']['creditParty']['accountNumber'] ?? 000, '-', -1, 0),
+                        'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
+                        'origem_cnpj' => '52.196.079/0001-71',
+                        'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+                        'data_hora' => date('d/m/Y H:i:s'),
+                        'id_transacao' => $array['response']['endToEndId'],
+                    ];
 
-                        $array['dados'] = $dados;
+                    $array['dados'] = $dados;
 
-                        EnviarComprovanteFornecedor::dispatch($contaspagar, $this->bcodexService, $array);
+                    EnviarComprovanteFornecedor::dispatch($contaspagar, $this->bcodexService, $array);
 
 
 
@@ -2147,22 +2144,96 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function infoEmprestimoFront(Request $request, $id)
     {
-        $array = ['error' => '', 'data' => []];
-
         $parcela = Parcela::with([
             'emprestimo.parcelas',
             'emprestimo.quitacao',
             'emprestimo.pagamentominimo',
             'emprestimo.pagamentosaldopendente',
-            'emprestimo.company'
+            'emprestimo.company',
+            'emprestimo.banco',
         ])->find($id);
 
-        if ($parcela) {
-            $array['data']['emprestimo'] = $parcela->emprestimo;
-            return $array;
+        if (!$parcela) {
+            return response()->json([
+                'error' => 'Parcela não encontrada.',
+                'data'  => []
+            ], 404);
         }
 
-        return response()->json(['message' => 'Baixa realizada com sucesso.']);
+        $emprestimo = $parcela->emprestimo;
+
+        // -------- PARCELAS --------
+        $parcelas = ($emprestimo?->parcelas ?? collect())->map(function ($p) {
+            $venc      = $p->venc      ? Carbon::parse($p->venc)->format('d/m/Y')      : null;
+            $venc_real = $p->venc_real ? Carbon::parse($p->venc_real)->format('d/m/Y') : null;
+
+            return [
+                'id'                  => (int) ($p->id ?? 0),
+                'venc'                => $venc,
+                'venc_real'           => $venc_real,
+                'saldo'               => (float) ($p->saldo ?? 0),
+                'total_pago_parcela'  => (float) ($p->total_pago_parcela ?? 0),
+                'dt_baixa'            => $p->dt_baixa ? (string) $p->dt_baixa : '', // front espera '' quando não pago
+                'chave_pix'           => (string) ($p->chave_pix ?? ''),
+
+                // Campos opcionais que aparecem no template (comentados)
+                'total_pendente'      => (float) ($p->total_pendente ?? 0),
+                'total_pendente_hoje' => (float) ($p->total_pendente_hoje ?? 0),
+            ];
+        })->values()->toArray();
+
+        // -------- PAGAMENTO SALDO PENDENTE (opcional) --------
+        $pagamentoSaldoPendente = $emprestimo?->pagamentosaldopendente;
+        $pagamentoSaldoPendenteArr = $pagamentoSaldoPendente ? [
+            'valor'     => (float) ($pagamentoSaldoPendente->valor ?? 0),
+            'chave_pix' => (string) ($pagamentoSaldoPendente->chave_pix ?? ''),
+        ] : null;
+
+        // -------- PAGAMENTO MÍNIMO (opcional) --------
+        $pagamentoMinimo = $emprestimo?->pagamentominimo;
+        $pagamentoMinimoArr = $pagamentoMinimo ? [
+            // front usa "valor" (string/number) e "valorSemFormatacao" (number)
+            'valor'               => (float) ($pagamentoMinimo->valor ?? 0),
+            'valorSemFormatacao'  => (float) ($pagamentoMinimo->valor ?? 0),
+            'chave_pix'           => (string) ($pagamentoMinimo->chave_pix ?? ''),
+        ] : null;
+
+        // -------- QUITAÇÃO (opcional) --------
+        $quitacao = $emprestimo?->quitacao;
+        $quitacaoArr = $quitacao ? [
+            'saldo'     => (float) ($quitacao->saldo ?? 0),
+            'chave_pix' => (string) ($quitacao->chave_pix ?? ''),
+        ] : null;
+
+        // -------- BANCO (opcional) --------
+        $banco = $emprestimo?->banco;
+        $bancoArr = $banco ? [
+            'chavepix'          => (string) ($banco->chavepix ?? ''),
+            'info_recebedor_pix' => (string) ($banco->info_recebedor_pix ?? ''),
+        ] : null;
+
+        // -------- OUTROS CAMPOS USADOS PELO FRONT --------
+        $payloadEmprestimo = [
+            'parcelas'               => $parcelas,
+            'pagamentosaldopendente' => $pagamentoSaldoPendenteArr,
+            'pagamentominimo'        => $pagamentoMinimoArr,
+            'quitacao'               => $quitacaoArr,
+            'banco'                  => $bancoArr,
+
+            'saldoareceber' => (float) ($emprestimo->saldoareceber ?? 0),
+            'liberar_minimo' => (int)   ($emprestimo->liberar_minimo ?? 0),
+            'lucro'         => (float) ($emprestimo->lucro ?? 0),
+
+            // usado no template para exibir WhatsApp
+            'telefone_empresa' => (string) ($emprestimo?->company?->telefone ?? ''),
+        ];
+
+        return response()->json([
+            'error' => '',
+            'data'  => [
+                'emprestimo' => $payloadEmprestimo
+            ]
+        ]);
     }
 
     public function infoClienteLocalizacao(Request $request, $id)
@@ -3770,7 +3841,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
 
             $envio = $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, ["phone" => "55" . $telefone, "message" => $frase]);
-
         } catch (\Throwable $th) {
         }
 
