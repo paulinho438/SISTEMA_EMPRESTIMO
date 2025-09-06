@@ -2158,7 +2158,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         ])->find($id);
 
         if ($parcela) {
-            $array['data']['emprestimo'] = new EmprestimoLandingPageResource($parcela->emprestimo);
+            $array['data']['emprestimo'] = $parcela->emprestimo;
             return $array;
         }
 
