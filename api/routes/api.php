@@ -28,7 +28,8 @@ use App\Http\Controllers\{
     LocacaoController,
     AuthClienteController,
     WebhookTesteController,
-    NotasController
+    NotasController,
+    CobrancaAutomaticaATestController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -94,6 +95,7 @@ Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataC
 
 
 
+Route::get('/cobrancas/teste', [CobrancaAutomaticaATestController::class, 'dryRun']);
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);
