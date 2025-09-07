@@ -9,16 +9,10 @@ use Carbon\Carbon;
 
 class CobrancaAutomaticaATestController extends Controller
 {
-    /**
-     * GET /api/cobrancas/teste
-     * Params opcionais:
-     *   - id: testa uma parcela específica (ignora o resto)
-     *   - limit: limita a quantidade avaliada (ex.: 50)
-     */
     public function dryRun(Request $request)
     {
         $today = Carbon::today();
-        $now   = Carbon::now(); // usa timezone da app (ajuste no config/app.php se precisar)
+        $now   = Carbon::now();
 
         $isWeekend = $now->isSaturday() || $now->isSunday();
         $isHoliday = Feriado::where('data_feriado', $today->toDateString())->exists();
@@ -30,7 +24,6 @@ class CobrancaAutomaticaATestController extends Controller
             'isHoliday'  => $isHoliday,
         ];
 
-        // Se for feriado, replica o early return da Command
         if ($isHoliday) {
             return response()->json([
                 'meta'   => $meta,
@@ -40,9 +33,10 @@ class CobrancaAutomaticaATestController extends Controller
             ]);
         }
 
-        // Base da consulta
         $parcelasQuery = Parcela::query()
             ->whereNull('dt_baixa')
+            // se quiser, evite registros sem vínculo:
+            // ->whereNotNull('emprestimo_id')
             ->with([
                 'emprestimo',
                 'emprestimo.company',
@@ -52,59 +46,59 @@ class CobrancaAutomaticaATestController extends Controller
             ])
             ->orderByDesc('id');
 
-        // Param opcional: testar apenas uma parcela específica
         if ($request->filled('id')) {
             $parcelasQuery->where('id', $request->integer('id'));
         }
 
-        // Fim de semana: só atrasadas > 0
         if ($isWeekend) {
             $parcelasQuery->where('atrasadas', '>', 0);
         }
 
-        if ($request->filled('limit')) {
-            $parcelas = $parcelasQuery->limit($request->integer('limit', 50))->get();
-        } else {
-            $parcelas = $parcelasQuery->get();
-        }
+        $parcelas = $request->filled('limit')
+            ? $parcelasQuery->limit($request->integer('limit', 50))->get()
+            : $parcelasQuery->get();
 
-        // Filtros pós-consulta, reproduzindo a Command
         if ($isWeekend) {
             $parcelas = $parcelas->filter(function ($parcela) {
-                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
+                $dataProtesto = data_get($parcela, 'emprestimo.data_protesto');
                 if (!$dataProtesto) return true;
                 return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
             });
         } else {
             $hoje = Carbon::now();
             $parcelas = $parcelas->filter(function ($parcela) use ($hoje) {
-                $emp = $parcela->emprestimo;
+                $deveCobrarHoje = ($d = data_get($parcela, 'emprestimo.deve_cobrar_hoje'))
+                    ? Carbon::parse($d)->isSameDay($hoje)
+                    : false;
 
-                $deveCobrarHoje = $emp
-                    && !is_null($emp->deve_cobrar_hoje)
-                    && Carbon::parse($emp->deve_cobrar_hoje)->isSameDay($hoje);
-
-                $vencimentoHoje = $parcela->venc_real
-                    && Carbon::parse($parcela->venc_real)->isSameDay($hoje);
+                $vencimentoHoje = ($vr = data_get($parcela, 'venc_real'))
+                    ? Carbon::parse($vr)->isSameDay($hoje)
+                    : false;
 
                 return $deveCobrarHoje || $vencimentoHoje;
             });
         }
 
-        // Deduplicar por emprestimo_id (mantendo a parcela de maior id)
         $parcelas = $parcelas->unique('emprestimo_id')->values();
 
-        // Avaliar item a item sem enviar
         $items = [];
         $wouldSendCount = 0;
 
         foreach ($parcelas as $p) {
+            $clienteNome = data_get($p, 'emprestimo.client.nome_completo');
+            $empresaNome = data_get($p, 'emprestimo.company.nome');
+            $whatsapp    = data_get($p, 'emprestimo.company.whatsapp');
+            $statusCP    = data_get($p, 'emprestimo.contaspagar.status');
+
             $trace = [
                 'parcela_id'        => $p->id,
                 'emprestimo_id'     => $p->emprestimo_id,
-                'cliente'           => optional($p->emprestimo->client)->nome_completo,
+                'cliente'           => $clienteNome,
+                'empresa'           => $empresaNome,
+                'company_whatsapp'  => $whatsapp,
+                'contaspagar_status'=> $statusCP,
                 'atrasadas'         => (int) $p->atrasadas,
-                'venc_real'         => optional($p->venc_real) ? Carbon::parse($p->venc_real)->toDateString() : null,
+                'venc_real'         => ($p->venc_real ? Carbon::parse($p->venc_real)->toDateString() : null),
                 'regras'            => [],
                 'blockers'          => [],
                 'selected_by'       => $isWeekend ? 'fim_de_semana' : 'dia_util',
@@ -112,49 +106,37 @@ class CobrancaAutomaticaATestController extends Controller
                 'would_send'        => false,
             ];
 
-            // === mesmos gates da Command ===
-
             // 1) podeProcessarParcela()
             $pp = $this->podeProcessarParcelaDry($p, $today);
             $trace['regras']['pode_processar_parcela'] = $pp;
-
-            if (!$pp['ok']) {
-                $trace['blockers'][] = 'podeProcessarParcela:false';
-            }
+            if (!$pp['ok']) $trace['blockers'][] = 'podeProcessarParcela:false';
 
             // 2) deveProcessarParcela()
             $dp = $this->deveProcessarParcelaDry($p);
             $trace['regras']['deve_processar_parcela'] = $dp;
-
-            if (!$dp['ok']) {
-                $trace['blockers'][] = 'deveProcessarParcela:false';
-            }
+            if (!$dp['ok']) $trace['blockers'][] = 'deveProcessarParcela:false';
 
             // 3) emprestimoEmProtesto()
             $ep = $this->emprestimoEmProtestoDry($p, $now);
             $trace['regras']['emprestimo_em_protesto'] = $ep;
+            if ($ep['em_protesto']) $trace['blockers'][] = 'emprestimoEmProtesto:true';
 
-            if ($ep['em_protesto']) {
-                $trace['blockers'][] = 'emprestimoEmProtesto:true';
-            }
-
-            // Resultado final (se passaria para enviarMensagem)
             $trace['would_send'] = $pp['ok'] && $dp['ok'] && !$ep['em_protesto'];
             if ($trace['would_send']) $wouldSendCount++;
 
-            // detalhes dos filtros de seleção do início
             if ($isWeekend) {
                 $trace['filters'][] = 'atrasadas>0';
-                $dataProtesto = optional($p->emprestimo)->data_protesto;
-                $trace['filters'][] = is_null($dataProtesto)
-                    ? 'data_protesto:null'
-                    : ('data_protesto>' . Carbon::parse($dataProtesto)->subDay()->toDateTimeString() . '? ' .
-                        (Carbon::parse($dataProtesto)->gt(Carbon::now()->subDay()) ? 'ok' : 'fail'));
+                $dataProtesto = data_get($p, 'emprestimo.data_protesto');
+                $okProtesto = !$dataProtesto || Carbon::parse($dataProtesto)->gt(Carbon::now()->subDay());
+                $trace['filters'][] = 'data_protesto ' . ($dataProtesto ?: 'null') . ' => ' . ($okProtesto ? 'ok' : 'fail');
             } else {
-                $emp = $p->emprestimo;
-                $trace['filters'][] = 'deve_cobrar_hoje=' . ($emp && $emp->deve_cobrar_hoje
-                    ? (Carbon::parse($emp->deve_cobrar_hoje)->toDateString()) : 'null');
+                $trace['filters'][] = 'deve_cobrar_hoje=' . (data_get($p, 'emprestimo.deve_cobrar_hoje') ? Carbon::parse(data_get($p, 'emprestimo.deve_cobrar_hoje'))->toDateString() : 'null');
                 $trace['filters'][] = 'venc_real=' . ($p->venc_real ? Carbon::parse($p->venc_real)->toDateString() : 'null');
+            }
+
+            // Ajuda extra: se o relacionamento emprestimo vier nulo, sinalizamos no item
+            if (is_null($p->emprestimo)) {
+                $trace['blockers'][] = 'emprestimo:null';
             }
 
             $items[] = $trace;
@@ -164,7 +146,7 @@ class CobrancaAutomaticaATestController extends Controller
             'meta'   => $meta,
             'counts' => [
                 'candidatas'   => $parcelas->count(),
-                'deduplicadas' => $parcelas->count(), // já deduplicado acima
+                'deduplicadas' => $parcelas->count(),
                 'would_send'   => $wouldSendCount,
             ],
             'items'  => $items,
@@ -175,13 +157,10 @@ class CobrancaAutomaticaATestController extends Controller
 
     private function podeProcessarParcelaDry($parcela, Carbon $today): array
     {
-        // (replica a lógica da sua static podeProcessarParcela)
         $motivos = [];
 
-        // carrega do banco novamente na sua versão original usa Parcela::find()
-        // aqui usamos o próprio objeto e cuidamos das datas
-        $dtBaixa   = $parcela->dt_baixa;
-        $vencReal  = $parcela->venc_real ? Carbon::parse($parcela->venc_real) : null;
+        $dtBaixa  = $parcela->dt_baixa;
+        $vencReal = $parcela->venc_real ? Carbon::parse($parcela->venc_real) : null;
 
         if ($vencReal && $vencReal->isSameDay($today) && is_null($dtBaixa)) {
             return ['ok' => true, 'motivos' => ['venc_real=hoje && dt_baixa=null']];
@@ -197,7 +176,10 @@ class CobrancaAutomaticaATestController extends Controller
             return ['ok' => false, 'motivos' => $motivos];
         }
 
-        $qtdParcelasEmp = Parcela::where('emprestimo_id', $parcela->emprestimo_id)->count();
+        $qtdParcelasEmp = $parcela->emprestimo_id
+            ? Parcela::where('emprestimo_id', $parcela->emprestimo_id)->count()
+            : 0;
+
         if ($qtdParcelasEmp === 1) {
             if ($vencReal && $vencReal->greaterThan($today)) {
                 $motivos[] = 'parcela_unica_e_venc_real_futuro';
@@ -211,35 +193,43 @@ class CobrancaAutomaticaATestController extends Controller
     private function deveProcessarParcelaDry($parcela): array
     {
         $emp = $parcela->emprestimo;
-        $okWhats = isset($emp->company->whatsapp);
-        $okCP    = $emp->contaspagar ?? null;
-        $okStat  = $okCP && $emp->contaspagar->status === "Pagamento Efetuado";
+
+        $whats = data_get($emp, 'company.whatsapp');
+        $conta = data_get($emp, 'contaspagar');
+        $status= data_get($emp, 'contaspagar.status');
+
+        $okWhats = !is_null($whats);
+        $okCP    = !is_null($conta);
+        $okStat  = $okCP && $status === "Pagamento Efetuado";
 
         $ok = $okWhats && $okCP && $okStat;
 
         $motivos = [];
         if (!$okWhats) $motivos[] = 'company.whatsapp_inexistente';
         if (!$okCP)    $motivos[] = 'contaspagar_inexistente';
-        if ($okCP && !$okStat) $motivos[] = 'contaspagar.status!=' . ($emp->contaspagar->status ?? 'null');
+        if ($okCP && !$okStat) $motivos[] = 'contaspagar.status!=' . ($status ?? 'null');
+
+        // se nem emprestimo existe, já marca
+        if (is_null($emp)) $motivos[] = 'emprestimo:null';
 
         return ['ok' => $ok, 'motivos' => $motivos ?: ['deve_processar=true']];
     }
 
     private function emprestimoEmProtestoDry($parcela, Carbon $now): array
     {
-        $emp = $parcela->emprestimo;
-        if (!$emp || !$emp->data_protesto) {
+        $dp = data_get($parcela, 'emprestimo.data_protesto');
+        if (!$dp) {
             return ['em_protesto' => false, 'motivos' => ['sem_data_protesto']];
         }
 
-        $dp = Carbon::parse($emp->data_protesto);
+        $dpC    = Carbon::parse($dp);
         $limite = $now->copy()->subDays(14);
+        $emProtesto = $dpC->lte($limite);
 
-        $emProtesto = $dp->lte($limite);
         return [
-            'em_protesto' => $emProtesto,
-            'motivos'     => [$emProtesto ? 'data_protesto<=now-14d' : 'data_protesto_recente'],
-            'data_protesto' => $dp->toDateString(),
+            'em_protesto'   => $emProtesto,
+            'motivos'       => [$emProtesto ? 'data_protesto<=now-14d' : 'data_protesto_recente'],
+            'data_protesto' => $dpC->toDateString(),
             'limite'        => $limite->toDateString(),
         ];
     }
