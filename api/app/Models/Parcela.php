@@ -33,6 +33,14 @@ class Parcela extends Model
         'venc_real_audit'
     ];
 
+    protected $casts = [
+        'venc_real'   => 'date',      // vira Carbon (data sem hora)
+        'dt_baixa'    => 'datetime',  // vira Carbon (com hora)
+        'created_at'  => 'datetime',
+        'updated_at'  => 'datetime',
+        'atrasadas'   => 'integer',
+    ];
+
     public function emprestimo()
     {
         return $this->belongsTo(Emprestimo::class, 'emprestimo_id', 'id');

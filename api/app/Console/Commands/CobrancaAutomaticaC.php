@@ -181,24 +181,52 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     private static function podeProcessarParcela($parcela)
     {
-        $parcelaPesquisa = Parcela::find($parcela->id);
+        // Se já veio uma instância atualizada, só dá fresh(); senão busca por id
+        $parcelaPesquisa = $parcela instanceof \App\Models\Parcela
+            ? $parcela->fresh()
+            : \App\Models\Parcela::find($parcela->id ?? null);
 
-        if ($parcelaPesquisa->dt_baixa !== null) {
-            Log::info("Parcela {$parcela->id} já baixada, não será processada novamente.");
+        if (!$parcelaPesquisa) {
+            Log::warning('Parcela não encontrada para processamento.');
             return false;
         }
 
-        if($parcelaPesquisa->atrasadas == 0){
-            Log::info("Parcela {$parcela->id} não está mais atrasada, não será processada novamente.");
+        // Blindagem extra caso os casts não estejam aplicados por algum motivo
+        $vencReal = $parcelaPesquisa->venc_real
+            ? ($parcelaPesquisa->venc_real instanceof Carbon
+                ? $parcelaPesquisa->venc_real
+                : Carbon::parse($parcelaPesquisa->venc_real))
+            : null;
+
+        $dtBaixa = $parcelaPesquisa->dt_baixa
+            ? ($parcelaPesquisa->dt_baixa instanceof Carbon
+                ? $parcelaPesquisa->dt_baixa
+                : Carbon::parse($parcelaPesquisa->dt_baixa))
+            : null;
+
+        // 1) Se vence hoje e ainda não foi baixada, processa
+        if ($vencReal?->isSameDay(today()) && $dtBaixa === null) {
+            return true;
+        }
+
+        // 2) Já baixada? não processa
+        if ($dtBaixa !== null) {
+            Log::info("Parcela {$parcelaPesquisa->id} já baixada, não será processada novamente.");
             return false;
         }
 
-        $parcelasVerification = Parcela::where('emprestimo_id', $parcela->emprestimo_id)->get();
+        // 3) Não está (mais) atrasada? não processa
+        if ((int) $parcelaPesquisa->atrasadas === 0) {
+            Log::info("Parcela {$parcelaPesquisa->id} não está mais atrasada, não será processada novamente.");
+            return false;
+        }
 
+        // 4) Verificação de parcela única — use COUNT direto (evita carregar a coleção inteira)
+        $qtdParcelas = \App\Models\Parcela::where('emprestimo_id', $parcelaPesquisa->emprestimo_id)->count();
 
-        if (count($parcelasVerification) == 1) {
-
-            if ($parcelaPesquisa->venc_real->greaterThan(Carbon::today())) {
+        if ($qtdParcelas === 1) {
+            // Se for única e ainda vai vencer no futuro, não processa
+            if ($vencReal && $vencReal->greaterThan(today())) {
                 return false;
             }
         }
