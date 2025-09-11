@@ -175,7 +175,7 @@ export default {
                         }
 
                         if (Clientes.emprestimos?.data_quitacao) {
-                            Clientes.data_quitacao = new Date(`${Clientes.emprestimos.data_quitacao}T00:00:00`); // Concatena e cria um objeto Date
+                            Clientes.data_quitacao = new Date(Clientes.emprestimos.data_quitacao); // Concatena e cria um objeto Date
                         }
 
                         return Clientes;
