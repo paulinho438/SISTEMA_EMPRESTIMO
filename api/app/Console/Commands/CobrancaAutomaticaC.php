@@ -27,35 +27,50 @@ class CobrancaAutomaticaC extends Command
 
         $today = Carbon::today()->toDateString();
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
-
         if ($isHoliday) return 0;
 
         $todayHoje = now();
 
-        $parcelasQuery = Parcela::whereNull('dt_baixa')->with('emprestimo');
-
-        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
-            $parcelasQuery->where('atrasadas', '>', 0);
-        }
-
-        $parcelasQuery->orderByDesc('id');
-        $parcelas = $parcelasQuery->get();
-
-        if ($todayHoje->isSaturday() || $todayHoje->isSunday()) {
-            $parcelas = $parcelas->filter(function ($parcela) {
-                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
-                return !$dataProtesto || !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
+        /**
+         * 1) Aplicar os MESMOS critérios de fim de semana / dia útil
+         */
+        $filtered = Parcela::query()
+            ->whereNull('dt_baixa')
+            ->when($todayHoje->isWeekend(), function ($q) {
+                $q->where('atrasadas', '>', 0)
+                    ->whereHas('emprestimo', function ($qq) {
+                        $qq->where(function ($s) {
+                            // Sem protesto OU protesto mais recente que 1 dia atrás
+                            $s->whereNull('data_protesto')
+                                ->orWhere('data_protesto', '>', Carbon::now()->subDay());
+                        });
+                    });
+            }, function ($q) use ($todayHoje) {
+                // deve_cobrar_hoje = hoje OU venc_real = hoje
+                $q->where(function ($s) use ($todayHoje) {
+                    $s->whereHas('emprestimo', function ($qq) use ($todayHoje) {
+                        $qq->whereDate('deve_cobrar_hoje', $todayHoje->toDateString());
+                    })
+                        ->orWhereDate('venc_real', $todayHoje->toDateString());
+                });
             });
-        } else {
-            $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
-                $emprestimo = $parcela->emprestimo;
-                $deveCobrarHoje = $emprestimo && $emprestimo->deve_cobrar_hoje && Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
-                $vencimentoHoje = $parcela->venc_real && Carbon::parse($parcela->venc_real)->isSameDay($todayHoje);
-                return $deveCobrarHoje || $vencimentoHoje;
-            });
-        }
 
-        $parcelas = $parcelas->unique('emprestimo_id')->values();
+        /**
+         * 2) Trazer SEMPRE a primeira parcela pendente por empréstimo (menor nº de 'parcela')
+         */
+        $sub = (clone $filtered)
+            ->selectRaw('MIN(parcela) as min_parcela, emprestimo_id')
+            ->groupBy('emprestimo_id');
+
+        $parcelas = (clone $filtered)
+            ->joinSub($sub, 'firsts', function ($join) {
+                $join->on('parcelas.emprestimo_id', '=', 'firsts.emprestimo_id')
+                    ->on('parcelas.parcela', '=', 'firsts.min_parcela');
+            })
+            ->with(['emprestimo', 'emprestimo.company', 'emprestimo.client'])
+            ->orderBy('parcelas.emprestimo_id')
+            ->orderBy('parcelas.parcela')
+            ->get();
 
         foreach ($parcelas as $parcela) {
             sleep(4);

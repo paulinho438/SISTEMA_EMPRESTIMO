@@ -38,62 +38,59 @@ class CobrancaAutomaticaA extends Command
     public function handle()
     {
         $this->info('Realizando a Cobrança Automatica das Parcelas em Atrasos');
-
         Log::info("Cobranca Automatica A inicio de rotina");
 
         $today = Carbon::today()->toDateString();
         $isHoliday = Feriado::where('data_feriado', $today)->exists();
-
         if ($isHoliday) {
             return 0;
         }
 
         $todayHoje = now();
 
-        $parcelasQuery = Parcela::whereNull('dt_baixa')->with('emprestimo');
-
-        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
-            $parcelasQuery->where('atrasadas', '>', 0);
-        }
-
-        $parcelasQuery->orderByDesc('id');
-        $parcelas = $parcelasQuery->get();
-
-        if (($todayHoje->isSaturday() || $todayHoje->isSunday())) {
-            $parcelas = $parcelas->filter(function ($parcela) {
-                $dataProtesto = optional($parcela->emprestimo)->data_protesto;
-
-                if (!$dataProtesto) {
-                    return true;
-                }
-
-                return !Carbon::parse($dataProtesto)->lte(Carbon::now()->subDays(1));
+        /**
+         * 1) Filtros iguais aos atuais
+         */
+        $filtered = Parcela::query()
+            ->whereNull('dt_baixa')
+            ->when($todayHoje->isWeekend(), function ($q) {
+                $q->where('atrasadas', '>', 0)
+                    ->whereHas('emprestimo', function ($qq) {
+                        $qq->where(function ($s) {
+                            $s->whereNull('data_protesto')
+                                ->orWhere('data_protesto', '>', Carbon::now()->subDay());
+                        });
+                    });
+            }, function ($q) use ($todayHoje) {
+                $q->where(function ($s) use ($todayHoje) {
+                    $s->whereHas('emprestimo', function ($qq) use ($todayHoje) {
+                        $qq->whereDate('deve_cobrar_hoje', $todayHoje->toDateString());
+                    })
+                        ->orWhereDate('venc_real', $todayHoje->toDateString());
+                });
             });
-        }
 
-        if (!($todayHoje->isSaturday() || $todayHoje->isSunday())) {
-            $parcelas = $parcelas->filter(function ($parcela) use ($todayHoje) {
-                $emprestimo = $parcela->emprestimo;
+        /**
+         * 2) Pegar SEMPRE a primeira pendente por empréstimo (menor nº de parcela)
+         */
+        $sub = (clone $filtered)
+            ->selectRaw('MIN(parcela) as min_parcela, emprestimo_id')
+            ->groupBy('emprestimo_id');
 
-                $deveCobrarHoje = $emprestimo &&
-                    !is_null($emprestimo->deve_cobrar_hoje) &&
-                    Carbon::parse($emprestimo->deve_cobrar_hoje)->isSameDay($todayHoje);
+        $parcelas = (clone $filtered)
+            ->joinSub($sub, 'firsts', function ($join) {
+                $join->on('parcelas.emprestimo_id', '=', 'firsts.emprestimo_id')
+                    ->on('parcelas.parcela', '=', 'firsts.min_parcela');
+            })
+            ->with(['emprestimo', 'emprestimo.company', 'emprestimo.client'])
+            ->orderBy('parcelas.emprestimo_id')
+            ->orderBy('parcelas.parcela')
+            ->get();
 
-                $vencimentoHoje = $parcela->venc_real &&
-                    Carbon::parse($parcela->venc_real)->isSameDay($todayHoje);
-
-                return $deveCobrarHoje || $vencimentoHoje;
-            });
-        }
-
-        // Remover duplicados e resetar índices
-        $parcelas = $parcelas->unique('emprestimo_id')->values();
-
-        $count = count($parcelas);
+        $count = $parcelas->count();
         Log::info("Cobranca Automatica A quantidade de clientes: {$count}");
-        //$parcelas = Parcela::where('id', 23167)->get();
-        foreach ($parcelas as $parcela) {
 
+        foreach ($parcelas as $parcela) {
             if (self::podeProcessarParcela($parcela)) {
                 $this->processarParcela($parcela);
                 sleep(4);
@@ -304,7 +301,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         // 3) Não está (mais) atrasada? não processa
-        if ((int) $parcelaPesquisa->atrasadas === 0) {
+        if ((int)$parcelaPesquisa->atrasadas === 0) {
             Log::info("Parcela {$parcelaPesquisa->id} não está mais atrasada, não será processada novamente.");
             return false;
         }
