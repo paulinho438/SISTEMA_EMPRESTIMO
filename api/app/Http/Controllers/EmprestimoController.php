@@ -3466,6 +3466,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         return $dados;
     }
 
+    public function validarTransacao(Request $request)
+    {
+        $bcodexService = new BcodexService();
+        $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
+    }
+
     public function aplicarMultaParcela(Request $request, $id)
     {
         Log::info('Função iniciada aplicarMultaParcela');

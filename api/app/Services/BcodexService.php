@@ -191,4 +191,18 @@ class BcodexService
 
         return $response;
     }
+
+    public function consultarTransacao(string $accountId, string $transactionId)
+    {
+        $url = "{$this->baseUrl}/bcodex-pix-dex/api/v1/account/{$accountId}/transactions/{$transactionId}";
+
+        $accessToken = $this->login();
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $accessToken,
+        ])->get($url, []);
+
+        return $response;
+    }
 }
