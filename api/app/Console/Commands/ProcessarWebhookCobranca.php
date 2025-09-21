@@ -485,7 +485,9 @@ class ProcessarWebhookCobranca extends Command
                                     $parcela->emprestimo->banco->save();
 
                                     // Reduz o saldo da parcela atual
-                                    $parcela->saldo -= $valor;
+                                    $parcela->saldo  = 0;
+                                    $parcela->dt_baixa = $horario;
+
                                     $valor = 0;
                                 }
 
