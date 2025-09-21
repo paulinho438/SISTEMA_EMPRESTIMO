@@ -2163,7 +2163,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $emprestimo = $parcela->emprestimo;
 
         // -------- PARCELAS --------
-        $parcelas = ($emprestimo?->parcelas ?? collect())->map(function ($p) {
+        $parcelas = ($emprestimo?->parcelas ?? collect())->sortBy('parcela')->map(function ($p) {
             $venc      = $p->venc      ? Carbon::parse($p->venc)->format('d/m/Y')      : null;
             $venc_real = $p->venc_real ? Carbon::parse($p->venc_real)->format('d/m/Y') : null;
 
