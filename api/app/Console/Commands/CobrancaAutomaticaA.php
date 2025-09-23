@@ -109,7 +109,11 @@ class CobrancaAutomaticaA extends Command
         if ($this->emprestimoEmProtesto($parcela)) {
             return;
         }
-        $this->enviarMensagem($parcela);
+        if($parcela->emprestimo->company->id != 8) {
+            $this->enviarMensagem($parcela);
+        }else {
+            $this->enviarMensagemAPIAntiga($parcela);
+        }
     }
 
     private function deveProcessarParcela($parcela)
@@ -317,5 +321,75 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         return true;
+    }
+
+    private function enviarMensagemAPIAntiga($parcela)
+    {
+        $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+        $baseUrl = $parcela->emprestimo->company->whatsapp;
+
+
+
+        $saudacao = $this->obterSaudacao();
+        $mensagem = $this->montarMensagem($parcela, $saudacao);
+
+        $data = [
+            "numero" => "55" . $telefone,
+            "mensagem" => $mensagem
+        ];
+
+        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        sleep(4);
+        if($parcela->emprestimo->company->mensagem_audio) {
+            if($parcela->atrasadas > 0) {
+                $baseUrl = $parcela->emprestimo->company->whatsapp;
+                $tipo = "0";
+                switch ($parcela->atrasadas) {
+                    case 2:
+                        $tipo = "1.1";
+                        break;
+                    case 4:
+                        $tipo = "2.1";
+                        break;
+                    case 6:
+                        $tipo = "3.1";
+                        break;
+                    case 8:
+                        $tipo = "4.1";
+                        break;
+                    case 10:
+                        $tipo = "5.1";
+                        break;
+                    case 15:
+                        $tipo = "6.1";
+                        break;
+                }
+
+                if($tipo != "0"){
+                    $data2 = [
+                        "numero" => "55" . $telefone,
+                        "nomeCliente" => $parcela->emprestimo->client->nome_completo,
+                        "tipo" => $tipo
+                    ];
+
+                    Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+                }
+            }
+        }
+
+        //identificar se o emprestimo é mensal
+        //identificar se é a primeira cobranca
+        if(count($parcela->emprestimo->parcelas) == 1) {
+            if($parcela->atrasadas == 0){
+                $data3 = [
+                    "numero" => "55" . $telefone,
+                    "nomeCliente" => "Sistema",
+                    "tipo" => "msginfo1"
+                ];
+
+                Http::asJson()->post("$baseUrl/enviar-audio", $data3);
+            }
+        }
+
     }
 }
