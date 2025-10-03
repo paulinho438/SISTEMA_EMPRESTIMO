@@ -44,12 +44,12 @@ class EnvioMensagemRenovacao extends Command
                 $query->whereNotNull('dt_baixa');
             }
         ])
-        ->whereNull('dt_envio_mensagem_renovacao')
-        ->whereDoesntHave('parcelas', function ($query) {
-            $query->where('atrasadas', '>', 2);
-        })
-        ->havingRaw('parcelas_baixadas_count = total_parcelas * 0.8')
-        ->get();
+            ->whereNull('dt_envio_mensagem_renovacao')
+            ->whereDoesntHave('parcelas', function ($query) {
+                $query->where('atrasadas', '>', 2);
+            })
+            ->havingRaw('parcelas_baixadas_count = total_parcelas * 0.8')
+            ->get();
 
         //$parcelas = Parcela::where('id', 23167)->get();
         foreach ($emprestimos as $emprestimo) {
@@ -62,21 +62,25 @@ class EnvioMensagemRenovacao extends Command
     {
 
         try {
+            if ($emprestimo->company->id != 8) {
                 $this->enviarMensagem($emprestimo);
+            } else {
+                $this->enviarMensagemAPIAntiga($emprestimo);
+            }
 
-                $emprestimo->dt_envio_mensagem_renovacao = now();
-                $emprestimo->save();
-                Log::info("Mensagem de renovação enviada para o empréstimo ID: {$emprestimo->id}");
+            $emprestimo->dt_envio_mensagem_renovacao = now();
+            $emprestimo->save();
+            Log::info("Mensagem de renovação enviada para o empréstimo ID: {$emprestimo->id}");
         } catch (\Throwable $th) {
             Log::error($th);
         }
     }
+
     private function enviarMensagem($emprestimo)
     {
         $wapiService = new WAPIService();
         $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
         $baseUrl = $emprestimo->company->whatsapp;
-
 
 
         $saudacao = $this->obterSaudacao();
@@ -126,5 +130,26 @@ Descontando o saldo devedor de R$ {$saldoDevedor} das parcelas pendentes, o valo
         } else {
             return $saudacoesNoite[array_rand($saudacoesNoite)];
         }
+    }
+
+    private function enviarMensagemAPIAntiga($emprestimo)
+    {
+        $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
+        $baseUrl = $emprestimo->company->whatsapp;
+
+        $saudacao = $this->obterSaudacao();
+        $mensagem = $this->montarMensagem($emprestimo, $saudacao);
+
+        $company = $emprestimo->company;
+        $telefoneCliente = "55" . $telefone;
+
+        $data = [
+            "numero" => "55" . $telefone,
+            "mensagem" => $mensagem
+        ];
+
+        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        sleep(4);
+
     }
 }
