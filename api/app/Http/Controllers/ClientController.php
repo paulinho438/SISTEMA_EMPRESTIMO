@@ -179,7 +179,6 @@ class ClientController extends Controller
         return response()->json($clientes->values());
 
 
-
         // return ParcelaResource::collection(Parcela::where('dt_baixa', null)
         //     ->where('valor_recebido', null)
         //     ->where(function ($query) use ($request) {
@@ -223,6 +222,7 @@ class ClientController extends Controller
         });
         return response()->json($lastLocations);
     }
+
     public function mapaConsultor(Request $request)
     {
 
@@ -282,7 +282,6 @@ class ClientController extends Controller
 
         return response()->json($lastLocations);
     }
-
 
 
     public function mapaRotaConsultor(Request $request)
@@ -345,21 +344,38 @@ class ClientController extends Controller
         foreach ($filteredClients as $client) {
             if ($dados['status'] == 0) {
                 if ($client->emprestimos->count_late_parcels <= 2) {
-                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                    if ($client->emprestimo->company->id == 8) {
+                        self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                    } else {
+                        self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                    }
+
                 }
 
                 if ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
-                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                    if ($client->emprestimo->company->id == 8) {
+                        self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                    } else {
+                        self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                    }
                 }
 
                 if ($client->emprestimos->count_late_parcels >= 6) {
-                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                    if ($client->emprestimo->company->id == 8) {
+                        self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                    } else {
+                        self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                    }
                 }
             }
 
             if ($dados['status'] == 1) {
                 if ($client->emprestimos->count_late_parcels <= 2) {
-                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                    if ($client->emprestimo->company->id == 8) {
+                        self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                    } else {
+                        self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
+                    }
                 }
             }
 
@@ -367,20 +383,29 @@ class ClientController extends Controller
 
 
                 if ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
-                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                    if ($client->emprestimo->company->id == 8) {
+                        self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                    } else {
+                        self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
+                    }
                 }
             }
 
             if ($dados['status'] == 3) {
 
                 if ($client->emprestimos->count_late_parcels >= 6 && $client->emprestimos->count_late_parcels <= 10) {
-                    self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                    if ($client->emprestimo->company->id == 8) {
+                        self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                    } else {
+                        self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
+                    }
                 }
             }
         }
 
         return response()->json(['message' => 'Mensagens enviadas com sucesso.']);
     }
+
     public function clientesDisponiveis(Request $request)
     {
         $this->custom_log->create([
@@ -569,15 +594,15 @@ class ClientController extends Controller
 
                     if (isset($item['id'])) {
                         $EditAddress = Address::find($item['id']);
-                        $EditAddress->description   = $item['description'];
-                        $EditAddress->address       = $item['address'];
-                        $EditAddress->cep           = $item['cep'];
-                        $EditAddress->number        = $item['number'];
-                        $EditAddress->complement    = $item['complement'];
-                        $EditAddress->neighborhood  = $item['neighborhood'];
-                        $EditAddress->city          = $item['city'];
-                        $EditAddress->latitude      = $item['latitude'];
-                        $EditAddress->longitude     = $item['longitude'];
+                        $EditAddress->description = $item['description'];
+                        $EditAddress->address = $item['address'];
+                        $EditAddress->cep = $item['cep'];
+                        $EditAddress->number = $item['number'];
+                        $EditAddress->complement = $item['complement'];
+                        $EditAddress->neighborhood = $item['neighborhood'];
+                        $EditAddress->city = $item['city'];
+                        $EditAddress->latitude = $item['latitude'];
+                        $EditAddress->longitude = $item['longitude'];
                         $EditAddress->save();
                     } else {
                         $item['client_id'] = $id;
@@ -665,7 +690,6 @@ class ClientController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
     }
-
 
 
     public function delete(Request $r, $id)
