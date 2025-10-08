@@ -73,7 +73,12 @@ class MensagemAutomaticaRenovacao extends Command
             }
 
             if ($mensagem) {
-                $this->enviarMensagem($client, $emprestimo, $mensagem);
+
+                if ($emprestimo->company->id != 8) {
+                    $this->enviarMensagem($client, $emprestimo, $mensagem);
+                } else {
+                    $this->enviarMensagemAPIAntiga($emprestimo, $mensagem);
+                }
                 $emprestimo->mensagem_renovacao = 1;
                 $emprestimo->save();
             }
@@ -103,5 +108,20 @@ class MensagemAutomaticaRenovacao extends Command
         } catch (\Throwable $th) {
             report($th);
         }
+    }
+
+    private function enviarMensagemAPIAntiga($emprestimo, $frase)
+    {
+        $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
+        $baseUrl = $emprestimo->company->whatsapp;
+
+        $data = [
+            "numero" => "55" . $telefone,
+            "mensagem" => $frase
+        ];
+
+        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        sleep(4);
+
     }
 }
