@@ -344,7 +344,7 @@ class ClientController extends Controller
         foreach ($filteredClients as $client) {
             if ($dados['status'] == 0) {
                 if ($client->emprestimos->count_late_parcels <= 2) {
-                    if ($client->emprestimo->company->id == 8) {
+                    if ($client->emprestimo->company->id == 8 || $client->emprestimo->company->id == 1) {
                         self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
                     } else {
                         self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
@@ -353,7 +353,7 @@ class ClientController extends Controller
                 }
 
                 if ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
-                    if ($client->emprestimo->company->id == 8) {
+                    if ($client->emprestimo->company->id == 8 || $client->emprestimo->company->id == 1) {
                         self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
                     } else {
                         self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
@@ -361,7 +361,7 @@ class ClientController extends Controller
                 }
 
                 if ($client->emprestimos->count_late_parcels >= 6) {
-                    if ($client->emprestimo->company->id == 8) {
+                    if ($client->emprestimo->company->id == 8 || $client->emprestimo->company->id == 1) {
                         self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
                     } else {
                         self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
@@ -371,7 +371,7 @@ class ClientController extends Controller
 
             if ($dados['status'] == 1) {
                 if ($client->emprestimos->count_late_parcels <= 2) {
-                    if ($client->emprestimo->company->id == 8) {
+                    if ($client->emprestimo->company->id == 8 || $client->emprestimo->company->id == 1) {
                         self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
                     } else {
                         self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] + 100) . ' Gostaria de contratar?');
@@ -383,7 +383,7 @@ class ClientController extends Controller
 
 
                 if ($client->emprestimos->count_late_parcels >= 3 && $client->emprestimos->count_late_parcels <= 5) {
-                    if ($client->emprestimo->company->id == 8) {
+                    if ($client->emprestimo->company->id == 8 || $client->emprestimo->company->id == 1) {
                         self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
                     } else {
                         self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor']) . ' Gostaria de contratar?');
@@ -394,7 +394,7 @@ class ClientController extends Controller
             if ($dados['status'] == 3) {
 
                 if ($client->emprestimos->count_late_parcels >= 6 && $client->emprestimos->count_late_parcels <= 10) {
-                    if ($client->emprestimo->company->id == 8) {
+                    if ($client->emprestimo->company->id == 8 || $client->emprestimo->company->id == 1) {
                         self::enviarMensagemUsuarioApp($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');
                     } else {
                         self::enviarMensagem($client, 'Olá ' . $client['nome_completo'] . ', estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ ' . ($client['emprestimos']['valor'] - 100) . ' Gostaria de contratar?');

@@ -119,7 +119,7 @@ class CobrancaAutomaticaB extends Command
                 $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado"
             ) {
 
-                if($parcela->emprestimo->company->id == 8) {
+                if($parcela->emprestimo->company->id == 8 || $parcela->emprestimo->company->id == 1) {
                     $this->enviarMensagemAPIAntiga($parcela);
                     continue;
                 }
