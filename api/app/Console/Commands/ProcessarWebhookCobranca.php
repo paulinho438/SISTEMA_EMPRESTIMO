@@ -66,7 +66,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $parcela = Parcela::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
@@ -142,7 +144,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $locacao = Locacao::where('identificador', $txId)->whereNull('data_pagamento')->first();
                         if ($locacao) {
@@ -168,7 +172,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $minimo = PagamentoMinimo::where('identificador', $txId)->whereNull('dt_baixa')->first();
                         if ($minimo) {
@@ -265,7 +271,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $quitacao = Quitacao::where('identificador', $txId)->whereNull('dt_baixa')->first();
                         if ($quitacao) {
@@ -311,7 +319,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $pagamento = PagamentoPersonalizado::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
@@ -424,7 +434,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $pagamento = PagamentoSaldoPendente::where('identificador', $txId)->first();
                         if ($pagamento) {
@@ -436,6 +448,7 @@ class ProcessarWebhookCobranca extends Command
                                 ->first();
 
                             while ($parcela && $valor > 0) {
+
                                 if ($valor >= (float)$parcela->saldo) {
                                     // MOV FIN (Entrada) - quitação da parcela
                                     Movimentacaofinanceira::create([
@@ -459,9 +472,18 @@ class ProcessarWebhookCobranca extends Command
                                     $parcela->emprestimo->banco->save();
 
                                     // Quita a parcela atual
-                                    $valor          -= (float)$parcela->saldo;
-                                    $parcela->saldo  = 0;
+                                    $valor -= (float)$parcela->saldo;
+                                    $valor = round($valor, 2); // 👈 Corrige imprecisões com float
+
+                                    $parcela->saldo = 0;
                                     $parcela->dt_baixa = $horario;
+                                    $parcela->save();
+
+                                    // Se o valor restante for praticamente zero, encerra o loop
+                                    if ($valor <= 0.00 || $valor < 0.01) {
+                                        $valor = 0;
+                                        break;
+                                    }
                                 } else {
                                     // MOV FIN (Entrada) - baixa parcial
                                     Movimentacaofinanceira::create([
@@ -485,15 +507,16 @@ class ProcessarWebhookCobranca extends Command
                                     $parcela->emprestimo->banco->save();
 
                                     // Reduz o saldo da parcela atual
-                                    $parcela->saldo  = 0;
+                                    $parcela->saldo -= $valor;
+                                    $parcela->saldo = round($parcela->saldo, 2);
                                     $parcela->dt_baixa = $horario;
+                                    $parcela->save();
 
                                     $valor = 0;
+                                    break;
                                 }
 
-                                $parcela->save();
-
-                                // Próxima parcela pendente
+                                // Busca a próxima parcela pendente
                                 $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
                                     ->whereNull('dt_baixa')
                                     ->orderBy('parcela', 'asc')
@@ -563,7 +586,9 @@ class ProcessarWebhookCobranca extends Command
                         $valor   = (float)($pix['valor'] ?? 0);
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $deposito = Deposito::where('identificador', $txId)->whereNull('data_pagamento')->first();
                         if ($deposito) {
@@ -593,7 +618,9 @@ class ProcessarWebhookCobranca extends Command
                 if (isset($data['pix']) && is_array($data['pix'])) {
                     foreach ($data['pix'] as $pix) {
                         $txId = $pix['txId'] ?? null;
-                        if (!$txId) { continue; }
+                        if (!$txId) {
+                            continue;
+                        }
 
                         $controle = ControleBcodex::where('identificador', $txId)->first();
                         if ($controle) {
@@ -675,12 +702,24 @@ class ProcessarWebhookCobranca extends Command
             if (($parcela->atrasadas ?? 0) > 0) {
                 $tipo = "0";
                 switch ($parcela->atrasadas) {
-                    case 2:  $tipo = "1.1"; break;
-                    case 4:  $tipo = "2.1"; break;
-                    case 6:  $tipo = "3.1"; break;
-                    case 8:  $tipo = "4.1"; break;
-                    case 10: $tipo = "5.1"; break;
-                    case 15: $tipo = "6.1"; break;
+                    case 2:
+                        $tipo = "1.1";
+                        break;
+                    case 4:
+                        $tipo = "2.1";
+                        break;
+                    case 6:
+                        $tipo = "3.1";
+                        break;
+                    case 8:
+                        $tipo = "4.1";
+                        break;
+                    case 10:
+                        $tipo = "5.1";
+                        break;
+                    case 15:
+                        $tipo = "6.1";
+                        break;
                 }
 
                 if ($tipo !== "0") {
