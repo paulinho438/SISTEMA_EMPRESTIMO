@@ -6,9 +6,105 @@ use Illuminate\Http\Request;
 use App\Models\Parcela;
 use App\Models\Feriado;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 
 class CobrancaAutomaticaATestController extends Controller
 {
+    /**
+     * Envia uma mensagem de teste
+     * 
+     * @param Request $request 
+     * Parâmetros: baseUrl (obrigatório), telefone (obrigatório), mensagem (obrigatório)
+     */
+    public function enviarMensagemTeste(Request $request)
+    {
+        $request->validate([
+            'baseUrl' => 'required|string',
+            'telefone' => 'required|string',
+            'mensagem' => 'required|string'
+        ]);
+
+        try {
+            // Remove caracteres não numéricos do telefone
+            $telefone = preg_replace('/\D/', '', $request->telefone);
+            
+            // Adiciona o código do país se não tiver
+            if (!str_starts_with($telefone, '55')) {
+                $telefone = '55' . $telefone;
+            }
+
+            $baseUrl = rtrim($request->baseUrl, '/');
+            $mensagem = $request->mensagem;
+
+            // Prepara os dados para envio
+            $data = [
+                "numero" => $telefone,
+                "mensagem" => $mensagem
+            ];
+
+            // Envia a mensagem
+            $response = Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mensagem enviada com sucesso',
+                'data' => [
+                    'baseUrl' => $baseUrl,
+                    'telefone' => $telefone,
+                    'mensagem_enviada' => $mensagem,
+                    'api_response' => $response->json(),
+                    'status_code' => $response->status()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao enviar mensagem',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtém saudação baseada na hora do dia
+     */
+    private function obterSaudacao()
+    {
+        $hora = date('H');
+        $saudacoesManha = ['🌤️ Bom dia', '👋 Olá, bom dia', '🌤️ Tenha um excelente dia'];
+        $saudacoesTarde = ['🌤️ Boa tarde', '👋 Olá, boa tarde', '🌤️ Espero que sua tarde esteja ótima'];
+        $saudacoesNoite = ['🌤️ Boa noite', '👋 Olá, boa noite', '🌤️ Espero que sua noite esteja ótima'];
+
+        if ($hora < 12) {
+            return $saudacoesManha[array_rand($saudacoesManha)];
+        } elseif ($hora < 18) {
+            return $saudacoesTarde[array_rand($saudacoesTarde)];
+        } else {
+            return $saudacoesNoite[array_rand($saudacoesNoite)];
+        }
+    }
+
+    /**
+     * Monta a mensagem de cobrança
+     */
+    private function montarMensagem($parcela, $saudacao)
+    {
+        $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
+        $fraseInicial = "
+
+Relatório de Parcelas Pendentes:
+
+⚠️ *sempre enviar o comprovante para ajudar na conferência não se esqueça*
+
+Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
+
+https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
+
+📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
+";
+        return $saudacaoTexto . $fraseInicial;
+    }
     public function dryRun(Request $request)
     {
         $today = Carbon::today();

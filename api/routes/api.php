@@ -96,6 +96,7 @@ Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataC
 
 
 Route::get('/cobrancas/teste', [CobrancaAutomaticaATestController::class, 'dryRun']);
+Route::post('/cobrancas/enviar-mensagem-teste', [CobrancaAutomaticaATestController::class, 'enviarMensagemTeste']);
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);
