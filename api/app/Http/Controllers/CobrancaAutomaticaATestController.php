@@ -7,6 +7,7 @@ use App\Models\Parcela;
 use App\Models\Feriado;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CobrancaAutomaticaATestController extends Controller
 {
@@ -35,6 +36,8 @@ class CobrancaAutomaticaATestController extends Controller
 
             $baseUrl = rtrim($request->baseUrl, '/');
             $mensagem = $request->mensagem;
+            
+            $endpoint = "$baseUrl/enviar-mensagem";
 
             // Prepara os dados para envio
             $data = [
@@ -42,26 +45,75 @@ class CobrancaAutomaticaATestController extends Controller
                 "mensagem" => $mensagem
             ];
 
-            // Envia a mensagem
-            $response = Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+            // Log da tentativa de envio
+            Log::info("Teste WhatsApp - Tentando enviar mensagem", [
+                'endpoint' => $endpoint,
+                'data' => $data
+            ]);
+
+            // Envia a mensagem com timeout de 30 segundos
+            $response = Http::timeout(30)
+                ->asJson()
+                ->post($endpoint, $data);
+
+            $statusCode = $response->status();
+            $responseBody = $response->body();
+            $responseJson = null;
+            
+            try {
+                $responseJson = $response->json();
+            } catch (\Exception $e) {
+                // Se não conseguir converter para JSON, mantém o body como string
+            }
+
+            // Log da resposta
+            Log::info("Teste WhatsApp - Resposta recebida", [
+                'status_code' => $statusCode,
+                'response_body' => $responseBody
+            ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Mensagem enviada com sucesso',
-                'data' => [
-                    'baseUrl' => $baseUrl,
+                'success' => $response->successful(),
+                'message' => $response->successful() ? 'Mensagem enviada com sucesso' : 'Erro ao enviar mensagem',
+                'request' => [
+                    'endpoint' => $endpoint,
                     'telefone' => $telefone,
-                    'mensagem_enviada' => $mensagem,
-                    'api_response' => $response->json(),
-                    'status_code' => $response->status()
+                    'mensagem' => $mensagem
+                ],
+                'response' => [
+                    'status_code' => $statusCode,
+                    'body' => $responseBody,
+                    'json' => $responseJson,
+                    'successful' => $response->successful(),
+                    'failed' => $response->failed(),
+                    'client_error' => $response->clientError(),
+                    'server_error' => $response->serverError()
                 ]
             ]);
 
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error("Teste WhatsApp - Erro de conexão", [
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro de conexão com o servidor WhatsApp',
+                'error' => $e->getMessage(),
+                'error_type' => 'connection_error'
+            ], 500);
+            
         } catch (\Exception $e) {
+            Log::error("Teste WhatsApp - Erro geral", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao enviar mensagem',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'error_type' => 'general_error'
             ], 500);
         }
     }
