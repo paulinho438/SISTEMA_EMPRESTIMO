@@ -79,9 +79,7 @@ class ProcessarPixJob implements ShouldQueue
                     $company = $this->emprestimo->company;
                     $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                     $numeroCliente = "55" . $telefone;
-                    if ($company->id != 8) {
-                        $this->wapiService->enviarMensagemImagem($company->token_api_wtz, $company->instance_id, ["delayMessage" => 1, "phone" => $numeroCliente, "image" => $base64]);
-                    } else {
+                    if ($company->id == 8 || $company->id == 1) {
                         try {
                             $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                             // Enviar o PNG gerado para o endpoint
@@ -94,6 +92,9 @@ class ProcessarPixJob implements ShouldQueue
                             ]);
                         } catch (\Exception $e) {
                         }
+                        
+                    } else {
+                        $this->wapiService->enviarMensagemImagem($company->token_api_wtz, $company->instance_id, ["delayMessage" => 1, "phone" => $numeroCliente, "image" => $base64]);
                     }
 
 
@@ -130,10 +131,12 @@ class ProcessarPixJob implements ShouldQueue
                 $this->emprestimo->banco->save();
             }
 
-            if($this->emprestimo->company->id != 8 ){
-                $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
-            }else{
+            if($this->emprestimo->company->id == 8 || $this->emprestimo->company->id == 1){
                 $this->envioMensagemVideoYoutubeANTIGO($this->emprestimo->parcelas[0]);
+
+            }else{
+                $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
+
             }
 
 
@@ -153,10 +156,13 @@ class ProcessarPixJob implements ShouldQueue
                 $this->processarCobrancaComTentativas($this->emprestimo->pagamentosaldopendente, $this->emprestimo->pagamentosaldopendente->valor);
             }
 
-            if($this->emprestimo->company->id != 8 ){
-                $this->envioMensagem($this->emprestimo->parcelas[0]);
-            }else{
+            if($this->emprestimo->company->id == 8 || $this->emprestimo->company->id == 1){
                 $this->envioMensagemANTIGO($this->emprestimo->parcelas[0]);
+
+            }else{
+
+                $this->envioMensagem($this->emprestimo->parcelas[0]);
+
             }
 
 

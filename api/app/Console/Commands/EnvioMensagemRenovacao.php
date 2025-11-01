@@ -62,10 +62,12 @@ class EnvioMensagemRenovacao extends Command
     {
 
         try {
-            if ($emprestimo->company->id != 8) {
-                $this->enviarMensagem($emprestimo);
-            } else {
+            if ($emprestimo->company->id == 8 || $emprestimo->company->id == 1) {
                 $this->enviarMensagemAPIAntiga($emprestimo);
+
+            } else {
+                $this->enviarMensagem($emprestimo);
+
             }
 
             $emprestimo->dt_envio_mensagem_renovacao = now();

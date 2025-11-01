@@ -109,10 +109,11 @@ class CobrancaAutomaticaA extends Command
         if ($this->emprestimoEmProtesto($parcela)) {
             return;
         }
-        if($parcela->emprestimo->company->id != 8) {
-            $this->enviarMensagem($parcela);
-        }else {
+
+        if($parcela->emprestimo->company->id == 8 || $parcela->emprestimo->company->id == 1) {
             $this->enviarMensagemAPIAntiga($parcela);
+        }else {
+            $this->enviarMensagem($parcela);
         }
     }
 

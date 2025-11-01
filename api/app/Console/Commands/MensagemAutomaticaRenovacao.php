@@ -74,10 +74,12 @@ class MensagemAutomaticaRenovacao extends Command
 
             if ($mensagem) {
 
-                if ($emprestimo->company->id != 8) {
-                    $this->enviarMensagem($client, $emprestimo, $mensagem);
-                } else {
+                if ($emprestimo->company->id == 8 || $emprestimo->company->id == 1) {
                     $this->enviarMensagemAPIAntiga($emprestimo, $mensagem);
+
+                } else {
+                    $this->enviarMensagem($client, $emprestimo, $mensagem);
+
                 }
                 $emprestimo->mensagem_renovacao = 1;
                 $emprestimo->save();
