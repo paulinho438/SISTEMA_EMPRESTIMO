@@ -162,7 +162,7 @@ class ProcessarPixJob implements ShouldQueue
 
             if ($this->comprovante) {
 
-                if($this->emprestimo->company->id == 8 ){
+                if($this->emprestimo->company->id == 8 || $this->emprestimo->company->id == 1){
                     $this->envioAudio($this->emprestimo->parcelas[0]);
                 }else{
                     $nomeArquivo = 'msginicio.ogg';
