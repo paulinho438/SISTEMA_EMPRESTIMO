@@ -241,8 +241,12 @@ export default {
                         <InputText id="firstname2" :modelValue="empresas?.motivo_inativo" v-model="empresas.motivo_inativo" type="text" />
                     </div>
                     <div class="field col-12 md:col-3">
-                        <label for="firstname2">URL Integração WhatsApp</label>
-                        <InputText id="firstname2" :modelValue="empresas?.whatsapp" v-model="empresas.whatsapp" type="text" />
+                        <label for="firstname2">URL Integração WhatsApp (Geral)</label>
+                        <InputText id="firstname2" :modelValue="empresas?.whatsapp" v-model="empresas.whatsapp" type="text" placeholder="Usado para: Renovações, Transferências, etc." />
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="whatsapp_cobranca">URL Integração WhatsApp (Cobrança)</label>
+                        <InputText id="whatsapp_cobranca" :modelValue="empresas?.whatsapp_cobranca" v-model="empresas.whatsapp_cobranca" type="text" placeholder="Usado exclusivamente para cobranças" />
                     </div>
                 </div>
             </div>

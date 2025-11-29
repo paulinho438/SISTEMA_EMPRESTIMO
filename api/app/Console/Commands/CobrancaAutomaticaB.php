@@ -125,7 +125,8 @@ class CobrancaAutomaticaB extends Command
                 }
 
                 $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-                $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+                // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
+                $baseUrl = ($parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp) . '/enviar-mensagem';
 
                 $saudacao = self::obterSaudacao();
 
@@ -162,7 +163,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 sleep(1);
                 if ($parcela->emprestimo->company->mensagem_audio) {
                     if ($parcela->atrasadas > 0) {
-                        $baseUrl = $parcela->emprestimo->company->whatsapp;
+                        // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
+                        $baseUrl = $parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp;
                         $tipo = "0";
                         switch ($parcela->atrasadas) {
                             case 2: $tipo = "1.2"; break;
@@ -329,7 +331,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     private function enviarMensagemAPIAntiga($parcela)
     {
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-        $baseUrl = $parcela->emprestimo->company->whatsapp;
+        // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
+        $baseUrl = $parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp;
 
 
 
@@ -345,7 +348,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         sleep(4);
         if($parcela->emprestimo->company->mensagem_audio) {
             if($parcela->atrasadas > 0) {
-                $baseUrl = $parcela->emprestimo->company->whatsapp;
+                // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
+                $baseUrl = $parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp;
                 $tipo = "0";
                 switch ($parcela->atrasadas) {
                     case 2:

@@ -650,7 +650,9 @@ class ProcessarWebhookCobranca extends Command
         }
 
         try {
-            $response = Http::get(($parcela->emprestimo->company->whatsapp ?? '') . '/logar');
+            // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
+            $whatsappUrl = $parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp ?? '';
+            $response = Http::get($whatsappUrl . '/logar');
 
             if ($response->successful() && ($response->json()['loggedIn'] ?? false)) {
                 $this->enviarMensagem($parcela);
@@ -662,7 +664,9 @@ class ProcessarWebhookCobranca extends Command
 
     private function deveProcessarParcela($parcela)
     {
-        return isset($parcela->emprestimo->company->whatsapp)
+        // Verifica se tem whatsapp ou whatsapp_cobranca configurado
+        $temWhatsapp = isset($parcela->emprestimo->company->whatsapp) || isset($parcela->emprestimo->company->whatsapp_cobranca);
+        return $temWhatsapp
             && $parcela->emprestimo->contaspagar
             && $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado";
     }
@@ -679,7 +683,8 @@ class ProcessarWebhookCobranca extends Command
     private function enviarMensagem($parcela)
     {
         $telefone = preg_replace('/\D/', '', (string)($parcela->emprestimo->client->telefone_celular_1 ?? ''));
-        $baseUrl  = $parcela->emprestimo->company->whatsapp ?? null;
+        // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
+        $baseUrl  = $parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp ?? null;
 
         if (!$telefone || !$baseUrl) {
             return;
