@@ -27,7 +27,8 @@ class Company extends Model
         'envio_automatico_renovacao',
         'mensagem_audio',
         'token_api_wtz',
-        'instance_id'
+        'instance_id',
+        'whatsapp_cobranca'
 
     ];
 

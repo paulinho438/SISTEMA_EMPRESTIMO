@@ -22,12 +22,14 @@ export default {
 			toast: useToast()
 		};
 	},
-	data() {
+		data() {
 		return {
 			contaspagar: ref({}),
 			intervalId: null,
+			intervalIdCobranca: null,
 			empresa: ref({}),
 			zap: ref({}),
+			zapCobranca: ref({}),
 			oldcontaspagar: ref(null),
 			errors: ref([]),
 			bancos: ref([]),
@@ -66,6 +68,10 @@ export default {
 						this.getInfoZap();
 						this.intervalId = setInterval(this.getInfoZap, 10000);
 					}
+					if(this.empresa?.whatsapp_cobranca != null){
+						this.getInfoZapCobranca();
+						this.intervalIdCobranca = setInterval(this.getInfoZapCobranca, 10000);
+					}
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -83,6 +89,22 @@ export default {
 			this.empresaService.zap(this.empresa.whatsapp)
 				.then((response) => {
 					this.zap = response;
+				})
+				.catch((error) => {
+					this.toast.add({
+						severity: ToastSeverity.ERROR,
+						detail: UtilService.message(e),
+						life: 3000
+					});
+				})
+				.finally(() => {
+					this.loading = false;
+				});
+		},
+		getInfoZapCobranca(){
+			this.empresaService.zap(this.empresa.whatsapp_cobranca)
+				.then((response) => {
+					this.zapCobranca = response;
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -127,6 +149,22 @@ export default {
 		},
 		desconectarZap(){
 			this.empresaService.desconectarZap(this.empresa.whatsapp)
+				.then((response) => {
+					window.location.reload();
+				})
+				.catch((error) => {
+					this.toast.add({
+						severity: ToastSeverity.ERROR,
+						detail: UtilService.message(e),
+						life: 3000
+					});
+				})
+				.finally(() => {
+					this.loading = false;
+				});
+		},
+		desconectarZapCobranca(){
+			this.empresaService.desconectarZap(this.empresa.whatsapp_cobranca)
 				.then((response) => {
 					window.location.reload();
 				})
@@ -212,6 +250,7 @@ export default {
 	},
 	beforeDestroy() {
 		clearInterval(this.intervalId); // Limpa o intervalo quando o componente é destruído
+		clearInterval(this.intervalIdCobranca); // Limpa o intervalo de cobrança
 	},
 };
 </script>
@@ -253,13 +292,28 @@ export default {
 				<div v-if="empresa?.whatsapp != null" class="card">
 					
 					<div v-if="empresa?.whatsapp != null" class="field col-12 md:col-12">
-						<h5>Integração whatsapp</h5>
+						<h5>Integração WhatsApp - Geral</h5>
+						<p class="text-sm text-500 mb-2">Usado para: Renovações, Transferências, Personalização, etc.</p>
 						<Button v-if="zap?.loggedIn" label="Conectado" class="p-button-rounded p-button-success mr-2 mb-2" />
 						<Button v-if="zap?.loggedIn" @click.prevent="desconectarZap" label="Clique para desconectar" class="p-button-rounded p-button-danger mr-2 mb-2" />
 						<Button v-if="!zap?.loggedIn" label="Aguardando Conexão" class="p-button-rounded p-button-danger mr-2 mb-2" />
                     </div>
 					<div v-if="empresa?.whatsapp != null && !zap?.loggedIn" class="field col-12 md:col-12">
 						<Image class="mb-5" :src="`${zap?.url}?t=${Date.now()}`" v-if="zap?.url" alt="Image" preview />
+                    </div>
+				</div>
+
+				<div v-if="empresa?.whatsapp_cobranca != null" class="card mt-3">
+					
+					<div v-if="empresa?.whatsapp_cobranca != null" class="field col-12 md:col-12">
+						<h5>Integração WhatsApp - Cobrança</h5>
+						<p class="text-sm text-500 mb-2">Usado exclusivamente para: Cobranças automáticas</p>
+						<Button v-if="zapCobranca?.loggedIn" label="Conectado" class="p-button-rounded p-button-success mr-2 mb-2" />
+						<Button v-if="zapCobranca?.loggedIn" @click.prevent="desconectarZapCobranca" label="Clique para desconectar" class="p-button-rounded p-button-danger mr-2 mb-2" />
+						<Button v-if="!zapCobranca?.loggedIn" label="Aguardando Conexão" class="p-button-rounded p-button-danger mr-2 mb-2" />
+                    </div>
+					<div v-if="empresa?.whatsapp_cobranca != null && !zapCobranca?.loggedIn" class="field col-12 md:col-12">
+						<Image class="mb-5" :src="`${zapCobranca?.url}?t=${Date.now()}`" v-if="zapCobranca?.url" alt="Image" preview />
                     </div>
 				</div>
             
