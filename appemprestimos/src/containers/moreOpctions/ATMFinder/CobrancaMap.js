@@ -115,11 +115,32 @@ export default function ATMDetails({navigation, route}) {
 
   const cobrarAmanha = async () => {
     try {
-      await api.cobrarAmanha(clientes.id, obterDataAtual());
-      Alert.alert('Cobrança alterada com sucesso!');
-      navigation.navigate(StackNav.TabNavigation, {atualizarClientes: true});
+      // Encontra a primeira parcela pendente/atrasada para usar seu ID
+      const parcelaParaCobrar = parcelas?.find(
+        p => !p.dt_baixa && p.atrasadas > 0
+      ) || parcelas?.[0];
+
+      if (!parcelaParaCobrar || !parcelaParaCobrar.id) {
+        Alert.alert(
+          'Atenção',
+          'Não há parcelas disponíveis para cobrança.',
+        );
+        return;
+      }
+
+      const response = await api.cobrarAmanha(parcelaParaCobrar.id, obterDataAtual());
+      
+      if (response?.message || response?.data?.message) {
+        Alert.alert('Sucesso', 'Cobrança alterada com sucesso!');
+        navigation.navigate(StackNav.TabNavigation, {atualizarClientes: true});
+      }
     } catch (error) {
       console.error('Erro ao cobrar:', error);
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        'Erro ao processar a solicitação. Tente novamente.';
+      Alert.alert('Erro', errorMessage);
     }
   };
 

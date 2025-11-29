@@ -3584,12 +3584,27 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             $editParcela = Parcela::find($id);
 
+            if (!$editParcela) {
+                return response()->json([
+                    "message" => "Parcela não encontrada.",
+                    "error" => "Parcela com ID {$id} não existe."
+                ], Response::HTTP_NOT_FOUND);
+            }
+
             $ultimaLocalizacao = UserLocation::where('user_id', $user->id)->orderByDesc('id')->first();
 
             $parcelas = Parcela::where('emprestimo_id', $editParcela->emprestimo_id)
                 ->where('dt_baixa', null)
                 ->where('atrasadas', '>', 0)
                 ->get();
+
+            if ($parcelas->count() == 0) {
+                DB::rollBack();
+                return response()->json([
+                    "message" => "Não há parcelas atrasadas para atualizar.",
+                    "error" => "Nenhuma parcela encontrada com atraso para este empréstimo."
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             foreach ($parcelas as $parcela) {
                 $parcela->dt_ult_cobranca = $request->dt_ult_cobranca;
