@@ -122,7 +122,12 @@ export default {
                 // Converte para número garantindo que seja um valor válido
                 const pagamentoMinimo = parseFloat(this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao) || 0;
                 const valorPendente = parseFloat(this.products?.data?.emprestimo?.pagamentosaldopendente?.valor) || 0;
-                const saldoAReceber = parseFloat(this.products?.data?.emprestimo?.saldoareceber) || 0;
+                let saldoAReceber = parseFloat(this.products?.data?.emprestimo?.saldoareceber) || 0;
+                
+                // Se saldoareceber for 0, usa o valor pendente como fallback
+                if (saldoAReceber <= 0 && valorPendente > 0) {
+                    saldoAReceber = valorPendente;
+                }
                 
                 // Min deve ser o pagamento mínimo quando existir, senão o valor pendente
                 this.min = pagamentoMinimo > 0 ? pagamentoMinimo : (valorPendente > 0 ? valorPendente : 0);
