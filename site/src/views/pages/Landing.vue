@@ -118,12 +118,32 @@ export default {
                 }
                 this.products = response.data;
 
-                this.min = this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao;
-                this.max = this.products?.data?.emprestimo?.saldoareceber;
+                // Define min: pagamento mínimo ou valor pendente do dia como fallback
+                // Converte para número garantindo que seja um valor válido
+                const pagamentoMinimo = parseFloat(this.products?.data?.emprestimo?.pagamentominimo?.valorSemFormatacao) || 0;
+                const valorPendente = parseFloat(this.products?.data?.emprestimo?.pagamentosaldopendente?.valor) || 0;
+                const saldoAReceber = parseFloat(this.products?.data?.emprestimo?.saldoareceber) || 0;
+                
+                // Min deve ser o pagamento mínimo quando existir, senão o valor pendente
+                this.min = pagamentoMinimo > 0 ? pagamentoMinimo : (valorPendente > 0 ? valorPendente : 0);
+                this.max = saldoAReceber;
 
-                let valor = this.max - this.min;
+                // Garante que min não seja maior que max
+                if (this.min > this.max && this.max > 0) {
+                    this.min = this.max;
+                }
 
-                this.sliderValue = this.min + valor / 2;
+                // Garante valores válidos para o slider
+                if (this.min <= 0 || this.max <= 0 || this.min >= this.max) {
+                    // Se não houver valores válidos, usa valores padrão seguros
+                    this.min = 0;
+                    this.max = 1000;
+                    this.sliderValue = 500;
+                } else {
+                    // Define o valor inicial no meio do range entre min e max
+                    let valor = this.max - this.min;
+                    this.sliderValue = this.min + valor / 2;
+                }
                 this.loading = false;
             })
             .catch((error) => {
