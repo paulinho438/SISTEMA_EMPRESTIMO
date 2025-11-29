@@ -3837,9 +3837,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     public function enviarMensagem($parcela, $frase)
     {
         try {
-
             $company = $parcela->emprestimo->company;
 
+            // Diferenciação por company->id: IDs 8 e 1 usam API antiga
+            if ($company->id == 8 || $company->id == 1) {
+                $this->enviarMensagemAPIAntiga($parcela, $frase);
+                return true;
+            }
+
+            // Para outras companies, usa a nova API (WAPIService)
             if (is_null($company->token_api_wtz) || is_null($company->instance_id)) {
                 return;
             }
@@ -3851,5 +3857,22 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         return true;
+    }
+
+    private function enviarMensagemAPIAntiga($parcela, $frase)
+    {
+        try {
+            $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
+            $baseUrl = $parcela->emprestimo->company->whatsapp;
+
+            $data = [
+                "numero" => "55" . $telefone,
+                "mensagem" => $frase
+            ];
+
+            Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        } catch (\Throwable $th) {
+            // Log error if needed
+        }
     }
 }
