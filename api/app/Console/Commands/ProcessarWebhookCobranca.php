@@ -58,6 +58,9 @@ class ProcessarWebhookCobranca extends Command
         WebhookCobranca::where('processado', false)->chunk(50, function ($lotes) {
             foreach ($lotes as $registro) {
                 $data = $registro->payload;
+                
+                // Controle para evitar processar o mesmo txId múltiplas vezes no mesmo processamento
+                $txIdsProcessados = [];
 
                 // =============== REFERENTE A PARCELAS ===============
                 if (isset($data['pix']) && is_array($data['pix'])) {
@@ -70,9 +73,29 @@ class ProcessarWebhookCobranca extends Command
                             continue;
                         }
 
+                        // Verifica se este txId já foi processado neste ciclo
+                        if (in_array($txId, $txIdsProcessados)) {
+                            Log::warning("txId {$txId} já foi processado neste ciclo, pulando duplicidade");
+                            continue;
+                        }
+
                         $parcela = Parcela::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
                         if ($parcela) {
+                            // Verifica se já existe movimentação financeira para esta parcela e txId
+                            $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
+                                ->where('dt_movimentacao', date('Y-m-d'))
+                                ->where('valor', $valor)
+                                ->where('tipomov', 'E')
+                                ->where('descricao', 'like', '%Baixa automática da parcela Nº ' . $parcela->id . '%')
+                                ->first();
+
+                            if ($movExistente) {
+                                Log::warning("Movimentação financeira já existe para parcela {$parcela->id} e txId {$txId}, pulando duplicidade");
+                                $txIdsProcessados[] = $txId;
+                                continue;
+                            }
+
                             $parcela->saldo   = 0;
                             $parcela->dt_baixa = $horario;
                             $parcela->save();
@@ -99,6 +122,9 @@ class ProcessarWebhookCobranca extends Command
                                     'dt_movimentacao' => date('Y-m-d'),
                                     'valor'           => $valor,
                                 ]);
+                                
+                                // Marca o txId como processado
+                                $txIdsProcessados[] = $txId;
 
                                 // Atualiza saldo do banco
                                 $parcela->emprestimo->banco->saldo += $valor;
@@ -176,6 +202,12 @@ class ProcessarWebhookCobranca extends Command
                             continue;
                         }
 
+                        // Verifica se este txId já foi processado neste ciclo
+                        if (in_array($txId, $txIdsProcessados)) {
+                            Log::warning("txId {$txId} já foi processado neste ciclo (PAGAMENTO MINIMO), pulando duplicidade");
+                            continue;
+                        }
+
                         $minimo = PagamentoMinimo::where('identificador', $txId)->whereNull('dt_baixa')->first();
                         if ($minimo) {
                             $juros   = 0.0;
@@ -198,26 +230,38 @@ class ProcessarWebhookCobranca extends Command
                                     $minimo->save();
                                 }
 
-                                // Movimentação financeira de entrada
-                                Movimentacaofinanceira::create([
-                                    'banco_id'        => $parcela->emprestimo->banco_id,
-                                    'company_id'      => $parcela->emprestimo->company_id,
-                                    'descricao'       => sprintf(
-                                        'Pagamento Minimo da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                                        $parcela->id,
-                                        $parcela->emprestimo_id,
-                                        $parcela->emprestimo->client->nome_completo,
-                                        $pix['pagador']['nome'] ?? 'Não informado'
-                                    ),
-                                    'tipomov'         => 'E',
-                                    'parcela_id'      => $parcela->id,
-                                    'dt_movimentacao' => date('Y-m-d'),
-                                    'valor'           => (float)$minimo->valor,
-                                ]);
+                                // Verifica se já existe movimentação financeira para esta parcela
+                                $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
+                                    ->where('dt_movimentacao', date('Y-m-d'))
+                                    ->where('valor', (float)$minimo->valor)
+                                    ->where('tipomov', 'E')
+                                    ->where('descricao', 'like', '%Pagamento Minimo da parcela Nº ' . $parcela->id . '%')
+                                    ->first();
 
-                                // Atualiza saldo do banco
-                                $parcela->emprestimo->banco->saldo += (float)$minimo->valor;
-                                $parcela->emprestimo->banco->save();
+                                if (!$movExistente) {
+                                    // Movimentação financeira de entrada
+                                    Movimentacaofinanceira::create([
+                                        'banco_id'        => $parcela->emprestimo->banco_id,
+                                        'company_id'      => $parcela->emprestimo->company_id,
+                                        'descricao'       => sprintf(
+                                            'Pagamento Minimo da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                            $parcela->id,
+                                            $parcela->emprestimo_id,
+                                            $parcela->emprestimo->client->nome_completo,
+                                            $pix['pagador']['nome'] ?? 'Não informado'
+                                        ),
+                                        'tipomov'         => 'E',
+                                        'parcela_id'      => $parcela->id,
+                                        'dt_movimentacao' => date('Y-m-d'),
+                                        'valor'           => (float)$minimo->valor,
+                                    ]);
+
+                                    // Atualiza saldo do banco apenas se a movimentação foi criada
+                                    $parcela->emprestimo->banco->saldo += (float)$minimo->valor;
+                                    $parcela->emprestimo->banco->save();
+                                } else {
+                                    Log::warning("Movimentação financeira já existe para parcela {$parcela->id} (PAGAMENTO MINIMO), pulando duplicidade");
+                                }
 
                                 // Recalcula/recobra Quitação
                                 if ($parcela->emprestimo?->quitacao) {
@@ -260,6 +304,9 @@ class ProcessarWebhookCobranca extends Command
                                     }
                                 }
                             }
+                            
+                            // Marca o txId como processado após processar PAGAMENTO MINIMO
+                            $txIdsProcessados[] = $txId;
                         }
                     }
                 }
@@ -275,6 +322,12 @@ class ProcessarWebhookCobranca extends Command
                             continue;
                         }
 
+                        // Verifica se este txId já foi processado neste ciclo
+                        if (in_array($txId, $txIdsProcessados)) {
+                            Log::warning("txId {$txId} já foi processado neste ciclo (QUITACAO), pulando duplicidade");
+                            continue;
+                        }
+
                         $quitacao = Quitacao::where('identificador', $txId)->whereNull('dt_baixa')->first();
                         if ($quitacao) {
                             $parcelas = Parcela::where('emprestimo_id', $quitacao->emprestimo_id)->get();
@@ -286,28 +339,43 @@ class ProcessarWebhookCobranca extends Command
                                 $parcela->save();
 
                                 if ($parcela->contasreceber) {
-                                    // MOVIMENTAÇÃO FINANCEIRA (Entrada)
-                                    Movimentacaofinanceira::create([
-                                        'banco_id'        => $parcela->emprestimo->banco_id,
-                                        'company_id'      => $parcela->emprestimo->company_id,
-                                        'descricao'       => sprintf(
-                                            'Quitação da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                                            $parcela->id,
-                                            $parcela->emprestimo_id,
-                                            $parcela->emprestimo->client->nome_completo,
-                                            $pix['pagador']['nome'] ?? 'Não informado'
-                                        ),
-                                        'tipomov'         => 'E',
-                                        'parcela_id'      => $parcela->id,
-                                        'dt_movimentacao' => date('Y-m-d'),
-                                        'valor'           => $valorParcela,
-                                    ]);
+                                    // Verifica se já existe movimentação financeira para esta parcela
+                                    $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
+                                        ->where('dt_movimentacao', date('Y-m-d'))
+                                        ->where('valor', $valorParcela)
+                                        ->where('tipomov', 'E')
+                                        ->where('descricao', 'like', '%Quitação da parcela Nº ' . $parcela->id . '%')
+                                        ->first();
 
-                                    // Atualiza saldo do banco
-                                    $parcela->emprestimo->banco->saldo += $valorParcela;
-                                    $parcela->emprestimo->banco->save();
+                                    if (!$movExistente) {
+                                        // MOVIMENTAÇÃO FINANCEIRA (Entrada)
+                                        Movimentacaofinanceira::create([
+                                            'banco_id'        => $parcela->emprestimo->banco_id,
+                                            'company_id'      => $parcela->emprestimo->company_id,
+                                            'descricao'       => sprintf(
+                                                'Quitação da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                                $parcela->id,
+                                                $parcela->emprestimo_id,
+                                                $parcela->emprestimo->client->nome_completo,
+                                                $pix['pagador']['nome'] ?? 'Não informado'
+                                            ),
+                                            'tipomov'         => 'E',
+                                            'parcela_id'      => $parcela->id,
+                                            'dt_movimentacao' => date('Y-m-d'),
+                                            'valor'           => $valorParcela,
+                                        ]);
+
+                                        // Atualiza saldo do banco apenas se a movimentação foi criada
+                                        $parcela->emprestimo->banco->saldo += $valorParcela;
+                                        $parcela->emprestimo->banco->save();
+                                    } else {
+                                        Log::warning("Movimentação financeira já existe para parcela {$parcela->id} (QUITACAO), pulando duplicidade");
+                                    }
                                 }
                             }
+                            
+                            // Marca o txId como processado após processar QUITACAO
+                            $txIdsProcessados[] = $txId;
                         }
                     }
                 }
@@ -320,6 +388,12 @@ class ProcessarWebhookCobranca extends Command
                         $horario = isset($pix['horario']) ? Carbon::parse($pix['horario'])->toDateTimeString() : now()->toDateTimeString();
 
                         if (!$txId) {
+                            continue;
+                        }
+
+                        // Verifica se este txId já foi processado neste ciclo
+                        if (in_array($txId, $txIdsProcessados)) {
+                            Log::warning("txId {$txId} já foi processado neste ciclo (PAGAMENTO PERSONALIZADO), pulando duplicidade");
                             continue;
                         }
 
@@ -353,26 +427,38 @@ class ProcessarWebhookCobranca extends Command
                                 continue;
                             }
 
-                            // MOVIMENTAÇÃO FINANCEIRA (Entrada)
-                            Movimentacaofinanceira::create([
-                                'banco_id'        => $parcela->emprestimo->banco_id,
-                                'company_id'      => $parcela->emprestimo->company_id,
-                                'descricao'       => sprintf(
-                                    'Pagamento personalizado Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                                    $pagamento->id,
-                                    $parcela->emprestimo_id,
-                                    $parcela->emprestimo->client->nome_completo,
-                                    $pix['pagador']['nome'] ?? 'Não informado'
-                                ),
-                                'tipomov'         => 'E',
-                                'parcela_id'      => $parcela->id,
-                                'dt_movimentacao' => date('Y-m-d'),
-                                'valor'           => $valor,
-                            ]);
+                            // Verifica se já existe movimentação financeira para esta parcela
+                            $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
+                                ->where('dt_movimentacao', date('Y-m-d'))
+                                ->where('valor', $valor)
+                                ->where('tipomov', 'E')
+                                ->where('descricao', 'like', '%Pagamento personalizado Nº ' . $pagamento->id . '%')
+                                ->first();
 
-                            // Atualiza saldo do banco
-                            $parcela->emprestimo->banco->saldo += $valor;
-                            $parcela->emprestimo->banco->save();
+                            if (!$movExistente) {
+                                // MOVIMENTAÇÃO FINANCEIRA (Entrada)
+                                Movimentacaofinanceira::create([
+                                    'banco_id'        => $parcela->emprestimo->banco_id,
+                                    'company_id'      => $parcela->emprestimo->company_id,
+                                    'descricao'       => sprintf(
+                                        'Pagamento personalizado Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                        $pagamento->id,
+                                        $parcela->emprestimo_id,
+                                        $parcela->emprestimo->client->nome_completo,
+                                        $pix['pagador']['nome'] ?? 'Não informado'
+                                    ),
+                                    'tipomov'         => 'E',
+                                    'parcela_id'      => $parcela->id,
+                                    'dt_movimentacao' => date('Y-m-d'),
+                                    'valor'           => $valor,
+                                ]);
+
+                                // Atualiza saldo do banco apenas se a movimentação foi criada
+                                $parcela->emprestimo->banco->saldo += $valor;
+                                $parcela->emprestimo->banco->save();
+                            } else {
+                                Log::warning("Movimentação financeira já existe para parcela {$parcela->id} (PAGAMENTO PERSONALIZADO), pulando duplicidade");
+                            }
 
                             // Abate valor na parcela
                             $parcela->saldo -= $valor;
@@ -423,6 +509,9 @@ class ProcessarWebhookCobranca extends Command
                                     }
                                 }
                             }
+                            
+                            // Marca o txId como processado após processar PAGAMENTO PERSONALIZADO
+                            $txIdsProcessados[] = $txId;
                         }
                     }
                 }
@@ -438,7 +527,13 @@ class ProcessarWebhookCobranca extends Command
                             continue;
                         }
 
-                        $pagamento = PagamentoSaldoPendente::where('identificador', $txId)->first();
+                        // Verifica se este txId já foi processado neste ciclo
+                        if (in_array($txId, $txIdsProcessados)) {
+                            Log::warning("txId {$txId} já foi processado neste ciclo (PagamentoSaldoPendente), pulando duplicidade");
+                            continue;
+                        }
+
+                        $pagamento = PagamentoSaldoPendente::where('identificador', $txId)->whereNull('dt_baixa')->first();
                         if ($pagamento) {
                             $emprestimo = $pagamento->emprestimo; // manter ref estável
 
@@ -450,26 +545,38 @@ class ProcessarWebhookCobranca extends Command
                             while ($parcela && $valor > 0) {
 
                                 if ($valor >= (float)$parcela->saldo) {
-                                    // MOV FIN (Entrada) - quitação da parcela
-                                    Movimentacaofinanceira::create([
-                                        'banco_id'        => $parcela->emprestimo->banco_id,
-                                        'company_id'      => $parcela->emprestimo->company_id,
-                                        'descricao'       => sprintf(
-                                            'Baixa automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                                            $parcela->id,
-                                            $parcela->emprestimo_id,
-                                            $parcela->emprestimo->client->nome_completo,
-                                            $pix['pagador']['nome'] ?? 'Não informado'
-                                        ),
-                                        'tipomov'         => 'E',
-                                        'parcela_id'      => $parcela->id,
-                                        'dt_movimentacao' => date('Y-m-d'),
-                                        'valor'           => (float)$parcela->saldo,
-                                    ]);
+                                    // Verifica se já existe movimentação financeira para esta parcela
+                                    $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
+                                        ->where('dt_movimentacao', date('Y-m-d'))
+                                        ->where('valor', (float)$parcela->saldo)
+                                        ->where('tipomov', 'E')
+                                        ->where('descricao', 'like', '%Baixa automática da parcela Nº ' . $parcela->id . '%')
+                                        ->first();
 
-                                    // Atualiza saldo do banco
-                                    $parcela->emprestimo->banco->saldo += (float)$parcela->saldo;
-                                    $parcela->emprestimo->banco->save();
+                                    if (!$movExistente) {
+                                        // MOV FIN (Entrada) - quitação da parcela
+                                        Movimentacaofinanceira::create([
+                                            'banco_id'        => $parcela->emprestimo->banco_id,
+                                            'company_id'      => $parcela->emprestimo->company_id,
+                                            'descricao'       => sprintf(
+                                                'Baixa automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                                $parcela->id,
+                                                $parcela->emprestimo_id,
+                                                $parcela->emprestimo->client->nome_completo,
+                                                $pix['pagador']['nome'] ?? 'Não informado'
+                                            ),
+                                            'tipomov'         => 'E',
+                                            'parcela_id'      => $parcela->id,
+                                            'dt_movimentacao' => date('Y-m-d'),
+                                            'valor'           => (float)$parcela->saldo,
+                                        ]);
+
+                                        // Atualiza saldo do banco apenas se a movimentação foi criada
+                                        $parcela->emprestimo->banco->saldo += (float)$parcela->saldo;
+                                        $parcela->emprestimo->banco->save();
+                                    } else {
+                                        Log::warning("Movimentação financeira já existe para parcela {$parcela->id} (PagamentoSaldoPendente), pulando duplicidade");
+                                    }
 
                                     // Quita a parcela atual
                                     $valor -= (float)$parcela->saldo;
@@ -485,26 +592,38 @@ class ProcessarWebhookCobranca extends Command
                                         break;
                                     }
                                 } else {
-                                    // MOV FIN (Entrada) - baixa parcial
-                                    Movimentacaofinanceira::create([
-                                        'banco_id'        => $parcela->emprestimo->banco_id,
-                                        'company_id'      => $parcela->emprestimo->company_id,
-                                        'descricao'       => sprintf(
-                                            'Baixa parcial automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
-                                            $parcela->id,
-                                            $parcela->emprestimo_id,
-                                            $parcela->emprestimo->client->nome_completo,
-                                            $pix['pagador']['nome'] ?? 'Não informado'
-                                        ),
-                                        'tipomov'         => 'E',
-                                        'parcela_id'      => $parcela->id,
-                                        'dt_movimentacao' => date('Y-m-d'),
-                                        'valor'           => $valor,
-                                    ]);
+                                    // Verifica se já existe movimentação financeira para esta parcela (baixa parcial)
+                                    $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
+                                        ->where('dt_movimentacao', date('Y-m-d'))
+                                        ->where('valor', $valor)
+                                        ->where('tipomov', 'E')
+                                        ->where('descricao', 'like', '%Baixa parcial automática da parcela Nº ' . $parcela->id . '%')
+                                        ->first();
 
-                                    // Atualiza saldo do banco
-                                    $parcela->emprestimo->banco->saldo += $valor;
-                                    $parcela->emprestimo->banco->save();
+                                    if (!$movExistente) {
+                                        // MOV FIN (Entrada) - baixa parcial
+                                        Movimentacaofinanceira::create([
+                                            'banco_id'        => $parcela->emprestimo->banco_id,
+                                            'company_id'      => $parcela->emprestimo->company_id,
+                                            'descricao'       => sprintf(
+                                                'Baixa parcial automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                                $parcela->id,
+                                                $parcela->emprestimo_id,
+                                                $parcela->emprestimo->client->nome_completo,
+                                                $pix['pagador']['nome'] ?? 'Não informado'
+                                            ),
+                                            'tipomov'         => 'E',
+                                            'parcela_id'      => $parcela->id,
+                                            'dt_movimentacao' => date('Y-m-d'),
+                                            'valor'           => $valor,
+                                        ]);
+
+                                        // Atualiza saldo do banco apenas se a movimentação foi criada
+                                        $parcela->emprestimo->banco->saldo += $valor;
+                                        $parcela->emprestimo->banco->save();
+                                    } else {
+                                        Log::warning("Movimentação financeira já existe para parcela {$parcela->id} (baixa parcial), pulando duplicidade");
+                                    }
 
                                     // Reduz o saldo da parcela atual
                                     $parcela->saldo -= $valor;
@@ -575,6 +694,9 @@ class ProcessarWebhookCobranca extends Command
                                     }
                                 }
                             }
+                            
+                            // Marca o txId como processado após processar PagamentoSaldoPendente
+                            $txIdsProcessados[] = $txId;
                         }
                     }
                 }

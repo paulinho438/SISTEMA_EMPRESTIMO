@@ -2500,6 +2500,16 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $dados['identificador'] = $data['pix'][0]['txId'];
             $dados['valor'] = $data['pix'][0]['valor'];
             $dados['qt_identificadores'] = count($data['pix']);
+            
+            // Verifica se já existe um webhook com o mesmo identificador não processado
+            $webhookExistente = WebhookCobranca::where('identificador', $dados['identificador'])
+                ->where('processado', false)
+                ->first();
+            
+            if ($webhookExistente) {
+                // Se já existe e não foi processado, não cria duplicado
+                return response()->json(['message' => 'Webhook já recebido anteriormente']);
+            }
         }
 
         WebhookCobranca::create($dados);
