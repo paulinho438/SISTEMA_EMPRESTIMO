@@ -110,11 +110,13 @@ class CobrancaAutomaticaA extends Command
             return;
         }
 
-        if($parcela->emprestimo->company->id == 8 || $parcela->emprestimo->company->id == 1) {
-            $this->enviarMensagemAPIAntiga($parcela);
-        }else {
-            $this->enviarMensagem($parcela);
-        }
+        $this->enviarMensagemAPIAntiga($parcela);
+
+        // if($parcela->emprestimo->company->id == 8 || $parcela->emprestimo->company->id == 1) {
+        //     $this->enviarMensagemAPIAntiga($parcela);
+        // }else {
+        //     $this->enviarMensagem($parcela);
+        // }
     }
 
     private function deveProcessarParcela($parcela)
