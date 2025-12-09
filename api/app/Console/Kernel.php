@@ -49,7 +49,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('cobranca:AutomaticaCBotao')->everyMinute();
 
         $schedule->command('mensagem:AutomaticaRenovacao')->everyMinute();
-        $schedule->command('webhook:baixaBcodex')->everyMinute();
+        $schedule->command('webhook:baixaBcodex')->everyMinute()->withoutOverlapping();
 
         //$schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 
