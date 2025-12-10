@@ -16,7 +16,8 @@ class PagamentoSaldoPendente extends Model
         'valor',
         'identificador',
         'chave_pix',
-        'ult_dt_geracao_pix'
+        'ult_dt_geracao_pix',
+        'dt_baixa'
     ];
 
     public function emprestimo()
