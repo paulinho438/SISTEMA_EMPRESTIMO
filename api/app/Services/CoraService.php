@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Banco;
 
 class CoraService
@@ -30,6 +31,95 @@ class CoraService
     public function getBaseUrl(): string
     {
         return $this->baseUrl;
+    }
+
+    /**
+     * Obtém o token de acesso usando Client Credentials (mTLS)
+     *
+     * @return string Token de acesso
+     * @throws \Exception Se falhar ao obter o token
+     */
+    protected function getAccessToken(): string
+    {
+        // Verificar se já temos um token válido em cache
+        $cacheKey = 'cora_access_token_' . md5($this->clientId . $this->certificatePath);
+        
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
+        // URL do servidor de autorização (diferente da API principal)
+        // Para stage: https://matls-clients.api.stage.cora.com.br/token
+        // Para production: https://matls-clients.api.cora.com.br/token
+        if (strpos($this->baseUrl, 'stage') !== false) {
+            $tokenUrl = 'https://matls-clients.api.stage.cora.com.br/token';
+        } else {
+            $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
+        }
+
+        // Verificar se temos certificados configurados
+        if (!$this->certificatePath || !$this->privateKeyPath ||
+            !file_exists($this->certificatePath) || !file_exists($this->privateKeyPath)) {
+            throw new \Exception('Certificados Cora não configurados para obter token de acesso.');
+        }
+
+        // Verificar se os arquivos são legíveis
+        if (!is_readable($this->certificatePath) || !is_readable($this->privateKeyPath)) {
+            throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
+        }
+
+        // Configurar cliente HTTP com autenticação mTLS
+        $httpClient = Http::asForm()->withOptions([
+            'cert' => $this->certificatePath,
+            'ssl_key' => $this->privateKeyPath,
+            'verify' => env('CORA_VERIFY_SSL', true),
+            'http_errors' => false,
+        ]);
+
+        // Fazer requisição para obter o token
+        $response = $httpClient->post($tokenUrl, [
+            'grant_type' => 'client_credentials',
+            'client_id' => $this->clientId
+        ]);
+
+        if (!$response->successful()) {
+            $errorBody = $response->body();
+            $errorJson = null;
+            
+            try {
+                $errorJson = $response->json();
+            } catch (\Exception $e) {
+                // Ignorar
+            }
+
+            Log::error('Erro ao obter token de acesso Cora', [
+                'status' => $response->status(),
+                'body' => $errorBody,
+                'json' => $errorJson,
+                'token_url' => $tokenUrl,
+                'client_id' => $this->clientId
+            ]);
+
+            throw new \Exception('Falha ao obter token de acesso Cora: ' . ($errorJson['error_description'] ?? $errorBody ?? 'Erro desconhecido'));
+        }
+
+        $data = $response->json();
+        $accessToken = $data['access_token'] ?? null;
+        $expiresIn = $data['expires_in'] ?? 86400; // Default 24 horas
+
+        if (!$accessToken) {
+            throw new \Exception('Token de acesso não retornado pela API Cora');
+        }
+
+        // Armazenar token em cache (com margem de segurança de 60 segundos antes de expirar)
+        Cache::put($cacheKey, $accessToken, $expiresIn - 60);
+
+        Log::info('Token de acesso Cora obtido com sucesso', [
+            'expires_in' => $expiresIn,
+            'token_url' => $tokenUrl
+        ]);
+
+        return $accessToken;
     }
 
     /**
@@ -148,130 +238,21 @@ class CoraService
 
             $url = "{$this->baseUrl}/v2/invoices/";
 
+            // Obter token de acesso (usando Client Credentials)
+            $accessToken = $this->getAccessToken();
+
             // Preparar headers
             $headers = [
+                'Authorization' => 'Bearer ' . $accessToken,
                 'Idempotency-Key' => $idempotencyKey,
                 'accept' => 'application/json',
                 'content-type' => 'application/json'
             ];
 
-            // Adicionar Client ID no header se disponível
-            // A API Cora pode precisar do Client ID em diferentes headers
-            // Segundo a documentação, pode ser necessário em Authorization ou X-Client-Id
-            if ($this->clientId) {
-                // Tentar diferentes formatos de header para Client ID
-                $headers['X-Client-Id'] = $this->clientId;
-                // Algumas implementações da Cora podem usar Authorization Bearer
-                // $headers['Authorization'] = 'Bearer ' . $this->clientId;
-                // Ou Client-Id sem o X-
-                // $headers['Client-Id'] = $this->clientId;
-            } else {
-                Log::warning('Client ID não configurado para autenticação Cora');
-            }
-
-            // Configurar cliente HTTP com autenticação mTLS se tiver certificado
-            $httpClient = Http::withHeaders($headers);
-
-            if ($this->certificatePath && $this->privateKeyPath &&
-                file_exists($this->certificatePath) && file_exists($this->privateKeyPath)) {
-                
-                // Verificar se os arquivos são legíveis
-                $certReadable = is_readable($this->certificatePath);
-                $keyReadable = is_readable($this->privateKeyPath);
-                
-                if (!$certReadable || !$keyReadable) {
-                    // Obter informações detalhadas sobre permissões
-                    $certPerms = file_exists($this->certificatePath) ? substr(sprintf('%o', fileperms($this->certificatePath)), -4) : 'N/A';
-                    $keyPerms = file_exists($this->privateKeyPath) ? substr(sprintf('%o', fileperms($this->privateKeyPath)), -4) : 'N/A';
-                    
-                    // Tentar obter informações do dono (pode não estar disponível em todos os ambientes)
-                    $certOwner = 'N/A';
-                    $keyOwner = 'N/A';
-                    $currentUser = 'N/A';
-                    
-                    if (function_exists('posix_getpwuid')) {
-                        try {
-                            if (file_exists($this->certificatePath)) {
-                                $ownerInfo = posix_getpwuid(fileowner($this->certificatePath));
-                                $certOwner = $ownerInfo ? $ownerInfo['name'] : 'N/A';
-                            }
-                            if (file_exists($this->privateKeyPath)) {
-                                $ownerInfo = posix_getpwuid(fileowner($this->privateKeyPath));
-                                $keyOwner = $ownerInfo ? $ownerInfo['name'] : 'N/A';
-                            }
-                            $userInfo = posix_getpwuid(posix_geteuid());
-                            $currentUser = $userInfo ? $userInfo['name'] : 'N/A';
-                        } catch (\Exception $e) {
-                            // Ignorar erros de posix
-                        }
-                    }
-                    
-                    Log::error('Certificados Cora não são legíveis', [
-                        'cert_path' => $this->certificatePath,
-                        'key_path' => $this->privateKeyPath,
-                        'cert_exists' => file_exists($this->certificatePath),
-                        'key_exists' => file_exists($this->privateKeyPath),
-                        'cert_readable' => $certReadable,
-                        'key_readable' => $keyReadable,
-                        'cert_permissions' => $certPerms,
-                        'key_permissions' => $keyPerms,
-                        'cert_owner' => $certOwner,
-                        'key_owner' => $keyOwner,
-                        'current_user' => $currentUser
-                    ]);
-                    
-                    $errorMsg = "Certificados Cora não são legíveis. ";
-                    $errorMsg .= "Certificado: " . ($certReadable ? "OK" : "NÃO LEGÍVEL (permissões: {$certPerms}, dono: {$certOwner})") . ". ";
-                    $errorMsg .= "Chave: " . ($keyReadable ? "OK" : "NÃO LEGÍVEL (permissões: {$keyPerms}, dono: {$keyOwner})") . ". ";
-                    if ($currentUser !== 'N/A') {
-                        $errorMsg .= "Usuário atual: {$currentUser}. ";
-                        $errorMsg .= "Execute no servidor: chmod 600 {$this->certificatePath} {$this->privateKeyPath}";
-                        $errorMsg .= " e depois: chown {$currentUser}:{$currentUser} {$this->certificatePath} {$this->privateKeyPath}";
-                    } else {
-                        $errorMsg .= "Execute no servidor: chmod 600 {$this->certificatePath} {$this->privateKeyPath}";
-                        $errorMsg .= " e depois: chown USUARIO_DO_SERVIDOR_WEB:USUARIO_DO_SERVIDOR_WEB {$this->certificatePath} {$this->privateKeyPath}";
-                    }
-                    
-                    throw new \Exception($errorMsg);
-                }
-                
-                // Autenticação mTLS com certificado e chave privada
-                // Guzzle requer 'cert' e 'ssl_key' separados:
-                // - 'cert' => caminho do certificado (ou array [cert_path, password] se tiver senha)
-                // - 'ssl_key' => caminho da chave privada (ou array [key_path, password] se tiver senha)
-                
-                $httpClient = $httpClient->withOptions([
-                    'cert' => $this->certificatePath, // Caminho do certificado
-                    'ssl_key' => $this->privateKeyPath, // Caminho da chave privada (separado)
-                    'verify' => env('CORA_VERIFY_SSL', true), // Pode desabilitar para debug
-                    'http_errors' => false, // Não lançar exceções para erros HTTP
-                ]);
-                
-                Log::info('Autenticação mTLS Cora configurada', [
-                    'certificate_path' => $this->certificatePath,
-                    'private_key_path' => $this->privateKeyPath,
-                    'client_id' => $this->clientId,
-                    'cert_exists' => file_exists($this->certificatePath),
-                    'key_exists' => file_exists($this->privateKeyPath),
-                    'cert_readable' => is_readable($this->certificatePath),
-                    'key_readable' => is_readable($this->privateKeyPath),
-                    'cert_size' => filesize($this->certificatePath),
-                    'key_size' => filesize($this->privateKeyPath)
-                ]);
-            } elseif ($this->certificatePath && file_exists($this->certificatePath)) {
-                Log::warning('Certificado Cora encontrado mas chave privada não configurada', [
-                    'certificate_path' => $this->certificatePath
-                ]);
-            } else {
-                Log::error('Certificados Cora não configurados ou não encontrados', [
-                    'certificate_path' => $this->certificatePath,
-                    'private_key_path' => $this->privateKeyPath,
-                    'client_id' => $this->clientId,
-                    'cert_exists' => $this->certificatePath ? file_exists($this->certificatePath) : false,
-                    'key_exists' => $this->privateKeyPath ? file_exists($this->privateKeyPath) : false
-                ]);
-                throw new \Exception('Certificados Cora não configurados. Verifique os caminhos no banco de dados.');
-            }
+            // Configurar cliente HTTP (não precisa mais de mTLS para a API, apenas para obter o token)
+            $httpClient = Http::withHeaders($headers)->withOptions([
+                'http_errors' => false, // Não lançar exceções para erros HTTP
+            ]);
 
             $inicioAtualizacao = microtime(true);
 
