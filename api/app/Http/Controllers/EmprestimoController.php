@@ -261,6 +261,94 @@ class EmprestimoController extends Controller
         ], $response->status());
     }
 
+    /**
+     * Teste de geração de cobrança Cora
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testeCobrancaCora(Request $request)
+    {
+        try {
+            $dados = $request->all();
+
+            // Validar dados mínimos
+            $validator = Validator::make($dados, [
+                'banco_id' => 'required|exists:bancos,id',
+                'valor' => 'required|numeric|min:0.01',
+                'cliente_id' => 'required|exists:clients,id',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'error' => 'Dados inválidos',
+                    'details' => $validator->errors()
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $banco = Banco::find($dados['banco_id']);
+            $cliente = Client::find($dados['cliente_id']);
+
+            // Verificar se o banco é do tipo Cora
+            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            
+            if ($bankType !== 'cora') {
+                return response()->json([
+                    'error' => 'Banco não é do tipo Cora',
+                    'bank_type' => $bankType
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Verificar se o banco tem as configurações necessárias
+            if (!$banco->client_id || !$banco->certificate_path || !$banco->private_key_path) {
+                return response()->json([
+                    'error' => 'Banco Cora não está configurado corretamente',
+                    'missing' => [
+                        'client_id' => !$banco->client_id,
+                        'certificate_path' => !$banco->certificate_path,
+                        'private_key_path' => !$banco->private_key_path
+                    ]
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Criar cobrança
+            $coraService = new CoraService($banco);
+            $code = 'TESTE_' . time() . '_' . rand(1000, 9999);
+            $dueDate = $dados['due_date'] ?? date('Y-m-d', strtotime('+30 days'));
+
+            $response = $coraService->criarCobranca(
+                $dados['valor'],
+                $cliente,
+                $code,
+                $dueDate
+            );
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cobrança Cora criada com sucesso',
+                    'data' => $response->json(),
+                    'code' => $code
+                ], Response::HTTP_CREATED);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Erro ao criar cobrança na API Cora',
+                    'details' => $response->json() ?? $response->body(),
+                    'status' => $response->status()
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Erro ao processar requisição',
+                'message' => $e->getMessage(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public function id(Request $r, $id)
     {
         return new EmprestimoResource(Emprestimo::find($id));

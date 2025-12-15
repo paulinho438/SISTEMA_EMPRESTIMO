@@ -283,6 +283,7 @@ Route::middleware('auth:api')->group(function () {
 
 
     Route::get('/cobrancateste', [EmprestimoController::class, 'gerarCobranca']);
+    Route::post('/cobranca/teste-cora', [EmprestimoController::class, 'testeCobrancaCora']);
 
 
 
