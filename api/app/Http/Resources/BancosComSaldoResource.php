@@ -39,6 +39,7 @@ class BancosComSaldoResource extends JsonResource
             "accountId" => $this->accountId,
             "client_id" => $this->client_id,
             "certificate_path" => $this->certificate_path,
+            "private_key_path" => $this->private_key_path,
             "chavepix" => $this->chavepix,
             "info_recebedor_pix" => $this->info_recebedor_pix,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),

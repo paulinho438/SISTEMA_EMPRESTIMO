@@ -40,6 +40,7 @@ class BancosResource extends JsonResource
             "accountId" => $this->accountId,
             "client_id" => $this->client_id,
             "certificate_path" => $this->certificate_path,
+            "private_key_path" => $this->private_key_path,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),
             "name_agencia_conta" => "{$this->name} - Agência {$this->agencia} Cc {$this->conta}",
         ];

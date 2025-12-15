@@ -17,6 +17,7 @@ return new class extends Migration
             $table->enum('bank_type', ['normal', 'bcodex', 'cora'])->default('normal')->after('wallet');
             $table->string('client_id')->nullable()->after('accountId');
             $table->string('certificate_path')->nullable()->after('client_id');
+            $table->string('private_key_path')->nullable()->after('certificate_path');
         });
     }
 
@@ -28,7 +29,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('bancos', function (Blueprint $table) {
-            $table->dropColumn(['bank_type', 'client_id', 'certificate_path']);
+            $table->dropColumn(['bank_type', 'client_id', 'certificate_path', 'private_key_path']);
         });
     }
 };

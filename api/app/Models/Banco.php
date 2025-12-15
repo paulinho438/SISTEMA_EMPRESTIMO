@@ -23,7 +23,8 @@ class Banco extends Model
         'info_recebedor_pix',
         'accountId',
         'client_id',
-        'certificate_path'
+        'certificate_path',
+        'private_key_path'
     ];
 
     public function company()

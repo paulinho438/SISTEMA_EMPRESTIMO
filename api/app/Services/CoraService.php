@@ -11,6 +11,7 @@ class CoraService
     protected $baseUrl;
     protected $clientId;
     protected $certificatePath;
+    protected $privateKeyPath;
 
     public function __construct(?Banco $banco = null)
     {
@@ -19,6 +20,7 @@ class CoraService
         if ($banco) {
             $this->clientId = $banco->client_id;
             $this->certificatePath = $banco->certificate_path;
+            $this->privateKeyPath = $banco->private_key_path;
         }
     }
 
@@ -144,14 +146,20 @@ class CoraService
                 'content-type' => 'application/json'
             ];
 
-            // Se tiver certificado, adicionar autenticação
+            // Configurar cliente HTTP com autenticação mTLS se tiver certificado
             $httpClient = Http::withHeaders($headers);
 
-            if ($this->certificatePath && file_exists($this->certificatePath)) {
-                // Autenticação com certificado (se necessário)
-                // A implementação pode variar dependendo de como a API Cora requer autenticação
-                // Por enquanto, apenas logamos que o certificado foi encontrado
-                Log::info('Certificado Cora encontrado: ' . $this->certificatePath);
+            if ($this->certificatePath && $this->privateKeyPath &&
+                file_exists($this->certificatePath) && file_exists($this->privateKeyPath)) {
+                // Autenticação mTLS com certificado e chave privada
+                $httpClient = $httpClient->withOptions([
+                    'cert' => $this->certificatePath,
+                    'ssl_key' => $this->privateKeyPath,
+                    'verify' => true // Verificar certificado do servidor
+                ]);
+                Log::info('Autenticação mTLS Cora configurada com certificado e chave privada');
+            } elseif ($this->certificatePath && file_exists($this->certificatePath)) {
+                Log::warning('Certificado Cora encontrado mas chave privada não configurada');
             }
 
             $inicioAtualizacao = microtime(true);
