@@ -90,12 +90,22 @@ class CoraService
         Log::info('Solicitando token de acesso Cora', [
             'token_url' => $tokenUrl,
             'client_id' => $this->clientId,
-            'grant_type' => 'client_credentials'
+            'grant_type' => 'client_credentials',
+            'certificate_path' => $this->certificatePath,
+            'private_key_path' => $this->privateKeyPath,
+            'base_url' => $this->baseUrl,
+            'environment' => strpos($this->baseUrl, 'stage') !== false ? 'stage' : 'production'
         ]);
 
         $response = $httpClient->post($tokenUrl, [
             'grant_type' => 'client_credentials',
             'client_id' => $this->clientId
+        ]);
+
+        Log::info('Resposta da requisição de token Cora', [
+            'status' => $response->status(),
+            'successful' => $response->successful(),
+            'body_preview' => substr($response->body(), 0, 200)
         ]);
 
         if (!$response->successful()) {
