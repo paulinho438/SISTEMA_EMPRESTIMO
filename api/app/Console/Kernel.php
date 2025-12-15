@@ -68,7 +68,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('cobranca:AutomaticaA')->dailyAt('08:00');
 //        $schedule->command('cobranca:AutomaticaA')->dailyAt('13:00');
-        $schedule->command('cobranca:AutomaticaA')->dailyAt('16:30');
+        $schedule->command('cobranca:AutomaticaA')->dailyAt('12:30');
 //        $schedule->command('cobranca:AutomaticaB')->dailyAt('13:00');
 //        $schedule->command('cobranca:AutomaticaC')->dailyAt('16:30');
 
