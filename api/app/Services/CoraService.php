@@ -21,7 +21,7 @@ class CoraService
         // Produção: https://api.cora.com.br
         // Configure no .env: CORA_API_URL=https://api.cora.com.br (produção)
         // ou CORA_API_URL=https://api.stage.cora.com.br (stage)
-        $this->baseUrl = env('CORA_API_URL', 'https://api.stage.cora.com.br');
+        $this->baseUrl = env('CORA_API_URL', 'https://matls-clients.api.cora.com.br');
 
         if ($banco) {
             $this->clientId = $banco->client_id;
