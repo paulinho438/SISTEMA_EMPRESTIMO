@@ -77,6 +77,13 @@ class CoraService
         ]);
 
         // Fazer requisição para obter o token
+        // O asForm() já foi aplicado acima, então não precisa chamar novamente
+        Log::info('Solicitando token de acesso Cora', [
+            'token_url' => $tokenUrl,
+            'client_id' => $this->clientId,
+            'grant_type' => 'client_credentials'
+        ]);
+
         $response = $httpClient->post($tokenUrl, [
             'grant_type' => 'client_credentials',
             'client_id' => $this->clientId
@@ -97,10 +104,27 @@ class CoraService
                 'body' => $errorBody,
                 'json' => $errorJson,
                 'token_url' => $tokenUrl,
-                'client_id' => $this->clientId
+                'client_id' => $this->clientId,
+                'certificate_path' => $this->certificatePath,
+                'private_key_path' => $this->privateKeyPath,
+                'cert_exists' => file_exists($this->certificatePath),
+                'key_exists' => file_exists($this->privateKeyPath),
+                'cert_readable' => is_readable($this->certificatePath),
+                'key_readable' => is_readable($this->privateKeyPath),
+                'headers' => $response->headers()
             ]);
 
-            throw new \Exception('Falha ao obter token de acesso Cora: ' . ($errorJson['error_description'] ?? $errorBody ?? 'Erro desconhecido'));
+            $errorMessage = 'Falha ao obter token de acesso Cora';
+            if ($errorJson) {
+                $errorMessage .= ': ' . json_encode($errorJson);
+                if (isset($errorJson['error_description'])) {
+                    $errorMessage .= ' - ' . $errorJson['error_description'];
+                }
+            } else {
+                $errorMessage .= ': ' . $errorBody;
+            }
+
+            throw new \Exception($errorMessage);
         }
 
         $data = $response->json();
