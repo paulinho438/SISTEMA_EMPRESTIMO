@@ -1,4 +1,8 @@
 *
+!certificates/
+!certificates/cora/
+!certificates/cora/certificate.pem
+!certificates/cora/private-key.key
 !public/
 !public/video.mp4
 !.gitignore

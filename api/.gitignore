@@ -17,10 +17,19 @@ yarn-error.log
 
 # IGNORA TUDO DENTRO DE storage
 /storage/*
+!/storage/.gitkeep
+!/storage/app/
 
 # MAS INCLUI OS ÁUDIOS
+!/storage/app/public/
 !/storage/app/public/audios/
 !/storage/app/public/audios/*.ogg
 !/storage/app/public/audios/*.mp4
+
+# MAS INCLUI OS CERTIFICADOS CORA
+!/storage/app/certificates/
+!/storage/app/certificates/cora/
+!/storage/app/certificates/cora/certificate.pem
+!/storage/app/certificates/cora/private-key.key
 
 
