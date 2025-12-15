@@ -25,6 +25,14 @@ class CoraService
     }
 
     /**
+     * Retorna a URL base da API Cora
+     */
+    public function getBaseUrl(): string
+    {
+        return $this->baseUrl;
+    }
+
+    /**
      * Cria uma cobrança (invoice) na API Cora
      *
      * @param float $valor Valor da cobrança em centavos
@@ -149,11 +157,16 @@ class CoraService
 
             // Adicionar Client ID no header se disponível
             // A API Cora pode precisar do Client ID em diferentes headers
+            // Segundo a documentação, pode ser necessário em Authorization ou X-Client-Id
             if ($this->clientId) {
                 // Tentar diferentes formatos de header para Client ID
                 $headers['X-Client-Id'] = $this->clientId;
-                // Algumas implementações da Cora podem usar este formato
+                // Algumas implementações da Cora podem usar Authorization Bearer
+                // $headers['Authorization'] = 'Bearer ' . $this->clientId;
+                // Ou Client-Id sem o X-
                 // $headers['Client-Id'] = $this->clientId;
+            } else {
+                Log::warning('Client ID não configurado para autenticação Cora');
             }
 
             // Configurar cliente HTTP com autenticação mTLS se tiver certificado
@@ -212,9 +225,12 @@ class CoraService
                     $errorMsg .= "Chave: " . ($keyReadable ? "OK" : "NÃO LEGÍVEL (permissões: {$keyPerms}, dono: {$keyOwner})") . ". ";
                     if ($currentUser !== 'N/A') {
                         $errorMsg .= "Usuário atual: {$currentUser}. ";
+                        $errorMsg .= "Execute no servidor: chmod 600 {$this->certificatePath} {$this->privateKeyPath}";
+                        $errorMsg .= " e depois: chown {$currentUser}:{$currentUser} {$this->certificatePath} {$this->privateKeyPath}";
+                    } else {
+                        $errorMsg .= "Execute no servidor: chmod 600 {$this->certificatePath} {$this->privateKeyPath}";
+                        $errorMsg .= " e depois: chown USUARIO_DO_SERVIDOR_WEB:USUARIO_DO_SERVIDOR_WEB {$this->certificatePath} {$this->privateKeyPath}";
                     }
-                    $errorMsg .= "Execute no servidor: chmod 600 {$this->certificatePath} {$this->privateKeyPath}";
-                    $errorMsg .= " e depois: chown www-data:www-data {$this->certificatePath} {$this->privateKeyPath}";
                     
                     throw new \Exception($errorMsg);
                 }
@@ -269,16 +285,25 @@ class CoraService
 
             if (!$response->successful()) {
                 $errorBody = $response->body();
-                $errorJson = $response->json();
+                $errorJson = null;
+                
+                try {
+                    $errorJson = $response->json();
+                } catch (\Exception $e) {
+                    // Se não conseguir converter para JSON, mantém o body como string
+                }
                 
                 Log::error('Erro ao criar cobrança Cora', [
                     'status' => $response->status(),
                     'body' => $errorBody,
                     'json' => $errorJson,
                     'headers' => $response->headers(),
+                    'url' => $url,
                     'certificate_path' => $this->certificatePath,
                     'private_key_path' => $this->privateKeyPath,
-                    'client_id' => $this->clientId
+                    'client_id' => $this->clientId,
+                    'base_url' => $this->baseUrl,
+                    'request_headers' => $headers
                 ]);
             }
 

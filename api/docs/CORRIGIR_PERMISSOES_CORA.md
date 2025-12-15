@@ -14,9 +14,13 @@ chmod 600 /home/agecontrolecom/SISTEMA_EMPRESTIMO/api/storage/app/certificates/c
 chmod 600 /home/agecontrolecom/SISTEMA_EMPRESTIMO/api/storage/app/certificates/cora/private-key.key
 
 # Alterar dono para o usuário do servidor web
-# Substitua 'www-data' pelo usuário correto do seu servidor
-chown www-data:www-data /home/agecontrolecom/SISTEMA_EMPRESTIMO/api/storage/app/certificates/cora/certificate.pem
-chown www-data:www-data /home/agecontrolecom/SISTEMA_EMPRESTIMO/api/storage/app/certificates/cora/private-key.key
+# No seu caso, o usuário é 'agecontrolecom' (conforme erro)
+chown agecontrolecom:agecontrolecom /home/agecontrolecom/SISTEMA_EMPRESTIMO/api/storage/app/certificates/cora/certificate.pem
+chown agecontrolecom:agecontrolecom /home/agecontrolecom/SISTEMA_EMPRESTIMO/api/storage/app/certificates/cora/private-key.key
+
+# OU se o usuário for diferente, descubra qual é:
+ps aux | grep php-fpm | head -1
+# E use o usuário mostrado na primeira coluna
 ```
 
 ## Como Descobrir o Usuário do Servidor Web

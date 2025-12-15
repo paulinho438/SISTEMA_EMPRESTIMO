@@ -17,12 +17,26 @@ if [ ! -f "$KEY_PATH" ]; then
     exit 1
 fi
 
-# Detectar usuário do servidor web (comum: www-data, nginx, apache)
-WEB_USER="www-data"
-if id "nginx" &>/dev/null; then
-    WEB_USER="nginx"
-elif id "apache" &>/dev/null; then
-    WEB_USER="apache"
+# Detectar usuário do servidor web
+# Primeiro tenta detectar pelo processo PHP-FPM
+WEB_USER=$(ps aux | grep -E 'php-fpm|php' | grep -v grep | head -1 | awk '{print $1}' | head -1)
+
+# Se não encontrou, tenta opções comuns
+if [ -z "$WEB_USER" ]; then
+    if id "agecontrolecom" &>/dev/null; then
+        WEB_USER="agecontrolecom"
+    elif id "www-data" &>/dev/null; then
+        WEB_USER="www-data"
+    elif id "nginx" &>/dev/null; then
+        WEB_USER="nginx"
+    elif id "apache" &>/dev/null; then
+        WEB_USER="apache"
+    else
+        echo "ERRO: Não foi possível detectar o usuário do servidor web"
+        echo "Por favor, especifique manualmente:"
+        echo "  chown USUARIO:USUARIO $CERT_PATH $KEY_PATH"
+        exit 1
+    fi
 fi
 
 echo "Configurando permissões para certificados Cora..."

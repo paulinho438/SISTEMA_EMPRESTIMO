@@ -331,14 +331,23 @@ class EmprestimoController extends Controller
                     'code' => $code
                 ], Response::HTTP_CREATED);
             } else {
-                $errorDetails = $response->json();
+                $errorDetails = null;
                 $errorBody = $response->body();
+                
+                try {
+                    $errorDetails = $response->json();
+                } catch (\Exception $e) {
+                    // Se não conseguir converter para JSON, mantém o body como string
+                }
                 
                 return response()->json([
                     'success' => false,
                     'error' => 'Erro ao criar cobrança na API Cora',
                     'details' => $errorDetails ?? $errorBody,
                     'status' => $response->status(),
+                    'response_body' => $errorBody,
+                    'response_headers' => $response->headers(),
+                    'request_url' => $coraService->getBaseUrl() . '/v2/invoices/',
                     'headers_sent' => [
                         'Idempotency-Key' => 'present',
                         'X-Client-Id' => $banco->client_id ?? 'missing',
@@ -352,6 +361,16 @@ class EmprestimoController extends Controller
                         'key_exists' => $banco->private_key_path ? file_exists($banco->private_key_path) : false,
                         'cert_readable' => $banco->certificate_path ? is_readable($banco->certificate_path) : false,
                         'key_readable' => $banco->private_key_path ? is_readable($banco->private_key_path) : false
+                    ],
+                    'troubleshooting' => [
+                        'message' => 'Erro 401 geralmente indica problema de autenticação. Verifique:',
+                        'checks' => [
+                            '1. Client ID está correto e corresponde ao certificado',
+                            '2. Certificado não está expirado',
+                            '3. Certificado corresponde ao Client ID fornecido',
+                            '4. URL da API está correta (stage vs production)',
+                            '5. Certificado e chave privada são um par válido'
+                        ]
                     ]
                 ], Response::HTTP_BAD_REQUEST);
             }
