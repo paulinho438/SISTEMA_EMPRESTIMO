@@ -21,7 +21,7 @@ class CoraService
         // Produção: https://api.cora.com.br
         // Configure no .env: CORA_API_URL=https://api.cora.com.br (produção)
         // ou CORA_API_URL=https://api.stage.cora.com.br (stage)
-        $this->baseUrl = env('CORA_API_URL', 'https://matls-clients.api.cora.com.br');
+        $this->baseUrl = env('CORA_API_URL', 'https://api.cora.com.br');
 
         if ($banco) {
             $this->clientId = $banco->client_id;
@@ -60,7 +60,7 @@ class CoraService
         $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
         
         if ($isStage) {
-            $tokenUrl = 'https://matls-clients.api.cora.cora.com.br/token';
+            $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
         } else {
             // Produção
             $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
@@ -279,7 +279,18 @@ class CoraService
                 }
             }
 
-            $url = "{$this->baseUrl}/v2/invoices/";
+            // A URL da API é diferente da URL do token
+            // API: https://api.cora.com.br ou https://api.stage.cora.com.br
+            // Token: https://matls-clients.api.cora.com.br/token
+            $apiUrl = $this->baseUrl;
+            
+            // Se baseUrl for matls-clients, corrigir para api
+            if (strpos($apiUrl, 'matls-clients') !== false) {
+                $apiUrl = str_replace('matls-clients.api.', 'api.', $apiUrl);
+                $apiUrl = str_replace('matls-clients.api.stage.', 'api.stage.', $apiUrl);
+            }
+            
+            $url = "{$apiUrl}/v2/invoices/";
 
             // Obter token de acesso (usando Client Credentials)
             $accessToken = $this->getAccessToken();
