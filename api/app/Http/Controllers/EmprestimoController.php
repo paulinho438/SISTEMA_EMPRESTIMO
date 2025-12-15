@@ -331,11 +331,28 @@ class EmprestimoController extends Controller
                     'code' => $code
                 ], Response::HTTP_CREATED);
             } else {
+                $errorDetails = $response->json();
+                $errorBody = $response->body();
+                
                 return response()->json([
                     'success' => false,
                     'error' => 'Erro ao criar cobrança na API Cora',
-                    'details' => $response->json() ?? $response->body(),
-                    'status' => $response->status()
+                    'details' => $errorDetails ?? $errorBody,
+                    'status' => $response->status(),
+                    'headers_sent' => [
+                        'Idempotency-Key' => 'present',
+                        'X-Client-Id' => $banco->client_id ?? 'missing',
+                        'accept' => 'application/json',
+                        'content-type' => 'application/json'
+                    ],
+                    'certificate_info' => [
+                        'certificate_path' => $banco->certificate_path,
+                        'private_key_path' => $banco->private_key_path,
+                        'cert_exists' => $banco->certificate_path ? file_exists($banco->certificate_path) : false,
+                        'key_exists' => $banco->private_key_path ? file_exists($banco->private_key_path) : false,
+                        'cert_readable' => $banco->certificate_path ? is_readable($banco->certificate_path) : false,
+                        'key_readable' => $banco->private_key_path ? is_readable($banco->private_key_path) : false
+                    ]
                 ], Response::HTTP_BAD_REQUEST);
             }
 

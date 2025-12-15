@@ -147,20 +147,67 @@ class CoraService
                 'content-type' => 'application/json'
             ];
 
+            // Adicionar Client ID no header se disponível
+            // A API Cora pode precisar do Client ID em diferentes headers
+            if ($this->clientId) {
+                // Tentar diferentes formatos de header para Client ID
+                $headers['X-Client-Id'] = $this->clientId;
+                // Algumas implementações da Cora podem usar este formato
+                // $headers['Client-Id'] = $this->clientId;
+            }
+
             // Configurar cliente HTTP com autenticação mTLS se tiver certificado
             $httpClient = Http::withHeaders($headers);
 
             if ($this->certificatePath && $this->privateKeyPath &&
                 file_exists($this->certificatePath) && file_exists($this->privateKeyPath)) {
+                
+                // Verificar se os arquivos são legíveis
+                if (!is_readable($this->certificatePath) || !is_readable($this->privateKeyPath)) {
+                    Log::error('Certificados Cora não são legíveis', [
+                        'cert_readable' => is_readable($this->certificatePath),
+                        'key_readable' => is_readable($this->privateKeyPath)
+                    ]);
+                    throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
+                }
+                
                 // Autenticação mTLS com certificado e chave privada
+                // Guzzle aceita certificado como:
+                // 1. String (caminho do arquivo) - se cert e key estão no mesmo arquivo
+                // 2. Array [cert_path, key_path] - formato mais comum
+                // 3. Array [cert_path, key_path, password] - se a chave tem senha
+                
+                // Tentar formato array primeiro (mais comum)
                 $httpClient = $httpClient->withOptions([
-                    'cert' => $this->certificatePath,
-                    'ssl_key' => $this->privateKeyPath,
-                    'verify' => true // Verificar certificado do servidor
+                    'cert' => [$this->certificatePath, $this->privateKeyPath], // [cert_path, key_path]
+                    'verify' => env('CORA_VERIFY_SSL', true), // Pode desabilitar para debug
+                    'http_errors' => false, // Não lançar exceções para erros HTTP
                 ]);
-                Log::info('Autenticação mTLS Cora configurada com certificado e chave privada');
+                
+                Log::info('Autenticação mTLS Cora configurada', [
+                    'certificate_path' => $this->certificatePath,
+                    'private_key_path' => $this->privateKeyPath,
+                    'client_id' => $this->clientId,
+                    'cert_exists' => file_exists($this->certificatePath),
+                    'key_exists' => file_exists($this->privateKeyPath),
+                    'cert_readable' => is_readable($this->certificatePath),
+                    'key_readable' => is_readable($this->privateKeyPath),
+                    'cert_size' => filesize($this->certificatePath),
+                    'key_size' => filesize($this->privateKeyPath)
+                ]);
             } elseif ($this->certificatePath && file_exists($this->certificatePath)) {
-                Log::warning('Certificado Cora encontrado mas chave privada não configurada');
+                Log::warning('Certificado Cora encontrado mas chave privada não configurada', [
+                    'certificate_path' => $this->certificatePath
+                ]);
+            } else {
+                Log::error('Certificados Cora não configurados ou não encontrados', [
+                    'certificate_path' => $this->certificatePath,
+                    'private_key_path' => $this->privateKeyPath,
+                    'client_id' => $this->clientId,
+                    'cert_exists' => $this->certificatePath ? file_exists($this->certificatePath) : false,
+                    'key_exists' => $this->privateKeyPath ? file_exists($this->privateKeyPath) : false
+                ]);
+                throw new \Exception('Certificados Cora não configurados. Verifique os caminhos no banco de dados.');
             }
 
             $inicioAtualizacao = microtime(true);
@@ -168,10 +215,24 @@ class CoraService
             $response = $httpClient->post($url, $data);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
-            Log::info("CHAMADA CORA - Tempo para chamar: {$duracaoAtualizacao}s");
+            Log::info("CHAMADA CORA - Tempo para chamar: {$duracaoAtualizacao}s", [
+                'status' => $response->status(),
+                'url' => $url
+            ]);
 
             if (!$response->successful()) {
-                Log::error('Erro ao criar cobrança Cora: ' . $response->body());
+                $errorBody = $response->body();
+                $errorJson = $response->json();
+                
+                Log::error('Erro ao criar cobrança Cora', [
+                    'status' => $response->status(),
+                    'body' => $errorBody,
+                    'json' => $errorJson,
+                    'headers' => $response->headers(),
+                    'certificate_path' => $this->certificatePath,
+                    'private_key_path' => $this->privateKeyPath,
+                    'client_id' => $this->clientId
+                ]);
             }
 
             return $response;
