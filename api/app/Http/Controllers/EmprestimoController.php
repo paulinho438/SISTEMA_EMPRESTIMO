@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\File;
 
 
 use App\Services\BcodexService;
+use App\Services\CoraService;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -94,6 +95,80 @@ class EmprestimoController extends Controller
         $this->custom_log = $custom_log;
         $this->bcodexService = $bcodexService;
         $this->wapiService = $wapiService;
+    }
+
+    /**
+     * Cria cobrança baseado no tipo de banco
+     * 
+     * @param float $valor Valor da cobrança
+     * @param \App\Models\Banco $banco Banco para criar a cobrança
+     * @param object|null $entidade Entidade relacionada (Parcela, Quitacao, PagamentoSaldoPendente, etc)
+     * @param string|null $txId Transaction ID para atualização (opcional)
+     * @return array|false Retorna array com dados da cobrança ou false em caso de erro
+     */
+    protected function criarCobrancaPorTipoBanco(float $valor, Banco $banco, $entidade = null, ?string $txId = null)
+    {
+        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+
+        if ($bankType === 'cora') {
+            // Usar CoraService para banco Cora
+            if (!$entidade || !$entidade->emprestimo || !$entidade->emprestimo->client) {
+                Log::error('Erro ao criar cobrança Cora: Entidade, empréstimo ou cliente não encontrado');
+                return false;
+            }
+
+            $coraService = new CoraService($banco);
+            $cliente = $entidade->emprestimo->client;
+            $code = $entidade->id . '_' . time(); // Código único para a cobrança
+            
+            // Tentar obter data de vencimento se a entidade tiver
+            $dueDate = null;
+            if (isset($entidade->venc_real) && $entidade->venc_real) {
+                $dueDate = is_string($entidade->venc_real) 
+                    ? date('Y-m-d', strtotime($entidade->venc_real))
+                    : $entidade->venc_real->format('Y-m-d');
+            }
+
+            $response = $coraService->criarCobranca($valor, $cliente, $code, $dueDate);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                $responseData = $response->json();
+                
+                // A API Cora retorna uma invoice, não um PIX diretamente
+                // Pode ser necessário ajustar conforme a resposta real da API
+                return [
+                    'success' => true,
+                    'invoice_id' => $responseData['id'] ?? $code,
+                    'code' => $code,
+                    'response' => $responseData
+                ];
+            } else {
+                Log::error('Erro ao criar cobrança Cora: ' . $response->body());
+                return false;
+            }
+        } elseif ($bankType === 'bcodex' || $banco->wallet == 1) {
+            // Usar BcodexService para banco Bcodex
+            $response = $this->bcodexService->criarCobranca($valor, $banco->document, $txId);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                $responseData = $response->json();
+                ControleBcodex::create(['identificador' => $responseData['txid']]);
+
+                return [
+                    'success' => true,
+                    'txid' => $responseData['txid'],
+                    'pixCopiaECola' => $responseData['pixCopiaECola'] ?? null,
+                    'response' => $responseData
+                ];
+            } else {
+                Log::error('Erro ao criar cobrança Bcodex: ' . ($response->body() ?? 'Resposta inválida'));
+                return false;
+            }
+        } else {
+            // Banco normal - não cria cobrança via API
+            Log::info('Banco normal - cobrança não criada via API');
+            return false;
+        }
     }
 
     public function enviarMensagemWAPITeste(Request $request)
@@ -2340,44 +2415,60 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         if ($parcela) {
             if ($parcela->ult_dt_geracao_pix) {
                 if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
-                    //API COBRANCA B.CODEX
-                    $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                    //API COBRANCA - Verifica tipo de banco
+                    $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $parcela->emprestimo->banco, $parcela);
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                    if ($result && $result['success']) {
+                        // Para Bcodex, salvar dados do PIX
+                        if (isset($result['pixCopiaECola'])) {
+                            $parcela->identificador = $result['txid'];
+                            $parcela->chave_pix = $result['pixCopiaECola'];
+                            $parcela->ult_dt_geracao_pix = $hoje;
+                            $parcela->save();
 
-                        $parcela->identificador = $response->json()['txid'];
-                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->ult_dt_geracao_pix = $hoje;
-                        $parcela->save();
+                            return ['chave_pix' => $result['pixCopiaECola']];
+                        } else {
+                            // Para Cora, salvar invoice_id
+                            $parcela->identificador = $result['invoice_id'] ?? $result['code'];
+                            $parcela->ult_dt_geracao_pix = $hoje;
+                            $parcela->save();
 
-                        return ['chave_pix' => $response->json()['pixCopiaECola']];
+                            return ['chave_pix' => 'Cobrança Cora criada: ' . ($result['invoice_id'] ?? $result['code'])];
+                        }
                     } else {
                         return response()->json([
                             "message" => "Erro ao gerar pagamento personalizado",
-                            "error" => $response->json()
+                            "error" => $result ?? 'Erro desconhecido'
                         ], Response::HTTP_FORBIDDEN);
                     }
                 } else {
                     return ['chave_pix' => $parcela->chave_pix];
                 }
             } else {
-                //API COBRANCA B.CODEX
-                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
+                //API COBRANCA - Verifica tipo de banco
+                $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $parcela->emprestimo->banco, $parcela);
 
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                if ($result && $result['success']) {
+                    // Para Bcodex, salvar dados do PIX
+                    if (isset($result['pixCopiaECola'])) {
+                        $parcela->identificador = $result['txid'];
+                        $parcela->chave_pix = $result['pixCopiaECola'];
+                        $parcela->ult_dt_geracao_pix = $hoje;
+                        $parcela->save();
 
-                    $parcela->identificador = $response->json()['txid'];
-                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                    $parcela->ult_dt_geracao_pix = $hoje;
-                    $parcela->save();
+                        return ['chave_pix' => $result['pixCopiaECola']];
+                    } else {
+                        // Para Cora, salvar invoice_id
+                        $parcela->identificador = $result['invoice_id'] ?? $result['code'];
+                        $parcela->ult_dt_geracao_pix = $hoje;
+                        $parcela->save();
 
-                    return ['chave_pix' => $response->json()['pixCopiaECola']];
+                        return ['chave_pix' => 'Cobrança Cora criada: ' . ($result['invoice_id'] ?? $result['code'])];
+                    }
                 } else {
                     return response()->json([
                         "message" => "Erro ao gerar cobrança",
-                        "error" => $response->json()
+                        "error" => $result ?? 'Erro desconhecido'
                     ], Response::HTTP_FORBIDDEN);
                 }
             }

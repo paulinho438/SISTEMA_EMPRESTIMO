@@ -15,12 +15,15 @@ class Banco extends Model
         'conta',
         'saldo',
         'wallet',
+        'bank_type',
         'document',
         'juros',
         'chavepix',
         'company_id',
         'info_recebedor_pix',
-        'accountId'
+        'accountId',
+        'client_id',
+        'certificate_path'
     ];
 
     public function company()
