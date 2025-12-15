@@ -22,12 +22,17 @@ export default {
 			toast: useToast()
 		};
 	},
-	data() {
+		data() {
 		return {
 			banco: ref({}),
 			oldCicom: ref(null),
 			errors: ref([]),
 			loading: ref(false),
+			bankTypes: [
+				{ label: 'Normal', value: 'normal' },
+				{ label: 'Bcodex', value: 'bcodex' },
+				{ label: 'Cora', value: 'cora' }
+			]
 		}
 	},
 	methods: {
@@ -55,6 +60,7 @@ export default {
 				});
 			}else{
 				this.banco.wallet = false;
+				this.banco.bank_type = 'normal';
 			}
 		
 			
@@ -74,6 +80,13 @@ export default {
 			this.errors = [];
 
 			this.banco.wallet = (this.banco.wallet) ? 1 : 0;
+			
+			// Se for bcodex, manter wallet = 1, se for cora ou normal, wallet = 0
+			if (this.banco.bank_type === 'bcodex') {
+				this.banco.wallet = 1;
+			} else {
+				this.banco.wallet = 0;
+			}
 
 			this.bancoService.saveComCertificado(this.banco)
 			.then((response) => {
@@ -193,24 +206,71 @@ export default {
 
 			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<h5>Wallet?</h5>
-					<InputSwitch :modelValue="banco?.wallet" v-model="banco.wallet" />
+					<label for="bank_type">Tipo de Banco</label>
+					<Dropdown 
+						:modelValue="banco?.bank_type || 'normal'" 
+						v-model="banco.bank_type" 
+						:options="bankTypes" 
+						optionLabel="label" 
+						optionValue="value"
+						placeholder="Selecione o tipo de banco"
+						class="w-full p-inputtext-sm"
+						:class="{ 'p-invalid': errors?.bank_type }"
+					/>
+					<small v-if="errors?.bank_type" class="text-red-500 pl-2">{{ errors?.bank_type[0] }}</small>
 				</div>
 			</div>
 
-			<div v-if="banco?.wallet" class="formgrid grid">
+			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<label for="name">B.CODEX Documento</label>
-					<InputText :modelValue="banco?.document" v-model="banco.document" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
-					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+					<h5>Wallet? (Bcodex)</h5>
+					<InputSwitch :modelValue="banco?.wallet" v-model="banco.wallet" :disabled="banco?.bank_type !== 'bcodex'" />
+					<small class="text-gray-500 pl-2">Ativo apenas para bancos Bcodex</small>
 				</div>
 			</div>
 
-			<div v-if="banco?.wallet" class="formgrid grid">
+			<!-- Campos Bcodex -->
+			<div v-if="banco?.bank_type === 'bcodex' || banco?.wallet" class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<label for="name">B.CODEX accountId</label>
-					<InputText :modelValue="banco?.accountId" v-model="banco.accountId" id="name" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }" />
-					<small v-if="errors?.name" class="text-red-500 pl-2">{{ errors?.name[0] }}</small>
+					<label for="document">B.CODEX Documento</label>
+					<InputText :modelValue="banco?.document" v-model="banco.document" id="document" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.document }" />
+					<small v-if="errors?.document" class="text-red-500 pl-2">{{ errors?.document[0] }}</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'bcodex' || banco?.wallet" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="accountId">B.CODEX accountId</label>
+					<InputText :modelValue="banco?.accountId" v-model="banco.accountId" id="accountId" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.accountId }" />
+					<small v-if="errors?.accountId" class="text-red-500 pl-2">{{ errors?.accountId[0] }}</small>
+				</div>
+			</div>
+
+			<!-- Campos Cora -->
+			<div v-if="banco?.bank_type === 'cora'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="client_id">Cora Client ID</label>
+					<InputText :modelValue="banco?.client_id" v-model="banco.client_id" id="client_id" type="text" class="w-full p-inputtext-sm" placeholder="Ex: int-3g1VYFU7tflsufR9ZrsUXp" :class="{ 'p-invalid': errors?.client_id }" />
+					<small v-if="errors?.client_id" class="text-red-500 pl-2">{{ errors?.client_id[0] }}</small>
+					<small class="text-gray-500 pl-2">Client ID fornecido pela Cora</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'cora'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="certificate_path">Caminho do Certificado</label>
+					<InputText :modelValue="banco?.certificate_path" v-model="banco.certificate_path" id="certificate_path" type="text" class="w-full p-inputtext-sm" placeholder="Ex: C:\projetos\...\certificate.pem" :class="{ 'p-invalid': errors?.certificate_path }" />
+					<small v-if="errors?.certificate_path" class="text-red-500 pl-2">{{ errors?.certificate_path[0] }}</small>
+					<small class="text-gray-500 pl-2">Caminho absoluto do arquivo certificate.pem</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'cora'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="private_key_path">Caminho da Chave Privada</label>
+					<InputText :modelValue="banco?.private_key_path" v-model="banco.private_key_path" id="private_key_path" type="text" class="w-full p-inputtext-sm" placeholder="Ex: C:\projetos\...\private-key.key" :class="{ 'p-invalid': errors?.private_key_path }" />
+					<small v-if="errors?.private_key_path" class="text-red-500 pl-2">{{ errors?.private_key_path[0] }}</small>
+					<small class="text-gray-500 pl-2">Caminho absoluto do arquivo private-key.key</small>
 				</div>
 			</div>
 

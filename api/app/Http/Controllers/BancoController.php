@@ -63,17 +63,29 @@ class BancoController extends Controller
             'agencia' => 'required',
             'conta' => 'required',
             'saldo' => 'required',
-            'wallet' => 'required',
         ]);
 
         $dados = $request->all();
         if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
+            
+            // Definir wallet baseado no bank_type se não foi informado
+            if (!isset($dados['wallet'])) {
+                $dados['wallet'] = ($dados['bank_type'] ?? 'normal') === 'bcodex' ? 1 : 0;
+            }
+            
+            // Definir bank_type padrão se não foi informado
+            if (!isset($dados['bank_type'])) {
+                $dados['bank_type'] = isset($dados['wallet']) && $dados['wallet'] == 1 ? 'bcodex' : 'normal';
+            }
 
             $newGroup = Banco::create($dados);
 
-            return $array;
+            return response()->json([
+                'data' => $newGroup,
+                'message' => 'Banco criado com sucesso!'
+            ], Response::HTTP_CREATED);
         } else {
             return response()->json([
                 "message" => $validator->errors()->first(),
@@ -98,7 +110,6 @@ class BancoController extends Controller
                 'agencia' => 'required',
                 'conta' => 'required',
                 'saldo' => 'required',
-                'wallet' => 'required',
             ]);
 
             $dados = $request->all();
@@ -110,13 +121,34 @@ class BancoController extends Controller
                 $EditBanco->agencia = $dados['agencia'];
                 $EditBanco->conta = $dados['conta'];
                 $EditBanco->saldo = $dados['saldo'];
-                $EditBanco->wallet = $dados['wallet'];
+                
+                // Definir wallet baseado no bank_type se não foi informado
+                if (isset($dados['bank_type'])) {
+                    $EditBanco->bank_type = $dados['bank_type'];
+                    $EditBanco->wallet = ($dados['bank_type'] === 'bcodex') ? 1 : 0;
+                } else {
+                    $EditBanco->wallet = $dados['wallet'] ?? 0;
+                    // Se wallet foi informado mas bank_type não, definir baseado no wallet
+                    if (!isset($EditBanco->bank_type)) {
+                        $EditBanco->bank_type = ($EditBanco->wallet == 1) ? 'bcodex' : 'normal';
+                    }
+                }
+                
                 $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'] ?? null;
                 $EditBanco->chavepix = $dados['chavepix'] ?? null;
+                $EditBanco->juros = $dados['juros'] ?? null;
 
-                if ($dados['wallet'] == 1) {
-                    $EditBanco->document = $dados['document'];
-                    $EditBanco->accountId = $dados['accountId'];
+                // Campos Bcodex
+                if (($EditBanco->bank_type ?? 'normal') === 'bcodex' || $EditBanco->wallet == 1) {
+                    $EditBanco->document = $dados['document'] ?? null;
+                    $EditBanco->accountId = $dados['accountId'] ?? null;
+                }
+
+                // Campos Cora
+                if (($EditBanco->bank_type ?? 'normal') === 'cora') {
+                    $EditBanco->client_id = $dados['client_id'] ?? null;
+                    $EditBanco->certificate_path = $dados['certificate_path'] ?? null;
+                    $EditBanco->private_key_path = $dados['private_key_path'] ?? null;
                 }
 
                 $EditBanco->save();
@@ -129,7 +161,10 @@ class BancoController extends Controller
 
             DB::commit();
 
-            return $array;
+            return response()->json([
+                'data' => $EditBanco,
+                'message' => 'Banco atualizado com sucesso!'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
 
