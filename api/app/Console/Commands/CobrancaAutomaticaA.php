@@ -103,12 +103,22 @@ class CobrancaAutomaticaA extends Command
     private function processarParcela($parcela)
     {
         if (!$this->deveProcessarParcela($parcela)) {
+            Log::info('CobrancaAutomaticaA: deveProcessarParcela retornou false', [
+                'parcela_id'   => $parcela->id ?? null,
+                'emprestimo_id'=> $parcela->emprestimo->id ?? null,
+                'company_id'   => $parcela->emprestimo->company->id ?? null,
+            ]);
             return;
         }
 
         $company = $parcela->emprestimo->company;
 
         if ($this->emprestimoEmProtesto($parcela)) {
+            Log::info('CobrancaAutomaticaA: empréstimo em protesto, ignorando parcela', [
+                'parcela_id'   => $parcela->id ?? null,
+                'emprestimo_id'=> $parcela->emprestimo->id ?? null,
+                'company_id'   => $company->id ?? null,
+            ]);
             return;
         }
 
@@ -117,8 +127,21 @@ class CobrancaAutomaticaA extends Command
          * usamos essa API. Caso contrário, mantemos o fluxo antigo.
          */
         if (!empty($company->whatsapp_cloud_phone_number_id) && !empty($company->whatsapp_cloud_token)) {
+            Log::info('CobrancaAutomaticaA: usando WhatsApp Cloud', [
+                'parcela_id'     => $parcela->id ?? null,
+                'emprestimo_id'  => $parcela->emprestimo->id ?? null,
+                'company_id'     => $company->id ?? null,
+                'phone_number_id'=> $company->whatsapp_cloud_phone_number_id,
+            ]);
             $this->enviarMensagemWhatsAppCloud($parcela);
         } else {
+            Log::info('CobrancaAutomaticaA: usando API antiga de WhatsApp', [
+                'parcela_id'    => $parcela->id ?? null,
+                'emprestimo_id' => $parcela->emprestimo->id ?? null,
+                'company_id'    => $company->id ?? null,
+                'whatsapp'      => $company->whatsapp ?? null,
+                'whatsapp_cobranca' => $company->whatsapp_cobranca ?? null,
+            ]);
             $this->enviarMensagemAPIAntiga($parcela);
         }
     }
@@ -131,9 +154,23 @@ class CobrancaAutomaticaA extends Command
         $temWhatsappAntigo = isset($company->whatsapp) || isset($company->whatsapp_cobranca);
         $temWhatsappCloud  = !empty($company->whatsapp_cloud_phone_number_id) && !empty($company->whatsapp_cloud_token);
 
-        return ($temWhatsappAntigo || $temWhatsappCloud) &&
+        $pode = ($temWhatsappAntigo || $temWhatsappCloud) &&
             $parcela->emprestimo->contaspagar &&
             $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado";
+
+        if (!$pode) {
+            Log::info('CobrancaAutomaticaA: parcela não será processada (sem config WhatsApp ou sem contaspagar pago)', [
+                'parcela_id'          => $parcela->id ?? null,
+                'emprestimo_id'       => $parcela->emprestimo->id ?? null,
+                'company_id'          => $company->id ?? null,
+                'tem_whatsapp_antigo' => $temWhatsappAntigo,
+                'tem_whatsapp_cloud'  => $temWhatsappCloud,
+                'tem_contaspagar'     => (bool)($parcela->emprestimo->contaspagar ?? null),
+                'status_contaspagar'  => $parcela->emprestimo->contaspagar->status ?? null,
+            ]);
+        }
+
+        return $pode;
     }
 
     private function emprestimoEmProtesto($parcela)
@@ -343,6 +380,14 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         // Usa whatsapp_cobranca se disponível, senão usa whatsapp padrão
         $baseUrl = $parcela->emprestimo->company->whatsapp_cobranca ?? $parcela->emprestimo->company->whatsapp;
 
+        Log::info('CobrancaAutomaticaA: enviarMensagemAPIAntiga - início', [
+            'parcela_id'    => $parcela->id ?? null,
+            'emprestimo_id' => $parcela->emprestimo->id ?? null,
+            'company_id'    => $parcela->emprestimo->company->id ?? null,
+            'telefone'      => $telefone,
+            'base_url'      => $baseUrl,
+        ]);
+
 
 
         $saudacao = $this->obterSaudacao();
@@ -353,7 +398,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             "mensagem" => $mensagem
         ];
 
-        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        try {
+            $response = Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+            Log::info('CobrancaAutomaticaA: enviarMensagemAPIAntiga - resposta mensagem', [
+                'status'  => $response->status(),
+                'body'    => $response->body(),
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('CobrancaAutomaticaA: erro ao enviar mensagem na API antiga', [
+                'exception' => $th->getMessage(),
+            ]);
+        }
         sleep(4);
         if($parcela->emprestimo->company->mensagem_audio) {
             if($parcela->atrasadas > 0) {
@@ -388,7 +443,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         "tipo" => $tipo
                     ];
 
-                    Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+                    try {
+                        $responseAudio = Http::asJson()->post("$baseUrl/enviar-audio", $data2);
+                        Log::info('CobrancaAutomaticaA: enviarMensagemAPIAntiga - resposta audio atraso', [
+                            'status' => $responseAudio->status(),
+                            'body'   => $responseAudio->body(),
+                        ]);
+                    } catch (\Throwable $th) {
+                        Log::error('CobrancaAutomaticaA: erro ao enviar audio de atraso na API antiga', [
+                            'exception' => $th->getMessage(),
+                        ]);
+                    }
                 }
             }
         }
@@ -403,7 +468,17 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     "tipo" => "msginfo1"
                 ];
 
-                Http::asJson()->post("$baseUrl/enviar-audio", $data3);
+                try {
+                    $responsePrimeiro = Http::asJson()->post("$baseUrl/enviar-audio", $data3);
+                    Log::info('CobrancaAutomaticaA: enviarMensagemAPIAntiga - resposta audio primeira cobrança', [
+                        'status' => $responsePrimeiro->status(),
+                        'body'   => $responsePrimeiro->body(),
+                    ]);
+                } catch (\Throwable $th) {
+                    Log::error('CobrancaAutomaticaA: erro ao enviar audio de primeira cobrança na API antiga', [
+                        'exception' => $th->getMessage(),
+                    ]);
+                }
             }
         }
 
@@ -418,11 +493,21 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $company = $parcela->emprestimo->company;
 
         if (empty($company->whatsapp_cloud_phone_number_id) || empty($company->whatsapp_cloud_token)) {
+            Log::warning('CobrancaAutomaticaA: tentar usar WhatsApp Cloud sem configuração', [
+                'parcela_id'    => $parcela->id ?? null,
+                'emprestimo_id' => $parcela->emprestimo->id ?? null,
+                'company_id'    => $company->id ?? null,
+            ]);
             return;
         }
 
         $telefone = preg_replace('/\D/', '', (string)($parcela->emprestimo->client->telefone_celular_1 ?? ''));
         if (!$telefone) {
+            Log::warning('CobrancaAutomaticaA: WhatsApp Cloud sem telefone válido', [
+                'parcela_id'    => $parcela->id ?? null,
+                'emprestimo_id' => $parcela->emprestimo->id ?? null,
+                'company_id'    => $company->id ?? null,
+            ]);
             return;
         }
 
@@ -430,6 +515,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         // Monta a URL com o phone_number_id parametrizado
         $url = "https://graph.facebook.com/v22.0/{$company->whatsapp_cloud_phone_number_id}/messages";
+
+        Log::info('CobrancaAutomaticaA: enviarMensagemWhatsAppCloud - início', [
+            'parcela_id'      => $parcela->id ?? null,
+            'emprestimo_id'   => $parcela->emprestimo->id ?? null,
+            'company_id'      => $company->id ?? null,
+            'telefone'        => $telefoneCliente,
+            'phone_number_id' => $company->whatsapp_cloud_phone_number_id,
+            'url'             => $url,
+        ]);
 
         // Nome do cliente (no corpo do template)
         $nomeCliente = $parcela->emprestimo->client->nome_completo ?? '';
@@ -471,10 +565,21 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ],
         ];
 
-        Http::withHeaders([
-            'Authorization' => 'Bearer ' . $company->whatsapp_cloud_token,
-            'Content-Type'  => 'application/json',
-        ])->post($url, $payload);
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $company->whatsapp_cloud_token,
+                'Content-Type'  => 'application/json',
+            ])->post($url, $payload);
+
+            Log::info('CobrancaAutomaticaA: enviarMensagemWhatsAppCloud - resposta', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+        } catch (\Throwable $th) {
+            Log::error('CobrancaAutomaticaA: erro ao enviar mensagem via WhatsApp Cloud', [
+                'exception' => $th->getMessage(),
+            ]);
+        }
 
         // pequeno intervalo para evitar flood
         sleep(4);
