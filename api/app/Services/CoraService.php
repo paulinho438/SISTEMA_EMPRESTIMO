@@ -16,6 +16,11 @@ class CoraService
 
     public function __construct(?Banco $banco = null)
     {
+        // Para Integração Direta (usando certificado e chave privada):
+        // Stage: https://api.stage.cora.com.br
+        // Produção: https://api.cora.com.br
+        // Configure no .env: CORA_API_URL=https://api.cora.com.br (produção)
+        // ou CORA_API_URL=https://api.stage.cora.com.br (stage)
         $this->baseUrl = env('CORA_API_URL', 'https://api.stage.cora.com.br');
 
         if ($banco) {
@@ -49,11 +54,15 @@ class CoraService
         }
 
         // URL do servidor de autorização (diferente da API principal)
-        // Para stage: https://matls-clients.api.stage.cora.com.br/token
-        // Para production: https://matls-clients.api.cora.com.br/token
-        if (strpos($this->baseUrl, 'stage') !== false) {
+        // Para Integração Direta:
+        // Stage: https://matls-clients.api.stage.cora.com.br/token
+        // Produção: https://matls-clients.api.cora.com.br/token
+        $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
+        
+        if ($isStage) {
             $tokenUrl = 'https://matls-clients.api.stage.cora.com.br/token';
         } else {
+            // Produção
             $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
         }
 
