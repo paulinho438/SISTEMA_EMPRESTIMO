@@ -172,14 +172,13 @@ class CoraService
                 }
                 
                 // Autenticação mTLS com certificado e chave privada
-                // Guzzle aceita certificado como:
-                // 1. String (caminho do arquivo) - se cert e key estão no mesmo arquivo
-                // 2. Array [cert_path, key_path] - formato mais comum
-                // 3. Array [cert_path, key_path, password] - se a chave tem senha
+                // Guzzle requer 'cert' e 'ssl_key' separados:
+                // - 'cert' => caminho do certificado (ou array [cert_path, password] se tiver senha)
+                // - 'ssl_key' => caminho da chave privada (ou array [key_path, password] se tiver senha)
                 
-                // Tentar formato array primeiro (mais comum)
                 $httpClient = $httpClient->withOptions([
-                    'cert' => [$this->certificatePath, $this->privateKeyPath], // [cert_path, key_path]
+                    'cert' => $this->certificatePath, // Caminho do certificado
+                    'ssl_key' => $this->privateKeyPath, // Caminho da chave privada (separado)
                     'verify' => env('CORA_VERIFY_SSL', true), // Pode desabilitar para debug
                     'http_errors' => false, // Não lançar exceções para erros HTTP
                 ]);
