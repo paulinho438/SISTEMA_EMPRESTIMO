@@ -173,6 +173,7 @@ class CoraService
      * @param string $code Código único da cobrança (geralmente ID da parcela)
      * @param string|null $dueDate Data de vencimento no formato Y-m-d
      * @param array $services Array de serviços (opcional, padrão usa o valor principal)
+     * @param \App\Models\Parcela|null $parcela Parcela relacionada (opcional, para enviar WhatsApp)
      * @return \Illuminate\Http\Client\Response
      */
     public function criarCobranca(
@@ -180,7 +181,8 @@ class CoraService
         $cliente,
         string $code,
         ?string $dueDate = null,
-        ?array $services = null
+        ?array $services = null,
+        $parcela = null
     ) {
         try {
             // Converter valor para centavos (a API Cora espera em centavos)
@@ -340,6 +342,19 @@ class CoraService
                     'base_url' => $this->baseUrl,
                     'request_headers' => $headers
                 ]);
+            } else {
+                // Se a cobrança foi criada com sucesso, enviar WhatsApp
+                if ($parcela && $parcela->emprestimo && $parcela->emprestimo->company) {
+                    try {
+                        $this->enviarWhatsAppCobranca($parcela);
+                    } catch (\Exception $e) {
+                        // Log do erro mas não interrompe o fluxo
+                        Log::error('Erro ao enviar WhatsApp após criar cobrança Cora: ' . $e->getMessage(), [
+                            'parcela_id' => $parcela->id ?? null,
+                            'exception' => $e->getMessage()
+                        ]);
+                    }
+                }
             }
 
             return $response;
@@ -347,6 +362,140 @@ class CoraService
         } catch (\Exception $e) {
             Log::error('Erro ao criar cobrança Cora: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Envia mensagem WhatsApp via Facebook Graph API após criar cobrança
+     *
+     * @param \App\Models\Parcela $parcela Parcela relacionada à cobrança
+     * @return void
+     */
+    protected function enviarWhatsAppCobranca($parcela)
+    {
+        $company = $parcela->emprestimo->company;
+        
+        // Verificar se a company tem as configurações necessárias
+        if (!$company->whatsapp_cloud_phone_number_id || !$company->whatsapp_cloud_token) {
+            Log::warning('CoraService: WhatsApp Cloud não configurado para company', [
+                'company_id' => $company->id,
+                'parcela_id' => $parcela->id
+            ]);
+            return;
+        }
+
+        // Verificar se o cliente tem telefone
+        $telefone = preg_replace('/\D/', '', (string)($parcela->emprestimo->client->telefone_celular_1 ?? ''));
+        if (!$telefone || strlen($telefone) < 10) {
+            Log::warning('CoraService: WhatsApp Cloud sem telefone válido', [
+                'parcela_id' => $parcela->id,
+                'cliente_id' => $parcela->emprestimo->client->id ?? null
+            ]);
+            return;
+        }
+
+        $telefoneCliente = "55" . $telefone;
+
+        // URL da API do Facebook
+        $url = "https://graph.facebook.com/v22.0/{$company->whatsapp_cloud_phone_number_id}/messages";
+
+        // Nome do cliente
+        $nomeCliente = $parcela->emprestimo->client->nome_completo ?? 'Cliente';
+        
+        // Telefone formatado para exibição - usar numero_contato da company
+        $telefoneFormatado = $company->numero_contato ?? '';
+        // Formatar telefone: (61) 99330 - 5267
+        if (strlen($telefoneFormatado) >= 10) {
+            $telefoneFormatado = preg_replace('/\D/', '', $telefoneFormatado);
+            if (strlen($telefoneFormatado) == 11) {
+                $telefoneFormatado = '(' . substr($telefoneFormatado, 0, 2) . ') ' . 
+                                    substr($telefoneFormatado, 2, 5) . ' - ' .
+                                    substr($telefoneFormatado, 7);
+            } elseif (strlen($telefoneFormatado) == 10) {
+                $telefoneFormatado = '(' . substr($telefoneFormatado, 0, 2) . ') ' .
+                                    substr($telefoneFormatado, 2, 4) . ' - ' .
+                                    substr($telefoneFormatado, 6);
+            }
+        }
+
+        // Nome da empresa (header)
+        $nomeEmpresa = $company->company ?? 'Empresa';
+
+        // Link para a parcela
+        $linkParcela = "#/parcela/{$parcela->id}";
+
+        // Montar payload do template
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "to" => $telefoneCliente,
+            "type" => "template",
+            "template" => [
+                "name" => "utilidade_cuiabano",
+                "language" => [
+                    "code" => "pt_BR"
+                ],
+                "components" => [
+                    [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $nomeEmpresa
+                            ]
+                        ]
+                    ],
+                    [
+                        "type" => "body",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $nomeCliente
+                            ],
+                            [
+                                "type" => "text",
+                                "text" => $telefoneFormatado
+                            ]
+                        ]
+                    ],
+                    [
+                        "type" => "button",
+                        "sub_type" => "url",
+                        "index" => "0",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $linkParcela
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $company->whatsapp_cloud_token,
+                'Content-Type' => 'application/json',
+            ])->post($url, $payload);
+
+            if ($response->successful()) {
+                Log::info('CoraService: WhatsApp enviado com sucesso após criar cobrança', [
+                    'parcela_id' => $parcela->id,
+                    'telefone' => $telefoneCliente,
+                    'company_id' => $company->id
+                ]);
+            } else {
+                Log::error('CoraService: Erro ao enviar WhatsApp após criar cobrança', [
+                    'parcela_id' => $parcela->id,
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('CoraService: Exceção ao enviar WhatsApp após criar cobrança', [
+                'parcela_id' => $parcela->id,
+                'exception' => $e->getMessage()
+            ]);
         }
     }
 }

@@ -129,7 +129,14 @@ class EmprestimoController extends Controller
                     : $entidade->venc_real->format('Y-m-d');
             }
 
-            $response = $coraService->criarCobranca($valor, $cliente, $code, $dueDate);
+            // Passar a parcela para enviar WhatsApp após criar cobrança
+            $parcela = null;
+            if ($entidade && isset($entidade->id)) {
+                // Tentar encontrar a parcela pelo ID da entidade
+                $parcela = \App\Models\Parcela::with(['emprestimo.company'])->find($entidade->id);
+            }
+            
+            $response = $coraService->criarCobranca($valor, $cliente, $code, $dueDate, null, $parcela);
 
             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 $responseData = $response->json();
