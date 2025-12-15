@@ -163,12 +163,60 @@ class CoraService
                 file_exists($this->certificatePath) && file_exists($this->privateKeyPath)) {
                 
                 // Verificar se os arquivos são legíveis
-                if (!is_readable($this->certificatePath) || !is_readable($this->privateKeyPath)) {
+                $certReadable = is_readable($this->certificatePath);
+                $keyReadable = is_readable($this->privateKeyPath);
+                
+                if (!$certReadable || !$keyReadable) {
+                    // Obter informações detalhadas sobre permissões
+                    $certPerms = file_exists($this->certificatePath) ? substr(sprintf('%o', fileperms($this->certificatePath)), -4) : 'N/A';
+                    $keyPerms = file_exists($this->privateKeyPath) ? substr(sprintf('%o', fileperms($this->privateKeyPath)), -4) : 'N/A';
+                    
+                    // Tentar obter informações do dono (pode não estar disponível em todos os ambientes)
+                    $certOwner = 'N/A';
+                    $keyOwner = 'N/A';
+                    $currentUser = 'N/A';
+                    
+                    if (function_exists('posix_getpwuid')) {
+                        try {
+                            if (file_exists($this->certificatePath)) {
+                                $ownerInfo = posix_getpwuid(fileowner($this->certificatePath));
+                                $certOwner = $ownerInfo ? $ownerInfo['name'] : 'N/A';
+                            }
+                            if (file_exists($this->privateKeyPath)) {
+                                $ownerInfo = posix_getpwuid(fileowner($this->privateKeyPath));
+                                $keyOwner = $ownerInfo ? $ownerInfo['name'] : 'N/A';
+                            }
+                            $userInfo = posix_getpwuid(posix_geteuid());
+                            $currentUser = $userInfo ? $userInfo['name'] : 'N/A';
+                        } catch (\Exception $e) {
+                            // Ignorar erros de posix
+                        }
+                    }
+                    
                     Log::error('Certificados Cora não são legíveis', [
-                        'cert_readable' => is_readable($this->certificatePath),
-                        'key_readable' => is_readable($this->privateKeyPath)
+                        'cert_path' => $this->certificatePath,
+                        'key_path' => $this->privateKeyPath,
+                        'cert_exists' => file_exists($this->certificatePath),
+                        'key_exists' => file_exists($this->privateKeyPath),
+                        'cert_readable' => $certReadable,
+                        'key_readable' => $keyReadable,
+                        'cert_permissions' => $certPerms,
+                        'key_permissions' => $keyPerms,
+                        'cert_owner' => $certOwner,
+                        'key_owner' => $keyOwner,
+                        'current_user' => $currentUser
                     ]);
-                    throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
+                    
+                    $errorMsg = "Certificados Cora não são legíveis. ";
+                    $errorMsg .= "Certificado: " . ($certReadable ? "OK" : "NÃO LEGÍVEL (permissões: {$certPerms}, dono: {$certOwner})") . ". ";
+                    $errorMsg .= "Chave: " . ($keyReadable ? "OK" : "NÃO LEGÍVEL (permissões: {$keyPerms}, dono: {$keyOwner})") . ". ";
+                    if ($currentUser !== 'N/A') {
+                        $errorMsg .= "Usuário atual: {$currentUser}. ";
+                    }
+                    $errorMsg .= "Execute no servidor: chmod 600 {$this->certificatePath} {$this->privateKeyPath}";
+                    $errorMsg .= " e depois: chown www-data:www-data {$this->certificatePath} {$this->privateKeyPath}";
+                    
+                    throw new \Exception($errorMsg);
                 }
                 
                 // Autenticação mTLS com certificado e chave privada
