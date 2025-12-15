@@ -28,8 +28,9 @@ class Company extends Model
         'mensagem_audio',
         'token_api_wtz',
         'instance_id',
-        'whatsapp_cobranca'
-
+        'whatsapp_cobranca',
+        'whatsapp_cloud_phone_number_id',
+        'whatsapp_cloud_token',
     ];
 
     use HasFactory;

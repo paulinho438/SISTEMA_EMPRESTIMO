@@ -106,22 +106,32 @@ class CobrancaAutomaticaA extends Command
             return;
         }
 
+        $company = $parcela->emprestimo->company;
+
         if ($this->emprestimoEmProtesto($parcela)) {
             return;
         }
 
-        $this->enviarMensagemAPIAntiga($parcela);
-
-        // if($parcela->emprestimo->company->id == 8 || $parcela->emprestimo->company->id == 1) {
-        //     $this->enviarMensagemAPIAntiga($parcela);
-        // }else {
-        //     $this->enviarMensagem($parcela);
-        // }
+        /**
+         * Se a empresa tiver configurado o WhatsApp Cloud (Facebook Graph),
+         * usamos essa API. Caso contrário, mantemos o fluxo antigo.
+         */
+        if (!empty($company->whatsapp_cloud_phone_number_id) && !empty($company->whatsapp_cloud_token)) {
+            $this->enviarMensagemWhatsAppCloud($parcela);
+        } else {
+            $this->enviarMensagemAPIAntiga($parcela);
+        }
     }
 
     private function deveProcessarParcela($parcela)
     {
-        return isset($parcela->emprestimo->company->whatsapp) &&
+        $company = $parcela->emprestimo->company ?? null;
+
+        // Só processa se houver alguma configuração de WhatsApp (antiga ou Cloud)
+        $temWhatsappAntigo = isset($company->whatsapp) || isset($company->whatsapp_cobranca);
+        $temWhatsappCloud  = !empty($company->whatsapp_cloud_phone_number_id) && !empty($company->whatsapp_cloud_token);
+
+        return ($temWhatsappAntigo || $temWhatsappCloud) &&
             $parcela->emprestimo->contaspagar &&
             $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado";
     }
@@ -397,5 +407,76 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
         }
 
+    }
+
+    /**
+     * Envio via WhatsApp Cloud (Facebook Graph API).
+     * Os dados (phone_number_id e token) ficam parametrizados na tabela companies.
+     */
+    private function enviarMensagemWhatsAppCloud($parcela)
+    {
+        $company = $parcela->emprestimo->company;
+
+        if (empty($company->whatsapp_cloud_phone_number_id) || empty($company->whatsapp_cloud_token)) {
+            return;
+        }
+
+        $telefone = preg_replace('/\D/', '', (string)($parcela->emprestimo->client->telefone_celular_1 ?? ''));
+        if (!$telefone) {
+            return;
+        }
+
+        $telefoneCliente = "55" . $telefone;
+
+        // Monta a URL com o phone_number_id parametrizado
+        $url = "https://graph.facebook.com/v22.0/{$company->whatsapp_cloud_phone_number_id}/messages";
+
+        // Nome do cliente (no corpo do template)
+        $nomeCliente = $parcela->emprestimo->client->nome_completo ?? '';
+
+        // Link para a parcela (apenas o hash/rota, conforme exemplo enviado)
+        $linkParcela = "#/parcela/{$parcela->id}";
+
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "to"                => $telefoneCliente,
+            "type"              => "template",
+            "template"          => [
+                "name"     => "payment_overdue_1",
+                "language" => [
+                    "code" => "pt_BR",
+                ],
+                "components" => [
+                    [
+                        "type"       => "body",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $nomeCliente ?: 'Cliente',
+                            ],
+                        ],
+                    ],
+                    [
+                        "type"     => "button",
+                        "sub_type" => "url",
+                        "index"    => "0",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $linkParcela,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::withHeaders([
+            'Authorization' => 'Bearer ' . $company->whatsapp_cloud_token,
+            'Content-Type'  => 'application/json',
+        ])->post($url, $payload);
+
+        // pequeno intervalo para evitar flood
+        sleep(4);
     }
 }
