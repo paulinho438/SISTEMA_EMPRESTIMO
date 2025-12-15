@@ -60,7 +60,7 @@ class CoraService
         $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
         
         if ($isStage) {
-            $tokenUrl = 'https://matls-clients.api.stage.cora.com.br/token';
+            $tokenUrl = 'https://matls-clients.api.cora.cora.com.br/token';
         } else {
             // Produção
             $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
