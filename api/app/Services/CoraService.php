@@ -53,14 +53,15 @@ class CoraService
             $documentType = strlen($document) === 11 ? 'CPF' : 'CNPJ';
 
             // Preparar dados do endereço
+            // Se o cliente não tiver endereço, usar valores padrão
             $addressData = [
-                'street' => $endereco->address ?? 'N/A',
-                'number' => $endereco->number ?? 'N/A',
-                'district' => $endereco->neighborhood ?? 'N/A',
-                'city' => $endereco->city ?? 'N/A',
-                'state' => 'SP', // Default, pode ser ajustado
-                'complement' => $endereco->complement ?? 'N/A',
-                'zip_code' => preg_replace('/\D/', '', $endereco->cep ?? '00000000')
+                'street' => $endereco ? ($endereco->address ?? 'N/A') : 'N/A',
+                'number' => $endereco ? ($endereco->number ?? 'N/A') : 'N/A',
+                'district' => $endereco ? ($endereco->neighborhood ?? 'N/A') : 'N/A',
+                'city' => $endereco ? ($endereco->city ?? 'N/A') : 'N/A',
+                'state' => $endereco ? ($endereco->state ?? 'SP') : 'SP', // Default SP
+                'complement' => $endereco ? ($endereco->complement ?? 'N/A') : 'N/A',
+                'zip_code' => $endereco ? preg_replace('/\D/', '', $endereco->cep ?? '00000000') : '00000000'
             ];
 
             // Preparar serviços
