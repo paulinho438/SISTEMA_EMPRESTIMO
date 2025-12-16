@@ -283,6 +283,27 @@ class CoraService
                 }
             }
 
+            // Verificar se temos certificados configurados ANTES de obter o token (obrigatório para integração direta)
+            if (!$this->certificatePath || !$this->privateKeyPath) {
+                throw new \Exception('Certificados Cora não configurados no banco. Verifique se certificate_path e private_key_path estão preenchidos no banco.');
+            }
+            
+            if (!file_exists($this->certificatePath) || !file_exists($this->privateKeyPath)) {
+                $missing = [];
+                if (!file_exists($this->certificatePath)) {
+                    $missing[] = "certificado: {$this->certificatePath}";
+                }
+                if (!file_exists($this->privateKeyPath)) {
+                    $missing[] = "chave privada: {$this->privateKeyPath}";
+                }
+                throw new \Exception('Arquivos de certificado Cora não encontrados: ' . implode(', ', $missing));
+            }
+
+            // Verificar se os arquivos são legíveis
+            if (!is_readable($this->certificatePath) || !is_readable($this->privateKeyPath)) {
+                throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
+            }
+
             // Para Integração Direta, TODAS as requisições devem usar matls-clients no endpoint
             // Stage: https://matls-clients.api.stage.cora.com.br/v2/invoices
             // Produção: https://matls-clients.api.cora.com.br/v2/invoices
@@ -295,18 +316,8 @@ class CoraService
             }
 
             // Obter token de acesso (usando Client Credentials)
+            // Nota: getAccessToken() também valida os certificados, mas já validamos acima para dar erro mais claro
             $accessToken = $this->getAccessToken();
-
-            // Verificar se temos certificados configurados (obrigatório para integração direta)
-            if (!$this->certificatePath || !$this->privateKeyPath ||
-                !file_exists($this->certificatePath) || !file_exists($this->privateKeyPath)) {
-                throw new \Exception('Certificados Cora não configurados para criar cobrança. Integração direta requer certificado e chave privada em todas as requisições.');
-            }
-
-            // Verificar se os arquivos são legíveis
-            if (!is_readable($this->certificatePath) || !is_readable($this->privateKeyPath)) {
-                throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
-            }
 
             // Preparar headers
             $headers = [
