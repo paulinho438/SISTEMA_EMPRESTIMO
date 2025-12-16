@@ -17,10 +17,12 @@ class CoraService
     public function __construct(?Banco $banco = null)
     {
         // Para Integração Direta (usando certificado e chave privada):
-        // Stage: https://api.stage.cora.com.br
-        // Produção: https://api.cora.com.br
-        // Configure no .env: CORA_API_URL=https://api.cora.com.br (produção)
-        // ou CORA_API_URL=https://api.stage.cora.com.br (stage)
+        // IMPORTANTE: Todas as requisições devem usar matls-clients no endpoint
+        // Stage: https://matls-clients.api.stage.cora.com.br
+        // Produção: https://matls-clients.api.cora.com.br
+        // Configure no .env: CORA_API_URL=https://api.cora.com.br (produção - usado apenas para detecção de ambiente)
+        // ou CORA_API_URL=https://api.stage.cora.com.br (stage - usado apenas para detecção de ambiente)
+        // O endpoint real será construído automaticamente com matls-clients
         $this->baseUrl = env('CORA_API_URL', 'https://api.cora.com.br');
 
         if ($banco) {
@@ -60,7 +62,7 @@ class CoraService
         $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
         
         if ($isStage) {
-            $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
+            $tokenUrl = 'https://matls-clients.api.stage.cora.com.br/token';
         } else {
             // Produção
             $tokenUrl = 'https://matls-clients.api.cora.com.br/token';
@@ -281,21 +283,30 @@ class CoraService
                 }
             }
 
-            // A URL da API é diferente da URL do token
-            // API: https://api.cora.com.br ou https://api.stage.cora.com.br
-            // Token: https://matls-clients.api.cora.com.br/token
-            $apiUrl = $this->baseUrl;
+            // Para Integração Direta, TODAS as requisições devem usar matls-clients no endpoint
+            // Stage: https://matls-clients.api.stage.cora.com.br/v2/invoices
+            // Produção: https://matls-clients.api.cora.com.br/v2/invoices
+            $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
             
-            // Se baseUrl for matls-clients, corrigir para api
-            if (strpos($apiUrl, 'matls-clients') !== false) {
-                $apiUrl = str_replace('matls-clients.api.', 'api.', $apiUrl);
-                $apiUrl = str_replace('matls-clients.api.stage.', 'api.stage.', $apiUrl);
+            if ($isStage) {
+                $url = 'https://matls-clients.api.stage.cora.com.br/v2/invoices';
+            } else {
+                $url = 'https://matls-clients.api.cora.com.br/v2/invoices';
             }
-            
-            $url = "{$apiUrl}/v2/invoices/";
 
             // Obter token de acesso (usando Client Credentials)
             $accessToken = $this->getAccessToken();
+
+            // Verificar se temos certificados configurados (obrigatório para integração direta)
+            if (!$this->certificatePath || !$this->privateKeyPath ||
+                !file_exists($this->certificatePath) || !file_exists($this->privateKeyPath)) {
+                throw new \Exception('Certificados Cora não configurados para criar cobrança. Integração direta requer certificado e chave privada em todas as requisições.');
+            }
+
+            // Verificar se os arquivos são legíveis
+            if (!is_readable($this->certificatePath) || !is_readable($this->privateKeyPath)) {
+                throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
+            }
 
             // Preparar headers
             $headers = [
@@ -305,8 +316,11 @@ class CoraService
                 'content-type' => 'application/json'
             ];
 
-            // Configurar cliente HTTP (não precisa mais de mTLS para a API, apenas para obter o token)
+            // Configurar cliente HTTP com autenticação mTLS (obrigatório para integração direta)
             $httpClient = Http::withHeaders($headers)->withOptions([
+                'cert' => $this->certificatePath,
+                'ssl_key' => $this->privateKeyPath,
+                'verify' => env('CORA_VERIFY_SSL', true),
                 'http_errors' => false, // Não lançar exceções para erros HTTP
             ]);
 
