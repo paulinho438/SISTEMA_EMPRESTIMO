@@ -525,29 +525,62 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             'url'             => $url,
         ]);
 
-        // Nome do cliente (no corpo do template)
-        $nomeCliente = $parcela->emprestimo->client->nome_completo ?? '';
+        // Nome do cliente
+        $nomeCliente = $parcela->emprestimo->client->nome_completo ?? 'Cliente';
+        
+        // Telefone formatado para exibição - usar numero_contato da company
+        $telefoneFormatado = $company->numero_contato ?? '';
+        // Formatar telefone: (61) 99330 - 5267
+        if (strlen($telefoneFormatado) >= 10) {
+            $telefoneFormatado = preg_replace('/\D/', '', $telefoneFormatado);
+            if (strlen($telefoneFormatado) == 11) {
+                $telefoneFormatado = '(' . substr($telefoneFormatado, 0, 2) . ') ' .
+                                    substr($telefoneFormatado, 2, 5) . ' - ' .
+                                    substr($telefoneFormatado, 7);
+            } elseif (strlen($telefoneFormatado) == 10) {
+                $telefoneFormatado = '(' . substr($telefoneFormatado, 0, 2) . ') ' .
+                                    substr($telefoneFormatado, 2, 4) . ' - ' .
+                                    substr($telefoneFormatado, 6);
+            }
+        }
 
-        // Link para a parcela (apenas o hash/rota, conforme exemplo enviado)
+        // Nome da empresa (header)
+        $nomeEmpresa = $company->company ?? 'Empresa';
+
+        // Link para a parcela
         $linkParcela = "#/parcela/{$parcela->id}";
 
+        // Montar payload do template utilidade_cuiabano
         $payload = [
             "messaging_product" => "whatsapp",
             "to"                => $telefoneCliente,
             "type"              => "template",
             "template"          => [
-                "name"     => "payment_overdue_1",
+                "name"     => "utilidade_cuiabano",
                 "language" => [
                     "code" => "pt_BR",
                 ],
                 "components" => [
                     [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $nomeEmpresa
+                            ]
+                        ]
+                    ],
+                    [
                         "type"       => "body",
                         "parameters" => [
                             [
                                 "type" => "text",
-                                "text" => $nomeCliente ?: 'Cliente',
+                                "text" => $nomeCliente
                             ],
+                            [
+                                "type" => "text",
+                                "text" => $telefoneFormatado
+                            ]
                         ],
                     ],
                     [
