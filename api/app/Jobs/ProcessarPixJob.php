@@ -23,6 +23,27 @@ class ProcessarPixJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * The number of times the job may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 3;
+
+    /**
+     * The number of seconds the job can run before timing out.
+     *
+     * @var int
+     */
+    public $timeout = 600; // 10 minutos
+
+    /**
+     * The number of seconds to wait before retrying the job.
+     *
+     * @var int
+     */
+    public $backoff = 60;
+
     protected $emprestimo;
     protected $bcodexService;
 
@@ -68,8 +89,8 @@ class ProcessarPixJob implements ShouldQueue
                 $quality = 85;  // Qualidade máxima
                 $zoom = 1.5;     // Zoom de 2x
 
-                // Executar o comando wkhtmltoimage com ajustes
-                $command = "xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
+                // Executar o comando wkhtmltoimage com ajustes e timeout
+                $command = "timeout 120 xvfb-run wkhtmltoimage --width {$width} --height {$height} --quality {$quality} --zoom {$zoom} {$htmlFilePath} {$pngPath}";
                 shell_exec($command);
 
                 // Verificar se o PNG foi gerado
@@ -83,7 +104,7 @@ class ProcessarPixJob implements ShouldQueue
                         try {
                             $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                             // Enviar o PNG gerado para o endpoint
-                            $response = Http::attach(
+                            $response = Http::timeout(30)->attach(
                                 'arquivo', // Nome do campo no formulário
                                 fopen($pngPath, 'rb'), // Conteúdo do arquivo
                                 'comprovante.png' // Nome do arquivo enviado
@@ -91,6 +112,7 @@ class ProcessarPixJob implements ShouldQueue
                                 'numero' => "55" . $telefone,
                             ]);
                         } catch (\Exception $e) {
+                            Log::warning('Erro ao enviar comprovante via WhatsApp: ' . $e->getMessage());
                         }
                         
                     } else {
@@ -188,7 +210,10 @@ class ProcessarPixJob implements ShouldQueue
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Erro ao processar PIX: ' . $e->getMessage());
+            Log::error('Erro ao processar PIX: ' . $e->getMessage(), [
+                'emprestimo_id' => $this->emprestimo->id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }
@@ -216,15 +241,31 @@ class ProcessarPixJob implements ShouldQueue
                     $sucesso = true;
                 } else {
                     $tentativas++;
+                    // Adicionar delay entre tentativas para evitar sobrecarga
+                    if ($tentativas < $maxTentativas) {
+                        sleep(min($tentativas * 2, 10)); // Delay progressivo: 2s, 4s, 6s, 8s, max 10s
+                    }
                 }
             } catch (\Exception $e) {
-                Log::error('Erro ao processar cobrança: ' . $e->getMessage());
+                Log::error('Erro ao processar cobrança: ' . $e->getMessage(), [
+                    'tentativa' => $tentativas + 1,
+                    'max_tentativas' => $maxTentativas,
+                    'entidade_id' => $entidade->id ?? null
+                ]);
                 $tentativas++;
+                // Adicionar delay entre tentativas para evitar sobrecarga
+                if ($tentativas < $maxTentativas) {
+                    sleep(min($tentativas * 2, 10)); // Delay progressivo: 2s, 4s, 6s, 8s, max 10s
+                }
             }
 
             if (!$sucesso && $tentativas >= $maxTentativas) {
                 // Armazenar que não deu certo após 5 tentativas
-                Log::error('Falha ao processar cobrança após 5 tentativas.');
+                Log::error('Falha ao processar cobrança após 5 tentativas.', [
+                    'entidade_id' => $entidade->id ?? null,
+                    'valor' => $valor,
+                    'emprestimo_id' => $this->emprestimo->id ?? null
+                ]);
                 // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
             }
         }
@@ -335,7 +376,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                         // Enviar o vídeo MP4 para o endpoint
-                        $response = Http::attach(
+                        $response = Http::timeout(60)->attach(
                             'arquivo', // Nome do campo no formulário
                             file_get_contents($videoPath), // Conteúdo do arquivo
                             'video.mp4' // Nome do arquivo enviado
@@ -366,7 +407,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         if (isset($parcela->emprestimo->company->whatsapp)) {
             try {
-                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+                $response = Http::timeout(30)->get($parcela->emprestimo->company->whatsapp . '/logar');
 
                 if ($response->successful()) {
                     $r = $response->json();
@@ -399,7 +440,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             "mensagem" => $frase
                         ];
 
-                        $response = Http::asJson()->post($baseUrl, $data);
+                        $response = Http::timeout(30)->asJson()->post($baseUrl, $data);
                         sleep(2);
                     }
                 }
@@ -413,7 +454,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         if (isset($parcela->emprestimo->company->whatsapp)) {
             try {
-                $response = Http::get($parcela->emprestimo->company->whatsapp . '/logar');
+                $response = Http::timeout(30)->get($parcela->emprestimo->company->whatsapp . '/logar');
 
                 if ($response->successful()) {
                     $r = $response->json();
@@ -429,7 +470,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             "nomeCliente" => "Sistema"
                         ];
 
-                        $response = Http::asJson()->post($baseUrl, $data);
+                        $response = Http::timeout(30)->asJson()->post($baseUrl, $data);
                         sleep(2);
                     }
                 }
@@ -474,7 +515,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             "mensagem" => $link
                         ];
 
-                        $response = Http::asJson()->post($baseUrl, $data);
+                        $response = Http::timeout(30)->asJson()->post($baseUrl, $data);
                         sleep(2);
                     }
                 }
@@ -498,7 +539,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
                         // Enviar o vídeo MP4 para o endpoint
-                        $response = Http::attach(
+                        $response = Http::timeout(60)->attach(
                             'arquivo', // Nome do campo no formulário
                             file_get_contents($videoPath), // Conteúdo do arquivo
                             'video.mp4' // Nome do arquivo enviado
