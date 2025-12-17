@@ -1292,7 +1292,7 @@ class EmprestimoController extends Controller
     public function envioMensagem($parcela)
     {
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-        $baseUrl = $parcela->emprestimo->company->whatsapp . '/enviar-mensagem';
+        $baseUrl = $parcela->emprestimo->company->whatsapp;
 
         $saudacao = self::obterSaudacao();
 
@@ -1315,9 +1315,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         $telefoneCliente = "55" . $telefone;
 
-        $company = $parcela->emprestimo->company;
+        $data = [
+            "numero" => $telefoneCliente,
+            "mensagem" => $frase
+        ];
 
-        $envio = $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, ["phone" => $telefoneCliente, "message" => $frase]);
+        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
     }
 
     function encontrarPrimeiraParcelaPendente($parcelas)
