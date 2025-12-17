@@ -443,11 +443,11 @@ class CoraService
             }
         }
 
-        // Nome da empresa (header)
-        $nomeEmpresa = $company->company ?? 'Empresa';
-
         // Link para a parcela
         $linkParcela = "#/parcela/{$parcela->id}";
+
+        // Selecionar imagem baseada no company_id
+        $imagemLink = $this->obterImagemPorCompany($company->id);
 
         // Montar payload do template
         $payload = [
@@ -455,7 +455,7 @@ class CoraService
             "to" => $telefoneCliente,
             "type" => "template",
             "template" => [
-                "name" => "utilidade_cuiabano",
+                "name" => "lembrete_melhorado_cui",
                 "language" => [
                     "code" => "pt_BR"
                 ],
@@ -464,8 +464,10 @@ class CoraService
                         "type" => "header",
                         "parameters" => [
                             [
-                                "type" => "text",
-                                "text" => $nomeEmpresa
+                                "type" => "image",
+                                "image" => [
+                                    "link" => $imagemLink
+                                ]
                             ]
                         ]
                     ],
@@ -521,6 +523,26 @@ class CoraService
                 'parcela_id' => $parcela->id,
                 'exception' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Obtém a URL da imagem baseada no company_id
+     *
+     * @param int $companyId ID da company
+     * @return string URL da imagem
+     */
+    protected function obterImagemPorCompany($companyId)
+    {
+        switch ($companyId) {
+            case 8:
+                return 'https://i.ibb.co/LBS8kpn/CUIABANO.jpg';
+            case 1:
+                return 'https://i.ibb.co/HDrndk9s/PAULISTA.jpg';
+            case 9:
+                return 'https://i.ibb.co/mrMp8qF1/RJEMPRESTIMO.jpg';
+            default:
+                return 'https://i.ibb.co/mrMp8qF1/RJEMPRESTIMO.jpg';
         }
     }
 }
