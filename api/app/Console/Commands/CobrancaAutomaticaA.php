@@ -544,19 +544,19 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
         }
 
-        // Nome da empresa (header)
-        $nomeEmpresa = $company->company ?? 'Empresa';
-
         // Link para a parcela
         $linkParcela = "#/parcela/{$parcela->id}";
 
-        // Montar payload do template utilidade_cuiabano
+        // Selecionar imagem baseada no company_id
+        $imagemLink = $this->obterImagemPorCompany($company->id);
+
+        // Montar payload do template lembrete_melhorado_cui
         $payload = [
             "messaging_product" => "whatsapp",
             "to"                => $telefoneCliente,
             "type"              => "template",
             "template"          => [
-                "name"     => "utilidade_cuiabano",
+                "name"     => "lembrete_melhorado_cui",
                 "language" => [
                     "code" => "pt_BR",
                 ],
@@ -565,8 +565,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         "type" => "header",
                         "parameters" => [
                             [
-                                "type" => "text",
-                                "text" => $nomeEmpresa
+                                "type" => "image",
+                                "image" => [
+                                    "link" => $imagemLink
+                                ]
                             ]
                         ]
                     ],
@@ -616,5 +618,25 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         // pequeno intervalo para evitar flood
         sleep(4);
+    }
+
+    /**
+     * Obtém a URL da imagem baseada no company_id
+     *
+     * @param int $companyId ID da company
+     * @return string URL da imagem
+     */
+    protected function obterImagemPorCompany($companyId)
+    {
+        switch ($companyId) {
+            case 8:
+                return 'https://i.ibb.co/LBS8kpn/CUIABANO.jpg';
+            case 1:
+                return 'https://i.ibb.co/HDrndk9s/PAULISTA.jpg';
+            case 9:
+                return 'https://i.ibb.co/mrMp8qF1/RJEMPRESTIMO.jpg';
+            default:
+                return 'https://i.ibb.co/mrMp8qF1/RJEMPRESTIMO.jpg';
+        }
     }
 }
