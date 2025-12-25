@@ -27,7 +27,8 @@ class Kernel extends ConsoleKernel
         Commands\MensagemAutomaticaRenovacao::class,
         Commands\BackupClientes::class,
         Commands\ProcessarWebhookCobranca::class,
-        Commands\RetirarProtestoEmprestimo::class
+        Commands\RetirarProtestoEmprestimo::class,
+        Commands\CorrigirDatasVencimentoFeriados::class
 
     ];
 
@@ -78,6 +79,18 @@ class Kernel extends ConsoleKernel
         $schedule->command('retirarProtesto:Emprestimo')->everyMinute()->withoutOverlapping();
 
         $schedule->command('rotina:envioMensagemRenovacao')->everyMinute()->withoutOverlapping();
+
+        // Corrigir datas de vencimento que caem em feriados
+        $schedule->command('corrigir:datas-vencimento-feriados 0')->dailyAt('02:00')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 1')->dailyAt('02:05')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 2')->dailyAt('02:10')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 3')->dailyAt('02:15')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 4')->dailyAt('02:20')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 5')->dailyAt('02:25')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 6')->dailyAt('02:30')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 7')->dailyAt('02:35')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 8')->dailyAt('02:40')->withoutOverlapping();
+        $schedule->command('corrigir:datas-vencimento-feriados 9')->dailyAt('02:45')->withoutOverlapping();
 
 
     }
