@@ -163,6 +163,12 @@ export default {
                 });
             }
 
+            contextMenuItems.push({
+                label: 'Refazer Data Vencimento Real',
+                icon: 'pi pi-calendar',
+                command: () => this.refazerDatasVencimentoReal(data.id)
+            });
+
             return contextMenuItems;
         },
         formatValorReal(r) {
@@ -290,6 +296,31 @@ export default {
                     this.toast.add({
                         severity: ToastSeverity.ERROR,
                         detail: UtilService.message(error.response.data),
+                        life: 3000
+                    });
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
+        },
+        refazerDatasVencimentoReal(emprestimoId) {
+            this.loading = true;
+
+            this.emprestimoService
+                .refazerDatasVencimentoReal(emprestimoId)
+                .then((e) => {
+                    console.log(e);
+                    this.toast.add({
+                        severity: ToastSeverity.SUCCESS,
+                        detail: e?.data?.message || 'Datas de vencimento real recalculadas com sucesso',
+                        life: 3000
+                    });
+                    this.getEmprestimos();
+                })
+                .catch((error) => {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: UtilService.message(error.response?.data || error),
                         life: 3000
                     });
                 })

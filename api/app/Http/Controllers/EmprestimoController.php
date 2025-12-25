@@ -4109,6 +4109,127 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         return true;
     }
 
+    public function refazerDatasVencimentoReal(Request $request, $id)
+    {
+        try {
+            $emprestimo = Emprestimo::with(['parcelas', 'company'])->find($id);
+
+            if (!$emprestimo) {
+                return response()->json([
+                    'error' => 'Empréstimo não encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $companyId = $request->header('company-id');
+            if ($emprestimo->company_id != $companyId) {
+                return response()->json([
+                    'error' => 'Empréstimo não pertence a esta empresa'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Buscar todos os feriados da empresa
+            $feriados = Feriado::where('company_id', $companyId)
+                ->pluck('data_feriado')
+                ->map(function ($date) {
+                    return Carbon::parse($date)->format('Y-m-d');
+                })
+                ->toArray();
+
+            // Buscar parcelas ordenadas por número de parcela (apenas não pagas)
+            $parcelas = $emprestimo->parcelas()
+                ->whereNull('dt_baixa')
+                ->orderBy('parcela')
+                ->get();
+
+            if ($parcelas->isEmpty()) {
+                return response()->json([
+                    'error' => 'Não há parcelas pendentes para recalcular'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Calcular intervalo entre parcelas baseado na diferença entre venc (data teórica)
+            $intervalo = 0;
+            if ($parcelas->count() >= 2) {
+                $primeiraParcela = $parcelas->first();
+                $segundaParcela = $parcelas->skip(1)->first();
+                $data1 = Carbon::parse($primeiraParcela->venc);
+                $data2 = Carbon::parse($segundaParcela->venc);
+                $intervalo = $data1->diffInDays($data2);
+            } else {
+                // Se tiver apenas uma parcela, calcular baseado na data de lançamento
+                $primeiraParcela = $parcelas->first();
+                $dataLanc = Carbon::parse($emprestimo->dt_lancamento);
+                $dataVenc = Carbon::parse($primeiraParcela->venc);
+                $intervalo = $dataLanc->diffInDays($dataVenc);
+            }
+
+            // Se ainda não tiver intervalo, usar 30 dias como padrão
+            if ($intervalo <= 0) {
+                $intervalo = 30;
+            }
+
+            // Função auxiliar para verificar se é feriado
+            $isFeriado = function ($date) use ($feriados) {
+                $dateString = Carbon::parse($date)->format('Y-m-d');
+                return in_array($dateString, $feriados);
+            };
+
+            // Função para encontrar o próximo dia útil (não feriado)
+            $proximoDiaUtil = function ($date) use ($isFeriado) {
+                $currentDate = Carbon::parse($date);
+                do {
+                    $currentDate->addDay();
+                } while ($isFeriado($currentDate));
+
+                return $currentDate;
+            };
+
+            // Recalcular as datas de vencimento real
+            // Começar da primeira parcela e ir ajustando sequencialmente
+            $dataBaseAnterior = null;
+
+            foreach ($parcelas as $index => $parcela) {
+                if ($index === 0) {
+                    // Primeira parcela: usar a data de vencimento teórica (venc)
+                    $novaDataVencReal = Carbon::parse($parcela->venc);
+                } else {
+                    // Parcelas seguintes: calcular baseado na data ajustada da parcela anterior + intervalo
+                    $novaDataVencReal = $dataBaseAnterior->copy()->addDays($intervalo);
+                }
+
+                // Verificar se cai em feriado e ajustar se necessário
+                while ($isFeriado($novaDataVencReal)) {
+                    $novaDataVencReal = $proximoDiaUtil($novaDataVencReal);
+                }
+
+                // Atualizar a parcela
+                $parcela->venc_real = $novaDataVencReal->format('Y-m-d');
+                $parcela->save();
+
+                // Atualizar data base para próxima parcela
+                $dataBaseAnterior = $novaDataVencReal->copy();
+            }
+
+            // Log da ação
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' refez as datas de vencimento real do empréstimo ID: ' . $id,
+                'operation' => 'refazer_datas_vencimento_real'
+            ]);
+
+            return response()->json([
+                'message' => 'Datas de vencimento real recalculadas com sucesso',
+                'parcelas_atualizadas' => $parcelas->count()
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao refazer datas de vencimento real: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Erro ao processar a solicitação: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private function enviarMensagemAPIAntiga($parcela, $frase)
     {
         try {

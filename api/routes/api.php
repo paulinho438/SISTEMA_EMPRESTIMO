@@ -302,6 +302,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/testebank', [EmprestimoController::class, 'testeBank']);
 
     Route::get('/recalcularparcelas', [EmprestimoController::class, 'recalcularParcelas']);
+    Route::post('/emprestimo/{id}/refazer-datas-vencimento-real', [EmprestimoController::class, 'refazerDatasVencimentoReal']);
 
     Route::get('/feriado', [FeriadoController::class, 'all']);
     Route::get('/feriado/{id}', [FeriadoController::class, 'id']);
