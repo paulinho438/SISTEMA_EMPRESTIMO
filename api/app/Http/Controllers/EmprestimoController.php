@@ -4214,7 +4214,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' refez as datas de vencimento real do empréstimo ID: ' . $id,
-                'operation' => 'refazer_datas_vencimento_real'
+                'operation' => 'update'
             ]);
 
             return response()->json([
