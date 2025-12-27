@@ -33,7 +33,8 @@ class User extends Authenticatable implements JWTSubject
         'status',
         'status_motivo',
         'tentativas',
-        'password'
+        'password',
+        'last_token_jti'
     ];
 
     public function getJWTIdentifier()

@@ -172,8 +172,16 @@ class AuthController extends Controller
             $array['token'] = $token;
             $array['user'] = new LoginResource(auth()->user());
 
-            auth()->user()->update(['device_token'=>$request->device_token]);
-            auth()->user()->update(['tentativas'  => 0 ]);
+            // Obter o jti do token gerado para invalidar tokens anteriores
+            $payload = auth()->payload();
+            $tokenJti = $payload->get('jti');
+
+            // Atualizar o último token válido (isso invalida tokens anteriores)
+            auth()->user()->update([
+                'device_token' => $request->device_token,
+                'tentativas' => 0,
+                'last_token_jti' => $tokenJti
+            ]);
 
             if(auth()->user()->status == 'I'){
                 return response()->json([

@@ -108,11 +108,11 @@ Route::post('/parcela/{id}/gerarpixpagamentoparcela', [EmprestimoController::cla
 Route::post('/parcela/{id}/gerarpixpagamentoquitacao', [EmprestimoController::class, 'gerarPixPagamentoQuitacao']);
 Route::post('/parcela/{id}/gerarpixpagamentosaldopendente', [EmprestimoController::class, 'gerarPixPagamentoSaldoPendente']);
 
-Route::middleware('auth:clientes')->group(function () {
+Route::middleware(['auth:clientes', 'single.token'])->group(function () {
     Route::get('/clientes/app/emprestimos_andamento', [ClientController::class, 'buscarEmprestimosAndamento']);
 });
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/dashboard/info-conta', [DashboardController::class, 'infoConta']);
 
 
