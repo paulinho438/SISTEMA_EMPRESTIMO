@@ -4166,6 +4166,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             // Recalcular as datas de vencimento real
             // Baseado na diferença de dias entre as colunas venc de cada parcela
+            $hoje = Carbon::now()->startOfDay();
             $dataVencRealAnterior = null;
 
             foreach ($parcelas as $index => $parcela) {
@@ -4190,6 +4191,18 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $novaDataVencReal = $proximoDiaUtil($novaDataVencReal);
                 }
 
+                // Recalcular o campo atrasadas baseado na diferença entre hoje e o novo venc_real
+                $dataVencReal = $novaDataVencReal->startOfDay();
+                
+                if ($dataVencReal->lessThan($hoje)) {
+                    // Parcela está vencida: calcular dias de atraso
+                    $diasAtraso = $dataVencReal->diffInDays($hoje);
+                    $parcela->atrasadas = max(0, $diasAtraso);
+                } else {
+                    // Parcela não está vencida: zerar atrasadas
+                    $parcela->atrasadas = 0;
+                }
+
                 // Atualizar a parcela
                 $parcela->venc_real = $novaDataVencReal->format('Y-m-d');
                 $parcela->save();
@@ -4199,7 +4212,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
 
             // Verificar se há multas aplicadas e reverter para valor original se a parcela não estiver vencida
-            $hoje = Carbon::now()->startOfDay();
             $parcelasComMultaRevertida = 0;
 
             foreach ($parcelas as $parcela) {
