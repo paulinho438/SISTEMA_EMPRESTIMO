@@ -4147,27 +4147,6 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            // Calcular intervalo entre parcelas baseado na diferença entre venc (data teórica)
-            $intervalo = 0;
-            if ($parcelas->count() >= 2) {
-                $primeiraParcela = $parcelas->first();
-                $segundaParcela = $parcelas->skip(1)->first();
-                $data1 = Carbon::parse($primeiraParcela->venc);
-                $data2 = Carbon::parse($segundaParcela->venc);
-                $intervalo = $data1->diffInDays($data2);
-            } else {
-                // Se tiver apenas uma parcela, calcular baseado na data de lançamento
-                $primeiraParcela = $parcelas->first();
-                $dataLanc = Carbon::parse($emprestimo->dt_lancamento);
-                $dataVenc = Carbon::parse($primeiraParcela->venc);
-                $intervalo = $dataLanc->diffInDays($dataVenc);
-            }
-
-            // Se ainda não tiver intervalo, usar 30 dias como padrão
-            if ($intervalo <= 0) {
-                $intervalo = 30;
-            }
-
             // Função auxiliar para verificar se é feriado
             $isFeriado = function ($date) use ($feriados) {
                 $dateString = Carbon::parse($date)->format('Y-m-d');
@@ -4185,16 +4164,24 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             };
 
             // Recalcular as datas de vencimento real
-            // Começar da primeira parcela e ir ajustando sequencialmente
-            $dataBaseAnterior = null;
+            // Baseado na diferença de dias entre as colunas venc de cada parcela
+            $dataVencRealAnterior = null;
 
             foreach ($parcelas as $index => $parcela) {
                 if ($index === 0) {
-                    // Primeira parcela: usar a data de vencimento teórica (venc)
+                    // Primeira parcela: usar a data de vencimento teórica (venc) como base
                     $novaDataVencReal = Carbon::parse($parcela->venc);
                 } else {
-                    // Parcelas seguintes: calcular baseado na data ajustada da parcela anterior + intervalo
-                    $novaDataVencReal = $dataBaseAnterior->copy()->addDays($intervalo);
+                    // Parcelas seguintes: calcular diferença em dias entre venc da parcela atual e venc da parcela anterior
+                    $parcelaAnterior = $parcelas[$index - 1];
+                    $dataVencAtual = Carbon::parse($parcela->venc);
+                    $dataVencAnterior = Carbon::parse($parcelaAnterior->venc);
+                    
+                    // Calcular diferença em dias
+                    $diferencaDias = $dataVencAnterior->diffInDays($dataVencAtual);
+                    
+                    // Aplicar a diferença na venc_real da parcela anterior
+                    $novaDataVencReal = $dataVencRealAnterior->copy()->addDays($diferencaDias);
                 }
 
                 // Verificar se cai em feriado e ajustar se necessário
@@ -4207,7 +4194,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $parcela->save();
 
                 // Atualizar data base para próxima parcela
-                $dataBaseAnterior = $novaDataVencReal->copy();
+                $dataVencRealAnterior = $novaDataVencReal->copy();
             }
 
             // Log da ação
