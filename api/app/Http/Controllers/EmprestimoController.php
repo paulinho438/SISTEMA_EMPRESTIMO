@@ -4112,7 +4112,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     public function refazerDatasVencimentoReal(Request $request, $id)
     {
         try {
-            $emprestimo = Emprestimo::with(['parcelas', 'company'])->find($id);
+            $emprestimo = Emprestimo::with(['parcelas', 'company', 'pagamentosaldopendente', 'quitacao', 'banco'])->find($id);
 
             if (!$emprestimo) {
                 return response()->json([
@@ -4235,6 +4235,70 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         }
                     } else {
                         $parcelasComMultaRevertida++;
+                    }
+                }
+            }
+
+            // Atualizar o saldo pendente do dia se existir
+            if ($emprestimo->pagamentosaldopendente) {
+                // Buscar a primeira parcela pendente para calcular o total pendente de hoje
+                $primeiraParcelaPendente = $parcelas->first();
+                if ($primeiraParcelaPendente) {
+                    $valorPendenteHoje = $primeiraParcelaPendente->totalPendenteHoje();
+                    $emprestimo->pagamentosaldopendente->valor = $valorPendenteHoje;
+                    $emprestimo->pagamentosaldopendente->save();
+
+                    // Atualizar a cobrança na API se tiver identificador e banco com wallet
+                    if ($emprestimo->pagamentosaldopendente->identificador && $emprestimo->banco && ($emprestimo->banco->wallet == 1 || $emprestimo->banco->wallet === true)) {
+                        try {
+                            $txId = $emprestimo->pagamentosaldopendente->identificador;
+                            $response = $this->bcodexService->criarCobranca(
+                                $valorPendenteHoje,
+                                $emprestimo->banco->document,
+                                $txId
+                            );
+
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                $emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'] ?? $emprestimo->pagamentosaldopendente->identificador;
+                                $emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'] ?? $emprestimo->pagamentosaldopendente->chave_pix;
+                                $emprestimo->pagamentosaldopendente->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao atualizar cobrança do saldo pendente após reverter multa: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
+            // Atualizar a quitação se existir
+            if ($emprestimo->quitacao) {
+                // Buscar a primeira parcela pendente para calcular o total pendente
+                $primeiraParcelaPendente = $parcelas->first();
+                if ($primeiraParcelaPendente) {
+                    $totalPendente = $primeiraParcelaPendente->totalPendente();
+                    $emprestimo->quitacao->valor = $totalPendente;
+                    $emprestimo->quitacao->saldo = $totalPendente;
+                    $emprestimo->quitacao->save();
+
+                    // Atualizar a cobrança na API se tiver chave_pix e banco com wallet
+                    if ($emprestimo->quitacao->chave_pix && $emprestimo->banco && ($emprestimo->banco->wallet == 1 || $emprestimo->banco->wallet === true)) {
+                        try {
+                            $txId = $emprestimo->quitacao->identificador ?: null;
+                            $response = $this->bcodexService->criarCobranca(
+                                $totalPendente,
+                                $emprestimo->banco->document,
+                                $txId
+                            );
+
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                $emprestimo->quitacao->identificador = $response->json()['txid'] ?? $emprestimo->quitacao->identificador;
+                                $emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'] ?? $emprestimo->quitacao->chave_pix;
+                                $emprestimo->quitacao->saldo = $totalPendente;
+                                $emprestimo->quitacao->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao atualizar cobrança da quitação após reverter multa: ' . $e->getMessage());
+                        }
                     }
                 }
             }
