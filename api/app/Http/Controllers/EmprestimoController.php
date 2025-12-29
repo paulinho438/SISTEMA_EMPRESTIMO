@@ -4138,6 +4138,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             // Buscar parcelas ordenadas por número de parcela (apenas não pagas)
             $parcelas = $emprestimo->parcelas()
                 ->whereNull('dt_baixa')
+                ->with('emprestimo.banco')
                 ->orderBy('parcela')
                 ->get();
 
@@ -4197,6 +4198,47 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $dataVencRealAnterior = $novaDataVencReal->copy();
             }
 
+            // Verificar se há multas aplicadas e reverter para valor original se a parcela não estiver vencida
+            $hoje = Carbon::now()->startOfDay();
+            $parcelasComMultaRevertida = 0;
+
+            foreach ($parcelas as $parcela) {
+                // Verificar se tem multa aplicada (saldo > valor)
+                $temMulta = $parcela->saldo > $parcela->valor;
+                
+                // Verificar se a parcela não está vencida
+                $dataVencReal = Carbon::parse($parcela->venc_real)->startOfDay();
+                $naoEstaVencida = $dataVencReal->greaterThanOrEqualTo($hoje);
+
+                if ($temMulta && $naoEstaVencida) {
+                    // Voltar o saldo para o valor original
+                    $parcela->saldo = $parcela->valor;
+                    $parcela->save();
+
+                    // Atualizar a cobrança na API se tiver identificador e banco com wallet
+                    if ($parcela->identificador && $parcela->emprestimo && $parcela->emprestimo->banco && ($parcela->emprestimo->banco->wallet == 1 || $parcela->emprestimo->banco->wallet === true)) {
+                        try {
+                            $response = $this->bcodexService->criarCobranca(
+                                $parcela->saldo,
+                                $parcela->emprestimo->banco->document,
+                                $parcela->identificador
+                            );
+
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                $parcela->identificador = $response->json()['txid'] ?? $parcela->identificador;
+                                $parcela->chave_pix = $response->json()['pixCopiaECola'] ?? $parcela->chave_pix;
+                                $parcela->save();
+                                $parcelasComMultaRevertida++;
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao atualizar cobrança após reverter multa: ' . $e->getMessage());
+                        }
+                    } else {
+                        $parcelasComMultaRevertida++;
+                    }
+                }
+            }
+
             // Log da ação
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
@@ -4206,7 +4248,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             return response()->json([
                 'message' => 'Datas de vencimento real recalculadas com sucesso',
-                'parcelas_atualizadas' => $parcelas->count()
+                'parcelas_atualizadas' => $parcelas->count(),
+                'parcelas_com_multa_revertida' => $parcelasComMultaRevertida
             ], Response::HTTP_OK);
 
         } catch (\Exception $e) {
