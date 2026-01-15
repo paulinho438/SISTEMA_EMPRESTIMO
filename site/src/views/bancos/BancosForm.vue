@@ -31,7 +31,8 @@ export default {
 			bankTypes: [
 				{ label: 'Normal', value: 'normal' },
 				{ label: 'Bcodex', value: 'bcodex' },
-				{ label: 'Cora', value: 'cora' }
+				{ label: 'Cora', value: 'cora' },
+				{ label: 'Velana', value: 'velana' }
 			]
 		}
 	},
@@ -271,6 +272,24 @@ export default {
 					<InputText :modelValue="banco?.private_key_path" v-model="banco.private_key_path" id="private_key_path" type="text" class="w-full p-inputtext-sm" placeholder="Ex: C:\projetos\...\private-key.key" :class="{ 'p-invalid': errors?.private_key_path }" />
 					<small v-if="errors?.private_key_path" class="text-red-500 pl-2">{{ errors?.private_key_path[0] }}</small>
 					<small class="text-gray-500 pl-2">Caminho absoluto do arquivo private-key.key</small>
+				</div>
+			</div>
+
+			<!-- Campos Velana -->
+			<div v-if="banco?.bank_type === 'velana'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="velana_secret_key">Velana Secret Key</label>
+					<InputText 
+						:modelValue="banco?.velana_secret_key" 
+						v-model="banco.velana_secret_key" 
+						id="velana_secret_key" 
+						type="password"
+						class="w-full p-inputtext-sm" 
+						placeholder="Digite a chave secreta da Velana"
+						:class="{ 'p-invalid': errors?.velana_secret_key }"
+					/>
+					<small v-if="errors?.velana_secret_key" class="text-red-500 pl-2">{{ errors?.velana_secret_key[0] }}</small>
+					<small class="text-gray-500 pl-2">Chave secreta encontrada em Configurações -> Credenciais de API no painel Velana</small>
 				</div>
 			</div>
 

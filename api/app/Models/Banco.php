@@ -24,7 +24,8 @@ class Banco extends Model
         'accountId',
         'client_id',
         'certificate_path',
-        'private_key_path'
+        'private_key_path',
+        'velana_secret_key'
     ];
 
     public function company()

@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\File;
 
 use App\Services\BcodexService;
 use App\Services\CoraService;
+use App\Services\VelanaService;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -151,6 +152,42 @@ class EmprestimoController extends Controller
                 ];
             } else {
                 Log::error('Erro ao criar cobrança Cora: ' . $response->body());
+                return false;
+            }
+        } elseif ($bankType === 'velana') {
+            // Usar VelanaService para banco Velana
+            if (!$entidade || !$entidade->emprestimo || !$entidade->emprestimo->client) {
+                Log::error('Erro ao criar cobrança Velana: Entidade, empréstimo ou cliente não encontrado');
+                return false;
+            }
+
+            $velanaService = new VelanaService($banco);
+            $cliente = $entidade->emprestimo->client;
+            $referenceId = $entidade->id . '_' . time(); // ID de referência único
+            
+            // Tentar obter data de vencimento se a entidade tiver
+            $dueDate = null;
+            if (isset($entidade->venc_real) && $entidade->venc_real) {
+                $dueDate = is_string($entidade->venc_real) 
+                    ? date('Y-m-d', strtotime($entidade->venc_real))
+                    : $entidade->venc_real->format('Y-m-d');
+            }
+            
+            $response = $velanaService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                $responseData = $response->json();
+                
+                return [
+                    'success' => true,
+                    'transaction_id' => $responseData['id'] ?? $referenceId,
+                    'txid' => $responseData['id'] ?? $referenceId,
+                    'reference_id' => $referenceId,
+                    'pixCopiaECola' => $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null,
+                    'response' => $responseData
+                ];
+            } else {
+                Log::error('Erro ao criar cobrança Velana: ' . ($response->body() ?? 'Resposta inválida'));
                 return false;
             }
         } elseif ($bankType === 'bcodex' || $banco->wallet == 1) {
@@ -827,6 +864,36 @@ class EmprestimoController extends Controller
             $contaspagar['descricao'] = 'Empréstimo Nº ' . $emprestimoAdd->id . ' para ' . $dados['cliente']['nome_completo'];
             $contaspagar['company_id'] = $request->header('company-id');
             Contaspagar::create($contaspagar);
+
+            // Criar checkout Velana se o banco for do tipo Velana
+            $banco = Banco::find($dados['banco']['id']);
+            if ($banco && ($banco->bank_type ?? 'normal') === 'velana') {
+                try {
+                    $velanaService = new VelanaService($banco);
+                    $cliente = Client::find($dados['cliente']['id']);
+                    $referenceId = 'emprestimo_' . $emprestimoAdd->id;
+                    $description = 'Empréstimo Nº ' . $emprestimoAdd->id . ' - ' . $cliente->nome_completo;
+                    
+                    $response = $velanaService->criarCheckout(
+                        $dados['valor'],
+                        $cliente,
+                        $referenceId,
+                        $description
+                    );
+
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                        $responseData = $response->json();
+                        Log::info('Checkout Velana criado com sucesso', [
+                            'emprestimo_id' => $emprestimoAdd->id,
+                            'checkout_id' => $responseData['id'] ?? null
+                        ]);
+                    } else {
+                        Log::error('Erro ao criar checkout Velana: ' . ($response->body() ?? 'Resposta inválida'));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Exceção ao criar checkout Velana: ' . $e->getMessage());
+                }
+            }
         }
 
         $pegarUltimaParcela = $dados['parcelas'];
@@ -2484,44 +2551,68 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         if ($parcela) {
             if ($parcela->ult_dt_geracao_pix) {
                 if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
-                    //API COBRANCA B.CODEX
-                    $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
+                    //API COBRANCA - Verifica tipo de banco
+                    $result = $this->criarCobrancaPorTipoBanco($parcela->valor, $parcela->emprestimo->banco, $parcela, $parcela->identificador);
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                    if ($result && $result['success']) {
+                        // Para Bcodex, salvar dados do PIX
+                        if (isset($result['pixCopiaECola'])) {
+                            if (isset($result['txid'])) {
+                                ControleBcodex::create(['identificador' => $result['txid']]);
+                            }
+                            $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
+                            $parcela->chave_pix = $result['pixCopiaECola'];
+                            $parcela->ult_dt_geracao_pix = $hoje;
+                            $parcela->save();
 
-                        $parcela->identificador = $response->json()['txid'];
-                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->ult_dt_geracao_pix = $hoje;
-                        $parcela->save();
+                            return ['chave_pix' => $result['pixCopiaECola']];
+                        } else {
+                            // Para Velana/Cora, salvar transaction_id
+                            $parcela->identificador = $result['transaction_id'] ?? $result['invoice_id'] ?? $result['txid'] ?? $parcela->identificador;
+                            $parcela->chave_pix = $result['pixCopiaECola'] ?? 'Cobrança criada: ' . ($result['transaction_id'] ?? $result['invoice_id'] ?? 'N/A');
+                            $parcela->ult_dt_geracao_pix = $hoje;
+                            $parcela->save();
 
-                        return ['chave_pix' => $response->json()['pixCopiaECola']];
+                            return ['chave_pix' => $parcela->chave_pix];
+                        }
                     } else {
                         return response()->json([
                             "message" => "Erro ao gerar pagamento personalizado",
-                            "error" => $response->json()
+                            "error" => $result ?? 'Erro desconhecido'
                         ], Response::HTTP_FORBIDDEN);
                     }
                 } else {
                     return ['chave_pix' => $parcela->chave_pix];
                 }
             } else {
-                //API COBRANCA B.CODEX
-                $response = $this->bcodexService->criarCobranca($parcela->valor, $parcela->emprestimo->banco->document);
+                //API COBRANCA - Verifica tipo de banco
+                $result = $this->criarCobrancaPorTipoBanco($parcela->valor, $parcela->emprestimo->banco, $parcela, $parcela->identificador);
 
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
+                if ($result && $result['success']) {
+                    // Para Bcodex, salvar dados do PIX
+                    if (isset($result['pixCopiaECola'])) {
+                        if (isset($result['txid'])) {
+                            ControleBcodex::create(['identificador' => $result['txid']]);
+                        }
+                        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
+                        $parcela->chave_pix = $result['pixCopiaECola'];
+                        $parcela->ult_dt_geracao_pix = $hoje;
+                        $parcela->save();
 
-                    $parcela->identificador = $response->json()['txid'];
-                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                    $parcela->ult_dt_geracao_pix = $hoje;
-                    $parcela->save();
+                        return ['chave_pix' => $result['pixCopiaECola']];
+                    } else {
+                        // Para Velana/Cora, salvar transaction_id
+                        $parcela->identificador = $result['transaction_id'] ?? $result['invoice_id'] ?? $result['txid'] ?? $parcela->identificador;
+                        $parcela->chave_pix = $result['pixCopiaECola'] ?? 'Cobrança criada: ' . ($result['transaction_id'] ?? $result['invoice_id'] ?? 'N/A');
+                        $parcela->ult_dt_geracao_pix = $hoje;
+                        $parcela->save();
 
-                    return ['chave_pix' => $response->json()['pixCopiaECola']];
+                        return ['chave_pix' => $parcela->chave_pix];
+                    }
                 } else {
                     return response()->json([
                         "message" => "Erro ao gerar cobrança",
-                        "error" => $response->json()
+                        "error" => $result ?? 'Erro desconhecido'
                     ], Response::HTTP_FORBIDDEN);
                 }
             }
@@ -2717,6 +2808,11 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     {
         $data = $request->json()->all();
 
+        // Verificar se é webhook Velana
+        if (isset($data['transaction']) || isset($data['id']) || isset($data['status'])) {
+            return $this->webhookVelana($request);
+        }
+
         $dados = [
             'payload' => $request->json()->all()
         ];
@@ -2740,6 +2836,137 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         WebhookCobranca::create($dados);
 
         return response()->json(['message' => 'Recebido com sucesso']);
+    }
+
+    /**
+     * Processa webhook da Velana
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function webhookVelana(Request $request)
+    {
+        try {
+            $data = $request->json()->all();
+            
+            Log::info('Webhook Velana recebido', ['payload' => $data]);
+
+            // Extrair informações da transação
+            $transactionId = $data['id'] ?? $data['transaction']['id'] ?? null;
+            $status = $data['status'] ?? $data['transaction']['status'] ?? null;
+            $valor = isset($data['amount']) ? ($data['amount'] / 100) : (isset($data['transaction']['amount']) ? ($data['transaction']['amount'] / 100) : 0);
+            $referenceId = $data['reference_id'] ?? $data['transaction']['reference_id'] ?? null;
+
+            if (!$transactionId) {
+                Log::error('Webhook Velana: transaction_id não encontrado', ['payload' => $data]);
+                return response()->json(['error' => 'transaction_id não encontrado'], 400);
+            }
+
+            // Verificar se já existe um webhook com o mesmo identificador não processado
+            $webhookExistente = WebhookCobranca::where('identificador', $transactionId)
+                ->where('processado', false)
+                ->first();
+            
+            if ($webhookExistente) {
+                Log::info('Webhook Velana já recebido anteriormente', ['transaction_id' => $transactionId]);
+                return response()->json(['message' => 'Webhook já recebido anteriormente']);
+            }
+
+            // Criar registro do webhook
+            $dados = [
+                'identificador' => $transactionId,
+                'valor' => $valor,
+                'payload' => $data,
+                'processado' => false
+            ];
+
+            WebhookCobranca::create($dados);
+
+            // Processar pagamento se status for "paid" ou "approved"
+            if (in_array(strtolower($status), ['paid', 'approved', 'captured'])) {
+                // Buscar parcela pelo reference_id ou transaction_id
+                $parcela = null;
+                
+                if ($referenceId) {
+                    // Extrair ID da parcela do reference_id (formato: parcela_id_timestamp)
+                    $parts = explode('_', $referenceId);
+                    if (count($parts) >= 1 && is_numeric($parts[0])) {
+                        $parcela = Parcela::where('id', $parts[0])
+                            ->whereNull('dt_baixa')
+                            ->first();
+                    }
+                }
+
+                // Se não encontrou pelo reference_id, tentar pelo identificador
+                if (!$parcela) {
+                    $parcela = Parcela::where('identificador', $transactionId)
+                        ->whereNull('dt_baixa')
+                        ->first();
+                }
+
+                if ($parcela) {
+                    // Processar baixa automática
+                    $parcela->saldo = 0;
+                    $parcela->dt_baixa = now();
+                    $parcela->save();
+
+                    if ($parcela->contasreceber) {
+                        $parcela->contasreceber->status = 'Pago';
+                        $parcela->contasreceber->dt_baixa = date('Y-m-d');
+                        $parcela->contasreceber->forma_recebto = 'PIX';
+                        $parcela->contasreceber->save();
+                    }
+
+                    // Criar movimentação financeira
+                    Movimentacaofinanceira::create([
+                        'banco_id' => $parcela->emprestimo->banco_id,
+                        'company_id' => $parcela->emprestimo->company_id,
+                        'descricao' => sprintf(
+                            'Baixa automática via Velana da parcela Nº %d do empréstimo Nº %d do cliente %s',
+                            $parcela->id,
+                            $parcela->emprestimo_id,
+                            $parcela->emprestimo->client->nome_completo
+                        ),
+                        'tipomov' => 'E',
+                        'parcela_id' => $parcela->id,
+                        'dt_movimentacao' => date('Y-m-d'),
+                        'valor' => $valor,
+                    ]);
+
+                    // Atualizar saldo do banco
+                    if ($parcela->emprestimo->banco) {
+                        $parcela->emprestimo->banco->saldo += $valor;
+                        $parcela->emprestimo->banco->save();
+                    }
+
+                    // Marcar webhook como processado
+                    $webhookExistente = WebhookCobranca::where('identificador', $transactionId)->first();
+                    if ($webhookExistente) {
+                        $webhookExistente->processado = true;
+                        $webhookExistente->save();
+                    }
+
+                    Log::info('Webhook Velana processado com sucesso', [
+                        'transaction_id' => $transactionId,
+                        'parcela_id' => $parcela->id
+                    ]);
+                } else {
+                    Log::warning('Webhook Velana: Parcela não encontrada', [
+                        'transaction_id' => $transactionId,
+                        'reference_id' => $referenceId
+                    ]);
+                }
+            }
+
+            return response()->json(['message' => 'Webhook Velana recebido com sucesso']);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao processar webhook Velana: ' . $e->getMessage(), [
+                'exception' => $e->getTraceAsString(),
+                'payload' => $request->json()->all()
+            ]);
+            return response()->json(['error' => 'Erro ao processar webhook'], 500);
+        }
     }
 
     public function corrigirRegistrosWebhook()
@@ -3741,51 +3968,104 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $parcela->venc_real = date('Y-m-d');
                 $parcela->atrasadas = $parcela->atrasadas + 1;
 
-                if ($parcela->emprestimo->banco->wallet) {
+                $banco = $parcela->emprestimo->banco;
+                $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+
+                if ($banco->wallet || $bankType === 'velana') {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
                     Log::info(message: "Processando cobranca parcela: txId: $txId parcelaId: { $parcela->id }");
-                    $response = $bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document, $txId);
+                    
+                    if ($bankType === 'velana') {
+                        // Usar VelanaService para banco Velana
+                        $velanaService = new VelanaService($banco);
+                        $cliente = $parcela->emprestimo->client;
+                        $referenceId = $parcela->id . '_' . time();
+                        $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
+                        
+                        $response = $velanaService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $newTxId = $response->json()['txid'];
-                        Log::info(message: "Processando com sucesso cobranca parcela: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
-                        echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
-                        $parcela->identificador = $response->json()['txid'];
-                        $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->save();
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $responseData = $response->json();
+                            $newTxId = $responseData['id'] ?? $referenceId;
+                            Log::info(message: "Processando com sucesso cobranca parcela Velana: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
+                            echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
+                            $parcela->identificador = $newTxId;
+                            $parcela->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
+                            $parcela->save();
+                        }
+                    } else {
+                        // Usar BcodexService para banco Bcodex
+                        $response = $bcodexService->criarCobranca($parcela->saldo, $banco->document, $txId);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $newTxId = $response->json()['txid'];
+                            Log::info(message: "Processando com sucesso cobranca parcela: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
+                            echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
+                            $parcela->identificador = $response->json()['txid'];
+                            $parcela->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->save();
+                        }
                     }
                 }
 
                 $parcela->save();
 
                 if ($parcela->emprestimo->quitacao) {
-
                     $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                     $parcela->emprestimo->quitacao->save();
-                    $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->totalPendente(), $parcela->emprestimo->banco->document, $txId);
+                    
+                    if ($bankType === 'velana') {
+                        $velanaService = new VelanaService($banco);
+                        $cliente = $parcela->emprestimo->client;
+                        $referenceId = 'quitacao_' . $parcela->emprestimo->quitacao->id . '_' . time();
+                        $response = $velanaService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                        $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
-                        $parcela->emprestimo->quitacao->save();
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $responseData = $response->json();
+                            $parcela->emprestimo->quitacao->identificador = $responseData['id'] ?? $referenceId;
+                            $parcela->emprestimo->quitacao->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
+                            $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                            $parcela->emprestimo->quitacao->save();
+                        }
+                    } else {
+                        $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
+                        $response = $bcodexService->criarCobranca($parcela->totalPendente(), $banco->document, $txId);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                            $parcela->emprestimo->quitacao->save();
+                        }
                     }
                 }
 
                 if ($parcela->emprestimo->pagamentominimo) {
-
                     $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
-
                     $parcela->emprestimo->pagamentominimo->save();
-                    $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $parcela->emprestimo->banco->document, $txId);
+                    
+                    if ($bankType === 'velana') {
+                        $velanaService = new VelanaService($banco);
+                        $cliente = $parcela->emprestimo->client;
+                        $referenceId = 'pagamento_minimo_' . $parcela->emprestimo->pagamentominimo->id . '_' . time();
+                        $response = $velanaService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
-                        $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->emprestimo->pagamentominimo->save();
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $responseData = $response->json();
+                            $parcela->emprestimo->pagamentominimo->identificador = $responseData['id'] ?? $referenceId;
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
+                    } else {
+                        $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
+                        $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $banco->document, $txId);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $parcela->emprestimo->pagamentominimo->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentominimo->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentominimo->save();
+                        }
                     }
                 }
 

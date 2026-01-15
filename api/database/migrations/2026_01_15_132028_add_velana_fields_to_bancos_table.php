@@ -14,10 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::table('bancos', function (Blueprint $table) {
-            $table->enum('bank_type', ['normal', 'bcodex', 'cora', 'velana'])->default('normal')->after('wallet');
-            $table->string('client_id')->nullable()->after('accountId');
-            $table->string('certificate_path')->nullable()->after('client_id');
-            $table->string('private_key_path')->nullable()->after('certificate_path');
+            $table->text('velana_secret_key')->nullable()->after('private_key_path');
         });
     }
 
@@ -29,7 +26,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('bancos', function (Blueprint $table) {
-            $table->dropColumn(['bank_type', 'client_id', 'certificate_path', 'private_key_path']);
+            $table->dropColumn('velana_secret_key');
         });
     }
 };

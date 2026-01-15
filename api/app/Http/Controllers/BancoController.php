@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use App\Models\ControleBcodex;
+use Illuminate\Support\Facades\Crypt;
 
 use App\Services\BcodexService;
 
@@ -78,6 +79,11 @@ class BancoController extends Controller
             // Definir bank_type padrão se não foi informado
             if (!isset($dados['bank_type'])) {
                 $dados['bank_type'] = isset($dados['wallet']) && $dados['wallet'] == 1 ? 'bcodex' : 'normal';
+            }
+
+            // Criptografar chave secreta Velana se fornecida
+            if (isset($dados['velana_secret_key']) && !empty($dados['velana_secret_key'])) {
+                $dados['velana_secret_key'] = Crypt::encryptString($dados['velana_secret_key']);
             }
 
             $newGroup = Banco::create($dados);
@@ -149,6 +155,17 @@ class BancoController extends Controller
                     $EditBanco->client_id = $dados['client_id'] ?? null;
                     $EditBanco->certificate_path = $dados['certificate_path'] ?? null;
                     $EditBanco->private_key_path = $dados['private_key_path'] ?? null;
+                }
+
+                // Campos Velana
+                if (($EditBanco->bank_type ?? 'normal') === 'velana') {
+                    // Criptografar chave secreta Velana se fornecida
+                    if (isset($dados['velana_secret_key']) && !empty($dados['velana_secret_key'])) {
+                        $EditBanco->velana_secret_key = Crypt::encryptString($dados['velana_secret_key']);
+                    } elseif (isset($dados['velana_secret_key']) && empty($dados['velana_secret_key'])) {
+                        // Se enviar vazio, manter o valor atual (não sobrescrever)
+                        // Não fazer nada, manter o valor existente
+                    }
                 }
 
                 $EditBanco->save();
