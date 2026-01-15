@@ -4695,4 +4695,120 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             // Log error if needed
         }
     }
+
+    /**
+     * Relatório de comissão de consultores
+     * Filtra empréstimos por consultor e período de criação
+     */
+    public function relatorioComissao(Request $request)
+    {
+        try {
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'user_id' => 'required|exists:users,id',
+                'data_inicio' => 'required|date',
+                'data_fim' => 'required|date|after_or_equal:data_inicio'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dados inválidos',
+                    'errors' => $validator->errors()
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $companyId = $request->header('company-id');
+            $userId = $request->user_id;
+            $dataInicio = Carbon::parse($request->data_inicio)->startOfDay();
+            $dataFim = Carbon::parse($request->data_fim)->endOfDay();
+
+            // Buscar empréstimos do consultor no período
+            $emprestimos = Emprestimo::where('company_id', $companyId)
+                ->where('user_id', $userId)
+                ->whereBetween('dt_lancamento', [$dataInicio, $dataFim])
+                ->with([
+                    'parcelas' => function ($query) {
+                        $query->select(['id', 'emprestimo_id', 'valor', 'saldo', 'dt_baixa', 'atrasadas', 'venc_real', 'parcela']);
+                    },
+                    'client' => function ($query) {
+                        $query->select(['id', 'nome_completo', 'cpf']);
+                    },
+                    'user' => function ($query) {
+                        $query->select(['id', 'nome_completo', 'email']);
+                    }
+                ])
+                ->orderBy('dt_lancamento', 'asc')
+                ->get();
+
+            // Buscar dados do consultor
+            $consultor = User::find($userId);
+
+            // Calcular totais
+            $totais = [
+                'total_emprestimos' => $emprestimos->count(),
+                'total_valor' => $emprestimos->sum('valor'),
+                'total_valor_deposito' => $emprestimos->sum('valor_deposito'),
+                'total_lucro' => $emprestimos->sum('lucro'),
+                'total_saldo_a_receber' => 0,
+                'total_valor_pago' => 0,
+                'total_em_dias' => 0,
+                'total_atrasado' => 0,
+                'total_muito_atrasado' => 0,
+                'total_vencido' => 0,
+                'total_pago' => 0
+            ];
+
+            foreach ($emprestimos as $emprestimo) {
+                $parcelas = $emprestimo->parcelas;
+                $qtAtrasadas = 0;
+                
+                foreach ($parcelas as $parcela) {
+                    if ($parcela->atrasadas > 0 && $parcela->saldo > 0) {
+                        $qtAtrasadas++;
+                    }
+                }
+
+                $totais['total_saldo_a_receber'] += $parcelas->where('dt_baixa', null)->sum('saldo');
+                $totais['total_valor_pago'] += $parcelas->where('dt_baixa', '<>', null)->sum('valor');
+
+                // Contar por status
+                $qtPagas = $parcelas->where('dt_baixa', '!=', null)->count();
+                $qtParcelas = count($parcelas);
+                
+                if ($qtParcelas == $qtPagas) {
+                    $totais['total_pago']++;
+                } elseif ($qtAtrasadas >= 10) {
+                    $totais['total_vencido']++;
+                } elseif ($qtAtrasadas >= 4) {
+                    $totais['total_muito_atrasado']++;
+                } elseif ($qtAtrasadas > 0) {
+                    $totais['total_atrasado']++;
+                } else {
+                    $totais['total_em_dias']++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'consultor' => [
+                    'id' => $consultor->id,
+                    'nome_completo' => $consultor->nome_completo,
+                    'email' => $consultor->email
+                ],
+                'periodo' => [
+                    'data_inicio' => $dataInicio->format('d/m/Y'),
+                    'data_fim' => $dataFim->format('d/m/Y')
+                ],
+                'totais' => $totais,
+                'emprestimos' => \App\Http\Resources\RelatorioComissaoResource::collection($emprestimos)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao gerar relatório de comissão: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao gerar relatório: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

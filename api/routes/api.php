@@ -311,6 +311,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
 
     Route::get('/recalcularparcelas', [EmprestimoController::class, 'recalcularParcelas']);
     Route::post('/emprestimo/{id}/refazer-datas-vencimento-real', [EmprestimoController::class, 'refazerDatasVencimentoReal']);
+    Route::post('/emprestimo/relatorio-comissao', [EmprestimoController::class, 'relatorioComissao']);
 
     Route::get('/feriado', [FeriadoController::class, 'all']);
     Route::get('/feriado/{id}', [FeriadoController::class, 'id']);
