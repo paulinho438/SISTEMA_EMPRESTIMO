@@ -810,16 +810,29 @@ class EmprestimoController extends Controller
 
     public function searchConsultor(Request $request)
     {
+        $query = User::whereHas('groups', function ($q) {
+                $q->where('name', 'Consultor');
+            })
+            ->whereHas('companies', function ($q) use ($request) {
+                $q->where('id', $request->header('company-id'));
+            });
 
-        // return User::where("name", "LIKE", "%{$request->name}%")->where('company_id', $request->header('company-id'))->get();
-        return User::where("nome_completo", "LIKE", "%{$request->name}%")
-            ->whereHas('groups', function ($query) {
-                $query->where('name', 'Consultor');
-            })
-            ->whereHas('companies', function ($query) use ($request) {
-                $query->where('id', $request->header('company-id'));
-            })
-            ->get();
+        // Se tiver nome na busca, filtrar por nome (case-insensitive)
+        if (!empty($request->name) && strlen($request->name) > 0) {
+            $query->whereRaw("LOWER(nome_completo) LIKE LOWER(?)", ["%{$request->name}%"]);
+        }
+
+        $consultores = $query->select(['id', 'nome_completo', 'email'])->orderBy('nome_completo', 'asc')->get();
+
+        // Log para debug
+        Log::info('Search Consultor', [
+            'query' => $request->name,
+            'company_id' => $request->header('company-id'),
+            'found' => $consultores->count(),
+            'names' => $consultores->pluck('nome_completo')->toArray()
+        ]);
+
+        return $consultores;
     }
 
     public function searchBancoFechamento(Request $request)
@@ -4732,6 +4745,22 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 'data_fim_raw' => $request->data_fim
             ]);
 
+            // Verificar dados do consultor
+            $consultor = User::find($userId);
+            if (!$consultor) {
+                Log::error('Relatório Comissão - Consultor não encontrado', ['user_id' => $userId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Consultor não encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            Log::info('Relatório Comissão - Consultor encontrado', [
+                'user_id' => $userId,
+                'nome_completo' => $consultor->nome_completo,
+                'email' => $consultor->email
+            ]);
+
             // Verificar se existem empréstimos para esse consultor e empresa
             $totalEmprestimosConsultor = Emprestimo::where('company_id', $companyId)
                 ->where('user_id', $userId)
@@ -4740,7 +4769,21 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             Log::info('Relatório Comissão - Total empréstimos do consultor', [
                 'total' => $totalEmprestimosConsultor,
                 'user_id' => $userId,
+                'nome_consultor' => $consultor->nome_completo,
                 'company_id' => $companyId
+            ]);
+
+            // Verificar empréstimos no período
+            $totalNoPeriodo = Emprestimo::where('company_id', $companyId)
+                ->where('user_id', $userId)
+                ->whereDate('dt_lancamento', '>=', $dataInicio->format('Y-m-d'))
+                ->whereDate('dt_lancamento', '<=', $dataFim->format('Y-m-d'))
+                ->count();
+            
+            Log::info('Relatório Comissão - Empréstimos no período', [
+                'total_no_periodo' => $totalNoPeriodo,
+                'data_inicio' => $dataInicio->format('Y-m-d'),
+                'data_fim' => $dataFim->format('Y-m-d')
             ]);
 
             // Buscar empréstimos do consultor no período
@@ -4763,8 +4806,29 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ->orderBy('dt_lancamento', 'asc')
                 ->get();
 
+            // Log para debug - quantidade encontrada
+            Log::info('Relatório Comissão - Resultados da Query', [
+                'total_encontrado' => $emprestimos->count(),
+                'ids' => $emprestimos->pluck('id')->toArray(),
+                'detalhes' => $emprestimos->take(5)->map(function($e) {
+                    return [
+                        'id' => $e->id,
+                        'dt_lancamento' => $e->dt_lancamento,
+                        'cliente' => $e->client->nome_completo ?? 'N/A',
+                        'valor' => $e->valor
+                    ];
+                })->toArray()
+            ]);
+
             // Buscar dados do consultor
             $consultor = User::find($userId);
+            
+            if (!$consultor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Consultor não encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
 
             // Calcular totais
             $totais = [

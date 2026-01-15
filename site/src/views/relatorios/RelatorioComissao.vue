@@ -16,12 +16,17 @@
 							:suggestions="consultoresFiltrados" 
 							@complete="searchConsultor"
 							field="nome_completo"
-							placeholder="Digite o nome do consultor"
+							placeholder="Digite o nome do consultor ou deixe vazio para ver todos"
 							class="w-full"
 							:class="{ 'p-invalid': errors.consultor }"
 							:loading="loadingConsultor"
+							:minLength="0"
+							forceSelection
+							optionLabel="nome_completo"
+							:dropdown="true"
 						/>
 						<small v-if="errors.consultor" class="text-red-500">{{ errors.consultor[0] }}</small>
+						<small class="text-gray-500 pl-2">Deixe vazio e clique para ver todos os consultores</small>
 					</div>
 
 					<div class="field col-12 md:col-4">
@@ -257,9 +262,14 @@ export default {
 		async searchConsultor(event) {
 			this.loadingConsultor = true;
 			try {
-				const response = await this.emprestimoService.searchConsultor(event.query);
+				// Se não houver query, buscar todos os consultores
+				const query = event.query || '';
+				const response = await this.emprestimoService.searchConsultor(query);
 				this.consultoresFiltrados = response.data || [];
+				
+				console.log('Consultores encontrados:', this.consultoresFiltrados);
 			} catch (error) {
+				console.error('Erro ao buscar consultores:', error);
 				this.toast.add({
 					severity: ToastSeverity.ERROR,
 					detail: 'Erro ao buscar consultores: ' + error.message,
