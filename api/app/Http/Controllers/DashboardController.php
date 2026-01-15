@@ -94,10 +94,13 @@ class DashboardController extends Controller
         }
 
         if ($qtAtrasadas > 0) {
-            $status = 'Muito Atrasado';
-
-            if ($qtAtrasadas == $qtParcelas) {
+            if ($qtAtrasadas >= 10) {
                 $status = 'Vencido';
+            } elseif ($qtAtrasadas >= 4) {
+                $status = 'Muito Atrasado';
+            } else {
+                // 1 a 3 parcelas atrasadas
+                $status = 'Atrasado';
             }
         }
 
@@ -114,9 +117,10 @@ class DashboardController extends Controller
         return $status;
     }
 
+    // Método não utilizado mais - mantido para compatibilidade
     private function isMaiorQuatro($qtAtrasadas, $qtParcelas)
     {
-        return $qtAtrasadas > 4;
+        return $qtAtrasadas >= 4;
     }
 
 

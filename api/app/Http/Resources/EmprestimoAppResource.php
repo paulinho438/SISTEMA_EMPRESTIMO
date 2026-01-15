@@ -87,14 +87,13 @@ class EmprestimoAppResource extends JsonResource
         }
 
         if ($qtAtrasadas > 0) {
-            if ($this->isMaiorQuatro($qtAtrasadas, $qtParcelas)) {
+            if ($qtAtrasadas >= 10) {
+                $status = 'Vencido';
+            } elseif ($qtAtrasadas >= 4) {
                 $status = 'Muito Atrasado';
             } else {
+                // 1 a 3 parcelas atrasadas
                 $status = 'Atrasado';
-            }
-
-            if ($qtAtrasadas == $qtParcelas) {
-                $status = 'Vencido';
             }
         }
 
@@ -111,9 +110,10 @@ class EmprestimoAppResource extends JsonResource
         return $status;
     }
 
+    // Método não utilizado mais - mantido para compatibilidade
     private function isMaiorQuatro($x, $y)
     {
-        return $x > 5;
+        return $x >= 4;
     }
 
     private function formatHistorico()
