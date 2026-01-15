@@ -41,6 +41,7 @@ class BancosComSaldoResource extends JsonResource
             "certificate_path" => $this->certificate_path,
             "private_key_path" => $this->private_key_path,
             "velana_secret_key_configured" => !empty($this->velana_secret_key),
+            "velana_public_key" => $this->velana_public_key,
             "chavepix" => $this->chavepix,
             "info_recebedor_pix" => $this->info_recebedor_pix,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),

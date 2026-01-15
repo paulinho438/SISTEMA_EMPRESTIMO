@@ -81,9 +81,20 @@ class BancoController extends Controller
                 $dados['bank_type'] = isset($dados['wallet']) && $dados['wallet'] == 1 ? 'bcodex' : 'normal';
             }
 
-            // Criptografar chave secreta Velana se fornecida
-            if (isset($dados['velana_secret_key']) && !empty($dados['velana_secret_key'])) {
-                $dados['velana_secret_key'] = Crypt::encryptString($dados['velana_secret_key']);
+            // Campos Velana
+            if (($dados['bank_type'] ?? 'normal') === 'velana') {
+                // Criptografar chave secreta Velana se fornecida
+                if (isset($dados['velana_secret_key']) && !empty($dados['velana_secret_key'])) {
+                    $dados['velana_secret_key'] = Crypt::encryptString($dados['velana_secret_key']);
+                }
+                // Chave pública não precisa ser criptografada (é pública)
+                if (isset($dados['velana_public_key']) && empty($dados['velana_public_key'])) {
+                    unset($dados['velana_public_key']);
+                }
+            } else {
+                // Limpar campos Velana se não for banco Velana
+                $dados['velana_secret_key'] = null;
+                $dados['velana_public_key'] = null;
             }
 
             $newGroup = Banco::create($dados);
@@ -166,6 +177,14 @@ class BancoController extends Controller
                         // Se enviar vazio, manter o valor atual (não sobrescrever)
                         // Não fazer nada, manter o valor existente
                     }
+                    // Chave pública (não precisa criptografar, é pública)
+                    if (isset($dados['velana_public_key'])) {
+                        $EditBanco->velana_public_key = $dados['velana_public_key'];
+                    }
+                } else {
+                    // Limpar campos Velana se não for banco Velana
+                    $EditBanco->velana_secret_key = null;
+                    $EditBanco->velana_public_key = null;
                 }
 
                 $EditBanco->save();

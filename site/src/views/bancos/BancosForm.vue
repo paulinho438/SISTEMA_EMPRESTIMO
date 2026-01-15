@@ -278,14 +278,31 @@ export default {
 			<!-- Campos Velana -->
 			<div v-if="banco?.bank_type === 'velana'" class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<label for="velana_secret_key">Velana Secret Key</label>
+					<label for="velana_public_key">Velana Public Key (Chave Pública)</label>
+					<InputText 
+						:modelValue="banco?.velana_public_key" 
+						v-model="banco.velana_public_key" 
+						id="velana_public_key" 
+						type="text"
+						class="w-full p-inputtext-sm" 
+						placeholder="Digite a chave pública da Velana (pk_live_...)"
+						:class="{ 'p-invalid': errors?.velana_public_key }"
+					/>
+					<small v-if="errors?.velana_public_key" class="text-red-500 pl-2">{{ errors?.velana_public_key[0] }}</small>
+					<small class="text-gray-500 pl-2">Chave pública encontrada em Configurações -> Credenciais de API no painel Velana</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'velana'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="velana_secret_key">Velana Secret Key (Chave Secreta)</label>
 					<InputText 
 						:modelValue="banco?.velana_secret_key" 
 						v-model="banco.velana_secret_key" 
 						id="velana_secret_key" 
 						type="password"
 						class="w-full p-inputtext-sm" 
-						placeholder="Digite a chave secreta da Velana"
+						placeholder="Digite a chave secreta da Velana (sk_live_...)"
 						:class="{ 'p-invalid': errors?.velana_secret_key }"
 					/>
 					<small v-if="errors?.velana_secret_key" class="text-red-500 pl-2">{{ errors?.velana_secret_key[0] }}</small>
