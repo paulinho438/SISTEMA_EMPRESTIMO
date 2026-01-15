@@ -4722,10 +4722,33 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $dataInicio = Carbon::parse($request->data_inicio)->startOfDay();
             $dataFim = Carbon::parse($request->data_fim)->endOfDay();
 
+            // Log para debug
+            Log::info('Relatório Comissão - Parâmetros', [
+                'company_id' => $companyId,
+                'user_id' => $userId,
+                'data_inicio' => $dataInicio->format('Y-m-d'),
+                'data_fim' => $dataFim->format('Y-m-d'),
+                'data_inicio_raw' => $request->data_inicio,
+                'data_fim_raw' => $request->data_fim
+            ]);
+
+            // Verificar se existem empréstimos para esse consultor e empresa
+            $totalEmprestimosConsultor = Emprestimo::where('company_id', $companyId)
+                ->where('user_id', $userId)
+                ->count();
+            
+            Log::info('Relatório Comissão - Total empréstimos do consultor', [
+                'total' => $totalEmprestimosConsultor,
+                'user_id' => $userId,
+                'company_id' => $companyId
+            ]);
+
             // Buscar empréstimos do consultor no período
+            // Usar whereBetween com formato de data string para garantir compatibilidade
             $emprestimos = Emprestimo::where('company_id', $companyId)
                 ->where('user_id', $userId)
-                ->whereBetween('dt_lancamento', [$dataInicio, $dataFim])
+                ->whereDate('dt_lancamento', '>=', $dataInicio->format('Y-m-d'))
+                ->whereDate('dt_lancamento', '<=', $dataFim->format('Y-m-d'))
                 ->with([
                     'parcelas' => function ($query) {
                         $query->select(['id', 'emprestimo_id', 'valor', 'saldo', 'dt_baixa', 'atrasadas', 'venc_real', 'parcela']);

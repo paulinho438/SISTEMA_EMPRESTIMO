@@ -294,11 +294,33 @@ export default {
 			this.relatorio = null;
 
 			try {
+				// Converter datas para formato YYYY-MM-DD
+				let dataInicio = null;
+				let dataFim = null;
+				
+				if (this.filtros.data_inicio) {
+					if (typeof this.filtros.data_inicio === 'string') {
+						dataInicio = this.filtros.data_inicio.split('T')[0];
+					} else {
+						dataInicio = this.filtros.data_inicio.toISOString().split('T')[0];
+					}
+				}
+				
+				if (this.filtros.data_fim) {
+					if (typeof this.filtros.data_fim === 'string') {
+						dataFim = this.filtros.data_fim.split('T')[0];
+					} else {
+						dataFim = this.filtros.data_fim.toISOString().split('T')[0];
+					}
+				}
+
 				const formData = {
 					user_id: this.selectedConsultor.id,
-					data_inicio: this.filtros.data_inicio ? this.filtros.data_inicio.toISOString().split('T')[0] : null,
-					data_fim: this.filtros.data_fim ? this.filtros.data_fim.toISOString().split('T')[0] : null
+					data_inicio: dataInicio,
+					data_fim: dataFim
 				};
+
+				console.log('Dados enviados para o relatório:', formData);
 
 				const response = await axios.post(`${apiPath}/emprestimo/relatorio-comissao`, formData);
 
