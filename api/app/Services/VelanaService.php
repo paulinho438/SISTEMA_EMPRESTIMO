@@ -287,5 +287,73 @@ class VelanaService
             throw $e;
         }
     }
+
+    /**
+     * Realiza uma transferência PIX para o cliente
+     *
+     * @param float $valor Valor da transferência em reais
+     * @param string $pixKey Chave PIX do destinatário
+     * @param string $description Descrição da transferência
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function realizarTransferenciaPix(
+        float $valor,
+        string $pixKey,
+        string $description = 'Transferência PIX'
+    ) {
+        try {
+            // Converter valor para centavos
+            $valorCentavos = (int)($valor * 100);
+
+            // Montar payload
+            $data = [
+                'amount' => $valorCentavos,
+                'payment_method' => 'PIX',
+                'pix_key' => $pixKey,
+                'description' => $description
+            ];
+
+            $url = $this->baseUrl . '/transfers';
+            $authHeader = $this->getAuthHeader();
+
+            $inicioAtualizacao = microtime(true);
+
+            $response = Http::withHeaders([
+                'Authorization' => $authHeader,
+                'Content-Type' => 'application/json',
+                'accept' => 'application/json'
+            ])->post($url, $data);
+
+            $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
+            Log::info("CHAMADA VELANA TRANSFERÊNCIA PIX - Tempo para chamar: {$duracaoAtualizacao}s", [
+                'status' => $response->status(),
+                'url' => $url
+            ]);
+
+            if (!$response->successful()) {
+                $errorBody = $response->body();
+                $errorJson = null;
+                
+                try {
+                    $errorJson = $response->json();
+                } catch (\Exception $e) {
+                    // Ignorar
+                }
+                
+                Log::error('Erro ao realizar transferência PIX Velana', [
+                    'status' => $response->status(),
+                    'body' => $errorBody,
+                    'json' => $errorJson,
+                    'url' => $url
+                ]);
+            }
+
+            return $response;
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao realizar transferência PIX Velana: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }
 

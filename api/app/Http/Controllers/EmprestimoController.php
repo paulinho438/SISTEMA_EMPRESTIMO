@@ -1264,57 +1264,120 @@ class EmprestimoController extends Controller
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
+                // Verificar se é banco Velana
+                if (($emprestimo->banco->bank_type ?? 'normal') === 'velana') {
+                    $velanaService = new VelanaService($emprestimo->banco);
+                    $description = 'Transferência Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
+                    
+                    $response = $velanaService->realizarTransferenciaPix(
+                        $valorPagamento,
+                        $emprestimo->client->pix_cliente,
+                        $description
+                    );
 
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
-
-                        $response = $this->bcodexService->realizarPagamentoPix(($valorPagamento * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
-
-                        if (!$response->successful()) {
-                            return response()->json([
-                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                                "error" => "Erro ao efetuar a transferencia do Emprestimo."
-                            ], Response::HTTP_FORBIDDEN);
-                        }
-
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                        $responseData = $response->json();
+                        
                         $emprestimo->contaspagar->status = 'Pagamento Efetuado';
-
                         $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
                         $emprestimo->contaspagar->save();
 
-                        $array['response'] = $response->json();
-
-                        $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
+                        $array['response'] = $responseData;
 
                         $dados = [
                             'valor' => $valorPagamento,
                             'tipo_transferencia' => 'PIX',
                             'descricao' => 'Transferência realizada com sucesso',
-                            'destino_nome' => $array['response']['creditParty']['name'],
+                            'destino_nome' => $emprestimo->client->nome_completo,
                             'destino_cpf' => self::mascararString($emprestimo->client->cpf),
                             'destino_chave_pix' => $emprestimo->client->pix_cliente,
-                            'destino_instituicao' => $bank->short_name ?? 'Unknown',
-                            'destino_banco' => $bank->code_number ?? '000',
-                            'destino_agencia' => str_pad($array['response']['creditParty']['branch'] ?? 000, 4, '0', STR_PAD_LEFT),
-                            'destino_conta' => substr_replace($array['response']['creditParty']['accountNumber'] ?? 000, '-', -1, 0),
-                            'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
-                            'origem_cnpj' => '52.196.079/0001-71',
-                            'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+                            'destino_instituicao' => 'Velana',
+                            'destino_banco' => '000',
+                            'destino_agencia' => '0000',
+                            'destino_conta' => '000000-0',
+                            'origem_nome' => 'Velana',
+                            'origem_cnpj' => '',
+                            'origem_instituicao' => 'Velana',
                             'data_hora' => date('d/m/Y H:i:s'),
-                            'id_transacao' => $array['response']['endToEndId'],
+                            'id_transacao' => $responseData['id'] ?? $responseData['transaction_id'] ?? null,
                         ];
 
                         $array['dados'] = $dados;
+
+                        // Criar movimentação financeira
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $emprestimo->banco->id,
+                            'company_id' => $emprestimo->company_id,
+                            'descricao' => 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo,
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => $valorPagamento,
+                        ]);
+
+                        $emprestimo->banco->saldo -= $valorPagamento;
+                        $emprestimo->banco->save();
+
+                        $this->envioMensagem($emprestimo->parcelas[0]);
+                    } else {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => $response->body() ?? 'Erro ao realizar transferência via Velana'
+                        ], Response::HTTP_FORBIDDEN);
                     }
                 } else {
-                    return response()->json([
-                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
-                    ], Response::HTTP_FORBIDDEN);
+                    // Lógica Bcodex (mantida como estava)
+                    $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
+
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                        if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
+
+                            $response = $this->bcodexService->realizarPagamentoPix(($valorPagamento * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
+
+                            if (!$response->successful()) {
+                                return response()->json([
+                                    "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                    "error" => "Erro ao efetuar a transferencia do Emprestimo."
+                                ], Response::HTTP_FORBIDDEN);
+                            }
+
+                            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+
+                            $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+                            $emprestimo->contaspagar->save();
+
+                            $array['response'] = $response->json();
+
+                            $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
+
+                            $dados = [
+                                'valor' => $valorPagamento,
+                                'tipo_transferencia' => 'PIX',
+                                'descricao' => 'Transferência realizada com sucesso',
+                                'destino_nome' => $array['response']['creditParty']['name'],
+                                'destino_cpf' => self::mascararString($emprestimo->client->cpf),
+                                'destino_chave_pix' => $emprestimo->client->pix_cliente,
+                                'destino_instituicao' => $bank->short_name ?? 'Unknown',
+                                'destino_banco' => $bank->code_number ?? '000',
+                                'destino_agencia' => str_pad($array['response']['creditParty']['branch'] ?? 000, 4, '0', STR_PAD_LEFT),
+                                'destino_conta' => substr_replace($array['response']['creditParty']['accountNumber'] ?? 000, '-', -1, 0),
+                                'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
+                                'origem_cnpj' => '52.196.079/0001-71',
+                                'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
+                                'data_hora' => date('d/m/Y H:i:s'),
+                                'id_transacao' => $array['response']['endToEndId'],
+                            ];
+
+                            $array['dados'] = $dados;
+                        }
+                    } else {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                    // Disparar o job para processar o empréstimo em paralelo
+                    ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
                 }
-                // Disparar o job para processar o empréstimo em paralelo
-                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
             } else {
                 $emprestimo->contaspagar->status = 'Pagamento Efetuado';
 
