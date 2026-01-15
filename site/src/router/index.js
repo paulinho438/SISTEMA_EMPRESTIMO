@@ -23,6 +23,7 @@ import EmprestimosfinalizadosRoutes from './emprestimosfinalizados.js';
 import EmpresasRoutes from './empresas.js';
 import LogRoutes from './log.js';
 import localizacaousuarioRoutes from './localizacaousuario.js';
+import VelanaRoutes from './velana.js';
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -56,6 +57,7 @@ const router = createRouter({
                 ...LogRoutes,
                 ...localizacaousuarioRoutes,
                 ...ControleBcodexRoutes,
+                ...VelanaRoutes,
                 {
                     path: '/uikit/formlayout',
                     name: 'formlayout',

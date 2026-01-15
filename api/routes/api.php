@@ -29,7 +29,8 @@ use App\Http\Controllers\{
     AuthClienteController,
     WebhookTesteController,
     NotasController,
-    CobrancaAutomaticaATestController
+    CobrancaAutomaticaATestController,
+    VelanaTestController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -97,6 +98,13 @@ Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataC
 
 Route::get('/cobrancas/teste', [CobrancaAutomaticaATestController::class, 'dryRun']);
 Route::post('/cobrancas/enviar-mensagem-teste', [CobrancaAutomaticaATestController::class, 'enviarMensagemTeste']);
+
+// Rotas de teste Velana
+Route::post('/velana/teste/checkout', [VelanaTestController::class, 'testarCheckout']);
+Route::post('/velana/teste/cobranca', [VelanaTestController::class, 'testarCobranca']);
+Route::post('/velana/teste/transferencia', [VelanaTestController::class, 'testarTransferencia']);
+Route::post('/velana/teste/buscar-checkout', [VelanaTestController::class, 'buscarCheckout']);
+Route::post('/velana/teste/buscar-transacao', [VelanaTestController::class, 'buscarTransacao']);
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);
