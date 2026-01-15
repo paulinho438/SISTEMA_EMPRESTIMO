@@ -71,6 +71,9 @@
 
 							<div v-if="resultado.checkout" class="field col-12">
 								<Divider />
+								<h6>Comando CURL:</h6>
+								<pre class="p-3 border-round surface-ground" style="max-height: 300px; overflow: auto; font-size: 0.85rem;">{{ resultado.checkout?.curl || 'N/A' }}</pre>
+								<Divider />
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.checkout, null, 2) }}</pre>
 							</div>
@@ -144,6 +147,9 @@
 
 							<div v-if="resultado.cobranca" class="field col-12">
 								<Divider />
+								<h6>Comando CURL:</h6>
+								<pre class="p-3 border-round surface-ground" style="max-height: 300px; overflow: auto; font-size: 0.85rem;">{{ resultado.cobranca?.curl || 'N/A' }}</pre>
+								<Divider />
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.cobranca, null, 2) }}</pre>
 							</div>
@@ -213,6 +219,9 @@
 
 							<div v-if="resultado.transferencia" class="field col-12">
 								<Divider />
+								<h6>Comando CURL:</h6>
+								<pre class="p-3 border-round surface-ground" style="max-height: 300px; overflow: auto; font-size: 0.85rem;">{{ resultado.transferencia?.curl || 'N/A' }}</pre>
+								<Divider />
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.transferencia, null, 2) }}</pre>
 							</div>
@@ -258,6 +267,9 @@
 
 							<div v-if="resultado.buscarCheckout" class="field col-12">
 								<Divider />
+								<h6>Comando CURL:</h6>
+								<pre class="p-3 border-round surface-ground" style="max-height: 300px; overflow: auto; font-size: 0.85rem;">{{ resultado.buscarCheckout?.curl || 'N/A' }}</pre>
+								<Divider />
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.buscarCheckout, null, 2) }}</pre>
 							</div>
@@ -302,6 +314,9 @@
 							</div>
 
 							<div v-if="resultado.buscarTransacao" class="field col-12">
+								<Divider />
+								<h6>Comando CURL:</h6>
+								<pre class="p-3 border-round surface-ground" style="max-height: 300px; overflow: auto; font-size: 0.85rem;">{{ resultado.buscarTransacao?.curl || 'N/A' }}</pre>
 								<Divider />
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.buscarTransacao, null, 2) }}</pre>
