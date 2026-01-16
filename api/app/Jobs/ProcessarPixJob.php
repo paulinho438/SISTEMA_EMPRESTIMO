@@ -100,7 +100,7 @@ class ProcessarPixJob implements ShouldQueue
                     $company = $this->emprestimo->company;
                     $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                     $numeroCliente = "55" . $telefone;
-                    if (1 == 1) {
+                    if (1 == 0) {
                         try {
                             $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
                             // Enviar o PNG gerado para o endpoint
@@ -153,7 +153,7 @@ class ProcessarPixJob implements ShouldQueue
                 $this->emprestimo->banco->save();
             }
 
-            if(1 == 1){
+            if(1 == 0){
                 $this->envioMensagemVideoYoutubeANTIGO($this->emprestimo->parcelas[0]);
 
             }else{
@@ -178,7 +178,7 @@ class ProcessarPixJob implements ShouldQueue
                 $this->processarCobrancaComTentativas($this->emprestimo->pagamentosaldopendente, $this->emprestimo->pagamentosaldopendente->valor);
             }
 
-            if(1 == 1){
+            if(1 == 0){
                 $this->envioMensagemANTIGO($this->emprestimo->parcelas[0]);
 
             }else{
@@ -190,7 +190,7 @@ class ProcessarPixJob implements ShouldQueue
 
             if ($this->comprovante) {
 
-                if(1 == 1){
+                if(1 == 0){
                     $this->envioAudio($this->emprestimo->parcelas[0]);
                 }else{
                     $nomeArquivo = 'msginicio.ogg';
