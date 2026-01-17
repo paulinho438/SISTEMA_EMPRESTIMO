@@ -913,11 +913,6 @@ class EmprestimoController extends Controller
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
-        // Calcular lucro por parcela (lucro total / número de parcelas)
-        $numParcelas = is_array($dados['parcelas']) ? count($dados['parcelas']) : 0;
-        $lucroEmprestimo = (float) ($emprestimoAdd->lucro ?? 0);
-        $lucroPorParcela = ($numParcelas > 0 && $lucroEmprestimo > 0) ? round($lucroEmprestimo / $numParcelas, 2) : 0;
-
         foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
@@ -926,7 +921,8 @@ class EmprestimoController extends Controller
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
-            $addParcela['lucro_real'] = $lucroPorParcela; // Inicializar lucro_real com valor proporcional
+            // Receber lucro_real do frontend (já calculado)
+            $addParcela['lucro_real'] = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -1047,17 +1043,6 @@ class EmprestimoController extends Controller
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
-        // Calcular lucro por parcela (lucro total / número de parcelas)
-        $numParcelas = is_array($dados['parcelas']) ? count($dados['parcelas']) : 0;
-        $lucroEmprestimo = (float) ($emprestimoAdd->lucro ?? $dados['lucro'] ?? 0);
-        
-        // Garantir que lucro não seja zero/nulo
-        if ($lucroEmprestimo == 0 && isset($dados['lucro'])) {
-            $lucroEmprestimo = (float) $dados['lucro'];
-        }
-        
-        $lucroPorParcela = ($numParcelas > 0 && $lucroEmprestimo > 0) ? round($lucroEmprestimo / $numParcelas, 2) : 0;
-
         foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
@@ -1066,8 +1051,8 @@ class EmprestimoController extends Controller
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
-            // Sempre calcular lucro_real, ignorando se vier do frontend
-            $addParcela['lucro_real'] = $lucroPorParcela; // Inicializar lucro_real com valor proporcional
+            // Receber lucro_real do frontend (já calculado)
+            $addParcela['lucro_real'] = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -1176,17 +1161,6 @@ class EmprestimoController extends Controller
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
-        // Calcular lucro por parcela (lucro total / número de parcelas)
-        $numParcelas = is_array($dados['parcelas']) ? count($dados['parcelas']) : 0;
-        $lucroEmprestimo = (float) ($emprestimoAdd->lucro ?? $dados['lucro'] ?? 0);
-        
-        // Garantir que lucro não seja zero/nulo
-        if ($lucroEmprestimo == 0 && isset($dados['lucro'])) {
-            $lucroEmprestimo = (float) $dados['lucro'];
-        }
-        
-        $lucroPorParcela = ($numParcelas > 0 && $lucroEmprestimo > 0) ? round($lucroEmprestimo / $numParcelas, 2) : 0;
-
         foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
@@ -1195,8 +1169,8 @@ class EmprestimoController extends Controller
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
-            // Sempre calcular lucro_real, ignorando se vier do frontend
-            $addParcela['lucro_real'] = $lucroPorParcela; // Inicializar lucro_real com valor proporcional
+            // Receber lucro_real do frontend (já calculado)
+            $addParcela['lucro_real'] = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');

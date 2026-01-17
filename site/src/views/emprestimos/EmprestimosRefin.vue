@@ -98,6 +98,13 @@ export default {
             // Array para armazenar as parcelas
             const parcelas = [];
 
+            // Calcular lucro por parcela (lucro total / número de parcelas)
+            const numParcelas = this.emprestimo.parcelas || 0;
+            const lucroTotal = parseFloat(this.emprestimo.lucro) || 0;
+            const lucroPorParcela = numParcelas > 0 && lucroTotal > 0 
+                ? Math.round((lucroTotal / numParcelas) * 100) / 100 
+                : 0;
+
             // Loop para gerar 25 parcelas
             for (let i = 0; i < this.emprestimo.parcelas; i++) {
                 parcela = {};
@@ -106,6 +113,7 @@ export default {
                 parcela.valor = this.emprestimo.mensalidade;
                 parcela.saldo = this.emprestimo.mensalidade;
                 parcela.total_pago_parcela = 0;
+                parcela.lucro_real = lucroPorParcela; // Calcular lucro real por parcela
                 parcela.dt_lancamento = this.formatarDataParaString(new Date(dataLanc));
 
                 dataInicial.setDate(dataInicial.getDate() + this.emprestimo.intervalo);
