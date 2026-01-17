@@ -4745,6 +4745,74 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     }
 
     /**
+     * Atualiza o lucro_real das parcelas de um empréstimo
+     * Calcula lucro_real = lucro_total / número_de_parcelas
+     */
+    public function atualizarLucroRealEmprestimo(Request $request, $id)
+    {
+        try {
+            $emprestimo = Emprestimo::find($id);
+
+            if (!$emprestimo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Empréstimo não encontrado'
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $parcelas = $emprestimo->parcelas;
+            $numParcelas = $parcelas->count();
+            $lucroTotal = (float) $emprestimo->lucro;
+
+            if ($numParcelas == 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Empréstimo não possui parcelas'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $lucroPorParcela = $lucroTotal > 0 ? round($lucroTotal / $numParcelas, 2) : 0;
+
+            $parcelasAtualizadas = 0;
+            foreach ($parcelas as $parcela) {
+                // Atualizar apenas se lucro_real estiver zerado ou se explicitamente solicitado
+                // Para não perder multas/juros que já foram aplicados
+                if (($parcela->lucro_real ?? 0) == 0) {
+                    $parcela->lucro_real = $lucroPorParcela;
+                    $parcela->save();
+                    $parcelasAtualizadas++;
+                }
+            }
+
+            $this->custom_log->create([
+                'user_id' => auth()->user()->id,
+                'content' => 'O usuário: ' . auth()->user()->nome_completo . ' atualizou o lucro_real das parcelas do empréstimo: ' . $id,
+                'operation' => 'update'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lucro real atualizado com sucesso',
+                'data' => [
+                    'emprestimo_id' => $id,
+                    'lucro_total' => $lucroTotal,
+                    'num_parcelas' => $numParcelas,
+                    'lucro_por_parcela' => $lucroPorParcela,
+                    'parcelas_atualizadas' => $parcelasAtualizadas,
+                    'total_parcelas' => $numParcelas
+                ]
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar lucro_real: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar lucro_real: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Relatório de comissão de consultores
      * Filtra empréstimos por consultor e período de criação
      */
