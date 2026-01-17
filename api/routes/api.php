@@ -31,7 +31,8 @@ use App\Http\Controllers\{
     NotasController,
     CobrancaAutomaticaATestController,
     VelanaTestController,
-    RelatorioFiscalController
+    RelatorioFiscalController,
+    RelatorioLucroRealController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -253,6 +254,12 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/relatorio-fiscal/excel', [RelatorioFiscalController::class, 'exportarExcel']);
     Route::get('/relatorio-fiscal/pdf', [RelatorioFiscalController::class, 'exportarPDF']);
     Route::post('/relatorio-fiscal/configurar', [RelatorioFiscalController::class, 'configurarPercentualPresuncao']);
+
+    Route::get('/relatorio-lucro-real/mensal', [RelatorioLucroRealController::class, 'relatorioMensal']);
+    Route::get('/relatorio-lucro-real/anual', [RelatorioLucroRealController::class, 'relatorioAnual']);
+    Route::get('/relatorio-lucro-real/periodo', [RelatorioLucroRealController::class, 'relatorioPeriodo']);
+    Route::get('/relatorio-lucro-real/excel', [RelatorioLucroRealController::class, 'exportarExcel']);
+    Route::get('/relatorio-lucro-real/pdf', [RelatorioLucroRealController::class, 'exportarPDF']);
 
     Route::get('/controlebcodex', [ControleBcodexController::class, 'all']);
 
