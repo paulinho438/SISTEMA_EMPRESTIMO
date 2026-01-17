@@ -922,7 +922,15 @@ class EmprestimoController extends Controller
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
             // Receber lucro_real do frontend (já calculado)
-            $addParcela['lucro_real'] = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
+            $lucroRealRecebido = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
+            $addParcela['lucro_real'] = $lucroRealRecebido;
+            
+            // Debug temporário
+            \Log::info('Parcela criada', [
+                'parcela_id' => $parcela['parcela'] ?? 'N/A',
+                'lucro_real_recebido' => $lucroRealRecebido,
+                'parcela_dados' => $parcela
+            ]);
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -1052,7 +1060,15 @@ class EmprestimoController extends Controller
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
             // Receber lucro_real do frontend (já calculado)
-            $addParcela['lucro_real'] = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
+            $lucroRealRecebido = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
+            $addParcela['lucro_real'] = $lucroRealRecebido;
+            
+            // Debug temporário
+            \Log::info('Parcela criada', [
+                'parcela_id' => $parcela['parcela'] ?? 'N/A',
+                'lucro_real_recebido' => $lucroRealRecebido,
+                'parcela_dados' => $parcela
+            ]);
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -1170,7 +1186,15 @@ class EmprestimoController extends Controller
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
             // Receber lucro_real do frontend (já calculado)
-            $addParcela['lucro_real'] = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
+            $lucroRealRecebido = isset($parcela['lucro_real']) ? (float) $parcela['lucro_real'] : 0;
+            $addParcela['lucro_real'] = $lucroRealRecebido;
+            
+            // Debug temporário
+            \Log::info('Parcela criada', [
+                'parcela_id' => $parcela['parcela'] ?? 'N/A',
+                'lucro_real_recebido' => $lucroRealRecebido,
+                'parcela_dados' => $parcela
+            ]);
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');

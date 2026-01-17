@@ -100,7 +100,44 @@ export default {
 
             // Calcular lucro por parcela (lucro total / número de parcelas)
             const numParcelas = this.emprestimo.parcelas || 0;
-            const lucroTotal = parseFloat(this.emprestimo.lucro) || 0;
+            
+            // Se o lucro não estiver definido, calcular a partir do valor total e valor emprestado
+            let lucroTotal = 0;
+            
+            // Primeiro, tentar usar o lucro diretamente do objeto
+            if (this.emprestimo.lucro !== null && this.emprestimo.lucro !== undefined && this.emprestimo.lucro !== '') {
+                if (typeof this.emprestimo.lucro === 'string') {
+                    // Remover formatação de moeda (R$, pontos, vírgulas)
+                    const lucroLimpo = this.emprestimo.lucro.toString().replace(/[R$\s.]/g, '').replace(',', '.');
+                    lucroTotal = parseFloat(lucroLimpo) || 0;
+                } else {
+                    lucroTotal = parseFloat(this.emprestimo.lucro) || 0;
+                }
+            }
+            
+            // Se o lucro ainda não foi calculado, calcular a partir de valor_total e valor
+            if (!lucroTotal && this.emprestimo.valortotal && this.emprestimo.valor) {
+                const valorTotal = typeof this.emprestimo.valortotal === 'string' 
+                    ? parseFloat(this.emprestimo.valortotal.toString().replace(/[R$\s.]/g, '').replace(',', '.')) 
+                    : parseFloat(this.emprestimo.valortotal);
+                const valor = typeof this.emprestimo.valor === 'string' 
+                    ? parseFloat(this.emprestimo.valor.toString().replace(/[R$\s.]/g, '').replace(',', '.')) 
+                    : parseFloat(this.emprestimo.valor);
+                lucroTotal = (valorTotal - valor) || 0;
+            }
+            
+            // Se ainda não tem lucro, calcular a partir de mensalidade e parcelas
+            if (!lucroTotal && this.emprestimo.mensalidade && numParcelas && this.emprestimo.valor) {
+                const mensalidade = typeof this.emprestimo.mensalidade === 'string' 
+                    ? parseFloat(this.emprestimo.mensalidade.toString().replace(/[R$\s.]/g, '').replace(',', '.')) 
+                    : parseFloat(this.emprestimo.mensalidade);
+                const valor = typeof this.emprestimo.valor === 'string' 
+                    ? parseFloat(this.emprestimo.valor.toString().replace(/[R$\s.]/g, '').replace(',', '.')) 
+                    : parseFloat(this.emprestimo.valor);
+                const valorTotal = mensalidade * numParcelas;
+                lucroTotal = (valorTotal - valor) || 0;
+            }
+            
             const lucroPorParcela = numParcelas > 0 && lucroTotal > 0 
                 ? Math.round((lucroTotal / numParcelas) * 100) / 100 
                 : 0;
