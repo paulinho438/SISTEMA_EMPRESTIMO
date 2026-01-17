@@ -308,7 +308,12 @@ export default {
             this.client.consultor = this.consultor;
             this.client.parcelas = this.parcelas;
 
-			console.log('client', this.client);	
+			console.log('client', this.client);
+			console.log('parcelas enviadas (primeiras 3):', this.parcelas.slice(0, 3).map(p => ({
+				parcela: p.parcela,
+				valor: p.valor,
+				lucro_real: p.lucro_real
+			})));	
 
             this.toast.add({
                 severity: ToastSeverity.SUCCESS,
