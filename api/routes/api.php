@@ -30,7 +30,8 @@ use App\Http\Controllers\{
     WebhookTesteController,
     NotasController,
     CobrancaAutomaticaATestController,
-    VelanaTestController
+    VelanaTestController,
+    RelatorioFiscalController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -244,6 +245,14 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
 
     Route::get('/movimentacaofinanceira', [MovimentacaofinanceiraController::class, 'all']);
     Route::get('/movimentacaofinanceira/{id}', [MovimentacaofinanceiraController::class, 'id']);
+
+    // Relatórios Fiscais - Lucro Presumido
+    Route::get('/relatorio-fiscal/mensal', [RelatorioFiscalController::class, 'relatorioMensal']);
+    Route::get('/relatorio-fiscal/anual', [RelatorioFiscalController::class, 'relatorioAnual']);
+    Route::get('/relatorio-fiscal/periodo', [RelatorioFiscalController::class, 'relatorioPeriodo']);
+    Route::get('/relatorio-fiscal/excel', [RelatorioFiscalController::class, 'exportarExcel']);
+    Route::get('/relatorio-fiscal/pdf', [RelatorioFiscalController::class, 'exportarPDF']);
+    Route::post('/relatorio-fiscal/configurar', [RelatorioFiscalController::class, 'configurarPercentualPresuncao']);
 
     Route::get('/controlebcodex', [ControleBcodexController::class, 'all']);
 

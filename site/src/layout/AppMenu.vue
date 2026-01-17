@@ -146,6 +146,12 @@ const model = ref([
                         icon: 'pi pi-fw pi-chart-line',
                         to: '/fechamentocaixa',
                         permission: 'view_fechamentocaixa'
+                    },
+                    {
+                        label: 'Relatório Fiscal',
+                        icon: 'pi pi-fw pi-file-pdf',
+                        to: '/relatorios/fiscal',
+                        permission: 'view_dashboard'
                     }
                 ]
             },

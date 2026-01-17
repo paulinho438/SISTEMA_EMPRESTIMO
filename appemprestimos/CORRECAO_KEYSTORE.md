@@ -38,3 +38,7 @@ gradlew.bat bundleRelease
 O build deve encontrar o keystore corretamente agora!
 
 
+
+
+
+
