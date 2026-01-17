@@ -152,6 +152,12 @@ const model = ref([
                         icon: 'pi pi-fw pi-file-pdf',
                         to: '/relatorios/fiscal',
                         permission: 'view_dashboard'
+                    },
+                    {
+                        label: 'Relatório de Lucro Real',
+                        icon: 'pi pi-fw pi-chart-line',
+                        to: '/relatorios/lucro-real',
+                        permission: 'view_dashboard'
                     }
                 ]
             },
