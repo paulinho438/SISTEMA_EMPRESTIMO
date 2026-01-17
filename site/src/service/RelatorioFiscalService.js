@@ -6,21 +6,21 @@ export default class RelatorioFiscalService {
 	constructor() {
 	}
 
-	async relatorioMensal(mes) {
+	async relatorioMensal(mes, tipo = 'presumido') {
 		return await axios.get(`${apiPath}/relatorio-fiscal/mensal`, {
-			params: { mes }
+			params: { mes, tipo }
 		});
 	}
 
-	async relatorioAnual(ano) {
+	async relatorioAnual(ano, tipo = 'presumido') {
 		return await axios.get(`${apiPath}/relatorio-fiscal/anual`, {
-			params: { ano }
+			params: { ano, tipo }
 		});
 	}
 
-	async relatorioPeriodo(dataInicio, dataFim) {
+	async relatorioPeriodo(dataInicio, dataFim, tipo = 'presumido') {
 		return await axios.get(`${apiPath}/relatorio-fiscal/periodo`, {
-			params: { data_inicio: dataInicio, data_fim: dataFim }
+			params: { data_inicio: dataInicio, data_fim: dataFim, tipo }
 		});
 	}
 

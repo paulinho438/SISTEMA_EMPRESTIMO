@@ -37,6 +37,7 @@ class RelatorioFiscalController extends Controller
         $companyId = $request->header('company-id');
         $mes = $request->query('mes', date('Y-m'));
         $ano = $request->query('ano', date('Y'));
+        $tipo = $request->query('tipo', 'presumido'); // 'presumido' ou 'proporcional'
 
         // Se mes não contém ano, usa o ano informado ou atual
         if (strlen($mes) === 2 || (strlen($mes) === 7 && !str_contains($mes, '-'))) {
@@ -52,7 +53,7 @@ class RelatorioFiscalController extends Controller
             'operation' => 'index'
         ]);
 
-        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim);
+        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim, $tipo);
 
         return response()->json(new RelatorioFiscalResource($relatorio));
     }
@@ -67,6 +68,7 @@ class RelatorioFiscalController extends Controller
     {
         $companyId = $request->header('company-id');
         $ano = $request->query('ano', date('Y'));
+        $tipo = $request->query('tipo', 'presumido'); // 'presumido' ou 'proporcional'
 
         $dataInicio = Carbon::createFromDate($ano, 1, 1)->startOfDay()->format('Y-m-d');
         $dataFim = Carbon::createFromDate($ano, 12, 31)->endOfDay()->format('Y-m-d');
@@ -77,7 +79,7 @@ class RelatorioFiscalController extends Controller
             'operation' => 'index'
         ]);
 
-        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim);
+        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim, $tipo);
 
         return response()->json(new RelatorioFiscalResource($relatorio));
     }
@@ -106,6 +108,7 @@ class RelatorioFiscalController extends Controller
         $companyId = $request->header('company-id');
         $dataInicio = Carbon::parse($request->data_inicio)->startOfDay()->format('Y-m-d');
         $dataFim = Carbon::parse($request->data_fim)->endOfDay()->format('Y-m-d');
+        $tipo = $request->query('tipo', 'presumido'); // 'presumido' ou 'proporcional'
 
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
@@ -113,7 +116,7 @@ class RelatorioFiscalController extends Controller
             'operation' => 'index'
         ]);
 
-        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim);
+        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim, $tipo);
 
         return response()->json(new RelatorioFiscalResource($relatorio));
     }
@@ -206,8 +209,10 @@ class RelatorioFiscalController extends Controller
 
         $nomeArquivo = 'relatorio-fiscal-' . $dataInicio . '-a-' . $dataFim . '.xlsx';
 
+        $tipo = $request->query('tipo', 'presumido');
+
         return Excel::download(
-            new RelatorioFiscalExport($companyId, $dataInicio, $dataFim),
+            new RelatorioFiscalExport($companyId, $dataInicio, $dataFim, $tipo),
             $nomeArquivo
         );
     }
@@ -248,7 +253,8 @@ class RelatorioFiscalController extends Controller
             'operation' => 'export'
         ]);
 
-        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim);
+        $tipo = $request->query('tipo', 'presumido');
+        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim, $tipo);
         $company = Company::find($companyId);
 
         $nomeArquivo = 'relatorio-fiscal-' . $dataInicio . '-a-' . $dataFim . '.pdf';

@@ -15,6 +15,7 @@ class Parcela extends Model
         'emprestimo_id',
         'parcela',
         'valor',
+        'lucro_real',
         'saldo',
         'venc',
         'venc_real',

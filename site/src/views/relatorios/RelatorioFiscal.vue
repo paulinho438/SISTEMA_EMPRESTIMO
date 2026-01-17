@@ -10,6 +10,19 @@
 				<!-- Filtros -->
 				<div class="formgrid grid mt-4">
 					<div class="field col-12 md:col-4">
+						<label>Tipo de Cálculo</label>
+						<Dropdown 
+							v-model="tipoCalculo" 
+							:options="tiposCalculo" 
+							optionLabel="label"
+							optionValue="value"
+							placeholder="Selecione o tipo de cálculo"
+							class="w-full"
+							@change="onTipoCalculoChange"
+						/>
+					</div>
+
+					<div class="field col-12 md:col-4">
 						<label>Tipo de Relatório</label>
 						<Dropdown 
 							v-model="tipoRelatorio" 
@@ -289,6 +302,76 @@
 							</DataTable>
 						</div>
 					</div>
+
+					<!-- Detalhamento por Empréstimo (apenas para tipo proporcional) -->
+					<div v-if="relatorio.tipo_calculo === 'proporcional' && relatorio.detalhamento_emprestimos && relatorio.detalhamento_emprestimos.length > 0" class="grid mb-4">
+						<div class="col-12">
+							<h6>Detalhamento por Empréstimo ({{ relatorio.detalhamento_emprestimos.length }} empréstimos)</h6>
+							<DataTable 
+								:value="relatorio.detalhamento_emprestimos" 
+								:paginator="true" 
+								:rows="10"
+								responsiveLayout="scroll"
+								class="p-datatable-sm"
+								:expandableRows="true"
+								v-model:expandedRows="expandedRows"
+							>
+								<Column :expander="true" headerStyle="width: 3rem" />
+								<Column field="emprestimo_id" header="ID Empréstimo" />
+								<Column field="cliente" header="Cliente" style="min-width: 20rem" />
+								<Column field="valor_emprestado" header="Valor Emprestado">
+									<template #body="{ data }">
+										{{ formatValorReal(data.valor_emprestado) }}
+									</template>
+								</Column>
+								<Column field="lucro_total" header="Lucro Total">
+									<template #body="{ data }">
+										{{ formatValorReal(data.lucro_total) }}
+									</template>
+								</Column>
+								<Column field="num_parcelas" header="Parcelas" />
+								<Column field="lucro_por_parcela" header="Lucro/Parcela">
+									<template #body="{ data }">
+										{{ formatValorReal(data.lucro_por_parcela) }}
+									</template>
+								</Column>
+								<Column field="total_lucro_periodo" header="Lucro no Período">
+									<template #body="{ data }">
+										<strong>{{ formatValorReal(data.total_lucro_periodo) }}</strong>
+									</template>
+								</Column>
+								<template #expansion="slotProps">
+									<div class="p-3">
+										<h6>Parcelas Recebidas no Período</h6>
+										<DataTable 
+											:value="slotProps.data.parcelas_recebidas_periodo" 
+											:paginator="true" 
+											:rows="5"
+											responsiveLayout="scroll"
+											class="p-datatable-sm"
+										>
+											<Column field="data_recebimento" header="Data Recebimento">
+												<template #body="{ data }">
+													{{ formatDate(data.data_recebimento) }}
+												</template>
+											</Column>
+											<Column field="valor_recebido" header="Valor Recebido">
+												<template #body="{ data }">
+													{{ formatValorReal(data.valor_recebido) }}
+												</template>
+											</Column>
+											<Column field="lucro_proporcional" header="Lucro Proporcional">
+												<template #body="{ data }">
+													<strong>{{ formatValorReal(data.lucro_proporcional) }}</strong>
+												</template>
+											</Column>
+											<Column field="descricao" header="Descrição" style="min-width: 30rem" />
+										</DataTable>
+									</div>
+								</template>
+							</DataTable>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -309,11 +392,16 @@ export default {
 			relatorioFiscalService: new RelatorioFiscalService()
 		};
 	},
-	data() {
+		data() {
 		return {
 			loading: ref(false),
 			loadingExcel: ref(false),
 			loadingPDF: ref(false),
+			tipoCalculo: ref('proporcional'),
+			tiposCalculo: [
+				{ label: 'Lucro Proporcional', value: 'proporcional' },
+				{ label: 'Lucro Presumido', value: 'presumido' }
+			],
 			tipoRelatorio: ref('mensal'),
 			tiposRelatorio: [
 				{ label: 'Mensal', value: 'mensal' },
@@ -326,7 +414,8 @@ export default {
 				data_inicio: null,
 				data_fim: null
 			},
-			relatorio: null
+			relatorio: null,
+			expandedRows: []
 		};
 	},
 	mounted() {
@@ -336,6 +425,9 @@ export default {
 		this.filtros.mes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 	},
 	methods: {
+		onTipoCalculoChange() {
+			this.relatorio = null;
+		},
 		onTipoRelatorioChange() {
 			this.relatorio = null;
 		},
@@ -366,7 +458,7 @@ export default {
 						// Se for string no formato YYYYMM, converter para YYYY-MM
 						mes = mes.substring(0, 4) + '-' + mes.substring(4);
 					}
-					response = await this.relatorioFiscalService.relatorioMensal(mes);
+					response = await this.relatorioFiscalService.relatorioMensal(mes, this.tipoCalculo);
 				} else if (this.tipoRelatorio === 'anual') {
 					if (!this.filtros.ano) {
 						this.toast.add({
@@ -377,7 +469,7 @@ export default {
 						this.loading = false;
 						return;
 					}
-					response = await this.relatorioFiscalService.relatorioAnual(this.filtros.ano);
+					response = await this.relatorioFiscalService.relatorioAnual(this.filtros.ano, this.tipoCalculo);
 				} else {
 					if (!this.filtros.data_inicio || !this.filtros.data_fim) {
 						this.toast.add({
@@ -394,7 +486,7 @@ export default {
 					const dataFim = typeof this.filtros.data_fim === 'string'
 						? this.filtros.data_fim.split('T')[0]
 						: this.filtros.data_fim.toISOString().split('T')[0];
-					response = await this.relatorioFiscalService.relatorioPeriodo(dataInicio, dataFim);
+					response = await this.relatorioFiscalService.relatorioPeriodo(dataInicio, dataFim, this.tipoCalculo);
 				}
 
 				if (response.data) {
@@ -443,6 +535,8 @@ export default {
 					params.data_inicio = dataInicio;
 					params.data_fim = dataFim;
 				}
+
+				params.tipo = this.tipoCalculo;
 
 				const response = await this.relatorioFiscalService.exportarExcel(params);
 				
@@ -502,6 +596,8 @@ export default {
 					params.data_inicio = dataInicio;
 					params.data_fim = dataFim;
 				}
+
+				params.tipo = this.tipoCalculo;
 
 				const response = await this.relatorioFiscalService.exportarPDF(params);
 				

@@ -136,6 +136,10 @@ class RecalcularParcelas extends Command
                         if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $newTxId = $response->json()['txid'] ?? null;
 
+                            // Incrementar lucro_real com o valor dos juros/multa
+                            $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
+                            $parcela->lucro_real = $lucroRealAtual + $valorJuros;
+                            
                             $parcela->saldo         = $novoValor;
                             $parcela->venc_real     = date('Y-m-d');
                             $parcela->identificador = $newTxId;

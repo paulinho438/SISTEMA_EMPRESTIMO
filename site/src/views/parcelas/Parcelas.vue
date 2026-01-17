@@ -347,6 +347,12 @@ export default {
 
 					</template>
 				</Column>
+				<Column field="lucro_real" header="Lucro Real" :sortable="false" class="w-1">
+					<template #body="slotProps">
+						<span class="p-column-title">Lucro Real</span>
+						{{ (slotProps.data.lucro_real || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
+					</template>
+				</Column>
 				<Column field="valor_recebido" header="Valor Recebido" :sortable="false" class="w-1">
 					<template #body="slotProps">
 						<span class="p-column-title">Valor Recebido Consultor</span>

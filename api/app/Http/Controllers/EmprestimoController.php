@@ -913,6 +913,10 @@ class EmprestimoController extends Controller
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
+        // Calcular lucro por parcela (lucro total / número de parcelas)
+        $numParcelas = count($dados['parcelas']);
+        $lucroPorParcela = $numParcelas > 0 ? round($emprestimoAdd->lucro / $numParcelas, 2) : 0;
+
         foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
@@ -921,6 +925,7 @@ class EmprestimoController extends Controller
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
+            $addParcela['lucro_real'] = $lucroPorParcela; // Inicializar lucro_real com valor proporcional
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -1041,6 +1046,10 @@ class EmprestimoController extends Controller
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
+        // Calcular lucro por parcela (lucro total / número de parcelas)
+        $numParcelas = count($dados['parcelas']);
+        $lucroPorParcela = $numParcelas > 0 ? round($emprestimoAdd->lucro / $numParcelas, 2) : 0;
+
         foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
@@ -1049,6 +1058,7 @@ class EmprestimoController extends Controller
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
+            $addParcela['lucro_real'] = $lucroPorParcela; // Inicializar lucro_real com valor proporcional
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -1157,6 +1167,10 @@ class EmprestimoController extends Controller
         end($pegarUltimaParcela);
         $ultimaParcela = current($pegarUltimaParcela);
 
+        // Calcular lucro por parcela (lucro total / número de parcelas)
+        $numParcelas = count($dados['parcelas']);
+        $lucroPorParcela = $numParcelas > 0 ? round($emprestimoAdd->lucro / $numParcelas, 2) : 0;
+
         foreach ($dados['parcelas'] as $parcela) {
 
             $addParcela = [];
@@ -1165,6 +1179,7 @@ class EmprestimoController extends Controller
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
+            $addParcela['lucro_real'] = $lucroPorParcela; // Inicializar lucro_real com valor proporcional
             $addParcela['venc'] = Carbon::createFromFormat('d/m/Y', $parcela['venc'])->format('Y-m-d');
             $addParcela['venc_real'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
             $addParcela['venc_real_audit'] = Carbon::createFromFormat('d/m/Y', $parcela['venc_real'])->format('Y-m-d');
@@ -2525,6 +2540,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 'venc_real'           => $venc_real,
                 'saldo'               => (float) ($p->saldo ?? 0),
                 'total_pago_parcela'  => (float) ($p->total_pago_parcela ?? 0),
+                'lucro_real'          => (float) ($p->lucro_real ?? 0),
                 'dt_baixa'            => $p->dt_baixa ? (string) $p->dt_baixa : '', // front espera '' quando não pago
                 'chave_pix'           => (string) ($p->chave_pix ?? ''),
 
@@ -4040,6 +4056,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $valorJuros = (1 * $parcela->saldo / 100);
                 }
 
+                // Incrementar lucro_real com o valor dos juros/multa
+                $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
+                $parcela->lucro_real = $lucroRealAtual + $valorJuros;
+                
                 $parcela->saldo = $novoValor;
                 $parcela->venc_real = date('Y-m-d');
                 $parcela->atrasadas = $parcela->atrasadas + 1;

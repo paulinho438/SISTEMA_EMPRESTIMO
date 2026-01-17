@@ -11,13 +11,15 @@ class RelatorioFiscalExport implements WithMultipleSheets
     protected $companyId;
     protected $dataInicio;
     protected $dataFim;
+    protected $tipo;
     protected $calculoFiscalService;
 
-    public function __construct($companyId, $dataInicio, $dataFim)
+    public function __construct($companyId, $dataInicio, $dataFim, $tipo = 'presumido')
     {
         $this->companyId = $companyId;
         $this->dataInicio = $dataInicio;
         $this->dataFim = $dataFim;
+        $this->tipo = $tipo;
         $this->calculoFiscalService = new CalculoFiscalService();
     }
 
@@ -29,14 +31,22 @@ class RelatorioFiscalExport implements WithMultipleSheets
         $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal(
             $this->companyId,
             $this->dataInicio,
-            $this->dataFim
+            $this->dataFim,
+            $this->tipo
         );
 
-        return [
+        $sheets = [
             new RelatorioFiscalResumoSheet($relatorio),
             new RelatorioFiscalMovimentacoesSheet($relatorio['movimentacoes']),
             new RelatorioFiscalDespesasSheet($relatorio['despesas']),
         ];
+
+        // Se for cálculo proporcional, adicionar aba de detalhamento por empréstimo
+        if ($this->tipo === 'proporcional' && !empty($relatorio['detalhamento_emprestimos'])) {
+            $sheets[] = new RelatorioFiscalDetalhamentoSheet($relatorio['detalhamento_emprestimos']);
+        }
+
+        return $sheets;
     }
 }
 
