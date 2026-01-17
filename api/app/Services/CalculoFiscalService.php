@@ -65,19 +65,18 @@ class CalculoFiscalService
 
     /**
      * Calcula a base tributável
-     * Nota: No lucro presumido, geralmente não se deduzem despesas da base,
-     * mas mantemos o parâmetro caso haja necessidade futura
+     * No lucro presumido, a base tributável é o próprio lucro presumido
+     * Despesas não são deduzidas da base, apenas informativas para relatórios
      *
      * @param float $lucroPresumido
-     * @param float $despesasDedutiveis
+     * @param float $despesasDedutiveis (apenas informativo, não utilizado no cálculo)
      * @return float
      */
     public function calcularBaseTributavel(float $lucroPresumido, float $despesasDedutiveis = 0): float
     {
-        // Por padrão, no lucro presumido, a base tributável é o próprio lucro presumido
-        // Despesas dedutíveis podem ser consideradas, mas depende da legislação e orientação contábil
-        $base = $lucroPresumido - $despesasDedutiveis;
-        return max(0, round($base, 2));
+        // No lucro presumido, a base tributável é sempre igual ao lucro presumido
+        // Despesas são apenas informativas e não reduzem a base de cálculo
+        return max(0, round($lucroPresumido, 2));
     }
 
     /**
