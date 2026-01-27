@@ -50,6 +50,24 @@ class XGateTestController extends Controller
                 $xgateService = new XGateService($banco);
                 $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
 
+                // Se a resposta contém erro, incluir curl_command se disponível
+                if (isset($response['success']) && !$response['success']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $response['error'] ?? 'Erro ao criar cobrança',
+                        'request' => [
+                            'banco_id' => $banco->id,
+                            'banco_nome' => $banco->name,
+                            'valor' => $valor,
+                            'cliente' => $cliente->nome_completo,
+                            'reference_id' => $referenceId,
+                            'due_date' => $dueDate
+                        ],
+                        'response' => $response,
+                        'curl_command' => $response['curl_command'] ?? null
+                    ]);
+                }
+
                 return response()->json([
                     'success' => $response['success'] ?? false,
                     'message' => $response['success'] ? 'Cobrança criada com sucesso' : ($response['error'] ?? 'Erro ao criar cobrança'),
@@ -61,15 +79,44 @@ class XGateTestController extends Controller
                         'reference_id' => $referenceId,
                         'due_date' => $dueDate
                     ],
-                    'response' => $response
+                    'response' => $response,
+                    'curl_command' => $response['curl_command'] ?? null
                 ]);
 
             } catch (\Exception $e) {
-                Log::error('Erro ao testar cobrança XGate: ' . $e->getMessage());
+                Log::error('Erro ao testar cobrança XGate: ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]);
+                
+                // Tentar obter curl_command da propriedade da exceção ou da resposta
+                $curlCommand = null;
+                if (isset($e->curl_command)) {
+                    $curlCommand = $e->curl_command;
+                }
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Erro ao testar cobrança: ' . $e->getMessage(),
-                    'error' => $e->getMessage()
+                    'message' => 'Erro no servidor, tente novamente',
+                    'request' => [
+                        'banco_id' => $banco->id ?? null,
+                        'banco_nome' => $banco->name ?? null,
+                        'valor' => $valor ?? null,
+                        'cliente' => $cliente->nome_completo ?? null,
+                        'reference_id' => $referenceId ?? null,
+                        'due_date' => $dueDate ?? null
+                    ],
+                    'response' => [
+                        'success' => false,
+                        'error' => 'Erro no servidor, tente novamente'
+                    ],
+                    'curl_command' => $curlCommand,
+                    'error_details' => [
+                        'message' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 

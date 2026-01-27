@@ -11,6 +11,7 @@ class XGateService
 {
     protected $xgate;
     protected $banco;
+    protected $lastCurlCommand = null;
 
     public function __construct(?Banco $banco = null)
     {
@@ -81,6 +82,26 @@ class XGateService
                 }
             }
 
+            // Preparar dados para logging
+            $requestData = [
+                'amount' => $valor,
+                'customer' => [
+                    'name' => $customer->name ?? null,
+                    'document' => $customer->document ?? null,
+                    'email' => $customer->email ?? null,
+                    'phone' => $customer->phone ? [
+                        'type' => $customer->phone->type->value ?? null,
+                        'number' => $customer->phone->number ?? null,
+                        'areaCode' => $customer->phone->areaCode ?? null,
+                        'countryCode' => $customer->phone->countryCode ?? null,
+                    ] : null,
+                ],
+                'methodCurrency' => \MethodCurrency::PIX->value ?? 'PIX'
+            ];
+
+            // Log da requisição antes de enviar
+            $this->logRequestDetails('POST', '/deposit', $requestData, 'Criar Cobrança PIX');
+
             // Criar depósito PIX
             $response = $this->xgate->depositFiat(
                 $valor,
@@ -91,7 +112,8 @@ class XGateService
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE COBRANÇA - Tempo para chamar: {$duracaoAtualizacao}s", [
                 'reference_id' => $referenceId,
-                'valor' => $valor
+                'valor' => $valor,
+                'response' => $response
             ]);
 
             // Processar resposta - depositFiat retorna um objeto Deposit
@@ -120,12 +142,27 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Erro ao criar cobrança XGate: ' . $e->getMessage(), [
+            $errorDetails = [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
-            ]);
+            ];
+            
+            $curlCommand = $this->getLastCurlCommand();
+            
+            Log::error('Erro ao criar cobrança XGate: ' . $e->getMessage(), array_merge($errorDetails, [
+                'curl_command' => $curlCommand
+            ]));
+            
+            // Adicionar curl_command à exceção para ser capturado no controller
+            $e->curl_command = $curlCommand;
+            
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Erro no servidor, tente novamente',
+                'error_details' => $errorDetails,
+                'curl_command' => $curlCommand
             ];
         }
     }
@@ -452,6 +489,119 @@ class XGateService
             return null;
         }
     }
+
+    /**
+     * Loga os detalhes da requisição e gera comando curl equivalente
+     *
+     * @param string $method Método HTTP (GET, POST, etc)
+     * @param string $endpoint Endpoint da API
+     * @param array $data Dados da requisição
+     * @param string $description Descrição da operação
+     * @return void
+     */
+    protected function logRequestDetails(string $method, string $endpoint, array $data, string $description = '')
+    {
+        $baseUrl = 'https://api.xgateglobal.com';
+        $url = $baseUrl . $endpoint;
+        
+        // Obter token de autenticação (se disponível)
+        $token = $this->getAuthToken();
+        
+        // Preparar headers
+        $headers = [
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ];
+        
+        if ($token) {
+            $headers[] = 'Authorization: Bearer ' . $token;
+        }
+        
+        // Gerar comando curl
+        $curlCommand = $this->generateCurlCommand($method, $url, $headers, $data);
+        
+        // Log detalhado
+        Log::info("XGATE REQUEST - {$description}", [
+            'method' => $method,
+            'url' => $url,
+            'headers' => $headers,
+            'data' => $data,
+            'curl_command' => $curlCommand
+        ]);
+        
+        // Armazenar último curl para retorno em caso de erro
+        $this->lastCurlCommand = $curlCommand;
+    }
+
+    /**
+     * Gera comando curl equivalente
+     *
+     * @param string $method Método HTTP
+     * @param string $url URL completa
+     * @param array $headers Headers HTTP
+     * @param array $data Dados do body
+     * @return string Comando curl
+     */
+    protected function generateCurlCommand(string $method, string $url, array $headers, array $data): string
+    {
+        $curl = "curl -X {$method} '{$url}' \\\n";
+        
+        // Adicionar headers
+        foreach ($headers as $header) {
+            $curl .= "  -H '{$header}' \\\n";
+        }
+        
+        // Adicionar body se houver dados
+        if (!empty($data) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
+            $jsonData = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $jsonDataEscaped = addcslashes($jsonData, "'");
+            $curl .= "  -d '{$jsonDataEscaped}'";
+        }
+        
+        return $curl;
+    }
+
+    /**
+     * Tenta obter o token de autenticação do XGate
+     * Nota: Isso pode não funcionar se o token estiver privado no objeto XGate
+     *
+     * @return string|null Token ou null se não disponível
+     */
+    protected function getAuthToken(): ?string
+    {
+        try {
+            // Tentar acessar o token através de reflexão (se disponível)
+            if ($this->xgate && is_object($this->xgate)) {
+                $reflection = new \ReflectionClass($this->xgate);
+                
+                // Tentar acessar propriedade access (onde o token geralmente fica)
+                if ($reflection->hasProperty('access')) {
+                    $accessProperty = $reflection->getProperty('access');
+                    $accessProperty->setAccessible(true);
+                    $access = $accessProperty->getValue($this->xgate);
+                    
+                    if (is_object($access) && isset($access->token)) {
+                        return $access->token;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Ignorar erros de reflexão
+        }
+        
+        return null;
+    }
+
+    /**
+     * Retorna o último comando curl gerado
+     *
+     * @return string|null
+     */
+    protected function getLastCurlCommand(): ?string
+    {
+        return $this->lastCurlCommand ?? null;
+    }
+
 
     /**
      * Garante que as classes do XGate estejam carregadas
