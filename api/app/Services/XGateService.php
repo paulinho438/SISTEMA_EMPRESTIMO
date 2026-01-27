@@ -102,12 +102,37 @@ class XGateService
             // Log da requisição antes de enviar
             $this->logRequestDetails('POST', '/deposit', $requestData, 'Criar Cobrança PIX');
 
+            // Tentar criar o cliente primeiro para ter mais controle sobre erros
+            // Se o cliente já existir, o XGate retornará o ID existente
+            $customerId = null;
+            try {
+                $customerCreateResponse = $this->xgate->customerCreate($customer);
+                if ($customerCreateResponse && isset($customerCreateResponse->customer) && isset($customerCreateResponse->customer->_id)) {
+                    $customerId = $customerCreateResponse->customer->_id;
+                    Log::info('Cliente XGate criado/encontrado', ['customer_id' => $customerId]);
+                }
+            } catch (\Exception $customerError) {
+                // Se falhar ao criar cliente, tentar usar o depósito direto mesmo assim
+                // O XGate pode criar automaticamente
+                Log::warning('Erro ao criar cliente XGate, tentando depósito direto: ' . $customerError->getMessage());
+            }
+
             // Criar depósito PIX
-            $response = $this->xgate->depositFiat(
-                $valor,
-                $customer,
-                \MethodCurrency::PIX
-            );
+            // Se temos o customerId, podemos passar como string ao invés do objeto
+            if ($customerId) {
+                $response = $this->xgate->depositFiat(
+                    $valor,
+                    $customerId, // Passar ID do cliente ao invés do objeto
+                    \MethodCurrency::PIX
+                );
+            } else {
+                // Usar objeto Customer (XGate criará automaticamente)
+                $response = $this->xgate->depositFiat(
+                    $valor,
+                    $customer,
+                    \MethodCurrency::PIX
+                );
+            }
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE COBRANÇA - Tempo para chamar: {$duracaoAtualizacao}s", [
@@ -142,17 +167,75 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
+            // Extrair mensagem real do erro
+            $errorMessage = $e->getMessage();
+            
+            // Se for XGateError, tentar extrair mais informações
+            if (class_exists('XGateError') && $e instanceof \XGateError) {
+                // XGateError pode ter propriedades message, status, originalError
+                if (isset($e->message) && $e->message !== 'Erro no servidor, tente novamente') {
+                    $errorMessage = $e->message;
+                }
+                
+                if (isset($e->originalError)) {
+                    $originalError = $e->originalError;
+                    if (is_object($originalError)) {
+                        // Tentar extrair mensagem do erro original
+                        if (isset($originalError->message)) {
+                            $errorMessage = $originalError->message;
+                        } elseif (is_string($originalError)) {
+                            $errorMessage = $originalError;
+                        }
+                    } elseif (is_string($originalError)) {
+                        $errorMessage = $originalError;
+                    }
+                }
+                
+                // Se tiver status HTTP, incluir na mensagem
+                if (isset($e->status)) {
+                    $errorMessage .= " (HTTP {$e->status})";
+                }
+            }
+            
             $errorDetails = [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'error_class' => get_class($e)
             ];
+            
+            // Adicionar propriedades do erro se disponíveis
+            if (is_object($e)) {
+                try {
+                    $reflection = new \ReflectionClass($e);
+                    foreach ($reflection->getProperties() as $property) {
+                        $property->setAccessible(true);
+                        $value = $property->getValue($e);
+                        if ($value !== null) {
+                            $errorDetails['error_' . $property->getName()] = $value;
+                        }
+                    }
+                } catch (\Exception $reflectionError) {
+                    // Ignorar erros de reflexão
+                }
+            }
             
             $curlCommand = $this->getLastCurlCommand();
             
-            Log::error('Erro ao criar cobrança XGate: ' . $e->getMessage(), array_merge($errorDetails, [
-                'curl_command' => $curlCommand
+            Log::error('Erro ao criar cobrança XGate: ' . $errorMessage, array_merge($errorDetails, [
+                'curl_command' => $curlCommand,
+                'customer_data' => [
+                    'name' => $customer->name ?? null,
+                    'document' => $customer->document ?? null,
+                    'email' => $customer->email ?? null,
+                    'phone' => $customer->phone ? [
+                        'type' => $customer->phone->type->value ?? null,
+                        'number' => $customer->phone->number ?? null,
+                        'areaCode' => $customer->phone->areaCode ?? null,
+                        'countryCode' => $customer->phone->countryCode ?? null,
+                    ] : null,
+                ]
             ]));
             
             // Adicionar curl_command à exceção para ser capturado no controller
@@ -160,7 +243,7 @@ class XGateService
             
             return [
                 'success' => false,
-                'error' => 'Erro no servidor, tente novamente',
+                'error' => $errorMessage ?: 'Erro no servidor, tente novamente',
                 'error_details' => $errorDetails,
                 'curl_command' => $curlCommand
             ];
