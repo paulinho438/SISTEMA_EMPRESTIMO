@@ -7,25 +7,38 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Banco;
 use Exception;
 
-// Incluir o arquivo principal do pacote XGate se não estiver instalado via Composer
+// O pacote XGate deve ser autoloaded pelo Composer
+// Se não estiver funcionando, vamos incluir manualmente o index.php
+// mas precisamos garantir que o vendor/autoload.php seja encontrado
 if (!class_exists('XGate\Integration\XGate')) {
-    // Tentar diferentes caminhos possíveis
-    $paths = [
-        base_path('vendor/xgate/xgate-integration/src/index.php'),
-        __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php',
-        base_path('../vendor/xgate/xgate-integration/src/index.php'),
-    ];
-    
-    foreach ($paths as $xgatePath) {
-        if (file_exists($xgatePath)) {
-            require_once $xgatePath;
-            break;
+    $xgateIndexPath = base_path('vendor/xgate/xgate-integration/src/index.php');
+    if (file_exists($xgateIndexPath)) {
+        // Definir o caminho correto do vendor/autoload.php antes de incluir
+        // O index.php do pacote pode estar tentando incluir vendor/autoload.php
+        // Vamos definir uma constante ou variável de ambiente para ajudar
+        $vendorAutoloadPath = base_path('vendor/autoload.php');
+        
+        // Salvar o diretório atual
+        $originalDir = getcwd();
+        // Mudar para o diretório raiz do projeto Laravel
+        chdir(base_path());
+        
+        // Incluir o arquivo (agora os caminhos relativos devem funcionar)
+        require_once $xgateIndexPath;
+        
+        // Restaurar o diretório original
+        chdir($originalDir);
+    } else {
+        // Tentar caminho alternativo
+        $xgateIndexPath = __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php';
+        if (file_exists($xgateIndexPath)) {
+            $originalDir = getcwd();
+            chdir(base_path());
+            require_once $xgateIndexPath;
+            chdir($originalDir);
+        } else {
+            throw new \Exception('Pacote XGate não encontrado. Execute: composer dump-autoload');
         }
-    }
-    
-    // Se ainda não encontrou, lançar exceção
-    if (!class_exists('XGate\Integration\XGate')) {
-        throw new \Exception('Pacote XGate não encontrado. Execute: composer require xgate/xgate-integration:dev-production');
     }
 }
 
