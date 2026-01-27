@@ -102,19 +102,23 @@ Route::post('/rotina/locacao_data_corte/{id}', [LocacaoController::class, 'dataC
 Route::get('/cobrancas/teste', [CobrancaAutomaticaATestController::class, 'dryRun']);
 Route::post('/cobrancas/enviar-mensagem-teste', [CobrancaAutomaticaATestController::class, 'enviarMensagemTeste']);
 
-// Rotas de teste Velana
-Route::post('/velana/teste/checkout', [VelanaTestController::class, 'testarCheckout']);
-Route::post('/velana/teste/cobranca', [VelanaTestController::class, 'testarCobranca']);
-Route::post('/velana/teste/transferencia', [VelanaTestController::class, 'testarTransferencia']);
-Route::post('/velana/teste/buscar-checkout', [VelanaTestController::class, 'buscarCheckout']);
-Route::post('/velana/teste/buscar-transacao', [VelanaTestController::class, 'buscarTransacao']);
+// Rotas de teste Velana - com rate limiter mais permissivo
+Route::middleware(['throttle:test'])->group(function () {
+    Route::post('/velana/teste/checkout', [VelanaTestController::class, 'testarCheckout']);
+    Route::post('/velana/teste/cobranca', [VelanaTestController::class, 'testarCobranca']);
+    Route::post('/velana/teste/transferencia', [VelanaTestController::class, 'testarTransferencia']);
+    Route::post('/velana/teste/buscar-checkout', [VelanaTestController::class, 'buscarCheckout']);
+    Route::post('/velana/teste/buscar-transacao', [VelanaTestController::class, 'buscarTransacao']);
+});
 
-// Rotas de teste XGate
-Route::post('/xgate/teste/cobranca', [XGateTestController::class, 'testarCobranca']);
-Route::post('/xgate/teste/transferencia', [XGateTestController::class, 'testarTransferencia']);
-Route::post('/xgate/teste/transferencia-cliente', [XGateTestController::class, 'testarTransferenciaComCliente']);
-Route::post('/xgate/teste/consultar-saldo', [XGateTestController::class, 'consultarSaldo']);
-Route::post('/xgate/teste/criar-cliente', [XGateTestController::class, 'criarOuAtualizarCliente']);
+// Rotas de teste XGate - com rate limiter mais permissivo
+Route::middleware(['throttle:test'])->group(function () {
+    Route::post('/xgate/teste/cobranca', [XGateTestController::class, 'testarCobranca']);
+    Route::post('/xgate/teste/transferencia', [XGateTestController::class, 'testarTransferencia']);
+    Route::post('/xgate/teste/transferencia-cliente', [XGateTestController::class, 'testarTransferenciaComCliente']);
+    Route::post('/xgate/teste/consultar-saldo', [XGateTestController::class, 'consultarSaldo']);
+    Route::post('/xgate/teste/criar-cliente', [XGateTestController::class, 'criarOuAtualizarCliente']);
+});
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);
