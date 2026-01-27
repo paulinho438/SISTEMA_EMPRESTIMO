@@ -7,48 +7,30 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Banco;
 use Exception;
 
-// O pacote XGate deve ser autoloaded pelo Composer
-// Se não estiver funcionando, vamos incluir manualmente o index.php
-// mas precisamos garantir que o vendor/autoload.php seja encontrado
-if (!class_exists('XGate\Integration\XGate')) {
-    $xgateIndexPath = base_path('vendor/xgate/xgate-integration/src/index.php');
-    if (file_exists($xgateIndexPath)) {
-        // Definir o caminho correto do vendor/autoload.php antes de incluir
-        // O index.php do pacote pode estar tentando incluir vendor/autoload.php
-        // Vamos definir uma constante ou variável de ambiente para ajudar
-        $vendorAutoloadPath = base_path('vendor/autoload.php');
-        
-        // Salvar o diretório atual
-        $originalDir = getcwd();
-        // Mudar para o diretório raiz do projeto Laravel
-        chdir(base_path());
-        
-        // Incluir o arquivo (agora os caminhos relativos devem funcionar)
-        require_once $xgateIndexPath;
-        
-        // Restaurar o diretório original
-        chdir($originalDir);
-    } else {
-        // Tentar caminho alternativo
-        $xgateIndexPath = __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php';
-        if (file_exists($xgateIndexPath)) {
-            $originalDir = getcwd();
-            chdir(base_path());
-            require_once $xgateIndexPath;
-            chdir($originalDir);
-        } else {
-            throw new \Exception('Pacote XGate não encontrado. Execute: composer dump-autoload');
-        }
-    }
+// Carregar o pacote XGate conforme a documentação oficial
+// A documentação mostra: require 'vendor/xgate/xgate-integration/src/index.php';
+$xgateIndexPath = base_path('vendor/xgate/xgate-integration/src/index.php');
+if (!file_exists($xgateIndexPath)) {
+    $xgateIndexPath = __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php';
 }
 
-// Classes do pacote XGate
-use XGate\Integration\XGate;
-use XGate\Integration\Account;
-use XGate\Integration\Customer;
-use XGate\Integration\MethodCurrency;
-use XGate\Integration\PixKeyParam;
-use XGate\Integration\PixKeyParamType;
+if (!file_exists($xgateIndexPath)) {
+    throw new \Exception('Pacote XGate não encontrado. Execute: composer require xgate/xgate-integration:dev-production');
+}
+
+// Salvar o diretório atual
+$originalDir = getcwd();
+// Mudar para o diretório raiz do projeto Laravel para que os caminhos relativos funcionem
+chdir(base_path());
+
+// Incluir o arquivo index.php conforme a documentação
+require_once $xgateIndexPath;
+
+// Restaurar o diretório original
+chdir($originalDir);
+
+// As classes são definidas no namespace XGate\Integration conforme o composer.json do pacote
+// Vamos usar o namespace completo diretamente no código
 
 class XGateService
 {
@@ -70,8 +52,8 @@ class XGateService
                     $password = $banco->xgate_password;
                 }
 
-                $account = new Account($banco->xgate_email, $password);
-                $this->xgate = new XGate($account);
+                $account = new \XGate\Integration\Account($banco->xgate_email, $password);
+                $this->xgate = new \XGate\Integration\XGate($account);
             } catch (\Exception $e) {
                 Log::error('Erro ao inicializar XGate: ' . $e->getMessage());
                 throw new \Exception('Erro ao inicializar XGate: ' . $e->getMessage());
@@ -103,7 +85,7 @@ class XGateService
             $document = preg_replace('/\D/', '', $cliente->cpf);
             
             // Criar objeto Customer do XGate
-            $customer = new Customer(
+            $customer = new \XGate\Integration\Customer(
                 $cliente->nome_completo,
                 $document
             );
@@ -125,7 +107,7 @@ class XGateService
             $response = $this->xgate->depositFiat(
                 $valor,
                 $customer,
-                MethodCurrency::PIX
+                \XGate\Integration\MethodCurrency::PIX
             );
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
@@ -189,18 +171,18 @@ class XGateService
             // Determinar tipo de chave PIX
             $pixKeyType = $this->determinarTipoChavePix($pixKey);
             
-            $pixKeyParam = new PixKeyParam($pixKey, $pixKeyType);
-
+            $pixKeyParam = new \XGate\Integration\PixKeyParam($pixKey, $pixKeyType);
+            
             // Para transferência, precisamos criar ou buscar um cliente
             // Como não temos o cliente completo, vamos usar um cliente temporário
             // Na prática, você pode querer criar o cliente primeiro ou usar um ID existente
-            $customer = new Customer('Cliente Transferência', $pixKey); // Nome temporário
+            $customer = new \XGate\Integration\Customer('Cliente Transferência', $pixKey); // Nome temporário
 
             // Realizar saque (transferência) PIX
             $response = $this->xgate->withdrawFiat(
                 $valor,
                 $customer,
-                MethodCurrency::PIX,
+                \XGate\Integration\MethodCurrency::PIX,
                 $pixKeyParam
             );
 
@@ -259,11 +241,11 @@ class XGateService
 
             $pixKey = $cliente->pix_cliente;
             $pixKeyType = $this->determinarTipoChavePix($pixKey);
-            $pixKeyParam = new PixKeyParam($pixKey, $pixKeyType);
+            $pixKeyParam = new \XGate\Integration\PixKeyParam($pixKey, $pixKeyType);
 
             // Criar objeto Customer do XGate
             $document = preg_replace('/\D/', '', $cliente->cpf);
-            $customer = new Customer($cliente->nome_completo, $document);
+            $customer = new \XGate\Integration\Customer($cliente->nome_completo, $document);
 
             if ($cliente->email) {
                 $customer->email = $cliente->email;
@@ -281,7 +263,7 @@ class XGateService
             $response = $this->xgate->withdrawFiat(
                 $valor,
                 $customer,
-                MethodCurrency::PIX,
+                \XGate\Integration\MethodCurrency::PIX,
                 $pixKeyParam
             );
 
@@ -359,7 +341,7 @@ class XGateService
         try {
             $document = preg_replace('/\D/', '', $cliente->cpf);
             
-            $customer = new Customer($cliente->nome_completo, $document);
+            $customer = new \XGate\Integration\Customer($cliente->nome_completo, $document);
 
             if ($cliente->email) {
                 $customer->email = $cliente->email;
@@ -405,11 +387,11 @@ class XGateService
      * @param string $pixKey Chave PIX
      * @return PixKeyParamType Tipo da chave
      */
-    protected function determinarTipoChavePix(string $pixKey): PixKeyParamType
+    protected function determinarTipoChavePix(string $pixKey): \XGate\Integration\PixKeyParamType
     {
         // Verificar email primeiro (antes de remover caracteres)
         if (strpos($pixKey, '@') !== false) {
-            return PixKeyParamType::EMAIL;
+            return \XGate\Integration\PixKeyParamType::EMAIL;
         }
 
         // Remover caracteres especiais para análise numérica
@@ -417,26 +399,26 @@ class XGateService
 
         // CPF (11 dígitos)
         if (strlen($pixKeyClean) === 11) {
-            return PixKeyParamType::CPF;
+            return \XGate\Integration\PixKeyParamType::CPF;
         }
 
         // CNPJ (14 dígitos)
         if (strlen($pixKeyClean) === 14) {
-            return PixKeyParamType::CNPJ;
+            return \XGate\Integration\PixKeyParamType::CNPJ;
         }
 
         // Telefone (10 ou 11 dígitos)
         if (strlen($pixKeyClean) === 10 || strlen($pixKeyClean) === 11) {
-            return PixKeyParamType::PHONE;
+            return \XGate\Integration\PixKeyParamType::PHONE;
         }
 
         // Chave aleatória (UUID - 32 ou 36 caracteres com hífens)
         $pixKeyOriginal = $pixKey;
         if (strlen($pixKeyOriginal) === 32 || strlen($pixKeyOriginal) === 36) {
-            return PixKeyParamType::RANDOM;
+            return \XGate\Integration\PixKeyParamType::RANDOM;
         }
 
         // Padrão: CPF
-        return PixKeyParamType::CPF;
+        return \XGate\Integration\PixKeyParamType::CPF;
     }
 }
