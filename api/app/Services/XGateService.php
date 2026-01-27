@@ -7,6 +7,28 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Banco;
 use Exception;
 
+// Incluir o arquivo principal do pacote XGate se não estiver instalado via Composer
+if (!class_exists('XGate\Integration\XGate')) {
+    // Tentar diferentes caminhos possíveis
+    $paths = [
+        base_path('vendor/xgate/xgate-integration/src/index.php'),
+        __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php',
+        base_path('../vendor/xgate/xgate-integration/src/index.php'),
+    ];
+    
+    foreach ($paths as $xgatePath) {
+        if (file_exists($xgatePath)) {
+            require_once $xgatePath;
+            break;
+        }
+    }
+    
+    // Se ainda não encontrou, lançar exceção
+    if (!class_exists('XGate\Integration\XGate')) {
+        throw new \Exception('Pacote XGate não encontrado. Execute: composer require xgate/xgate-integration:dev-production');
+    }
+}
+
 // Classes do pacote XGate
 use XGate\Integration\XGate;
 use XGate\Integration\Account;
