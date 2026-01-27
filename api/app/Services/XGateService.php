@@ -8,12 +8,12 @@ use App\Models\Banco;
 use Exception;
 
 // Classes do pacote XGate
-use XGate\XGate;
-use XGate\Account;
-use XGate\Customer;
-use XGate\MethodCurrency;
-use XGate\PixKeyParam;
-use XGate\PixKeyParamType;
+use XGate\Integration\XGate;
+use XGate\Integration\Account;
+use XGate\Integration\Customer;
+use XGate\Integration\MethodCurrency;
+use XGate\Integration\PixKeyParam;
+use XGate\Integration\PixKeyParamType;
 
 class XGateService
 {
@@ -99,19 +99,20 @@ class XGateService
                 'valor' => $valor
             ]);
 
-            // Processar resposta
-            if (isset($response['data'])) {
-                $data = $response['data'];
+            // Processar resposta - depositFiat retorna um objeto Deposit
+            if ($response && isset($response->data)) {
+                $data = $response->data;
                 
                 // Retornar no formato esperado pelo sistema
                 return [
                     'success' => true,
-                    'transaction_id' => $data['id'] ?? $data['code'] ?? $referenceId,
-                    'code' => $data['code'] ?? null,
-                    'pixCopiaECola' => $data['pixCopiaECola'] ?? null,
-                    'qr_code' => $data['qr_code'] ?? null,
-                    'status' => $data['status'] ?? 'PENDING',
-                    'customerId' => $data['customerId'] ?? null,
+                    'transaction_id' => $data->id ?? $data->code ?? $referenceId,
+                    'code' => $data->code ?? null,
+                    'pixCopiaECola' => null, // XGate não retorna PIX copia e cola diretamente no depósito
+                    'qr_code' => null,
+                    'status' => $data->status ?? 'PENDING',
+                    'customerId' => $data->customerId ?? null,
+                    'message' => $response->message ?? null,
                     'response' => $response
                 ];
             }
@@ -174,13 +175,13 @@ class XGateService
                 'pix_key' => $pixKey
             ]);
 
-            // Processar resposta
-            if (isset($response['_id']) || isset($response['status'])) {
+            // Processar resposta - withdrawFiat retorna um objeto Withdraw
+            if ($response && (isset($response->_id) || isset($response->status))) {
                 return [
                     'success' => true,
-                    'transaction_id' => $response['_id'] ?? null,
-                    'status' => $response['status'] ?? 'PENDING',
-                    'message' => $response['message'] ?? 'Transferência iniciada',
+                    'transaction_id' => $response->_id ?? null,
+                    'status' => $response->status ?? 'PENDING',
+                    'message' => $response->message ?? 'Transferência iniciada',
                     'response' => $response
                 ];
             }
@@ -255,12 +256,13 @@ class XGateService
                 'cliente_id' => $cliente->id
             ]);
 
-            if (isset($response['_id']) || isset($response['status'])) {
+            // Processar resposta - withdrawFiat retorna um objeto Withdraw
+            if ($response && (isset($response->_id) || isset($response->status))) {
                 return [
                     'success' => true,
-                    'transaction_id' => $response['_id'] ?? null,
-                    'status' => $response['status'] ?? 'PENDING',
-                    'message' => $response['message'] ?? 'Transferência iniciada',
+                    'transaction_id' => $response->_id ?? null,
+                    'status' => $response->status ?? 'PENDING',
+                    'message' => $response->message ?? 'Transferência iniciada',
                     'response' => $response
                 ];
             }
@@ -295,9 +297,10 @@ class XGateService
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE CONSULTAR SALDO - Tempo para chamar: {$duracaoAtualizacao}s");
 
+            // getBalance retorna um array de saldos
             return [
                 'success' => true,
-                'saldo' => $response,
+                'saldo' => is_array($response) ? $response : [$response],
                 'response' => $response
             ];
 
@@ -334,13 +337,14 @@ class XGateService
                 }
             }
 
-            // Tentar criar cliente
+            // Tentar criar cliente - customerCreate retorna um objeto CreateCustomer
             $response = $this->xgate->customerCreate($customer);
 
-            if (isset($response['customer']['_id'])) {
+            if ($response && isset($response->customer) && isset($response->customer->_id)) {
                 return [
                     'success' => true,
-                    'customer_id' => $response['customer']['_id'],
+                    'customer_id' => $response->customer->_id,
+                    'message' => $response->message ?? null,
                     'response' => $response
                 ];
             }
@@ -364,35 +368,36 @@ class XGateService
      * Determina o tipo de chave PIX baseado no formato
      *
      * @param string $pixKey Chave PIX
-     * @return string Tipo da chave (PixKeyParamType)
+     * @return PixKeyParamType Tipo da chave
      */
-    protected function determinarTipoChavePix(string $pixKey): string
+    protected function determinarTipoChavePix(string $pixKey): PixKeyParamType
     {
-        // Remover caracteres especiais
-        $pixKey = preg_replace('/\D/', '', $pixKey);
-
-        // CPF (11 dígitos)
-        if (strlen($pixKey) === 11) {
-            return PixKeyParamType::CPF;
-        }
-
-        // CNPJ (14 dígitos)
-        if (strlen($pixKey) === 14) {
-            return PixKeyParamType::CNPJ;
-        }
-
-        // Email (contém @)
+        // Verificar email primeiro (antes de remover caracteres)
         if (strpos($pixKey, '@') !== false) {
             return PixKeyParamType::EMAIL;
         }
 
+        // Remover caracteres especiais para análise numérica
+        $pixKeyClean = preg_replace('/\D/', '', $pixKey);
+
+        // CPF (11 dígitos)
+        if (strlen($pixKeyClean) === 11) {
+            return PixKeyParamType::CPF;
+        }
+
+        // CNPJ (14 dígitos)
+        if (strlen($pixKeyClean) === 14) {
+            return PixKeyParamType::CNPJ;
+        }
+
         // Telefone (10 ou 11 dígitos)
-        if (strlen($pixKey) === 10 || strlen($pixKey) === 11) {
+        if (strlen($pixKeyClean) === 10 || strlen($pixKeyClean) === 11) {
             return PixKeyParamType::PHONE;
         }
 
-        // Chave aleatória (UUID)
-        if (strlen($pixKey) === 32 || strlen($pixKey) === 36) {
+        // Chave aleatória (UUID - 32 ou 36 caracteres com hífens)
+        $pixKeyOriginal = $pixKey;
+        if (strlen($pixKeyOriginal) === 32 || strlen($pixKeyOriginal) === 36) {
             return PixKeyParamType::RANDOM;
         }
 
