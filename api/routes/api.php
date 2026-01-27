@@ -31,6 +31,7 @@ use App\Http\Controllers\{
     NotasController,
     CobrancaAutomaticaATestController,
     VelanaTestController,
+    XGateTestController,
     RelatorioFiscalController,
     RelatorioLucroRealController
 };
@@ -107,6 +108,13 @@ Route::post('/velana/teste/cobranca', [VelanaTestController::class, 'testarCobra
 Route::post('/velana/teste/transferencia', [VelanaTestController::class, 'testarTransferencia']);
 Route::post('/velana/teste/buscar-checkout', [VelanaTestController::class, 'buscarCheckout']);
 Route::post('/velana/teste/buscar-transacao', [VelanaTestController::class, 'buscarTransacao']);
+
+// Rotas de teste XGate
+Route::post('/xgate/teste/cobranca', [XGateTestController::class, 'testarCobranca']);
+Route::post('/xgate/teste/transferencia', [XGateTestController::class, 'testarTransferencia']);
+Route::post('/xgate/teste/transferencia-cliente', [XGateTestController::class, 'testarTransferenciaComCliente']);
+Route::post('/xgate/teste/consultar-saldo', [XGateTestController::class, 'consultarSaldo']);
+Route::post('/xgate/teste/criar-cliente', [XGateTestController::class, 'criarOuAtualizarCliente']);
 
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth_cliente/login', [AuthClienteController::class, 'login']);

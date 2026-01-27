@@ -191,6 +191,25 @@ const model = ref([
                         permission: 'view_fechamentocaixa'
                     },
                 ]
+            },
+            {
+                label: 'Testes e Integrações',
+                permission: 'view_dashboard',
+                icon: 'pi pi-fw pi-cog',
+                items: [
+                    {
+                        label: 'Teste Velana',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/velana/teste',
+                        permission: 'view_dashboard'
+                    },
+                    {
+                        label: 'Teste XGate',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/xgate/teste',
+                        permission: 'view_dashboard'
+                    },
+                ]
             }
         ]
     },

@@ -24,6 +24,7 @@ import EmpresasRoutes from './empresas.js';
 import LogRoutes from './log.js';
 import localizacaousuarioRoutes from './localizacaousuario.js';
 import VelanaRoutes from './velana.js';
+import XGateRoutes from './xgate.js';
 import RelatoriosRoutes from './relatorios.js';
 
 const router = createRouter({
@@ -59,6 +60,7 @@ const router = createRouter({
                 ...localizacaousuarioRoutes,
                 ...ControleBcodexRoutes,
                 ...VelanaRoutes,
+                ...XGateRoutes,
                 ...RelatoriosRoutes,
                 {
                     path: '/uikit/formlayout',
