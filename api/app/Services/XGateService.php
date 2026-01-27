@@ -4,35 +4,40 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Banco;
 use Exception;
 
 class XGateService
 {
-    protected $xgate;
+    protected $baseUrl = 'https://api.xgateglobal.com';
     protected $banco;
+    protected $email;
+    protected $password;
+    protected $token = null;
+    protected $tokenExpiresAt = null;
     protected $lastCurlCommand = null;
 
     public function __construct(?Banco $banco = null)
     {
         $this->banco = $banco;
 
-        // Garantir que as classes do XGate estejam carregadas
-        $this->ensureXGateLoaded();
-
         if ($banco && $banco->xgate_email && $banco->xgate_password) {
             try {
                 // Descriptografar senha se necessário
-                $password = $banco->xgate_password;
+                $this->email = $banco->xgate_email;
+                $this->password = $banco->xgate_password;
+                
                 try {
-                    $password = Crypt::decryptString($banco->xgate_password);
+                    $this->password = Crypt::decryptString($banco->xgate_password);
                 } catch (\Exception $e) {
                     // Se não conseguir descriptografar, usar o valor direto (pode já estar descriptografado)
-                    $password = $banco->xgate_password;
+                    $this->password = $banco->xgate_password;
                 }
 
-                $account = new \Account($banco->xgate_email, $password);
-                $this->xgate = new \XGate($account);
+                // Fazer login para obter token
+                $this->authenticate();
             } catch (\Exception $e) {
                 Log::error('Erro ao inicializar XGate: ' . $e->getMessage());
                 throw new \Exception('Erro ao inicializar XGate: ' . $e->getMessage());
@@ -40,6 +45,115 @@ class XGateService
         } else {
             throw new \Exception('Credenciais XGate não configuradas');
         }
+    }
+
+    /**
+     * Autentica e obtém token de acesso
+     *
+     * @return string Token de acesso
+     */
+    protected function authenticate(): string
+    {
+        // Verificar se temos um token válido em cache
+        $cacheKey = 'xgate_token_' . md5($this->email);
+        
+        if (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
+            $this->token = $cached['token'];
+            $this->tokenExpiresAt = $cached['expires_at'];
+            
+            // Se o token ainda é válido (com margem de 5 minutos), usar
+            if ($this->tokenExpiresAt > (time() + 300)) {
+                return $this->token;
+            }
+        }
+
+        // Fazer login
+        $url = $this->baseUrl . '/auth/token';
+        
+        $response = Http::asJson()->post($url, [
+            'email' => $this->email,
+            'password' => $this->password
+        ]);
+
+        if (!$response->successful()) {
+            $errorMessage = $response->json()['message'] ?? 'Erro ao autenticar na API XGate';
+            throw new \Exception('Erro ao autenticar: ' . $errorMessage);
+        }
+
+        $data = $response->json();
+        $this->token = $data['token'];
+        
+        // Token JWT geralmente expira em 48 horas (conforme documentação)
+        // Vamos cachear por 47 horas para garantir
+        $this->tokenExpiresAt = time() + (47 * 60 * 60);
+        
+        Cache::put($cacheKey, [
+            'token' => $this->token,
+            'expires_at' => $this->tokenExpiresAt
+        ], now()->addHours(47));
+
+        return $this->token;
+    }
+
+    /**
+     * Garante que temos um token válido
+     *
+     * @return string Token de acesso
+     */
+    protected function ensureAuthenticated(): string
+    {
+        if (!$this->token || ($this->tokenExpiresAt && $this->tokenExpiresAt <= time())) {
+            return $this->authenticate();
+        }
+        
+        return $this->token;
+    }
+
+    /**
+     * Faz uma requisição HTTP autenticada
+     *
+     * @param string $method Método HTTP
+     * @param string $endpoint Endpoint da API
+     * @param array $data Dados da requisição
+     * @return \Illuminate\Http\Client\Response
+     */
+    protected function makeRequest(string $method, string $endpoint, array $data = [])
+    {
+        $token = $this->ensureAuthenticated();
+        $url = $this->baseUrl . $endpoint;
+
+        // Preparar headers
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            'Authorization' => 'Bearer ' . $token
+        ];
+
+        // Log da requisição
+        $this->logRequestDetails($method, $endpoint, $data, "XGate API Request");
+
+        // Fazer requisição
+        $httpClient = Http::withHeaders($headers);
+        
+        switch (strtoupper($method)) {
+            case 'GET':
+                $response = $httpClient->get($url, $data);
+                break;
+            case 'POST':
+                $response = $httpClient->post($url, $data);
+                break;
+            case 'PUT':
+                $response = $httpClient->put($url, $data);
+                break;
+            case 'DELETE':
+                $response = $httpClient->delete($url, $data);
+                break;
+            default:
+                $response = $httpClient->post($url, $data);
+        }
+
+        return $response;
     }
 
     /**
@@ -63,191 +177,161 @@ class XGateService
             // Preparar dados do cliente
             $document = preg_replace('/\D/', '', $cliente->cpf);
             
-            // Criar objeto Customer do XGate
-            $customer = new \Customer(
-                $cliente->nome_completo,
-                $document
-            );
+            // Preparar dados do customer
+            $customerData = [
+                'name' => $cliente->nome_completo,
+                'document' => $document
+            ];
 
             // Adicionar email se disponível
             if ($cliente->email) {
-                $customer->email = $cliente->email;
+                $customerData['email'] = $cliente->email;
             }
 
             // Adicionar telefone se disponível
             if ($cliente->telefone_celular_1) {
                 $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
                 if ($phoneObj) {
-                    $customer->phone = $phoneObj;
+                    $customerData['phone'] = $phoneObj;
                 }
             }
 
-            // Preparar dados para logging
-            $requestData = [
+            // Criar cliente primeiro (ou obter ID se já existir)
+            $customerId = $this->criarOuObterCliente($customerData);
+
+            // Preparar dados do depósito
+            $depositData = [
                 'amount' => $valor,
-                'customer' => [
-                    'name' => $customer->name ?? null,
-                    'document' => $customer->document ?? null,
-                    'email' => $customer->email ?? null,
-                    'phone' => $customer->phone ? [
-                        'type' => $customer->phone->type->value ?? null,
-                        'number' => $customer->phone->number ?? null,
-                        'areaCode' => $customer->phone->areaCode ?? null,
-                        'countryCode' => $customer->phone->countryCode ?? null,
-                    ] : null,
-                ],
-                'methodCurrency' => \MethodCurrency::PIX->value ?? 'PIX'
+                'customerId' => $customerId
             ];
 
-            // Log da requisição antes de enviar
-            $this->logRequestDetails('POST', '/deposit', $requestData, 'Criar Cobrança PIX');
-
-            // Tentar criar o cliente primeiro para ter mais controle sobre erros
-            // Se o cliente já existir, o XGate retornará o ID existente
-            $customerId = null;
-            try {
-                $customerCreateResponse = $this->xgate->customerCreate($customer);
-                if ($customerCreateResponse && isset($customerCreateResponse->customer) && isset($customerCreateResponse->customer->_id)) {
-                    $customerId = $customerCreateResponse->customer->_id;
-                    Log::info('Cliente XGate criado/encontrado', ['customer_id' => $customerId]);
+            // Obter currency (PIX)
+            $currencies = $this->getCurrenciesDeposit();
+            $pixCurrency = null;
+            foreach ($currencies as $currency) {
+                if (isset($currency['type']) && $currency['type'] === 'PIX') {
+                    $pixCurrency = $currency;
+                    break;
                 }
-            } catch (\Exception $customerError) {
-                // Se falhar ao criar cliente, tentar usar o depósito direto mesmo assim
-                // O XGate pode criar automaticamente
-                Log::warning('Erro ao criar cliente XGate, tentando depósito direto: ' . $customerError->getMessage());
             }
 
-            // Criar depósito PIX
-            // Se temos o customerId, podemos passar como string ao invés do objeto
-            if ($customerId) {
-                $response = $this->xgate->depositFiat(
-                    $valor,
-                    $customerId, // Passar ID do cliente ao invés do objeto
-                    \MethodCurrency::PIX
-                );
-            } else {
-                // Usar objeto Customer (XGate criará automaticamente)
-                $response = $this->xgate->depositFiat(
-                    $valor,
-                    $customer,
-                    \MethodCurrency::PIX
-                );
+            if (!$pixCurrency) {
+                throw new \Exception('Moeda PIX não encontrada na conta XGate');
             }
+
+            $depositData['currency'] = $pixCurrency;
+
+            // Fazer requisição de depósito
+            $response = $this->makeRequest('POST', '/deposit', $depositData);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE COBRANÇA - Tempo para chamar: {$duracaoAtualizacao}s", [
                 'reference_id' => $referenceId,
                 'valor' => $valor,
-                'response' => $response
+                'status' => $response->status()
             ]);
 
-            // Processar resposta - depositFiat retorna um objeto Deposit
-            if ($response && isset($response->data)) {
-                $data = $response->data;
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $errorMessage = $errorData['message'] ?? 'Erro ao criar cobrança na API XGate';
                 
-                // Retornar no formato esperado pelo sistema
+                throw new \Exception($errorMessage);
+            }
+
+            $responseData = $response->json();
+
+            // Processar resposta
+            if (isset($responseData['data'])) {
+                $data = $responseData['data'];
+                
                 return [
                     'success' => true,
-                    'transaction_id' => $data->id ?? $data->code ?? $referenceId,
-                    'code' => $data->code ?? null,
+                    'transaction_id' => $data['id'] ?? $data['code'] ?? $referenceId,
+                    'code' => $data['code'] ?? null,
                     'pixCopiaECola' => null, // XGate não retorna PIX copia e cola diretamente no depósito
                     'qr_code' => null,
-                    'status' => $data->status ?? 'PENDING',
-                    'customerId' => $data->customerId ?? null,
-                    'message' => $response->message ?? null,
-                    'response' => $response
+                    'status' => $data['status'] ?? 'PENDING',
+                    'customerId' => $data['customerId'] ?? null,
+                    'message' => $responseData['message'] ?? null,
+                    'response' => $responseData
                 ];
             }
 
-            Log::error('Resposta XGate inválida', ['response' => $response]);
+            Log::error('Resposta XGate inválida', ['response' => $responseData]);
             return [
                 'success' => false,
                 'error' => 'Resposta inválida da API XGate',
-                'response' => $response
+                'response' => $responseData
             ];
 
         } catch (\Exception $e) {
-            // Extrair mensagem real do erro
-            $errorMessage = $e->getMessage();
-            
-            // Se for XGateError, tentar extrair mais informações
-            if (class_exists('XGateError') && $e instanceof \XGateError) {
-                // XGateError pode ter propriedades message, status, originalError
-                if (isset($e->message) && $e->message !== 'Erro no servidor, tente novamente') {
-                    $errorMessage = $e->message;
-                }
-                
-                if (isset($e->originalError)) {
-                    $originalError = $e->originalError;
-                    if (is_object($originalError)) {
-                        // Tentar extrair mensagem do erro original
-                        if (isset($originalError->message)) {
-                            $errorMessage = $originalError->message;
-                        } elseif (is_string($originalError)) {
-                            $errorMessage = $originalError;
-                        }
-                    } elseif (is_string($originalError)) {
-                        $errorMessage = $originalError;
-                    }
-                }
-                
-                // Se tiver status HTTP, incluir na mensagem
-                if (isset($e->status)) {
-                    $errorMessage .= " (HTTP {$e->status})";
-                }
-            }
-            
             $errorDetails = [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'error_class' => get_class($e)
+                'trace' => $e->getTraceAsString()
             ];
-            
-            // Adicionar propriedades do erro se disponíveis
-            if (is_object($e)) {
-                try {
-                    $reflection = new \ReflectionClass($e);
-                    foreach ($reflection->getProperties() as $property) {
-                        $property->setAccessible(true);
-                        $value = $property->getValue($e);
-                        if ($value !== null) {
-                            $errorDetails['error_' . $property->getName()] = $value;
-                        }
-                    }
-                } catch (\Exception $reflectionError) {
-                    // Ignorar erros de reflexão
-                }
-            }
             
             $curlCommand = $this->getLastCurlCommand();
             
-            Log::error('Erro ao criar cobrança XGate: ' . $errorMessage, array_merge($errorDetails, [
-                'curl_command' => $curlCommand,
-                'customer_data' => [
-                    'name' => $customer->name ?? null,
-                    'document' => $customer->document ?? null,
-                    'email' => $customer->email ?? null,
-                    'phone' => $customer->phone ? [
-                        'type' => $customer->phone->type->value ?? null,
-                        'number' => $customer->phone->number ?? null,
-                        'areaCode' => $customer->phone->areaCode ?? null,
-                        'countryCode' => $customer->phone->countryCode ?? null,
-                    ] : null,
-                ]
+            Log::error('Erro ao criar cobrança XGate: ' . $e->getMessage(), array_merge($errorDetails, [
+                'curl_command' => $curlCommand
             ]));
-            
-            // Adicionar curl_command à exceção para ser capturado no controller
-            $e->curl_command = $curlCommand;
             
             return [
                 'success' => false,
-                'error' => $errorMessage ?: 'Erro no servidor, tente novamente',
+                'error' => $e->getMessage() ?: 'Erro no servidor, tente novamente',
                 'error_details' => $errorDetails,
                 'curl_command' => $curlCommand
             ];
         }
+    }
+
+    /**
+     * Cria ou obtém cliente no XGate
+     *
+     * @param array $customerData Dados do cliente
+     * @return string ID do cliente
+     */
+    protected function criarOuObterCliente(array $customerData): string
+    {
+        try {
+            // Tentar criar cliente
+            $response = $this->makeRequest('POST', '/customer', $customerData);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (isset($data['customer']['_id'])) {
+                    return $data['customer']['_id'];
+                }
+            }
+
+            // Se falhar, pode ser que o cliente já exista
+            // Por enquanto, vamos lançar o erro
+            $errorData = $response->json();
+            $errorMessage = $errorData['message'] ?? 'Erro ao criar cliente na API XGate';
+            
+            throw new \Exception($errorMessage);
+        } catch (\Exception $e) {
+            Log::error('Erro ao criar cliente XGate: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Obtém lista de moedas disponíveis para depósito
+     *
+     * @return array
+     */
+    protected function getCurrenciesDeposit(): array
+    {
+        $response = $this->makeRequest('GET', '/deposit/company/currencies');
+        
+        if (!$response->successful()) {
+            throw new \Exception('Erro ao buscar moedas de depósito');
+        }
+
+        return $response->json();
     }
 
     /**
@@ -268,21 +352,71 @@ class XGateService
 
             // Determinar tipo de chave PIX
             $pixKeyType = $this->determinarTipoChavePix($pixKey);
-            
-            $pixKeyParam = new \PixKeyParam($pixKey, $pixKeyType);
-            
-            // Para transferência, precisamos criar ou buscar um cliente
-            // Como não temos o cliente completo, vamos usar um cliente temporário
-            // Na prática, você pode querer criar o cliente primeiro ou usar um ID existente
-            $customer = new \Customer('Cliente Transferência', $pixKey); // Nome temporário
 
-            // Realizar saque (transferência) PIX
-            $response = $this->xgate->withdrawFiat(
-                $valor,
-                $customer,
-                \MethodCurrency::PIX,
-                $pixKeyParam
-            );
+            // Criar cliente temporário com a chave PIX
+            $customerData = [
+                'name' => 'Cliente Transferência',
+                'document' => $pixKey // Usar a chave PIX como documento temporário
+            ];
+
+            $customerId = $this->criarOuObterCliente($customerData);
+
+            // Criar chave PIX para o cliente
+            $pixKeyData = [
+                'key' => $pixKey,
+                'type' => $pixKeyType
+            ];
+
+            $pixResponse = $this->makeRequest('POST', "/pix/customer/{$customerId}/key", $pixKeyData);
+            
+            if (!$pixResponse->successful()) {
+                // Se a chave já existe, continuar
+                $pixData = $pixResponse->json();
+                if (!isset($pixData['key'])) {
+                    throw new \Exception('Erro ao criar chave PIX: ' . ($pixData['message'] ?? 'Erro desconhecido'));
+                }
+            }
+
+            // Obter currency (PIX) para saque
+            $currencies = $this->getCurrenciesWithdraw();
+            $pixCurrency = null;
+            foreach ($currencies as $currency) {
+                if (isset($currency['type']) && $currency['type'] === 'PIX') {
+                    $pixCurrency = $currency;
+                    break;
+                }
+            }
+
+            if (!$pixCurrency) {
+                throw new \Exception('Moeda PIX não encontrada para saque na conta XGate');
+            }
+
+            // Obter chaves PIX do cliente
+            $pixKeysResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key");
+            $pixKeys = $pixKeysResponse->json();
+            
+            $pixKeyToUse = null;
+            foreach ($pixKeys as $key) {
+                if ($key['key'] === $pixKey) {
+                    $pixKeyToUse = $key;
+                    break;
+                }
+            }
+
+            if (!$pixKeyToUse) {
+                throw new \Exception('Chave PIX não encontrada para o cliente');
+            }
+
+            // Preparar dados do saque
+            $withdrawData = [
+                'amount' => $valor,
+                'customerId' => $customerId,
+                'currency' => $pixCurrency,
+                'pixKey' => $pixKeyToUse
+            ];
+
+            // Fazer requisição de saque
+            $response = $this->makeRequest('POST', '/withdraw', $withdrawData);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE TRANSFERÊNCIA PIX - Tempo para chamar: {$duracaoAtualizacao}s", [
@@ -290,22 +424,21 @@ class XGateService
                 'pix_key' => $pixKey
             ]);
 
-            // Processar resposta - withdrawFiat retorna um objeto Withdraw
-            if ($response && (isset($response->_id) || isset($response->status))) {
-                return [
-                    'success' => true,
-                    'transaction_id' => $response->_id ?? null,
-                    'status' => $response->status ?? 'PENDING',
-                    'message' => $response->message ?? 'Transferência iniciada',
-                    'response' => $response
-                ];
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $errorMessage = $errorData['message'] ?? 'Erro ao realizar transferência na API XGate';
+                
+                throw new \Exception($errorMessage);
             }
 
-            Log::error('Resposta XGate inválida na transferência', ['response' => $response]);
+            $responseData = $response->json();
+
             return [
-                'success' => false,
-                'error' => 'Resposta inválida da API XGate',
-                'response' => $response
+                'success' => true,
+                'transaction_id' => $responseData['_id'] ?? null,
+                'status' => $responseData['status'] ?? 'PENDING',
+                'message' => $responseData['message'] ?? 'Transferência iniciada',
+                'response' => $responseData
             ];
 
         } catch (\Exception $e) {
@@ -314,7 +447,8 @@ class XGateService
             ]);
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'curl_command' => $this->getLastCurlCommand()
             ];
         }
     }
@@ -339,31 +473,94 @@ class XGateService
 
             $pixKey = $cliente->pix_cliente;
             $pixKeyType = $this->determinarTipoChavePix($pixKey);
-            $pixKeyParam = new \PixKeyParam($pixKey, $pixKeyType);
 
-            // Criar objeto Customer do XGate
+            // Preparar dados do cliente
             $document = preg_replace('/\D/', '', $cliente->cpf);
-            $customer = new \Customer($cliente->nome_completo, $document);
+            $customerData = [
+                'name' => $cliente->nome_completo,
+                'document' => $document
+            ];
 
             if ($cliente->email) {
-                $customer->email = $cliente->email;
+                $customerData['email'] = $cliente->email;
             }
 
             if ($cliente->telefone_celular_1) {
                 $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
                 if ($phoneObj) {
-                    $customer->phone = $phoneObj;
+                    $customerData['phone'] = $phoneObj;
                 }
             }
 
+            $customerId = $this->criarOuObterCliente($customerData);
+
+            // Criar chave PIX
+            $pixKeyData = [
+                'key' => $pixKey,
+                'type' => $pixKeyType
+            ];
+
+            $pixResponse = $this->makeRequest('POST', "/pix/customer/{$customerId}/key", $pixKeyData);
+            
+            // Se a chave já existe, continuar
+            if (!$pixResponse->successful()) {
+                $pixData = $pixResponse->json();
+                if (!isset($pixData['key'])) {
+                    // Tentar buscar chaves existentes
+                    $pixKeysResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key");
+                    if ($pixKeysResponse->successful()) {
+                        $pixKeys = $pixKeysResponse->json();
+                        foreach ($pixKeys as $key) {
+                            if ($key['key'] === $pixKey) {
+                                // Chave já existe, continuar
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Obter currency (PIX) para saque
+            $currencies = $this->getCurrenciesWithdraw();
+            $pixCurrency = null;
+            foreach ($currencies as $currency) {
+                if (isset($currency['type']) && $currency['type'] === 'PIX') {
+                    $pixCurrency = $currency;
+                    break;
+                }
+            }
+
+            if (!$pixCurrency) {
+                throw new \Exception('Moeda PIX não encontrada para saque na conta XGate');
+            }
+
+            // Obter chaves PIX do cliente
+            $pixKeysResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key");
+            $pixKeys = $pixKeysResponse->json();
+            
+            $pixKeyToUse = null;
+            foreach ($pixKeys as $key) {
+                if ($key['key'] === $pixKey) {
+                    $pixKeyToUse = $key;
+                    break;
+                }
+            }
+
+            if (!$pixKeyToUse) {
+                throw new \Exception('Chave PIX não encontrada para o cliente');
+            }
+
+            // Preparar dados do saque
+            $withdrawData = [
+                'amount' => $valor,
+                'customerId' => $customerId,
+                'currency' => $pixCurrency,
+                'pixKey' => $pixKeyToUse
+            ];
+
             $inicioAtualizacao = microtime(true);
 
-            $response = $this->xgate->withdrawFiat(
-                $valor,
-                $customer,
-                \MethodCurrency::PIX,
-                $pixKeyParam
-            );
+            $response = $this->makeRequest('POST', '/withdraw', $withdrawData);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE TRANSFERÊNCIA PIX COM CLIENTE - Tempo para chamar: {$duracaoAtualizacao}s", [
@@ -371,28 +568,29 @@ class XGateService
                 'cliente_id' => $cliente->id
             ]);
 
-            // Processar resposta - withdrawFiat retorna um objeto Withdraw
-            if ($response && (isset($response->_id) || isset($response->status))) {
-                return [
-                    'success' => true,
-                    'transaction_id' => $response->_id ?? null,
-                    'status' => $response->status ?? 'PENDING',
-                    'message' => $response->message ?? 'Transferência iniciada',
-                    'response' => $response
-                ];
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $errorMessage = $errorData['message'] ?? 'Erro ao realizar transferência na API XGate';
+                
+                throw new \Exception($errorMessage);
             }
 
+            $responseData = $response->json();
+
             return [
-                'success' => false,
-                'error' => 'Resposta inválida da API XGate',
-                'response' => $response
+                'success' => true,
+                'transaction_id' => $responseData['_id'] ?? null,
+                'status' => $responseData['status'] ?? 'PENDING',
+                'message' => $responseData['message'] ?? 'Transferência iniciada',
+                'response' => $responseData
             ];
 
         } catch (\Exception $e) {
             Log::error('Erro ao realizar transferência PIX XGate com cliente: ' . $e->getMessage());
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'curl_command' => $this->getLastCurlCommand()
             ];
         }
     }
@@ -407,23 +605,32 @@ class XGateService
         try {
             $inicioAtualizacao = microtime(true);
 
-            $response = $this->xgate->getBalance();
+            $response = $this->makeRequest('POST', '/balance/company', []);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
             Log::info("CHAMADA XGATE CONSULTAR SALDO - Tempo para chamar: {$duracaoAtualizacao}s");
 
-            // getBalance retorna um array de saldos
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $errorMessage = $errorData['message'] ?? 'Erro ao consultar saldo na API XGate';
+                
+                throw new \Exception($errorMessage);
+            }
+
+            $responseData = $response->json();
+
             return [
                 'success' => true,
-                'saldo' => is_array($response) ? $response : [$response],
-                'response' => $response
+                'saldo' => is_array($responseData) ? $responseData : [$responseData],
+                'response' => $responseData
             ];
 
         } catch (\Exception $e) {
             Log::error('Erro ao consultar saldo XGate: ' . $e->getMessage());
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'curl_command' => $this->getLastCurlCommand()
             ];
         }
     }
@@ -439,57 +646,68 @@ class XGateService
         try {
             $document = preg_replace('/\D/', '', $cliente->cpf);
             
-            $customer = new \Customer($cliente->nome_completo, $document);
+            $customerData = [
+                'name' => $cliente->nome_completo,
+                'document' => $document
+            ];
 
             if ($cliente->email) {
-                $customer->email = $cliente->email;
+                $customerData['email'] = $cliente->email;
             }
 
             if ($cliente->telefone_celular_1) {
                 $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
                 if ($phoneObj) {
-                    $customer->phone = $phoneObj;
+                    $customerData['phone'] = $phoneObj;
                 }
             }
 
-            // Tentar criar cliente - customerCreate retorna um objeto CreateCustomer
-            $response = $this->xgate->customerCreate($customer);
-
-            if ($response && isset($response->customer) && isset($response->customer->_id)) {
-                return [
-                    'success' => true,
-                    'customer_id' => $response->customer->_id,
-                    'message' => $response->message ?? null,
-                    'response' => $response
-                ];
-            }
+            $customerId = $this->criarOuObterCliente($customerData);
 
             return [
-                'success' => false,
-                'error' => 'Erro ao criar cliente',
-                'response' => $response
+                'success' => true,
+                'customer_id' => $customerId,
+                'message' => 'Cliente criado/atualizado com sucesso',
+                'response' => ['customer' => ['_id' => $customerId]]
             ];
 
         } catch (\Exception $e) {
             Log::error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
             return [
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'curl_command' => $this->getLastCurlCommand()
             ];
         }
+    }
+
+    /**
+     * Obtém lista de moedas disponíveis para saque
+     *
+     * @return array
+     */
+    protected function getCurrenciesWithdraw(): array
+    {
+        $response = $this->makeRequest('GET', '/withdraw/company/currencies');
+        
+        if (!$response->successful()) {
+            throw new \Exception('Erro ao buscar moedas de saque');
+        }
+
+        return $response->json();
     }
 
     /**
      * Determina o tipo de chave PIX baseado no formato
      *
      * @param string $pixKey Chave PIX
-     * @return PixKeyParamType Tipo da chave
+     * @return string Tipo da chave (PHONE, CPF, CNPJ, EMAIL, RANDOM)
      */
-    protected function determinarTipoChavePix(string $pixKey): \PixKeyParamType
+    protected function determinarTipoChavePix(string $pixKey): string
     {
         // Verificar email primeiro (antes de remover caracteres)
         if (strpos($pixKey, '@') !== false) {
-            return \PixKeyParamType::EMAIL;
+            return 'EMAIL';
         }
 
         // Remover caracteres especiais para análise numérica
@@ -497,36 +715,36 @@ class XGateService
 
         // CPF (11 dígitos)
         if (strlen($pixKeyClean) === 11) {
-            return \PixKeyParamType::CPF;
+            return 'CPF';
         }
 
         // CNPJ (14 dígitos)
         if (strlen($pixKeyClean) === 14) {
-            return \PixKeyParamType::CNPJ;
+            return 'CNPJ';
         }
 
         // Telefone (10 ou 11 dígitos)
         if (strlen($pixKeyClean) === 10 || strlen($pixKeyClean) === 11) {
-            return \PixKeyParamType::PHONE;
+            return 'PHONE';
         }
 
         // Chave aleatória (UUID - 32 ou 36 caracteres com hífens)
         $pixKeyOriginal = $pixKey;
         if (strlen($pixKeyOriginal) === 32 || strlen($pixKeyOriginal) === 36) {
-            return \PixKeyParamType::RANDOM;
+            return 'RANDOM';
         }
 
         // Padrão: CPF
-        return \PixKeyParamType::CPF;
+        return 'CPF';
     }
 
     /**
      * Cria um objeto Phone do XGate a partir de um número de telefone brasileiro
      *
      * @param string $telefone Número de telefone (pode conter formatação)
-     * @return \Phone|null Objeto Phone ou null se não for possível criar
+     * @return array|null Array com dados do telefone ou null se não for possível criar
      */
-    protected function criarObjetoPhone(string $telefone): ?\Phone
+    protected function criarObjetoPhone(string $telefone): ?array
     {
         try {
             // Remover todos os caracteres não numéricos
@@ -538,9 +756,6 @@ class XGateService
             }
 
             // Extrair código de área (DDD) e número
-            // Formato brasileiro: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
-            // Pode ter 10 ou 11 dígitos (com ou sem o 9 inicial)
-            
             $codigoArea = '';
             $numero = '';
             
@@ -557,14 +772,13 @@ class XGateService
                 return null;
             }
 
-            // Criar objeto Phone conforme documentação XGate
-            // new Phone(PhoneType::mobile, "900000000", "11", "55")
-            return new \Phone(
-                \PhoneType::mobile,  // Tipo: mobile (celular)
-                $numero,              // Número do telefone (sem DDD)
-                $codigoArea,          // Código de área (DDD)
-                "55"                  // Código do país (Brasil)
-            );
+            // Retornar array conforme esperado pela API
+            return [
+                'type' => 'mobile',
+                'number' => $numero,
+                'areaCode' => $codigoArea,
+                'countryCode' => '55'
+            ];
         } catch (\Exception $e) {
             Log::warning('Erro ao criar objeto Phone do XGate: ' . $e->getMessage(), [
                 'telefone' => $telefone
@@ -584,11 +798,7 @@ class XGateService
      */
     protected function logRequestDetails(string $method, string $endpoint, array $data, string $description = '')
     {
-        $baseUrl = 'https://api.xgateglobal.com';
-        $url = $baseUrl . $endpoint;
-        
-        // Obter token de autenticação (se disponível)
-        $token = $this->getAuthToken();
+        $url = $this->baseUrl . $endpoint;
         
         // Preparar headers
         $headers = [
@@ -596,8 +806,8 @@ class XGateService
             'Accept: application/json'
         ];
         
-        if ($token) {
-            $headers[] = 'Authorization: Bearer ' . $token;
+        if ($this->token) {
+            $headers[] = 'Authorization: Bearer ' . $this->token;
         }
         
         // Gerar comando curl
@@ -645,37 +855,6 @@ class XGateService
     }
 
     /**
-     * Tenta obter o token de autenticação do XGate
-     * Nota: Isso pode não funcionar se o token estiver privado no objeto XGate
-     *
-     * @return string|null Token ou null se não disponível
-     */
-    protected function getAuthToken(): ?string
-    {
-        try {
-            // Tentar acessar o token através de reflexão (se disponível)
-            if ($this->xgate && is_object($this->xgate)) {
-                $reflection = new \ReflectionClass($this->xgate);
-                
-                // Tentar acessar propriedade access (onde o token geralmente fica)
-                if ($reflection->hasProperty('access')) {
-                    $accessProperty = $reflection->getProperty('access');
-                    $accessProperty->setAccessible(true);
-                    $access = $accessProperty->getValue($this->xgate);
-                    
-                    if (is_object($access) && isset($access->token)) {
-                        return $access->token;
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            // Ignorar erros de reflexão
-        }
-        
-        return null;
-    }
-
-    /**
      * Retorna o último comando curl gerado
      *
      * @return string|null
@@ -683,46 +862,5 @@ class XGateService
     protected function getLastCurlCommand(): ?string
     {
         return $this->lastCurlCommand ?? null;
-    }
-
-
-    /**
-     * Garante que as classes do XGate estejam carregadas
-     *
-     * @return void
-     */
-    protected function ensureXGateLoaded()
-    {
-        // Se a classe Account já existe, não precisa carregar novamente
-        if (class_exists('Account')) {
-            return;
-        }
-
-        // Tentar carregar o arquivo index.php do XGate
-        $xgateIndexPath = base_path('vendor/xgate/xgate-integration/src/index.php');
-        
-        if (!file_exists($xgateIndexPath)) {
-            $xgateIndexPath = __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php';
-        }
-
-        if (file_exists($xgateIndexPath)) {
-            // Salvar o diretório atual
-            $originalDir = getcwd();
-            // Mudar para o diretório raiz do projeto Laravel
-            chdir(base_path());
-            
-            // Incluir o arquivo
-            require_once $xgateIndexPath;
-            
-            // Restaurar o diretório original
-            chdir($originalDir);
-        } else {
-            throw new \Exception('Pacote XGate não encontrado. Execute: composer require xgate/xgate-integration:dev-production && composer dump-autoload');
-        }
-
-        // Verificar se as classes foram carregadas
-        if (!class_exists('Account')) {
-            throw new \Exception('Falha ao carregar classes do pacote XGate. Verifique se o pacote está instalado corretamente.');
-        }
     }
 }

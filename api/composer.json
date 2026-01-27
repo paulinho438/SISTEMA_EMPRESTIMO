@@ -35,10 +35,7 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        },
-        "files": [
-            "vendor/xgate/xgate-integration/src/index.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
