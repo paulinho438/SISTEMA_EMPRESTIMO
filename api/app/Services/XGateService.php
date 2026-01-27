@@ -75,9 +75,9 @@ class XGateService
 
             // Adicionar telefone se disponível
             if ($cliente->telefone_celular_1) {
-                $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
-                if (strlen($phone) >= 10) {
-                    $customer->phone = $phone;
+                $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
+                if ($phoneObj) {
+                    $customer->phone = $phoneObj;
                 }
             }
 
@@ -230,9 +230,9 @@ class XGateService
             }
 
             if ($cliente->telefone_celular_1) {
-                $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
-                if (strlen($phone) >= 10) {
-                    $customer->phone = $phone;
+                $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
+                if ($phoneObj) {
+                    $customer->phone = $phoneObj;
                 }
             }
 
@@ -326,9 +326,9 @@ class XGateService
             }
 
             if ($cliente->telefone_celular_1) {
-                $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1);
-                if (strlen($phone) >= 10) {
-                    $customer->phone = $phone;
+                $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
+                if ($phoneObj) {
+                    $customer->phone = $phoneObj;
                 }
             }
 
@@ -398,6 +398,59 @@ class XGateService
 
         // Padrão: CPF
         return \PixKeyParamType::CPF;
+    }
+
+    /**
+     * Cria um objeto Phone do XGate a partir de um número de telefone brasileiro
+     *
+     * @param string $telefone Número de telefone (pode conter formatação)
+     * @return \Phone|null Objeto Phone ou null se não for possível criar
+     */
+    protected function criarObjetoPhone(string $telefone): ?\Phone
+    {
+        try {
+            // Remover todos os caracteres não numéricos
+            $telefoneLimpo = preg_replace('/\D/', '', $telefone);
+            
+            // Validar tamanho mínimo (10 dígitos para telefone brasileiro)
+            if (strlen($telefoneLimpo) < 10) {
+                return null;
+            }
+
+            // Extrair código de área (DDD) e número
+            // Formato brasileiro: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+            // Pode ter 10 ou 11 dígitos (com ou sem o 9 inicial)
+            
+            $codigoArea = '';
+            $numero = '';
+            
+            if (strlen($telefoneLimpo) == 10) {
+                // Telefone fixo: (XX) XXXX-XXXX
+                $codigoArea = substr($telefoneLimpo, 0, 2);
+                $numero = substr($telefoneLimpo, 2);
+            } elseif (strlen($telefoneLimpo) == 11) {
+                // Celular: (XX) 9XXXX-XXXX
+                $codigoArea = substr($telefoneLimpo, 0, 2);
+                $numero = substr($telefoneLimpo, 2);
+            } else {
+                // Formato inválido
+                return null;
+            }
+
+            // Criar objeto Phone conforme documentação XGate
+            // new Phone(PhoneType::mobile, "900000000", "11", "55")
+            return new \Phone(
+                \PhoneType::mobile,  // Tipo: mobile (celular)
+                $numero,              // Número do telefone (sem DDD)
+                $codigoArea,          // Código de área (DDD)
+                "55"                  // Código do país (Brasil)
+            );
+        } catch (\Exception $e) {
+            Log::warning('Erro ao criar objeto Phone do XGate: ' . $e->getMessage(), [
+                'telefone' => $telefone
+            ]);
+            return null;
+        }
     }
 
     /**
