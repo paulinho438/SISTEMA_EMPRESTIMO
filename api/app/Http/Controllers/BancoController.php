@@ -100,6 +100,22 @@ class BancoController extends Controller
                 $dados['velana_public_key'] = null;
             }
 
+            // Campos XGate
+            if (($dados['bank_type'] ?? 'normal') === 'xgate') {
+                // Criptografar senha XGate se fornecida
+                if (isset($dados['xgate_password']) && !empty($dados['xgate_password'])) {
+                    $dados['xgate_password'] = Crypt::encryptString($dados['xgate_password']);
+                }
+                // Email não precisa ser criptografado
+                if (isset($dados['xgate_email']) && empty($dados['xgate_email'])) {
+                    unset($dados['xgate_email']);
+                }
+            } else {
+                // Limpar campos XGate se não for banco XGate
+                $dados['xgate_email'] = null;
+                $dados['xgate_password'] = null;
+            }
+
             $newGroup = Banco::create($dados);
 
             return response()->json([
@@ -191,6 +207,25 @@ class BancoController extends Controller
                     // Limpar campos Velana se não for banco Velana
                     $EditBanco->velana_secret_key = null;
                     $EditBanco->velana_public_key = null;
+                }
+
+                // Campos XGate
+                if (($EditBanco->bank_type ?? 'normal') === 'xgate') {
+                    // Criptografar senha XGate se fornecida
+                    if (isset($dados['xgate_password']) && !empty($dados['xgate_password'])) {
+                        $EditBanco->xgate_password = Crypt::encryptString($dados['xgate_password']);
+                    } elseif (isset($dados['xgate_password']) && empty($dados['xgate_password'])) {
+                        // Se enviar vazio, manter o valor atual (não sobrescrever)
+                        // Não fazer nada, manter o valor existente
+                    }
+                    // Email (não precisa criptografar)
+                    if (isset($dados['xgate_email'])) {
+                        $EditBanco->xgate_email = $dados['xgate_email'];
+                    }
+                } else {
+                    // Limpar campos XGate se não for banco XGate
+                    $EditBanco->xgate_email = null;
+                    $EditBanco->xgate_password = null;
                 }
 
                 $EditBanco->save();

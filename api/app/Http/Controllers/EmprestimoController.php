@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\File;
 use App\Services\BcodexService;
 use App\Services\CoraService;
 use App\Services\VelanaService;
+use App\Services\XGateService;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -188,6 +189,46 @@ class EmprestimoController extends Controller
                 ];
             } else {
                 Log::error('Erro ao criar cobrança Velana: ' . ($response->body() ?? 'Resposta inválida'));
+                return false;
+            }
+        } elseif ($bankType === 'xgate') {
+            // Usar XGateService para banco XGate
+            if (!$entidade || !$entidade->emprestimo || !$entidade->emprestimo->client) {
+                Log::error('Erro ao criar cobrança XGate: Entidade, empréstimo ou cliente não encontrado');
+                return false;
+            }
+
+            try {
+                $xgateService = new XGateService($banco);
+                $cliente = $entidade->emprestimo->client;
+                $referenceId = $entidade->id . '_' . time(); // ID de referência único
+                
+                // Tentar obter data de vencimento se a entidade tiver
+                $dueDate = null;
+                if (isset($entidade->venc_real) && $entidade->venc_real) {
+                    $dueDate = is_string($entidade->venc_real) 
+                        ? date('Y-m-d', strtotime($entidade->venc_real))
+                        : $entidade->venc_real->format('Y-m-d');
+                }
+                
+                $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
+
+                if (isset($response['success']) && $response['success']) {
+                    return [
+                        'success' => true,
+                        'transaction_id' => $response['transaction_id'] ?? $referenceId,
+                        'txid' => $response['transaction_id'] ?? $referenceId,
+                        'code' => $response['code'] ?? null,
+                        'reference_id' => $referenceId,
+                        'pixCopiaECola' => $response['pixCopiaECola'] ?? $response['qr_code'] ?? null,
+                        'response' => $response['response'] ?? $response
+                    ];
+                } else {
+                    Log::error('Erro ao criar cobrança XGate: ' . ($response['error'] ?? 'Resposta inválida'));
+                    return false;
+                }
+            } catch (\Exception $e) {
+                Log::error('Exceção ao criar cobrança XGate: ' . $e->getMessage());
                 return false;
             }
         } elseif ($bankType === 'bcodex' || $banco->wallet == 1) {
@@ -1365,6 +1406,71 @@ class EmprestimoController extends Controller
                         return response()->json([
                             "message" => "Erro ao efetuar a transferencia do Emprestimo.",
                             "error" => $response->body() ?? 'Erro ao realizar transferência via Velana'
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                } elseif (($emprestimo->banco->bank_type ?? 'normal') === 'xgate') {
+                    // Usar XGateService para banco XGate
+                    try {
+                        $xgateService = new XGateService($emprestimo->banco);
+                        $description = 'Transferência Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
+                        
+                        $response = $xgateService->realizarTransferenciaPixComCliente(
+                            $valorPagamento,
+                            $emprestimo->client,
+                            $description
+                        );
+
+                        if (isset($response['success']) && $response['success']) {
+                            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+                            $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+                            $emprestimo->contaspagar->save();
+
+                            $array['response'] = $response;
+
+                            $dados = [
+                                'valor' => $valorPagamento,
+                                'tipo_transferencia' => 'PIX',
+                                'descricao' => 'Transferência realizada com sucesso',
+                                'destino_nome' => $emprestimo->client->nome_completo,
+                                'destino_cpf' => self::mascararString($emprestimo->client->cpf),
+                                'destino_chave_pix' => $emprestimo->client->pix_cliente,
+                                'destino_instituicao' => 'XGate',
+                                'destino_banco' => '000',
+                                'destino_agencia' => '0000',
+                                'destino_conta' => '000000-0',
+                                'origem_nome' => 'XGate',
+                                'origem_cnpj' => '',
+                                'origem_instituicao' => 'XGate',
+                                'data_hora' => date('d/m/Y H:i:s'),
+                                'id_transacao' => $response['transaction_id'] ?? null,
+                            ];
+
+                            $array['dados'] = $dados;
+
+                            // Criar movimentação financeira
+                            Movimentacaofinanceira::create([
+                                'banco_id' => $emprestimo->banco->id,
+                                'company_id' => $emprestimo->company_id,
+                                'descricao' => 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo,
+                                'tipomov' => 'S',
+                                'dt_movimentacao' => date('Y-m-d'),
+                                'valor' => $valorPagamento,
+                            ]);
+
+                            $emprestimo->banco->saldo -= $valorPagamento;
+                            $emprestimo->banco->save();
+
+                            $this->envioMensagem($emprestimo->parcelas[0]);
+                        } else {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => $response['error'] ?? 'Erro ao realizar transferência via XGate'
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                    } catch (\Exception $e) {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => $e->getMessage()
                         ], Response::HTTP_FORBIDDEN);
                     }
                 } else {
@@ -4082,7 +4188,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $banco = $parcela->emprestimo->banco;
                 $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
 
-                if ($banco->wallet || $bankType === 'velana') {
+                if ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate') {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
                     Log::info(message: "Processando cobranca parcela: txId: $txId parcelaId: { $parcela->id }");
@@ -4104,6 +4210,27 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->identificador = $newTxId;
                             $parcela->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
                             $parcela->save();
+                        }
+                    } elseif ($bankType === 'xgate') {
+                        // Usar XGateService para banco XGate
+                        try {
+                            $xgateService = new XGateService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = $parcela->id . '_' . time();
+                            $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
+                            
+                            $response = $xgateService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+
+                            if (isset($response['success']) && $response['success']) {
+                                $newTxId = $response['transaction_id'] ?? $referenceId;
+                                Log::info(message: "Processando com sucesso cobranca parcela XGate: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
+                                echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
+                                $parcela->identificador = $newTxId;
+                                $parcela->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
+                                $parcela->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao criar cobrança XGate para parcela: ' . $e->getMessage());
                         }
                     } else {
                         // Usar BcodexService para banco Bcodex
@@ -4139,6 +4266,22 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                             $parcela->emprestimo->quitacao->save();
                         }
+                    } elseif ($bankType === 'xgate') {
+                        try {
+                            $xgateService = new XGateService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = 'quitacao_' . $parcela->emprestimo->quitacao->id . '_' . time();
+                            $response = $xgateService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+
+                            if (isset($response['success']) && $response['success']) {
+                                $parcela->emprestimo->quitacao->identificador = $response['transaction_id'] ?? $referenceId;
+                                $parcela->emprestimo->quitacao->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
+                                $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
+                                $parcela->emprestimo->quitacao->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao criar cobrança XGate para quitação: ' . $e->getMessage());
+                        }
                     } else {
                         $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
                         $response = $bcodexService->criarCobranca($parcela->totalPendente(), $banco->document, $txId);
@@ -4167,6 +4310,21 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->emprestimo->pagamentominimo->identificador = $responseData['id'] ?? $referenceId;
                             $parcela->emprestimo->pagamentominimo->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
                             $parcela->emprestimo->pagamentominimo->save();
+                        }
+                    } elseif ($bankType === 'xgate') {
+                        try {
+                            $xgateService = new XGateService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = 'pagamento_minimo_' . $parcela->emprestimo->pagamentominimo->id . '_' . time();
+                            $response = $xgateService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+
+                            if (isset($response['success']) && $response['success']) {
+                                $parcela->emprestimo->pagamentominimo->identificador = $response['transaction_id'] ?? $referenceId;
+                                $parcela->emprestimo->pagamentominimo->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
+                                $parcela->emprestimo->pagamentominimo->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao criar cobrança XGate para pagamento mínimo: ' . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
