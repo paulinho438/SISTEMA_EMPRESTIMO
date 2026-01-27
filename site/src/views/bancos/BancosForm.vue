@@ -32,7 +32,8 @@ export default {
 				{ label: 'Normal', value: 'normal' },
 				{ label: 'Bcodex', value: 'bcodex' },
 				{ label: 'Cora', value: 'cora' },
-				{ label: 'Velana', value: 'velana' }
+				{ label: 'Velana', value: 'velana' },
+				{ label: 'XGate', value: 'xgate' }
 			]
 		}
 	},
@@ -307,6 +308,41 @@ export default {
 					/>
 					<small v-if="errors?.velana_secret_key" class="text-red-500 pl-2">{{ errors?.velana_secret_key[0] }}</small>
 					<small class="text-gray-500 pl-2">Chave secreta encontrada em Configurações -> Credenciais de API no painel Velana</small>
+				</div>
+			</div>
+
+			<!-- Campos XGate -->
+			<div v-if="banco?.bank_type === 'xgate'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="xgate_email">XGate Email</label>
+					<InputText 
+						:modelValue="banco?.xgate_email" 
+						v-model="banco.xgate_email" 
+						id="xgate_email" 
+						type="email"
+						class="w-full p-inputtext-sm" 
+						placeholder="Digite o email da conta XGate"
+						:class="{ 'p-invalid': errors?.xgate_email }"
+					/>
+					<small v-if="errors?.xgate_email" class="text-red-500 pl-2">{{ errors?.xgate_email[0] }}</small>
+					<small class="text-gray-500 pl-2">Email utilizado para login na plataforma XGate</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'xgate'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="xgate_password">XGate Password (Senha)</label>
+					<InputText 
+						:modelValue="banco?.xgate_password" 
+						v-model="banco.xgate_password" 
+						id="xgate_password" 
+						type="password"
+						class="w-full p-inputtext-sm" 
+						placeholder="Digite a senha da conta XGate"
+						:class="{ 'p-invalid': errors?.xgate_password }"
+					/>
+					<small v-if="errors?.xgate_password" class="text-red-500 pl-2">{{ errors?.xgate_password[0] }}</small>
+					<small class="text-gray-500 pl-2">Senha utilizada para login na plataforma XGate (será criptografada)</small>
 				</div>
 			</div>
 
