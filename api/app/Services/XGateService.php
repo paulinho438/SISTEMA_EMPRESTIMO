@@ -177,19 +177,19 @@ class XGateService
             // Preparar dados do cliente
             $document = preg_replace('/\D/', '', $cliente->cpf);
             
-            // Preparar dados do customer
+            // Preparar dados do customer - apenas campos obrigatórios
             $customerData = [
                 'name' => $cliente->nome_completo,
                 'document' => $document
             ];
 
-            // Adicionar email se disponível
-            if ($cliente->email) {
+            // Adicionar email apenas se disponível e não vazio
+            if (!empty($cliente->email)) {
                 $customerData['email'] = $cliente->email;
             }
 
-            // Adicionar telefone se disponível
-            if ($cliente->telefone_celular_1) {
+            // Adicionar telefone apenas se disponível e válido
+            if (!empty($cliente->telefone_celular_1)) {
                 $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
                 if ($phoneObj) {
                     $customerData['phone'] = $phoneObj;
@@ -296,8 +296,29 @@ class XGateService
     protected function criarOuObterCliente(array $customerData): string
     {
         try {
+            // Garantir que temos pelo menos name e document (obrigatórios)
+            if (empty($customerData['name']) || empty($customerData['document'])) {
+                throw new \Exception('Nome e documento são obrigatórios para criar cliente');
+            }
+
+            // Preparar payload com apenas os campos necessários
+            $payload = [
+                'name' => $customerData['name'],
+                'document' => $customerData['document']
+            ];
+
+            // Adicionar email apenas se presente
+            if (isset($customerData['email']) && !empty($customerData['email'])) {
+                $payload['email'] = $customerData['email'];
+            }
+
+            // Adicionar phone apenas se presente
+            if (isset($customerData['phone']) && !empty($customerData['phone'])) {
+                $payload['phone'] = $customerData['phone'];
+            }
+
             // Tentar criar cliente
-            $response = $this->makeRequest('POST', '/customer', $customerData);
+            $response = $this->makeRequest('POST', '/customer', $payload);
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -313,7 +334,9 @@ class XGateService
             
             throw new \Exception($errorMessage);
         } catch (\Exception $e) {
-            Log::error('Erro ao criar cliente XGate: ' . $e->getMessage());
+            Log::error('Erro ao criar cliente XGate: ' . $e->getMessage(), [
+                'customer_data' => $customerData
+            ]);
             throw $e;
         }
     }
@@ -481,11 +504,13 @@ class XGateService
                 'document' => $document
             ];
 
-            if ($cliente->email) {
+            // Adicionar email apenas se disponível e não vazio
+            if (!empty($cliente->email)) {
                 $customerData['email'] = $cliente->email;
             }
 
-            if ($cliente->telefone_celular_1) {
+            // Adicionar telefone apenas se disponível e válido
+            if (!empty($cliente->telefone_celular_1)) {
                 $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
                 if ($phoneObj) {
                     $customerData['phone'] = $phoneObj;
@@ -651,11 +676,13 @@ class XGateService
                 'document' => $document
             ];
 
-            if ($cliente->email) {
+            // Adicionar email apenas se disponível e não vazio
+            if (!empty($cliente->email)) {
                 $customerData['email'] = $cliente->email;
             }
 
-            if ($cliente->telefone_celular_1) {
+            // Adicionar telefone apenas se disponível e válido
+            if (!empty($cliente->telefone_celular_1)) {
                 $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
                 if ($phoneObj) {
                     $customerData['phone'] = $phoneObj;
