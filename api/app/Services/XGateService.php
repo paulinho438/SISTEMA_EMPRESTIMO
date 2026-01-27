@@ -16,6 +16,9 @@ class XGateService
     {
         $this->banco = $banco;
 
+        // Garantir que as classes do XGate estejam carregadas
+        $this->ensureXGateLoaded();
+
         if ($banco && $banco->xgate_email && $banco->xgate_password) {
             try {
                 // Descriptografar senha se necessário
@@ -395,5 +398,45 @@ class XGateService
 
         // Padrão: CPF
         return \PixKeyParamType::CPF;
+    }
+
+    /**
+     * Garante que as classes do XGate estejam carregadas
+     *
+     * @return void
+     */
+    protected function ensureXGateLoaded()
+    {
+        // Se a classe Account já existe, não precisa carregar novamente
+        if (class_exists('Account')) {
+            return;
+        }
+
+        // Tentar carregar o arquivo index.php do XGate
+        $xgateIndexPath = base_path('vendor/xgate/xgate-integration/src/index.php');
+        
+        if (!file_exists($xgateIndexPath)) {
+            $xgateIndexPath = __DIR__ . '/../../vendor/xgate/xgate-integration/src/index.php';
+        }
+
+        if (file_exists($xgateIndexPath)) {
+            // Salvar o diretório atual
+            $originalDir = getcwd();
+            // Mudar para o diretório raiz do projeto Laravel
+            chdir(base_path());
+            
+            // Incluir o arquivo
+            require_once $xgateIndexPath;
+            
+            // Restaurar o diretório original
+            chdir($originalDir);
+        } else {
+            throw new \Exception('Pacote XGate não encontrado. Execute: composer require xgate/xgate-integration:dev-production && composer dump-autoload');
+        }
+
+        // Verificar se as classes foram carregadas
+        if (!class_exists('Account')) {
+            throw new \Exception('Falha ao carregar classes do pacote XGate. Verifique se o pacote está instalado corretamente.');
+        }
     }
 }
