@@ -167,12 +167,22 @@ class ProcessarWebhookXgate extends Command
 
         $sufixoId = $identificadorTransacao !== '' ? ' | ID transação: ' . $identificadorTransacao : '';
 
-        $jaTemEntrada = Movimentacaofinanceira::where('banco_id', $bancoId)
-            ->where('dt_movimentacao', date('Y-m-d'))
-            ->where('valor', $valor)
-            ->where('tipomov', 'E')
-            ->where('descricao', 'like', '%' . substr($descricaoEntrada, 0, 30) . '%')
-            ->exists();
+        // Deduplicação: só evita criar entrada se JÁ existir entrada para ESTA transação (mesmo ID).
+        // Antes usava descrição genérica + valor, o que bloqueava entrada de outra parcela com mesmo valor no mesmo dia.
+        if ($identificadorTransacao !== '') {
+            $jaTemEntrada = Movimentacaofinanceira::where('banco_id', $bancoId)
+                ->where('dt_movimentacao', date('Y-m-d'))
+                ->where('tipomov', 'E')
+                ->where('descricao', 'like', '%ID transação: ' . $identificadorTransacao . '%')
+                ->exists();
+        } else {
+            $jaTemEntrada = Movimentacaofinanceira::where('banco_id', $bancoId)
+                ->where('dt_movimentacao', date('Y-m-d'))
+                ->where('valor', $valor)
+                ->where('tipomov', 'E')
+                ->where('descricao', 'like', '%' . substr($descricaoEntrada, 0, 30) . '%')
+                ->exists();
+        }
 
         if (!$jaTemEntrada) {
             Movimentacaofinanceira::create([
