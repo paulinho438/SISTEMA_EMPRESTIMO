@@ -50,8 +50,11 @@ class XGateTestController extends Controller
                 $xgateService = new XGateService($banco);
                 $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
 
-                // Se a resposta contém erro, incluir curl_command se disponível
                 if (isset($response['success']) && !$response['success']) {
+                    Log::channel('xgate')->error('Teste cobrança XGate: erro na resposta', [
+                        'response' => $response,
+                        'last_response' => $response['last_response'] ?? null
+                    ]);
                     return response()->json([
                         'success' => false,
                         'message' => $response['error'] ?? 'Erro ao criar cobrança',
@@ -64,7 +67,7 @@ class XGateTestController extends Controller
                             'due_date' => $dueDate
                         ],
                         'response' => $response,
-                        'curl_command' => $response['curl_command'] ?? null
+                        'last_response' => $response['last_response'] ?? null
                     ]);
                 }
 
@@ -80,22 +83,17 @@ class XGateTestController extends Controller
                         'due_date' => $dueDate
                     ],
                     'response' => $response,
-                    'curl_command' => $response['curl_command'] ?? null
+                    'last_response' => $response['last_response'] ?? $xgateService->getLastResponse()
                 ]);
 
             } catch (\Exception $e) {
+                $lastResponse = isset($xgateService) ? $xgateService->getLastResponse() : null;
                 Log::channel('xgate')->error('Erro ao testar cobrança XGate: ' . $e->getMessage(), [
                     'trace' => $e->getTraceAsString(),
                     'file' => $e->getFile(),
-                    'line' => $e->getLine()
+                    'line' => $e->getLine(),
+                    'last_response' => $lastResponse
                 ]);
-                
-                // Tentar obter curl_command da propriedade da exceção ou da resposta
-                $curlCommand = null;
-                if (isset($e->curl_command)) {
-                    $curlCommand = $e->curl_command;
-                }
-                
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro no servidor, tente novamente',
@@ -109,9 +107,9 @@ class XGateTestController extends Controller
                     ],
                     'response' => [
                         'success' => false,
-                        'error' => 'Erro no servidor, tente novamente'
+                        'error' => $e->getMessage()
                     ],
-                    'curl_command' => $curlCommand,
+                    'last_response' => $lastResponse,
                     'error_details' => [
                         'message' => $e->getMessage(),
                         'file' => $e->getFile(),
@@ -177,15 +175,20 @@ class XGateTestController extends Controller
                         'pix_key' => $pixKey,
                         'description' => $description
                     ],
-                    'response' => $response
+                    'response' => $response,
+                    'last_response' => $response['last_response'] ?? $xgateService->getLastResponse()
                 ]);
 
             } catch (\Exception $e) {
-                Log::channel('xgate')->error('Erro ao testar transferência XGate: ' . $e->getMessage());
+                $lastResponse = isset($xgateService) ? $xgateService->getLastResponse() : null;
+                Log::channel('xgate')->error('Erro ao testar transferência XGate: ' . $e->getMessage(), [
+                    'last_response' => $lastResponse
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao testar transferência: ' . $e->getMessage(),
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'last_response' => $lastResponse
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
@@ -255,15 +258,20 @@ class XGateTestController extends Controller
                         'cliente_pix' => $cliente->pix_cliente,
                         'description' => $description
                     ],
-                    'response' => $response
+                    'response' => $response,
+                    'last_response' => $response['last_response'] ?? $xgateService->getLastResponse()
                 ]);
 
             } catch (\Exception $e) {
-                Log::channel('xgate')->error('Erro ao testar transferência XGate com cliente: ' . $e->getMessage());
+                $lastResponse = isset($xgateService) ? $xgateService->getLastResponse() : null;
+                Log::channel('xgate')->error('Erro ao testar transferência XGate com cliente: ' . $e->getMessage(), [
+                    'last_response' => $lastResponse
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao testar transferência: ' . $e->getMessage(),
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'last_response' => $lastResponse
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
@@ -314,15 +322,20 @@ class XGateTestController extends Controller
                         'banco_id' => $banco->id,
                         'banco_nome' => $banco->name
                     ],
-                    'response' => $response
+                    'response' => $response,
+                    'last_response' => $response['last_response'] ?? $xgateService->getLastResponse()
                 ]);
 
             } catch (\Exception $e) {
-                Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage());
+                $lastResponse = isset($xgateService) ? $xgateService->getLastResponse() : null;
+                Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage(), [
+                    'last_response' => $lastResponse
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao consultar saldo: ' . $e->getMessage(),
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'last_response' => $lastResponse
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
@@ -378,15 +391,20 @@ class XGateTestController extends Controller
                         'cliente' => $cliente->nome_completo,
                         'cliente_cpf' => $cliente->cpf
                     ],
-                    'response' => $response
+                    'response' => $response,
+                    'last_response' => $response['last_response'] ?? $xgateService->getLastResponse()
                 ]);
 
             } catch (\Exception $e) {
-                Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
+                $lastResponse = isset($xgateService) ? $xgateService->getLastResponse() : null;
+                Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage(), [
+                    'last_response' => $lastResponse
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao criar/atualizar cliente: ' . $e->getMessage(),
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'last_response' => $lastResponse
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 

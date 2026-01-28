@@ -17,7 +17,8 @@ class XGateService
     protected $password;
     protected $token = null;
     protected $tokenExpiresAt = null;
-    protected $lastCurlCommand = null;
+    /** @var array|null Última resposta da API (status + body) para log em caso de erro */
+    protected $lastResponse = null;
 
     public function __construct(?Banco $banco = null)
     {
@@ -130,7 +131,7 @@ class XGateService
             'Authorization' => 'Bearer ' . $token
         ];
 
-        // Log da requisição
+        // Log da requisição (sem curl)
         $this->logRequestDetails($method, $endpoint, $data, "XGate API Request");
 
         // Fazer requisição
@@ -152,6 +153,13 @@ class XGateService
             default:
                 $response = $httpClient->post($url, $data);
         }
+
+        // Sempre registrar no log o retorno da chamada
+        $this->lastResponse = [
+            'status' => $response->status(),
+            'body' => $response->json() ?? $response->body(),
+        ];
+        Log::channel('xgate')->info('XGATE RESPONSE', $this->lastResponse);
 
         return $response;
     }
@@ -271,18 +279,14 @@ class XGateService
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ];
-            
-            $curlCommand = $this->getLastCurlCommand();
-            
             Log::channel('xgate')->error('Erro ao criar cobrança XGate: ' . $e->getMessage(), array_merge($errorDetails, [
-                'curl_command' => $curlCommand
+                'last_response' => $this->lastResponse
             ]));
-            
             return [
                 'success' => false,
                 'error' => $e->getMessage() ?: 'Erro no servidor, tente novamente',
                 'error_details' => $errorDetails,
-                'curl_command' => $curlCommand
+                'last_response' => $this->lastResponse
             ];
         }
     }
@@ -335,7 +339,8 @@ class XGateService
             throw new \Exception($errorMessage);
         } catch (\Exception $e) {
             Log::channel('xgate')->error('Erro ao criar cliente XGate: ' . $e->getMessage(), [
-                'customer_data' => $customerData
+                'customer_data' => $customerData,
+                'last_response' => $this->lastResponse
             ]);
             throw $e;
         }
@@ -466,12 +471,13 @@ class XGateService
 
         } catch (\Exception $e) {
             Log::channel('xgate')->error('Erro ao realizar transferência PIX XGate: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'last_response' => $this->lastResponse
             ]);
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'curl_command' => $this->getLastCurlCommand()
+                'last_response' => $this->lastResponse
             ];
         }
     }
@@ -611,11 +617,13 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::channel('xgate')->error('Erro ao realizar transferência PIX XGate com cliente: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao realizar transferência PIX XGate com cliente: ' . $e->getMessage(), [
+                'last_response' => $this->lastResponse
+            ]);
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'curl_command' => $this->getLastCurlCommand()
+                'last_response' => $this->lastResponse
             ];
         }
     }
@@ -651,11 +659,13 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage(), [
+                'last_response' => $this->lastResponse
+            ]);
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'curl_command' => $this->getLastCurlCommand()
+                'last_response' => $this->lastResponse
             ];
         }
     }
@@ -699,11 +709,13 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage(), [
+                'last_response' => $this->lastResponse
+            ]);
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
-                'curl_command' => $this->getLastCurlCommand()
+                'last_response' => $this->lastResponse
             ];
         }
     }
@@ -815,7 +827,7 @@ class XGateService
     }
 
     /**
-     * Loga os detalhes da requisição e gera comando curl equivalente
+     * Loga os detalhes da requisição (sem curl)
      *
      * @param string $method Método HTTP (GET, POST, etc)
      * @param string $endpoint Endpoint da API
@@ -826,68 +838,20 @@ class XGateService
     protected function logRequestDetails(string $method, string $endpoint, array $data, string $description = '')
     {
         $url = $this->baseUrl . $endpoint;
-        
-        // Preparar headers
-        $headers = [
-            'Content-Type: application/json',
-            'Accept: application/json'
-        ];
-        
-        if ($this->token) {
-            $headers[] = 'Authorization: Bearer ' . $this->token;
-        }
-        
-        // Gerar comando curl
-        $curlCommand = $this->generateCurlCommand($method, $url, $headers, $data);
-        
-        // Log detalhado
         Log::channel('xgate')->info("XGATE REQUEST - {$description}", [
             'method' => $method,
             'url' => $url,
-            'headers' => $headers,
             'data' => $data,
-            'curl_command' => $curlCommand
         ]);
-        
-        // Armazenar último curl para retorno em caso de erro
-        $this->lastCurlCommand = $curlCommand;
     }
 
     /**
-     * Gera comando curl equivalente
+     * Retorna a última resposta da API (status + body) para uso em erros/debug
      *
-     * @param string $method Método HTTP
-     * @param string $url URL completa
-     * @param array $headers Headers HTTP
-     * @param array $data Dados do body
-     * @return string Comando curl
+     * @return array|null
      */
-    protected function generateCurlCommand(string $method, string $url, array $headers, array $data): string
+    public function getLastResponse(): ?array
     {
-        $curl = "curl -X {$method} '{$url}' \\\n";
-        
-        // Adicionar headers
-        foreach ($headers as $header) {
-            $curl .= "  -H '{$header}' \\\n";
-        }
-        
-        // Adicionar body se houver dados
-        if (!empty($data) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
-            $jsonData = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $jsonDataEscaped = addcslashes($jsonData, "'");
-            $curl .= "  -d '{$jsonDataEscaped}'";
-        }
-        
-        return $curl;
-    }
-
-    /**
-     * Retorna o último comando curl gerado
-     *
-     * @return string|null
-     */
-    protected function getLastCurlCommand(): ?string
-    {
-        return $this->lastCurlCommand ?? null;
+        return $this->lastResponse;
     }
 }
