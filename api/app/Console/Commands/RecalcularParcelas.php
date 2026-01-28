@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 use App\Models\Parcela;
 use App\Services\BcodexService;
+use App\Services\VelanaService;
+use App\Services\XGateService;
 
 use Carbon\Carbon;
 
@@ -116,8 +118,12 @@ class RecalcularParcelas extends Command
                         $valorJuros = (1 * $parcela->saldo / 100);
                     }
 
-                    // Cobrança principal (wallet)
-                    if ($parcela->emprestimo->banco && $parcela->emprestimo->banco->wallet) {
+                    $banco = $parcela->emprestimo->banco;
+                    $bankType = $banco ? ($banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal')) : 'normal';
+                    $isWalletOuVirtual = $banco && ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate');
+
+                    // Cobrança principal (parcela) – Bcodex, Velana ou XGate
+                    if ($isWalletOuVirtual) {
                         if (!$this->podeProcessarParcela($parcela)) {
                             $countIgnoradas++;
                             Log::info("[recalcular:Parcelas] parcela={$parcela->id} | ignorada (já baixada)");
@@ -125,105 +131,200 @@ class RecalcularParcelas extends Command
                         }
 
                         $txId = $parcela->identificador ?: null;
-                        Log::info("[recalcular:Parcelas] Alterando cobrança | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | valor={$parcela->saldo} | txid={$txId}");
+                        Log::info("[recalcular:Parcelas] Alterando cobrança | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | bankType={$bankType} | valor={$parcela->saldo} | txid={$txId}");
 
-                        $response = $bcodexService->criarCobranca(
-                            $parcela->saldo,
-                            $parcela->emprestimo->banco->document,
-                            $txId
-                        );
+                        $cobrancaOk = false;
 
-                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                            $newTxId = $response->json()['txid'] ?? null;
+                        if ($bankType === 'velana') {
+                            $velanaService = new VelanaService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = $parcela->id . '_' . time();
+                            $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
+                            $response = $velanaService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                $responseData = $response->json();
+                                $newTxId = $responseData['id'] ?? $referenceId;
+                                $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
+                                $parcela->lucro_real = $lucroRealAtual + $valorJuros;
+                                $parcela->saldo = $novoValor;
+                                $parcela->venc_real = date('Y-m-d');
+                                $parcela->identificador = $newTxId;
+                                $parcela->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
+                                $parcela->save();
+                                $cobrancaOk = true;
+                            }
+                        } elseif ($bankType === 'xgate') {
+                            try {
+                                $xgateService = new XGateService($banco);
+                                $cliente = $parcela->emprestimo->client;
+                                $referenceId = $parcela->id . '_' . time();
+                                $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
+                                $response = $xgateService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                                if (isset($response['success']) && $response['success']) {
+                                    $newTxId = $response['transaction_id'] ?? $referenceId;
+                                    $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
+                                    $parcela->lucro_real = $lucroRealAtual + $valorJuros;
+                                    $parcela->saldo = $novoValor;
+                                    $parcela->venc_real = date('Y-m-d');
+                                    $parcela->identificador = $newTxId;
+                                    $parcela->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
+                                    $parcela->save();
+                                    $cobrancaOk = true;
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("[recalcular:Parcelas] XGate parcela={$parcela->id} | " . $e->getMessage());
+                            }
+                        } else {
+                            $response = $bcodexService->criarCobranca($parcela->saldo, $banco->document, $txId);
+                            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                $newTxId = $response->json()['txid'] ?? null;
+                                $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
+                                $parcela->lucro_real = $lucroRealAtual + $valorJuros;
+                                $parcela->saldo = $novoValor;
+                                $parcela->venc_real = date('Y-m-d');
+                                $parcela->identificador = $newTxId;
+                                $parcela->chave_pix = $response->json()['pixCopiaECola'] ?? null;
+                                $parcela->save();
+                                $cobrancaOk = true;
+                            }
+                        }
 
-                            // Incrementar lucro_real com o valor dos juros/multa
-                            $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
-                            $parcela->lucro_real = $lucroRealAtual + $valorJuros;
-                            
-                            $parcela->saldo         = $novoValor;
-                            $parcela->venc_real     = date('Y-m-d');
-                            $parcela->identificador = $newTxId;
-                            $parcela->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
-                            $parcela->save();
-
+                        if ($cobrancaOk) {
                             $countAtualizadas++;
-                            Log::info("[recalcular:Parcelas] parcela={$parcela->id} | cobrança OK | novo_txid={$newTxId} | novo_saldo={$parcela->saldo}");
+                            Log::info("[recalcular:Parcelas] parcela={$parcela->id} | cobrança OK | bankType={$bankType} | novo_saldo={$parcela->saldo}");
                         } else {
                             $countFalhas++;
-                            Log::warning("[recalcular:Parcelas] parcela={$parcela->id} | cobrança FALHOU | txid={$txId}");
+                            Log::warning("[recalcular:Parcelas] parcela={$parcela->id} | cobrança FALHOU | bankType={$bankType} | txid={$txId}");
                             continue;
                         }
                     }
 
-                    // Quitação
-                    if ($parcela->emprestimo->quitacao) {
+                    // Quitação – só atualiza chave quando banco é wallet/velana/xgate
+                    if ($isWalletOuVirtual && $parcela->emprestimo->quitacao) {
                         $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                         $parcela->emprestimo->quitacao->save();
 
-                        $txId = $parcela->emprestimo->quitacao->identificador ?: null;
-                        $resp = $bcodexService->criarCobranca(
-                            $parcela->totalPendente(),
-                            $parcela->emprestimo->banco->document,
-                            $txId
-                        );
-                        Log::info("[recalcular:Parcelas] Quitação | parcela={$parcela->id} | quitacao={$parcela->emprestimo->quitacao->id} | txid={$txId}");
-
-                        if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
-                            $parcela->emprestimo->quitacao->identificador = $resp->json()['txid'] ?? null;
-                            $parcela->emprestimo->quitacao->chave_pix     = $resp->json()['pixCopiaECola'] ?? null;
-                            $parcela->emprestimo->quitacao->saldo         = $parcela->totalPendente();
-                            $parcela->emprestimo->quitacao->save();
-
-                            Log::info("[recalcular:Parcelas] Quitação atualizada | parcela={$parcela->id}");
+                        if ($bankType === 'velana') {
+                            $velanaService = new VelanaService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = 'quitacao_' . $parcela->emprestimo->quitacao->id . '_' . time();
+                            $resp = $velanaService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                            if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
+                                $rd = $resp->json();
+                                $parcela->emprestimo->quitacao->identificador = $rd['id'] ?? $referenceId;
+                                $parcela->emprestimo->quitacao->chave_pix = $rd['pix']['qr_code'] ?? $rd['pix']['copy_paste'] ?? null;
+                                $parcela->emprestimo->quitacao->save();
+                            }
+                        } elseif ($bankType === 'xgate') {
+                            try {
+                                $xgateService = new XGateService($banco);
+                                $cliente = $parcela->emprestimo->client;
+                                $referenceId = 'quitacao_' . $parcela->emprestimo->quitacao->id . '_' . time();
+                                $resp = $xgateService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                                if (isset($resp['success']) && $resp['success']) {
+                                    $parcela->emprestimo->quitacao->identificador = $resp['transaction_id'] ?? $referenceId;
+                                    $parcela->emprestimo->quitacao->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? null;
+                                    $parcela->emprestimo->quitacao->save();
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("[recalcular:Parcelas] XGate quitação parcela={$parcela->id} | " . $e->getMessage());
+                            }
+                        } else {
+                            $txId = $parcela->emprestimo->quitacao->identificador ?: null;
+                            $resp = $bcodexService->criarCobranca($parcela->totalPendente(), $banco->document, $txId);
+                            if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
+                                $parcela->emprestimo->quitacao->identificador = $resp->json()['txid'] ?? null;
+                                $parcela->emprestimo->quitacao->chave_pix = $resp->json()['pixCopiaECola'] ?? null;
+                                $parcela->emprestimo->quitacao->save();
+                            }
                         }
+                        Log::info("[recalcular:Parcelas] Quitação | parcela={$parcela->id} | bankType={$bankType}");
                     }
 
-                    // Pagamento mínimo
-                    if ($parcela->emprestimo->pagamentominimo) {
+                    // Pagamento mínimo – só quando wallet/velana/xgate
+                    if ($isWalletOuVirtual && $parcela->emprestimo->pagamentominimo) {
                         $parcela->emprestimo->pagamentominimo->valor += $valorJuros;
                         $parcela->emprestimo->pagamentominimo->save();
 
-                        $txId = $parcela->emprestimo->pagamentominimo->identificador ?: null;
-                        $resp = $bcodexService->criarCobranca(
-                            $parcela->emprestimo->pagamentominimo->valor,
-                            $parcela->emprestimo->banco->document,
-                            $txId
-                        );
-                        Log::info("[recalcular:Parcelas] Pag. mínimo | parcela={$parcela->id} | valor={$parcela->emprestimo->pagamentominimo->valor} | txid={$txId}");
-
-                        if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
-                            $parcela->emprestimo->pagamentominimo->identificador = $resp->json()['txid'] ?? null;
-                            $parcela->emprestimo->pagamentominimo->chave_pix     = $resp->json()['pixCopiaECola'] ?? null;
-                            $parcela->emprestimo->pagamentominimo->save();
-
-                            Log::info("[recalcular:Parcelas] Pag. mínimo atualizado | parcela={$parcela->id}");
+                        if ($bankType === 'velana') {
+                            $velanaService = new VelanaService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = 'pagamento_minimo_' . $parcela->emprestimo->pagamentominimo->id . '_' . time();
+                            $resp = $velanaService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+                            if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
+                                $rd = $resp->json();
+                                $parcela->emprestimo->pagamentominimo->identificador = $rd['id'] ?? $referenceId;
+                                $parcela->emprestimo->pagamentominimo->chave_pix = $rd['pix']['qr_code'] ?? $rd['pix']['copy_paste'] ?? null;
+                                $parcela->emprestimo->pagamentominimo->save();
+                            }
+                        } elseif ($bankType === 'xgate') {
+                            try {
+                                $xgateService = new XGateService($banco);
+                                $cliente = $parcela->emprestimo->client;
+                                $referenceId = 'pagamento_minimo_' . $parcela->emprestimo->pagamentominimo->id . '_' . time();
+                                $resp = $xgateService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+                                if (isset($resp['success']) && $resp['success']) {
+                                    $parcela->emprestimo->pagamentominimo->identificador = $resp['transaction_id'] ?? $referenceId;
+                                    $parcela->emprestimo->pagamentominimo->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? null;
+                                    $parcela->emprestimo->pagamentominimo->save();
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("[recalcular:Parcelas] XGate pag. mínimo parcela={$parcela->id} | " . $e->getMessage());
+                            }
+                        } else {
+                            $txId = $parcela->emprestimo->pagamentominimo->identificador ?: null;
+                            $resp = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $banco->document, $txId);
+                            if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
+                                $parcela->emprestimo->pagamentominimo->identificador = $resp->json()['txid'] ?? null;
+                                $parcela->emprestimo->pagamentominimo->chave_pix = $resp->json()['pixCopiaECola'] ?? null;
+                                $parcela->emprestimo->pagamentominimo->save();
+                            }
                         }
+                        Log::info("[recalcular:Parcelas] Pag. mínimo | parcela={$parcela->id} | bankType={$bankType}");
                     }
 
-                    // Saldo pendente
-                    if ($parcela->emprestimo->pagamentosaldopendente) {
+                    // Saldo pendente – só quando wallet/velana/xgate
+                    if ($isWalletOuVirtual && $parcela->emprestimo->pagamentosaldopendente) {
                         $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
-
                         if ($parcela->emprestimo->pagamentosaldopendente->valor <= 0) {
                             Log::info("[recalcular:Parcelas] Saldo pendente ZERO | parcela={$parcela->id}");
                         } else {
                             $parcela->emprestimo->pagamentosaldopendente->save();
-
-                            $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ?: null;
-                            $resp = $bcodexService->criarCobranca(
-                                $parcela->emprestimo->pagamentosaldopendente->valor,
-                                $parcela->emprestimo->banco->document,
-                                $txId
-                            );
-                            Log::info("[recalcular:Parcelas] Saldo pendente | parcela={$parcela->id} | valor={$parcela->emprestimo->pagamentosaldopendente->valor} | txid={$txId}");
-
-                            if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
-                                $parcela->emprestimo->pagamentosaldopendente->identificador = $resp->json()['txid'] ?? null;
-                                $parcela->emprestimo->pagamentosaldopendente->chave_pix     = $resp->json()['pixCopiaECola'] ?? null;
-                                $parcela->emprestimo->pagamentosaldopendente->save();
-
-                                Log::info("[recalcular:Parcelas] Saldo pendente atualizado | parcela={$parcela->id}");
+                            if ($bankType === 'velana') {
+                                $velanaService = new VelanaService($banco);
+                                $cliente = $parcela->emprestimo->client;
+                                $referenceId = 'saldo_' . $parcela->emprestimo->pagamentosaldopendente->id . '_' . time();
+                                $resp = $velanaService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+                                if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
+                                    $rd = $resp->json();
+                                    $parcela->emprestimo->pagamentosaldopendente->identificador = $rd['id'] ?? $referenceId;
+                                    $parcela->emprestimo->pagamentosaldopendente->chave_pix = $rd['pix']['qr_code'] ?? $rd['pix']['copy_paste'] ?? null;
+                                    $parcela->emprestimo->pagamentosaldopendente->save();
+                                }
+                            } elseif ($bankType === 'xgate') {
+                                try {
+                                    $xgateService = new XGateService($banco);
+                                    $cliente = $parcela->emprestimo->client;
+                                    $referenceId = 'saldo_' . $parcela->emprestimo->pagamentosaldopendente->id . '_' . time();
+                                    $resp = $xgateService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+                                    if (isset($resp['success']) && $resp['success']) {
+                                        $parcela->emprestimo->pagamentosaldopendente->identificador = $resp['transaction_id'] ?? $referenceId;
+                                        $parcela->emprestimo->pagamentosaldopendente->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? null;
+                                        $parcela->emprestimo->pagamentosaldopendente->save();
+                                    }
+                                } catch (\Exception $e) {
+                                    Log::error("[recalcular:Parcelas] XGate saldo pendente parcela={$parcela->id} | " . $e->getMessage());
+                                }
+                            } else {
+                                $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ?: null;
+                                $resp = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $banco->document, $txId);
+                                if (is_object($resp) && method_exists($resp, 'successful') && $resp->successful()) {
+                                    $parcela->emprestimo->pagamentosaldopendente->identificador = $resp->json()['txid'] ?? null;
+                                    $parcela->emprestimo->pagamentosaldopendente->chave_pix = $resp->json()['pixCopiaECola'] ?? null;
+                                    $parcela->emprestimo->pagamentosaldopendente->save();
+                                }
                             }
+                            Log::info("[recalcular:Parcelas] Saldo pendente | parcela={$parcela->id} | bankType={$bankType}");
                         }
                     }
 

@@ -1443,6 +1443,7 @@ class EmprestimoController extends Controller
                                 'origem_instituicao' => 'XGate',
                                 'data_hora' => date('d/m/Y H:i:s'),
                                 'id_transacao' => $response['transaction_id'] ?? null,
+                                'is_xgate' => true,
                             ];
 
                             $array['dados'] = $dados;
@@ -1926,6 +1927,24 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     "message" => "Pagamento já efetuado.",
                     "error" => ""
                 ], Response::HTTP_FORBIDDEN);
+            }
+
+            $bankType = $emprestimo->banco->bank_type ?? 'normal';
+
+            if ($bankType === 'xgate') {
+                if (!$emprestimo->client->pix_cliente) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Empréstimo.",
+                        "error" => 'Cliente não possui chave PIX cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                DB::commit();
+                return response()->json([
+                    'creditParty' => [
+                        'name' => $emprestimo->client->nome_completo,
+                    ],
+                    'chave_pix' => $emprestimo->client->pix_cliente,
+                ]);
             }
 
             if ($emprestimo->banco->wallet == 1) {
@@ -4343,13 +4362,43 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $parcela->emprestimo->pagamentosaldopendente->valor = $parcela->totalPendenteHoje();
 
                     $parcela->emprestimo->pagamentosaldopendente->save();
-                    $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
-                    $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
 
-                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                        $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                        $parcela->emprestimo->pagamentosaldopendente->save();
+                    if ($bankType === 'velana') {
+                        $velanaService = new VelanaService($banco);
+                        $cliente = $parcela->emprestimo->client;
+                        $referenceId = 'saldo_' . $parcela->emprestimo->pagamentosaldopendente->id . '_' . time();
+                        $response = $velanaService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $responseData = $response->json();
+                            $parcela->emprestimo->pagamentosaldopendente->identificador = $responseData['id'] ?? $referenceId;
+                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
+                            $parcela->emprestimo->pagamentosaldopendente->save();
+                        }
+                    } elseif ($bankType === 'xgate') {
+                        try {
+                            $xgateService = new XGateService($banco);
+                            $cliente = $parcela->emprestimo->client;
+                            $referenceId = 'saldo_' . $parcela->emprestimo->pagamentosaldopendente->id . '_' . time();
+                            $response = $xgateService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+
+                            if (isset($response['success']) && $response['success']) {
+                                $parcela->emprestimo->pagamentosaldopendente->identificador = $response['transaction_id'] ?? $referenceId;
+                                $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
+                                $parcela->emprestimo->pagamentosaldopendente->save();
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao criar cobrança XGate para saldo pendente (aplicar multa): ' . $e->getMessage());
+                        }
+                    } else {
+                        $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;
+                        $response = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $parcela->emprestimo->banco->document, $txId);
+
+                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                            $parcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
+                            $parcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                            $parcela->emprestimo->pagamentosaldopendente->save();
+                        }
                     }
                 }
             }

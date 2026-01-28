@@ -100,20 +100,26 @@
             <p><strong>Nome:</strong> {{ $destino_nome }}</p>
             <p><strong>CPF:</strong> {{ $destino_cpf }}</p>
             <p><strong>Chave Pix:</strong> {{ $destino_chave_pix }}</p>
+            @if(empty($is_xgate))
             <p><strong>Instituição:</strong> {{ $destino_instituicao }}</p>
             <p><strong>Banco:</strong> {{ $destino_banco }}</p>
             <p><strong>Agencia:</strong> {{ $destino_agencia }}</p>
             <p><strong>Conta:</strong> {{ $destino_conta }}</p>
-            <p><strong>Id da transação:</strong> {{ $id_transacao }}</p>
+            <p><strong>Id da transação:</strong> {{ $id_transacao ?? '' }}</p>
+            @endif
         </div>
 
         <div class="section-divider"></div>
 
         <h2>Origem</h2>
         <div class="section2">
+            @if(!empty($is_xgate))
+            <p><strong>Xgate</strong></p>
+            @else
             <p><strong>Nome:</strong> {{ $origem_nome }}</p>
             <p><strong>CNPJ:</strong> {{ $origem_cnpj }}</p>
             <p><strong>Instituição:</strong> {{ $origem_instituicao }}</p>
+            @endif
         </div>
     </div>
 </body>
