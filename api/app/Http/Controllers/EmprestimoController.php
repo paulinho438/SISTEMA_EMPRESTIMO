@@ -83,9 +83,9 @@ use Illuminate\Support\Facades\Http;
 use App\Models\ControleBcodex;
 
 class EmprestimoController extends Controller
-
-
 {
+    /** Taxa XGate em reais (cobrada em cada transferência e em cada recebimento) */
+    private const TAXA_XGATE = 0.30;
 
     protected $custom_log;
     protected $bcodexService;
@@ -1467,17 +1467,29 @@ class EmprestimoController extends Controller
 
                             $array['dados'] = $dados;
 
-                            // Criar movimentação financeira
+                            $idTransacao = $response['transaction_id'] ?? null;
+
+                            // Movimentação: saída do valor da transferência
                             Movimentacaofinanceira::create([
                                 'banco_id' => $emprestimo->banco->id,
                                 'company_id' => $emprestimo->company_id,
-                                'descricao' => 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo,
+                                'descricao' => 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
                                 'tipomov' => 'S',
                                 'dt_movimentacao' => date('Y-m-d'),
                                 'valor' => $valorPagamento,
                             ]);
 
-                            $emprestimo->banco->saldo -= $valorPagamento;
+                            // Movimentação: taxa XGate (R$ 0,30 por transferência)
+                            Movimentacaofinanceira::create([
+                                'banco_id' => $emprestimo->banco->id,
+                                'company_id' => $emprestimo->company_id,
+                                'descricao' => 'Taxa XGate (R$ ' . number_format(self::TAXA_XGATE, 2, ',', '.') . ')' . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                                'tipomov' => 'S',
+                                'dt_movimentacao' => date('Y-m-d'),
+                                'valor' => self::TAXA_XGATE,
+                            ]);
+
+                            $emprestimo->banco->saldo -= ($valorPagamento + self::TAXA_XGATE);
                             $emprestimo->banco->save();
 
                             // Job específico XGate: comprovante, cobranças via API XGate, envio msg/vídeo/áudio

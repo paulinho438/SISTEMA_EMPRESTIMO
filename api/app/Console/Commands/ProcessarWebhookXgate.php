@@ -87,7 +87,7 @@ class ProcessarWebhookXgate extends Command
         // 1) Parcela
         $parcela = Parcela::where('identificador', $txId)->whereNull('dt_baixa')->first();
         if ($parcela) {
-            $this->baixaParcela($parcela, $valor, $horario, $pagadorNome);
+            $this->baixaParcela($parcela, $valor, $horario, $pagadorNome, $txId);
             return true;
         }
 
@@ -102,28 +102,28 @@ class ProcessarWebhookXgate extends Command
         // 3) Pagamento Mínimo
         $minimo = PagamentoMinimo::where('identificador', $txId)->whereNull('dt_baixa')->first();
         if ($minimo) {
-            $this->baixaPagamentoMinimo($minimo, $valor, $horario, $pagadorNome);
+            $this->baixaPagamentoMinimo($minimo, $valor, $horario, $pagadorNome, $txId);
             return true;
         }
 
         // 4) Quitação
         $quitacao = Quitacao::where('identificador', $txId)->whereNull('dt_baixa')->first();
         if ($quitacao) {
-            $this->baixaQuitacao($quitacao, $valor, $horario, $pagadorNome);
+            $this->baixaQuitacao($quitacao, $valor, $horario, $pagadorNome, $txId);
             return true;
         }
 
         // 5) Pagamento Personalizado
         $pagamento = PagamentoPersonalizado::where('identificador', $txId)->whereNull('dt_baixa')->first();
         if ($pagamento) {
-            $this->baixaPagamentoPersonalizado($pagamento, $valor, $horario, $pagadorNome);
+            $this->baixaPagamentoPersonalizado($pagamento, $valor, $horario, $pagadorNome, $txId);
             return true;
         }
 
         // 6) Pagamento Saldo Pendente
         $pagamentoSaldo = PagamentoSaldoPendente::where('identificador', $txId)->whereNull('dt_baixa')->first();
         if ($pagamentoSaldo) {
-            $this->baixaPagamentoSaldoPendente($pagamentoSaldo, $valor, $horario, $pagadorNome);
+            $this->baixaPagamentoSaldoPendente($pagamentoSaldo, $valor, $horario, $pagadorNome, $txId);
             return true;
         }
 
@@ -133,7 +133,7 @@ class ProcessarWebhookXgate extends Command
             $deposito->data_pagamento = $horario;
             $deposito->save();
             $this->registrarMovimentacaoETaxa($deposito->banco_id, $deposito->company_id, null, $valor,
-                sprintf('Depósito Nº %d - Pagador: %s', $deposito->id, $pagadorNome), $pagadorNome);
+                sprintf('Depósito Nº %d - Pagador: %s', $deposito->id, $pagadorNome), $pagadorNome, $txId);
             return true;
         }
 
@@ -144,6 +144,7 @@ class ProcessarWebhookXgate extends Command
     /**
      * Registra movimentação financeira: entrada do valor recebido e saída da taxa XGate (R$ 0,30).
      * Atualiza saldo do banco: + valor - TAXA_XGATE.
+     * Inclui o ID da transação XGate na descrição.
      */
     private function registrarMovimentacaoETaxa(
         ?int $bancoId,
@@ -151,7 +152,8 @@ class ProcessarWebhookXgate extends Command
         ?int $parcelaId,
         float $valor,
         string $descricaoEntrada,
-        string $pagadorNome
+        string $pagadorNome,
+        string $identificadorTransacao = ''
     ): void {
         if (!$bancoId || $companyId === null) {
             Log::channel('xgate')->warning('ProcessarWebhookXgate: banco_id ou company_id ausente, movimentação não criada');
@@ -162,6 +164,8 @@ class ProcessarWebhookXgate extends Command
         if (!$banco) {
             return;
         }
+
+        $sufixoId = $identificadorTransacao !== '' ? ' | ID transação: ' . $identificadorTransacao : '';
 
         $jaTemEntrada = Movimentacaofinanceira::where('banco_id', $bancoId)
             ->where('dt_movimentacao', date('Y-m-d'))
@@ -175,32 +179,24 @@ class ProcessarWebhookXgate extends Command
                 'banco_id'        => $bancoId,
                 'company_id'      => $companyId,
                 'parcela_id'      => $parcelaId,
-                'descricao'       => $descricaoEntrada . ', pagador: ' . $pagadorNome,
+                'descricao'       => $descricaoEntrada . ', pagador: ' . $pagadorNome . $sufixoId,
                 'tipomov'         => 'E',
                 'dt_movimentacao' => date('Y-m-d'),
                 'valor'           => $valor,
             ]);
         }
 
-        $descricaoTaxa = 'Taxa XGate (R$ ' . number_format(self::TAXA_XGATE, 2, ',', '.') . ')';
-        $jaTaxa = Movimentacaofinanceira::where('banco_id', $bancoId)
-            ->where('dt_movimentacao', date('Y-m-d'))
-            ->where('valor', self::TAXA_XGATE)
-            ->where('tipomov', 'S')
-            ->where('descricao', 'like', '%Taxa XGate%')
-            ->exists();
-
-        if (!$jaTaxa) {
-            Movimentacaofinanceira::create([
-                'banco_id'        => $bancoId,
-                'company_id'      => $companyId,
-                'parcela_id'      => $parcelaId,
-                'descricao'       => $descricaoTaxa,
-                'tipomov'         => 'S',
-                'dt_movimentacao' => date('Y-m-d'),
-                'valor'           => self::TAXA_XGATE,
-            ]);
-        }
+        // Uma movimentação de saída de R$ 0,30 (taxa XGate) por transação recebida
+        $descricaoTaxa = 'Taxa XGate (R$ ' . number_format(self::TAXA_XGATE, 2, ',', '.') . ')' . $sufixoId;
+        Movimentacaofinanceira::create([
+            'banco_id'        => $bancoId,
+            'company_id'      => $companyId,
+            'parcela_id'      => $parcelaId,
+            'descricao'       => $descricaoTaxa,
+            'tipomov'         => 'S',
+            'dt_movimentacao' => date('Y-m-d'),
+            'valor'           => self::TAXA_XGATE,
+        ]);
 
         // Atualiza saldo do banco (entrada - taxa) apenas quando registramos a entrada agora
         if (!$jaTemEntrada) {
@@ -209,7 +205,7 @@ class ProcessarWebhookXgate extends Command
         }
     }
 
-    private function baixaParcela(Parcela $parcela, float $valor, string $horario, string $pagadorNome): void
+    private function baixaParcela(Parcela $parcela, float $valor, string $horario, string $pagadorNome, string $identificadorTransacao = ''): void
     {
         $parcela->saldo = 0;
         $parcela->dt_baixa = $horario;
@@ -234,13 +230,14 @@ class ProcessarWebhookXgate extends Command
             $parcela->id,
             $valor,
             $descricao,
-            $pagadorNome
+            $pagadorNome,
+            $identificadorTransacao
         );
 
         $this->recriarCobrancaQuitacaoOuSaldoPendente($parcela->emprestimo, $parcela);
     }
 
-    private function baixaPagamentoMinimo(PagamentoMinimo $minimo, float $valor, string $horario, string $pagadorNome): void
+    private function baixaPagamentoMinimo(PagamentoMinimo $minimo, float $valor, string $horario, string $pagadorNome, string $identificadorTransacao = ''): void
     {
         $parcela = Parcela::where('emprestimo_id', $minimo->emprestimo_id)->first();
         if (!$parcela) {
@@ -270,13 +267,14 @@ class ProcessarWebhookXgate extends Command
             $parcela->id,
             $valor,
             $descricao,
-            $pagadorNome
+            $pagadorNome,
+            $identificadorTransacao
         );
 
         $this->recriarCobrancaQuitacaoOuSaldoPendente($parcela->emprestimo, $parcela);
     }
 
-    private function baixaQuitacao(Quitacao $quitacao, float $valor, string $horario, string $pagadorNome): void
+    private function baixaQuitacao(Quitacao $quitacao, float $valor, string $horario, string $pagadorNome, string $identificadorTransacao = ''): void
     {
         $parcelas = Parcela::where('emprestimo_id', $quitacao->emprestimo_id)->get();
         $bancoId = null;
@@ -306,11 +304,11 @@ class ProcessarWebhookXgate extends Command
                 $emprestimo->id,
                 $emprestimo->client->nome_completo ?? 'N/I'
             );
-            $this->registrarMovimentacaoETaxa($bancoId, $companyId, null, $valor, $descricao, $pagadorNome);
+            $this->registrarMovimentacaoETaxa($bancoId, $companyId, null, $valor, $descricao, $pagadorNome, $identificadorTransacao);
         }
     }
 
-    private function baixaPagamentoPersonalizado(PagamentoPersonalizado $pagamento, float $valor, string $horario, string $pagadorNome): void
+    private function baixaPagamentoPersonalizado(PagamentoPersonalizado $pagamento, float $valor, string $horario, string $pagadorNome, string $identificadorTransacao = ''): void
     {
         $minimoRel = $pagamento->emprestimo?->pagamentominimo;
         $saldoPendRel = $pagamento->emprestimo?->pagamentosaldopendente;
@@ -338,7 +336,8 @@ class ProcessarWebhookXgate extends Command
             $parcela->id,
             $valor,
             $descricao,
-            $pagadorNome
+            $pagadorNome,
+            $identificadorTransacao
         );
 
         $parcela->saldo -= $valor;
@@ -355,7 +354,7 @@ class ProcessarWebhookXgate extends Command
         }
     }
 
-    private function baixaPagamentoSaldoPendente(PagamentoSaldoPendente $pagamento, float $valor, string $horario, string $pagadorNome): void
+    private function baixaPagamentoSaldoPendente(PagamentoSaldoPendente $pagamento, float $valor, string $horario, string $pagadorNome, string $identificadorTransacao = ''): void
     {
         $emprestimo = $pagamento->emprestimo;
         $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
@@ -378,7 +377,8 @@ class ProcessarWebhookXgate extends Command
                     $parcela->id,
                     $valorParcela,
                     $descricao,
-                    $pagadorNome
+                    $pagadorNome,
+                    $identificadorTransacao
                 );
                 $valor -= $valorParcela;
                 $valor = round($valor, 2);
@@ -404,7 +404,8 @@ class ProcessarWebhookXgate extends Command
                     $parcela->id,
                     $valor,
                     $descricao,
-                    $pagadorNome
+                    $pagadorNome,
+                    $identificadorTransacao
                 );
                 $parcela->saldo -= $valor;
                 $parcela->saldo = round($parcela->saldo, 2);
