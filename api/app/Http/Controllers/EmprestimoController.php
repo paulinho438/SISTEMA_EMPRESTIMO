@@ -194,7 +194,7 @@ class EmprestimoController extends Controller
         } elseif ($bankType === 'xgate') {
             // Usar XGateService para banco XGate
             if (!$entidade || !$entidade->emprestimo || !$entidade->emprestimo->client) {
-                Log::error('Erro ao criar cobrança XGate: Entidade, empréstimo ou cliente não encontrado');
+                Log::channel('xgate')->error('Erro ao criar cobrança XGate: Entidade, empréstimo ou cliente não encontrado');
                 return false;
             }
 
@@ -224,11 +224,11 @@ class EmprestimoController extends Controller
                         'response' => $response['response'] ?? $response
                     ];
                 } else {
-                    Log::error('Erro ao criar cobrança XGate: ' . ($response['error'] ?? 'Resposta inválida'));
+                    Log::channel('xgate')->error('Erro ao criar cobrança XGate: ' . ($response['error'] ?? 'Resposta inválida'));
                     return false;
                 }
             } catch (\Exception $e) {
-                Log::error('Exceção ao criar cobrança XGate: ' . $e->getMessage());
+                Log::channel('xgate')->error('Exceção ao criar cobrança XGate: ' . $e->getMessage());
                 return false;
             }
         } elseif ($bankType === 'bcodex' || $banco->wallet == 1) {
@@ -1421,6 +1421,20 @@ class EmprestimoController extends Controller
                         );
 
                         if (isset($response['success']) && $response['success']) {
+                            $statusXGate = strtoupper((string) ($response['status'] ?? ''));
+                            $statusFalha = ['FAILED', 'ERROR', 'CANCELLED', 'REJECTED'];
+                            if (in_array($statusXGate, $statusFalha)) {
+                                Log::channel('xgate')->warning('XGate transferência retornou status de falha', [
+                                    'emprestimo_id' => $emprestimo->id,
+                                    'status' => $statusXGate,
+                                    'response' => $response
+                                ]);
+                                return response()->json([
+                                    "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                    "error" => 'A XGate retornou status: ' . $statusXGate . '. A transferência não foi concluída.'
+                                ], Response::HTTP_FORBIDDEN);
+                            }
+
                             $emprestimo->contaspagar->status = 'Pagamento Efetuado';
                             $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
                             $emprestimo->contaspagar->save();
@@ -1460,6 +1474,16 @@ class EmprestimoController extends Controller
 
                             $emprestimo->banco->saldo -= $valorPagamento;
                             $emprestimo->banco->save();
+
+                            // Enviar comprovante ao cliente (mesmo fluxo do Bcodex)
+                            ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
+
+                            Log::channel('xgate')->info('Pagamento XGate autorizado e comprovante enfileirado', [
+                                'emprestimo_id' => $emprestimo->id,
+                                'valor' => $valorPagamento,
+                                'transaction_id' => $response['transaction_id'] ?? null,
+                                'status_xgate' => $statusXGate ?? null
+                            ]);
 
                             $this->envioMensagem($emprestimo->parcelas[0]);
                         } else {
@@ -4242,14 +4266,14 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                             if (isset($response['success']) && $response['success']) {
                                 $newTxId = $response['transaction_id'] ?? $referenceId;
-                                Log::info(message: "Processando com sucesso cobranca parcela XGate: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
+                                Log::channel('xgate')->info("Processando com sucesso cobranca parcela XGate: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
                                 echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
                                 $parcela->identificador = $newTxId;
                                 $parcela->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
                                 $parcela->save();
                             }
                         } catch (\Exception $e) {
-                            Log::error('Erro ao criar cobrança XGate para parcela: ' . $e->getMessage());
+                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para parcela: ' . $e->getMessage());
                         }
                     } else {
                         // Usar BcodexService para banco Bcodex
@@ -4299,7 +4323,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->quitacao->save();
                             }
                         } catch (\Exception $e) {
-                            Log::error('Erro ao criar cobrança XGate para quitação: ' . $e->getMessage());
+                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para quitação: ' . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
@@ -4343,7 +4367,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->pagamentominimo->save();
                             }
                         } catch (\Exception $e) {
-                            Log::error('Erro ao criar cobrança XGate para pagamento mínimo: ' . $e->getMessage());
+                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para pagamento mínimo: ' . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
@@ -4388,7 +4412,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->pagamentosaldopendente->save();
                             }
                         } catch (\Exception $e) {
-                            Log::error('Erro ao criar cobrança XGate para saldo pendente (aplicar multa): ' . $e->getMessage());
+                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para saldo pendente (aplicar multa): ' . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;

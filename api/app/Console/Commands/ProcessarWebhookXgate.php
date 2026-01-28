@@ -33,7 +33,7 @@ class ProcessarWebhookXgate extends Command
     public function handle(): void
     {
         $this->info('Processando webhooks XGate');
-        Log::info('ProcessarWebhookXgate: início da rotina');
+        Log::channel('xgate')->info('ProcessarWebhookXgate: início da rotina');
 
         WebhookXgate::where('processado', false)->chunk(50, function ($lotes) {
             foreach ($lotes as $registro) {
@@ -44,12 +44,12 @@ class ProcessarWebhookXgate extends Command
                 $status = $deposit['status'] ?? $registro->status ?? null;
 
                 if (!$txId) {
-                    Log::warning('Webhook XGate sem identificador', ['webhook_id' => $registro->id]);
+                    Log::channel('xgate')->warning('Webhook XGate sem identificador', ['webhook_id' => $registro->id]);
                     continue;
                 }
 
                 if (!in_array(strtoupper((string) $status), self::STATUS_PAGO)) {
-                    Log::info('Webhook XGate ainda não pago, ignorando', [
+                    Log::channel('xgate')->info('Webhook XGate ainda não pago, ignorando', [
                         'identificador' => $txId,
                         'status' => $status
                     ]);
@@ -69,7 +69,7 @@ class ProcessarWebhookXgate extends Command
                 $registro->processado = true;
                 $registro->save();
                 if ($processado) {
-                    Log::info('Webhook XGate processado com sucesso', ['identificador' => $txId]);
+                    Log::channel('xgate')->info('Webhook XGate processado com sucesso', ['identificador' => $txId]);
                 }
             }
         });
@@ -137,7 +137,7 @@ class ProcessarWebhookXgate extends Command
             return true;
         }
 
-        Log::info('Webhook XGate sem entidade associada ao pagamento', ['identificador' => $txId]);
+        Log::channel('xgate')->info('Webhook XGate sem entidade associada ao pagamento', ['identificador' => $txId]);
         return false;
     }
 
@@ -154,7 +154,7 @@ class ProcessarWebhookXgate extends Command
         string $pagadorNome
     ): void {
         if (!$bancoId || $companyId === null) {
-            Log::warning('ProcessarWebhookXgate: banco_id ou company_id ausente, movimentação não criada');
+            Log::channel('xgate')->warning('ProcessarWebhookXgate: banco_id ou company_id ausente, movimentação não criada');
             return;
         }
 
@@ -452,7 +452,7 @@ class ProcessarWebhookXgate extends Command
                 $pagamento->save();
             }
         } catch (\Throwable $e) {
-            Log::warning('ProcessarWebhookXgate: falha ao recriar cobrança saldo pendente XGate', [
+            Log::channel('xgate')->warning('ProcessarWebhookXgate: falha ao recriar cobrança saldo pendente XGate', [
                 'pagamento_id' => $pagamento->id,
                 'message' => $e->getMessage()
             ]);
@@ -500,7 +500,7 @@ class ProcessarWebhookXgate extends Command
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning('ProcessarWebhookXgate: falha ao recriar cobrança XGate', [
+            Log::channel('xgate')->warning('ProcessarWebhookXgate: falha ao recriar cobrança XGate', [
                 'emprestimo_id' => $emprestimo->id,
                 'message' => $e->getMessage()
             ]);

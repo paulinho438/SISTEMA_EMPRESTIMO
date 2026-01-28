@@ -20,7 +20,7 @@ class XGateWebhookController extends Controller
         try {
             $data = $request->json()->all();
 
-            Log::info('Webhook XGate recebido', ['payload' => $data]);
+            Log::channel('xgate')->info('Webhook XGate recebido', ['payload' => $data]);
 
             // Extrair informações básicas do webhook
             $identificador = null;
@@ -66,7 +66,7 @@ class XGateWebhookController extends Controller
                     ->first();
                 
                 if ($webhookExistente) {
-                    Log::info('Webhook XGate já recebido anteriormente', ['identificador' => $identificador]);
+                    Log::channel('xgate')->info('Webhook XGate já recebido anteriormente', ['identificador' => $identificador]);
                     return response()->json(['message' => 'Webhook já recebido anteriormente']);
                 }
             }
@@ -90,7 +90,7 @@ class XGateWebhookController extends Controller
 
             WebhookXgate::create($dados);
 
-            Log::info('Webhook XGate salvo com sucesso', [
+            Log::channel('xgate')->info('Webhook XGate salvo com sucesso', [
                 'identificador' => $identificador,
                 'tipo_evento' => $tipoEvento,
                 'status' => $status
@@ -99,7 +99,7 @@ class XGateWebhookController extends Controller
             return response()->json(['message' => 'Webhook recebido com sucesso'], Response::HTTP_OK);
 
         } catch (\Exception $e) {
-            Log::error('Erro ao processar webhook XGate: ' . $e->getMessage(), [
+            Log::channel('xgate')->error('Erro ao processar webhook XGate: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'payload' => $request->json()->all()
             ]);

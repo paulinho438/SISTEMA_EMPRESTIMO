@@ -63,7 +63,7 @@ class BancosComSaldoResource extends JsonResource
                     return $this->extrairSaldoXGate($result['response']);
                 }
             } catch (\Throwable $e) {
-                Log::warning('BancosComSaldoResource: erro ao consultar saldo XGate - ' . $e->getMessage());
+                Log::channel('xgate')->warning('BancosComSaldoResource: erro ao consultar saldo XGate - ' . $e->getMessage());
             }
             return null;
         }

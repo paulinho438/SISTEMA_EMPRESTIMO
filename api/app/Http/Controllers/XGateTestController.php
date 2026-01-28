@@ -84,7 +84,7 @@ class XGateTestController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                Log::error('Erro ao testar cobrança XGate: ' . $e->getMessage(), [
+                Log::channel('xgate')->error('Erro ao testar cobrança XGate: ' . $e->getMessage(), [
                     'trace' => $e->getTraceAsString(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine()
@@ -121,7 +121,7 @@ class XGateTestController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Erro ao testar cobrança XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao testar cobrança XGate: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao testar cobrança: ' . $e->getMessage()
@@ -181,7 +181,7 @@ class XGateTestController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                Log::error('Erro ao testar transferência XGate: ' . $e->getMessage());
+                Log::channel('xgate')->error('Erro ao testar transferência XGate: ' . $e->getMessage());
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao testar transferência: ' . $e->getMessage(),
@@ -190,7 +190,7 @@ class XGateTestController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Erro ao testar transferência XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao testar transferência XGate: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao testar transferência: ' . $e->getMessage()
@@ -259,7 +259,7 @@ class XGateTestController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                Log::error('Erro ao testar transferência XGate com cliente: ' . $e->getMessage());
+                Log::channel('xgate')->error('Erro ao testar transferência XGate com cliente: ' . $e->getMessage());
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao testar transferência: ' . $e->getMessage(),
@@ -268,7 +268,7 @@ class XGateTestController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Erro ao testar transferência XGate com cliente: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao testar transferência XGate com cliente: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao testar transferência: ' . $e->getMessage()
@@ -318,7 +318,7 @@ class XGateTestController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                Log::error('Erro ao consultar saldo XGate: ' . $e->getMessage());
+                Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage());
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao consultar saldo: ' . $e->getMessage(),
@@ -327,7 +327,7 @@ class XGateTestController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Erro ao consultar saldo XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao consultar saldo: ' . $e->getMessage()
@@ -382,7 +382,7 @@ class XGateTestController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                Log::error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
+                Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
                 return response()->json([
                     'success' => false,
                     'message' => 'Erro ao criar/atualizar cliente: ' . $e->getMessage(),
@@ -391,7 +391,7 @@ class XGateTestController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao criar/atualizar cliente: ' . $e->getMessage()

@@ -39,7 +39,7 @@ class XGateService
                 // Fazer login para obter token
                 $this->authenticate();
             } catch (\Exception $e) {
-                Log::error('Erro ao inicializar XGate: ' . $e->getMessage());
+                Log::channel('xgate')->error('Erro ao inicializar XGate: ' . $e->getMessage());
                 throw new \Exception('Erro ao inicializar XGate: ' . $e->getMessage());
             }
         } else {
@@ -225,7 +225,7 @@ class XGateService
             $response = $this->makeRequest('POST', '/deposit', $depositData);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
-            Log::info("CHAMADA XGATE COBRANÇA - Tempo para chamar: {$duracaoAtualizacao}s", [
+            Log::channel('xgate')->info("CHAMADA XGATE COBRANÇA - Tempo para chamar: {$duracaoAtualizacao}s", [
                 'reference_id' => $referenceId,
                 'valor' => $valor,
                 'status' => $response->status()
@@ -257,7 +257,7 @@ class XGateService
                 ];
             }
 
-            Log::error('Resposta XGate inválida', ['response' => $responseData]);
+            Log::channel('xgate')->error('Resposta XGate inválida', ['response' => $responseData]);
             return [
                 'success' => false,
                 'error' => 'Resposta inválida da API XGate',
@@ -274,7 +274,7 @@ class XGateService
             
             $curlCommand = $this->getLastCurlCommand();
             
-            Log::error('Erro ao criar cobrança XGate: ' . $e->getMessage(), array_merge($errorDetails, [
+            Log::channel('xgate')->error('Erro ao criar cobrança XGate: ' . $e->getMessage(), array_merge($errorDetails, [
                 'curl_command' => $curlCommand
             ]));
             
@@ -334,7 +334,7 @@ class XGateService
             
             throw new \Exception($errorMessage);
         } catch (\Exception $e) {
-            Log::error('Erro ao criar cliente XGate: ' . $e->getMessage(), [
+            Log::channel('xgate')->error('Erro ao criar cliente XGate: ' . $e->getMessage(), [
                 'customer_data' => $customerData
             ]);
             throw $e;
@@ -442,7 +442,7 @@ class XGateService
             $response = $this->makeRequest('POST', '/withdraw', $withdrawData);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
-            Log::info("CHAMADA XGATE TRANSFERÊNCIA PIX - Tempo para chamar: {$duracaoAtualizacao}s", [
+            Log::channel('xgate')->info("CHAMADA XGATE TRANSFERÊNCIA PIX - Tempo para chamar: {$duracaoAtualizacao}s", [
                 'valor' => $valor,
                 'pix_key' => $pixKey
             ]);
@@ -465,7 +465,7 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Erro ao realizar transferência PIX XGate: ' . $e->getMessage(), [
+            Log::channel('xgate')->error('Erro ao realizar transferência PIX XGate: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return [
@@ -588,7 +588,7 @@ class XGateService
             $response = $this->makeRequest('POST', '/withdraw', $withdrawData);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
-            Log::info("CHAMADA XGATE TRANSFERÊNCIA PIX COM CLIENTE - Tempo para chamar: {$duracaoAtualizacao}s", [
+            Log::channel('xgate')->info("CHAMADA XGATE TRANSFERÊNCIA PIX COM CLIENTE - Tempo para chamar: {$duracaoAtualizacao}s", [
                 'valor' => $valor,
                 'cliente_id' => $cliente->id
             ]);
@@ -611,7 +611,7 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Erro ao realizar transferência PIX XGate com cliente: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao realizar transferência PIX XGate com cliente: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -633,7 +633,7 @@ class XGateService
             $response = $this->makeRequest('POST', '/balance/company', []);
 
             $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
-            Log::info("CHAMADA XGATE CONSULTAR SALDO - Tempo para chamar: {$duracaoAtualizacao}s");
+            Log::channel('xgate')->info("CHAMADA XGATE CONSULTAR SALDO - Tempo para chamar: {$duracaoAtualizacao}s");
 
             if (!$response->successful()) {
                 $errorData = $response->json();
@@ -651,7 +651,7 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Erro ao consultar saldo XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao consultar saldo XGate: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -699,7 +699,7 @@ class XGateService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
+            Log::channel('xgate')->error('Erro ao criar/atualizar cliente XGate: ' . $e->getMessage());
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -807,7 +807,7 @@ class XGateService
                 'countryCode' => '55'
             ];
         } catch (\Exception $e) {
-            Log::warning('Erro ao criar objeto Phone do XGate: ' . $e->getMessage(), [
+            Log::channel('xgate')->warning('Erro ao criar objeto Phone do XGate: ' . $e->getMessage(), [
                 'telefone' => $telefone
             ]);
             return null;
@@ -841,7 +841,7 @@ class XGateService
         $curlCommand = $this->generateCurlCommand($method, $url, $headers, $data);
         
         // Log detalhado
-        Log::info("XGATE REQUEST - {$description}", [
+        Log::channel('xgate')->info("XGATE REQUEST - {$description}", [
             'method' => $method,
             'url' => $url,
             'headers' => $headers,

@@ -172,7 +172,7 @@ class RecalcularParcelas extends Command
                                     $cobrancaOk = true;
                                 }
                             } catch (\Exception $e) {
-                                Log::error("[recalcular:Parcelas] XGate parcela={$parcela->id} | " . $e->getMessage());
+                                Log::channel('xgate')->error("[recalcular:Parcelas] XGate parcela={$parcela->id} | " . $e->getMessage());
                             }
                         } else {
                             $response = $bcodexService->criarCobranca($parcela->saldo, $banco->document, $txId);
@@ -227,7 +227,7 @@ class RecalcularParcelas extends Command
                                     $parcela->emprestimo->quitacao->save();
                                 }
                             } catch (\Exception $e) {
-                                Log::error("[recalcular:Parcelas] XGate quitação parcela={$parcela->id} | " . $e->getMessage());
+                                Log::channel('xgate')->error("[recalcular:Parcelas] XGate quitação parcela={$parcela->id} | " . $e->getMessage());
                             }
                         } else {
                             $txId = $parcela->emprestimo->quitacao->identificador ?: null;
@@ -269,7 +269,7 @@ class RecalcularParcelas extends Command
                                     $parcela->emprestimo->pagamentominimo->save();
                                 }
                             } catch (\Exception $e) {
-                                Log::error("[recalcular:Parcelas] XGate pag. mínimo parcela={$parcela->id} | " . $e->getMessage());
+                                Log::channel('xgate')->error("[recalcular:Parcelas] XGate pag. mínimo parcela={$parcela->id} | " . $e->getMessage());
                             }
                         } else {
                             $txId = $parcela->emprestimo->pagamentominimo->identificador ?: null;
@@ -313,7 +313,7 @@ class RecalcularParcelas extends Command
                                         $parcela->emprestimo->pagamentosaldopendente->save();
                                     }
                                 } catch (\Exception $e) {
-                                    Log::error("[recalcular:Parcelas] XGate saldo pendente parcela={$parcela->id} | " . $e->getMessage());
+                                    Log::channel('xgate')->error("[recalcular:Parcelas] XGate saldo pendente parcela={$parcela->id} | " . $e->getMessage());
                                 }
                             } else {
                                 $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ?: null;
