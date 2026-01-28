@@ -484,7 +484,7 @@ export default {
                         </div>
                     </div>
 
-                    <div v-if="banco?.wallet == true" class="col-12 md:col-3">
+                    <div v-if="banco?.wallet == true || banco?.bank_type === 'xgate'" class="col-12 md:col-3">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
@@ -492,10 +492,10 @@ export default {
                                         <span class="block text-500 font-medium mb-3">Saldo Banco wallet</span>
                                         <div class="text-900 font-medium text-xl">
                                             {{
-                                                parseFloat(banco?.saldo_banco).toLocaleString('pt-BR', {
+                                                (parseFloat(banco?.saldo_banco ?? 0) || 0).toLocaleString('pt-BR', {
                                                     style: 'currency',
                                                     currency: 'BRL'
-                                                }) ?? 'R$ 0,00'
+                                                })
                                             }}
                                         </div>
                                     </div>
@@ -576,7 +576,7 @@ export default {
                         </div>
                     </div>
 
-                    <div v-if="banco?.wallet == true" class="col-12 md:col-3">
+                    <div v-if="banco?.wallet == true || banco?.bank_type === 'xgate'" class="col-12 md:col-3">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
@@ -584,10 +584,10 @@ export default {
                                         <span class="block text-500 font-medium mb-3">Diferença Entre Bancos</span>
                                         <div class="text-900 font-medium text-xl">
                                             {{
-                                                (parseFloat(banco?.saldo_banco) - banco?.saldo).toLocaleString('pt-BR', {
+                                                ((parseFloat(banco?.saldo_banco ?? 0) || 0) - (parseFloat(banco?.saldo ?? 0) || 0)).toLocaleString('pt-BR', {
                                                     style: 'currency',
                                                     currency: 'BRL'
-                                                }) ?? 'R$ 0,00'
+                                                })
                                             }}
                                         </div>
                                     </div>

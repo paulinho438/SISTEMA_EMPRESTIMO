@@ -91,6 +91,9 @@ class BancosComSaldoResource extends JsonResource
         if (is_array($data) && isset($data['amount']) && is_numeric($data['amount'])) {
             return (float) $data['amount'];
         }
+        if (is_array($data) && isset($data['totalAmount']) && is_numeric($data['totalAmount'])) {
+            return (float) $data['totalAmount'];
+        }
         if (is_array($data)) {
             foreach ($data as $item) {
                 if (!is_array($item)) {
@@ -101,6 +104,10 @@ class BancosComSaldoResource extends JsonResource
                 }
                 if (isset($item['amount']) && is_numeric($item['amount'])) {
                     return (float) $item['amount'];
+                }
+                // API XGate balance/company retorna array de objetos com totalAmount (ex.: [{"currency":{...},"totalAmount":7.5}])
+                if (isset($item['totalAmount']) && is_numeric($item['totalAmount'])) {
+                    return (float) $item['totalAmount'];
                 }
             }
         }
