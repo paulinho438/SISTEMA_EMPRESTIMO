@@ -1625,13 +1625,16 @@ class EmprestimoController extends Controller
 
     public function envioMensagem($parcela)
     {
+        $company = $parcela->emprestimo->company;
+        if (is_null($company->token_api_wtz) || is_null($company->instance_id)) {
+            Log::warning('envioMensagem: empresa sem token_api_wtz ou instance_id configurado', ['company_id' => $company->id ?? null]);
+            return;
+        }
+
         $telefone = preg_replace('/\D/', '', $parcela->emprestimo->client->telefone_celular_1);
-        $baseUrl = $parcela->emprestimo->company->whatsapp;
+        $telefoneCliente = '55' . $telefone;
 
         $saudacao = self::obterSaudacao();
-
-        $parcelaPendente = self::encontrarPrimeiraParcelaPendente($parcela->emprestimo->parcelas);
-
         $saudacaoTexto = "{$saudacao}, " . $parcela->emprestimo->client->nome_completo . "!";
         $fraseInicial = "
 
@@ -1641,20 +1644,15 @@ Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
 
 https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
-📲 Para mais informações WhatsApp {$parcela->emprestimo->company->numero_contato}
+📲 Para mais informações WhatsApp {$company->numero_contato}
 ";
-
-
         $frase = $saudacaoTexto . $fraseInicial;
 
-        $telefoneCliente = "55" . $telefone;
-
-        $data = [
-            "numero" => $telefoneCliente,
-            "mensagem" => $frase
-        ];
-
-        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
+        $this->wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, [
+            'delayMessage' => 1,
+            'phone' => $telefoneCliente,
+            'message' => $frase,
+        ]);
     }
 
     function encontrarPrimeiraParcelaPendente($parcelas)
