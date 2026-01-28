@@ -131,7 +131,11 @@ class RecalcularParcelas extends Command
                         }
 
                         $txId = $parcela->identificador ?: null;
-                        Log::info("[recalcular:Parcelas] Alterando cobrança | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | bankType={$bankType} | valor={$parcela->saldo} | txid={$txId}");
+                        if ($bankType === 'xgate') {
+                            Log::info("[recalcular:Parcelas] Nova cobrança XGate | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | valor_atualizado={$novoValor}");
+                        } else {
+                            Log::info("[recalcular:Parcelas] Alterando cobrança | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | bankType={$bankType} | valor={$parcela->saldo} | txid={$txId}");
+                        }
 
                         $cobrancaOk = false;
 
@@ -154,12 +158,14 @@ class RecalcularParcelas extends Command
                                 $cobrancaOk = true;
                             }
                         } elseif ($bankType === 'xgate') {
+                            // XGate: sempre criar NOVA cobrança com valor atualizado (saldo + juros/taxa), nunca reutilizar a antiga
                             try {
                                 $xgateService = new XGateService($banco);
                                 $cliente = $parcela->emprestimo->client;
-                                $referenceId = $parcela->id . '_' . time();
+                                $referenceId = 'parcela_' . $parcela->id . '_' . time();
                                 $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
-                                $response = $xgateService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                                $valorCobranca = $novoValor; // valor já com juros/taxa aplicados
+                                $response = $xgateService->criarCobranca($valorCobranca, $cliente, $referenceId, $dueDate);
                                 if (isset($response['success']) && $response['success']) {
                                     $newTxId = $response['transaction_id'] ?? $referenceId;
                                     $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
@@ -170,6 +176,7 @@ class RecalcularParcelas extends Command
                                     $parcela->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
                                     $parcela->save();
                                     $cobrancaOk = true;
+                                    Log::info("[recalcular:Parcelas] XGate nova cobrança parcela={$parcela->id} | valor={$valorCobranca} | txId={$newTxId}");
                                 }
                             } catch (\Exception $e) {
                                 Log::channel('xgate')->error("[recalcular:Parcelas] XGate parcela={$parcela->id} | " . $e->getMessage());
@@ -216,6 +223,7 @@ class RecalcularParcelas extends Command
                                 $parcela->emprestimo->quitacao->save();
                             }
                         } elseif ($bankType === 'xgate') {
+                            // XGate: sempre nova cobrança (atualiza identificador e chave_pix)
                             try {
                                 $xgateService = new XGateService($banco);
                                 $cliente = $parcela->emprestimo->client;
@@ -258,6 +266,7 @@ class RecalcularParcelas extends Command
                                 $parcela->emprestimo->pagamentominimo->save();
                             }
                         } elseif ($bankType === 'xgate') {
+                            // XGate: sempre nova cobrança com valor atualizado (atualiza identificador e chave_pix)
                             try {
                                 $xgateService = new XGateService($banco);
                                 $cliente = $parcela->emprestimo->client;
@@ -302,6 +311,7 @@ class RecalcularParcelas extends Command
                                     $parcela->emprestimo->pagamentosaldopendente->save();
                                 }
                             } elseif ($bankType === 'xgate') {
+                                // XGate: sempre nova cobrança (atualiza identificador e chave_pix)
                                 try {
                                     $xgateService = new XGateService($banco);
                                     $cliente = $parcela->emprestimo->client;
