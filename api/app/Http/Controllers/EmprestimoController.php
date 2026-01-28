@@ -45,6 +45,7 @@ use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
 use App\Jobs\ProcessarPixJob;
+use App\Jobs\ProcessarPixXgateJob;
 use App\Jobs\EnviarComprovanteFornecedor;
 
 use App\Mail\ExampleEmail;
@@ -1479,8 +1480,8 @@ class EmprestimoController extends Controller
                             $emprestimo->banco->saldo -= $valorPagamento;
                             $emprestimo->banco->save();
 
-                            // Enviar comprovante ao cliente (mesmo fluxo do Bcodex)
-                            ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
+                            // Job específico XGate: comprovante, cobranças via API XGate, envio msg/vídeo/áudio
+                            ProcessarPixXgateJob::dispatch($emprestimo, $array);
 
                             Log::channel('xgate')->info('Pagamento XGate autorizado e comprovante enfileirado', [
                                 'emprestimo_id' => $emprestimo->id,
@@ -1488,8 +1489,7 @@ class EmprestimoController extends Controller
                                 'transaction_id' => $response['transaction_id'] ?? null,
                                 'status_xgate' => $statusXGate ?? null
                             ]);
-
-                            $this->envioMensagem($emprestimo->parcelas[0]);
+                            // Mensagem/vídeo/áudio são enviados pelo ProcessarPixXgateJob
                         } else {
                             return response()->json([
                                 "message" => "Erro ao efetuar a transferencia do Emprestimo.",

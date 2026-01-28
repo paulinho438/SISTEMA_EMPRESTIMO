@@ -1,5 +1,7 @@
 # Como Corrigir Permissões do Log XGate (xgate.log)
 
+> **Dica:** Para corrigir permissões de **todo** o `storage` (logs, cache, sessões) de uma vez, use [PERMISSOES_STORAGE.md](PERMISSOES_STORAGE.md).
+
 ## Problema
 
 O erro abaixo indica que o processo que roda o PHP (servidor web ou queue) não tem permissão para escrever no arquivo de log da XGate:
