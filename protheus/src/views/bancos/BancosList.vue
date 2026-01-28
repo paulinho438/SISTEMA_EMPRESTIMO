@@ -44,11 +44,17 @@ export default {
 			});
 		},
 		formatValorReal(r) {
-			return r.toLocaleString('pt-BR', {
+			const valor = r != null && r !== '' ? Number(r) : 0;
+			return valor.toLocaleString('pt-BR', {
 				style: 'currency',
 				currency: 'BRL',
 				minimumFractionDigits: 2,
-				});
+			});
+		},
+		getSaldoExibir(data) {
+			const usaSaldoApi = data.wallet || data.bank_type === 'xgate';
+			const valor = usaSaldoApi ? (data.saldo_banco ?? data.saldo) : data.saldo;
+			return valor != null ? valor : 0;
 		},
 		editCostcenter(id) {
 			if (undefined === id) this.router.push('/bancos/add');
@@ -155,7 +161,7 @@ export default {
 						<Column field="description" header="Saldo" :sortable="true" class="w-2">
 							<template #body="slotProps">
 								<span class="p-column-title">Saldo</span>
-								{{ formatValorReal(slotProps.data.saldo) }}
+								{{ formatValorReal(getSaldoExibir(slotProps.data)) }}
 							</template>
 						</Column>
 						

@@ -7,7 +7,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\Permgroup;
 use App\Models\Parcela;
 use App\Services\BcodexService;
+use App\Services\XGateService;
 use App\Models\CustomLog;
+use Illuminate\Support\Facades\Log;
 
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -51,22 +53,58 @@ class BancosComSaldoResource extends JsonResource
 
     private function getSaldoBanco()
     {
+        $bankType = $this->bank_type ?? ($this->wallet ? 'bcodex' : 'normal');
 
-        if ($this->wallet) {
-
-            $bcodexService = new BcodexService();
-
-            $response = $bcodexService->consultarSaldo($this->accountId);
-
-            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-
-                return ($response->json()['balance'] / 100);
+        if ($bankType === 'xgate') {
+            try {
+                $xgateService = new XGateService($this->resource);
+                $result = $xgateService->consultarSaldo();
+                if (!empty($result['success']) && isset($result['response'])) {
+                    return $this->extrairSaldoXGate($result['response']);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('BancosComSaldoResource: erro ao consultar saldo XGate - ' . $e->getMessage());
             }
-
-        } else {
             return null;
         }
 
+        if ($this->wallet) {
+            $bcodexService = new BcodexService();
+            $response = $bcodexService->consultarSaldo($this->accountId);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                return ($response->json()['balance'] / 100);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extrai valor numérico do saldo da resposta da API XGate (balance/company).
+     */
+    private function extrairSaldoXGate($data): ?float
+    {
+        if (is_array($data) && isset($data['balance']) && is_numeric($data['balance'])) {
+            return (float) $data['balance'];
+        }
+        if (is_array($data) && isset($data['amount']) && is_numeric($data['amount'])) {
+            return (float) $data['amount'];
+        }
+        if (is_array($data)) {
+            foreach ($data as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                if (isset($item['balance']) && is_numeric($item['balance'])) {
+                    return (float) $item['balance'];
+                }
+                if (isset($item['amount']) && is_numeric($item['amount'])) {
+                    return (float) $item['amount'];
+                }
+            }
+        }
+        return null;
     }
 
     private function getParcelasBaixaManual()
