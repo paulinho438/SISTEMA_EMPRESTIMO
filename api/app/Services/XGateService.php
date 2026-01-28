@@ -248,16 +248,16 @@ class XGateService
 
             $responseData = $response->json();
 
-            // Processar resposta
+            // Processar resposta (API retorna data.id = tx id, data.code = PIX copia e cola)
             if (isset($responseData['data'])) {
                 $data = $responseData['data'];
-                
+                $pixCopiaECola = $data['code'] ?? null;
                 return [
                     'success' => true,
-                    'transaction_id' => $data['id'] ?? $data['code'] ?? $referenceId,
+                    'transaction_id' => $data['id'] ?? $referenceId,
                     'code' => $data['code'] ?? null,
-                    'pixCopiaECola' => null, // XGate não retorna PIX copia e cola diretamente no depósito
-                    'qr_code' => null,
+                    'pixCopiaECola' => $pixCopiaECola,
+                    'qr_code' => $pixCopiaECola,
                     'status' => $data['status'] ?? 'PENDING',
                     'customerId' => $data['customerId'] ?? null,
                     'message' => $responseData['message'] ?? null,
