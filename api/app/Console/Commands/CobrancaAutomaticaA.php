@@ -134,6 +134,13 @@ class CobrancaAutomaticaA extends Command
                 'phone_number_id'=> $company->whatsapp_cloud_phone_number_id,
             ]);
             $this->enviarMensagemWhatsAppCloud($parcela);
+        } elseif (!empty($company->token_api_wtz) && !empty($company->instance_id)) {
+            Log::info('CobrancaAutomaticaA: usando WAPIService (token_api_wtz)', [
+                'parcela_id'    => $parcela->id ?? null,
+                'emprestimo_id' => $parcela->emprestimo->id ?? null,
+                'company_id'    => $company->id ?? null,
+            ]);
+            $this->enviarMensagemNovaAPI($parcela);
         } else {
             Log::info('CobrancaAutomaticaA: usando API antiga de WhatsApp', [
                 'parcela_id'    => $parcela->id ?? null,
@@ -150,11 +157,12 @@ class CobrancaAutomaticaA extends Command
     {
         $company = $parcela->emprestimo->company ?? null;
 
-        // Só processa se houver alguma configuração de WhatsApp (antiga ou Cloud)
+        // Só processa se houver alguma configuração de WhatsApp (antiga, Cloud ou WAPI)
         $temWhatsappAntigo = isset($company->whatsapp) || isset($company->whatsapp_cobranca);
         $temWhatsappCloud  = !empty($company->whatsapp_cloud_phone_number_id) && !empty($company->whatsapp_cloud_token);
+        $temWhatsappWAPI   = !empty($company->token_api_wtz) && !empty($company->instance_id);
 
-        $pode = ($temWhatsappAntigo || $temWhatsappCloud) &&
+        $pode = ($temWhatsappAntigo || $temWhatsappCloud || $temWhatsappWAPI) &&
             $parcela->emprestimo->contaspagar &&
             $parcela->emprestimo->contaspagar->status == "Pagamento Efetuado";
 
@@ -165,6 +173,7 @@ class CobrancaAutomaticaA extends Command
                 'company_id'          => $company->id ?? null,
                 'tem_whatsapp_antigo' => $temWhatsappAntigo,
                 'tem_whatsapp_cloud'  => $temWhatsappCloud,
+                'tem_whatsapp_wapi'   => $temWhatsappWAPI,
                 'tem_contaspagar'     => (bool)($parcela->emprestimo->contaspagar ?? null),
                 'status_contaspagar'  => $parcela->emprestimo->contaspagar->status ?? null,
             ]);
@@ -180,6 +189,15 @@ class CobrancaAutomaticaA extends Command
         }
 
         return Carbon::parse($parcela->emprestimo->data_protesto)->lte(Carbon::now()->subDays(14));
+    }
+
+    /**
+     * Envio via WAPIService (token_api_wtz / instance_id).
+     * Utiliza a mesma mensagem e lógica de áudios que a API antiga.
+     */
+    private function enviarMensagemNovaAPI($parcela)
+    {
+        $this->enviarMensagem($parcela);
     }
 
     private function enviarMensagem($parcela)
