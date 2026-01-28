@@ -1340,7 +1340,11 @@ class EmprestimoController extends Controller
                 $valorPagamento = $emprestimo->valor;
             }
 
-            if ($emprestimo->banco->wallet == 1) {
+            $isWalletOuXgateOuVelana = ($emprestimo->banco->wallet == 1)
+                || (($emprestimo->banco->bank_type ?? 'normal') === 'xgate')
+                || (($emprestimo->banco->bank_type ?? 'normal') === 'velana');
+
+            if ($isWalletOuXgateOuVelana) {
                 if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
@@ -1553,6 +1557,20 @@ class EmprestimoController extends Controller
                     ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
                 }
             } else {
+                // Banco não é wallet/xgate/velana: fluxo sem API (ex.: transferência manual)
+                $bankType = $emprestimo->banco->bank_type ?? 'normal';
+                if ($bankType === 'xgate' || $bankType === 'velana') {
+                    Log::channel('xgate')->error('Pagamento ao cliente: banco XGate/Velana sem chamada à API (wallet=0?). Não marcar como pago.', [
+                        'emprestimo_id' => $emprestimo->id,
+                        'banco_id' => $emprestimo->banco->id,
+                        'bank_type' => $bankType,
+                    ]);
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => 'Configuração inválida: banco XGate/Velana deve ter wallet ativo. Contate o suporte.'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
                 $emprestimo->contaspagar->status = 'Pagamento Efetuado';
 
                 $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
