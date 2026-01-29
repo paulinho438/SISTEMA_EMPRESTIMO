@@ -24,6 +24,7 @@ use App\Models\ControleBcodex;
 use Illuminate\Support\Facades\Crypt;
 
 use App\Services\BcodexService;
+use App\Services\XGateService;
 
 class BancoController extends Controller
 {
@@ -834,43 +835,67 @@ class BancoController extends Controller
 
     public function depositar(Request $request, $id)
     {
-
-
-
         try {
-            $array = ['error' => ''];
-
             $user = auth()->user();
-
-
             $dados = $request->all();
-
             $banco = Banco::find($id);
 
-            if ($banco->wallet) {
-                $response = $this->bcodexService->criarCobranca($dados['valor'], $banco->document);
-
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
-
-
-                    Deposito::create([
-                        'banco_id' => $banco->id,
-                        'valor' => $dados['valor'],
-                        'company_id' => $request->header('company-id'),
-                        'identificador' => $response->json()['txid'],
-                        'chave_pix' => $response->json()['pixCopiaECola'],
-                    ]);
-
-
-                    return response()->json(['message' => 'Pix criado com sucesso!', 'chavepix' =>  $response->json()['pixCopiaECola']]);
-                }
-            } else {
+            if (!$banco->wallet && ($banco->bank_type ?? 'normal') !== 'xgate') {
                 return response()->json([
                     "message" => "Banco não é do tipo wallet.",
                     "error" => "Banco não é do tipo wallet."
                 ], Response::HTTP_FORBIDDEN);
             }
+
+            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+
+            if ($bankType === 'xgate') {
+                $xgateService = new XGateService($banco);
+                $referenceId = 'dep-caixa-' . $banco->id . '-' . time();
+                $response = $xgateService->criarDepositoCaixa((float) $dados['valor'], $referenceId);
+
+                if (!empty($response['success']) && !empty($response['pixCopiaECola'])) {
+                    Deposito::create([
+                        'banco_id' => $banco->id,
+                        'valor' => $dados['valor'],
+                        'company_id' => $request->header('company-id'),
+                        'identificador' => $response['transaction_id'],
+                        'chave_pix' => $response['pixCopiaECola'],
+                    ]);
+
+                    return response()->json([
+                        'message' => 'Pix criado com sucesso!',
+                        'chavepix' => $response['pixCopiaECola'],
+                    ]);
+                }
+
+                return response()->json([
+                    'message' => $response['error'] ?? 'Erro ao criar depósito XGate.',
+                    'error' => $response['error'] ?? 'Erro ao criar depósito XGate.',
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            // BCodex
+            $response = $this->bcodexService->criarCobranca($dados['valor'], $banco->document);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                ControleBcodex::create(['identificador' => $response->json()['txid']]);
+
+                Deposito::create([
+                    'banco_id' => $banco->id,
+                    'valor' => $dados['valor'],
+                    'company_id' => $request->header('company-id'),
+                    'identificador' => $response->json()['txid'],
+                    'chave_pix' => $response->json()['pixCopiaECola'],
+                ]);
+
+                return response()->json(['message' => 'Pix criado com sucesso!', 'chavepix' => $response->json()['pixCopiaECola']]);
+            }
+
+            return response()->json([
+                'message' => 'Erro ao criar PIX.',
+                'error' => 'Erro ao criar PIX.',
+            ], Response::HTTP_FORBIDDEN);
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao fechar o Caixa.",
@@ -881,42 +906,64 @@ class BancoController extends Controller
 
     public function saqueConsulta(Request $request, $id)
     {
-
         try {
-            $array = ['error' => ''];
-
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' consultou o envio de pix no valor de R$' . $request->valor,
                 'operation' => 'index'
             ]);
 
-            $user = auth()->user();
-
-
             $dados = $request->all();
-
             $banco = Banco::find($id);
 
-            if ($banco->wallet == 1) {
-                if (!$banco->chavepix) {
-                    return response()->json([
-                        "message" => "Banco não possui chave pix cadastrada!",
-                        "error" => 'Banco não possui chave pix cadastrada'
-                    ], Response::HTTP_FORBIDDEN);
-                }
-
-                $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
-
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    return $response->json();
-                } else {
-                    return response()->json([
-                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
-                    ], Response::HTTP_FORBIDDEN);
-                }
+            if ($banco->wallet != 1 && ($banco->bank_type ?? 'normal') !== 'xgate') {
+                return response()->json([
+                    "message" => "Banco não é do tipo wallet.",
+                    "error" => "Banco não é do tipo wallet."
+                ], Response::HTTP_FORBIDDEN);
             }
+
+            if (!$banco->chavepix) {
+                return response()->json([
+                    "message" => "Banco não possui chave pix cadastrada!",
+                    "error" => 'Banco não possui chave pix cadastrada'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+
+            if ($bankType === 'xgate') {
+                $xgateService = new XGateService($banco);
+                $saldoResult = $xgateService->consultarSaldo();
+                $resp = $saldoResult['response'] ?? [];
+                $saldoDisponivel = (float) ($resp['totalAmount'] ?? $resp['balance'] ?? $resp['amount'] ?? 0);
+                $valor = (float) ($dados['valor'] ?? 0);
+
+                if ($valor <= 0 || $saldoDisponivel < $valor) {
+                    return response()->json([
+                        "message" => "Saldo insuficiente para o saque.",
+                        "error" => "O banco não possui saldo suficiente para efetuar a transferência"
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                return response()->json([
+                    'creditParty' => [
+                        'name' => $banco->name ?: 'Conta destino',
+                    ],
+                    'status' => 'AWAITING_CONFIRMATION',
+                ]);
+            }
+
+            $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                return $response->json();
+            }
+
+            return response()->json([
+                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+            ], Response::HTTP_FORBIDDEN);
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao efetuar saque.",
@@ -927,54 +974,91 @@ class BancoController extends Controller
 
     public function efetuarSaque(Request $request, $id)
     {
-
         try {
-            $array = ['error' => ''];
-
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' consultou o envio de pix no valor de R$' . $request->valor,
                 'operation' => 'index'
             ]);
 
-            $user = auth()->user();
-
-
             $dados = $request->all();
-
             $banco = Banco::find($id);
 
-            if ($banco->wallet == 1) {
-                if (!$banco->chavepix) {
-                    return response()->json([
-                        "message" => "Banco não possui chave pix cadastrada!",
-                        "error" => 'Banco não possui chave pix cadastrada'
-                    ], Response::HTTP_FORBIDDEN);
-                }
-
-                $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
-
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
-
-                        $response = $this->bcodexService->realizarPagamentoPix(($dados['valor'] * 100), $banco->accountId, $response->json()['paymentId']);
-
-                        if (!$response->successful()) {
-                            return response()->json([
-                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                                "error" => "Erro ao efetuar a transferencia do Emprestimo."
-                            ], Response::HTTP_FORBIDDEN);
-                        }
-                    }
-                } else {
-                    return response()->json([
-                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                        "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
-                    ], Response::HTTP_FORBIDDEN);
-                }
-                // Disparar o job para processar o empréstimo em paralelo
+            if ($banco->wallet != 1 && ($banco->bank_type ?? 'normal') !== 'xgate') {
+                return response()->json([
+                    "message" => "Banco não é do tipo wallet.",
+                    "error" => "Banco não é do tipo wallet."
+                ], Response::HTTP_FORBIDDEN);
             }
 
+            if (!$banco->chavepix) {
+                return response()->json([
+                    "message" => "Banco não possui chave pix cadastrada!",
+                    "error" => 'Banco não possui chave pix cadastrada'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $valor = (float) ($dados['valor'] ?? 0);
+            $nomeDestino = $banco->name ?: 'Conta destino';
+
+            if ($bankType === 'xgate') {
+                $xgateService = new XGateService($banco);
+                $response = $xgateService->realizarTransferenciaPix(
+                    $valor,
+                    $banco->chavepix,
+                    'Saque Fechamento de Caixa'
+                );
+
+                if (empty($response['success'])) {
+                    return response()->json([
+                        "message" => $response['error'] ?? "Erro ao efetuar a transferência na XGate.",
+                        "error" => $response['error'] ?? "Erro ao efetuar a transferência na XGate."
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $transactionId = $response['transaction_id'] ?? null;
+                $descricao = 'Saque realizado para ' . $nomeDestino;
+                if ($transactionId) {
+                    $descricao .= ' (ID transação XGate: ' . $transactionId . ')';
+                }
+
+                $movimentacaoFinanceira = [
+                    'banco_id' => $banco->id,
+                    'company_id' => $request->header('company-id'),
+                    'descricao' => $descricao,
+                    'tipomov' => 'S',
+                    'dt_movimentacao' => date('Y-m-d'),
+                    'valor' => $valor,
+                ];
+
+                $banco->saldo = ($banco->saldo ?? 0) - $valor;
+                $banco->save();
+
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                return response()->json(['message' => 'Saque efetuado com sucesso.']);
+            }
+
+            $response = $this->bcodexService->consultarChavePix(($valor * 100), $banco->chavepix, $banco->accountId);
+
+            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
+                    $response = $this->bcodexService->realizarPagamentoPix(($valor * 100), $banco->accountId, $response->json()['paymentId']);
+
+                    if (!$response->successful()) {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => "Erro ao efetuar a transferencia do Emprestimo."
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                }
+            } else {
+                return response()->json([
+                    "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                    "error" => 'O banco não possui saldo suficiente para efetuar a transferencia'
+                ], Response::HTTP_FORBIDDEN);
+            }
 
             $movimentacaoFinanceira = [];
             $movimentacaoFinanceira['banco_id'] = $banco->id;
@@ -982,12 +1066,14 @@ class BancoController extends Controller
             $movimentacaoFinanceira['descricao'] = 'Saque realizado para ' . $response->json()['creditParty']['name'];
             $movimentacaoFinanceira['tipomov'] = 'S';
             $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $dados['valor'];
+            $movimentacaoFinanceira['valor'] = $valor;
 
-            $banco->saldo -= $dados['valor'];
+            $banco->saldo -= $valor;
             $banco->save();
 
             Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+            return response()->json(['message' => 'Saque efetuado com sucesso.']);
         } catch (\Exception $e) {
             return response()->json([
                 "message" => "Erro ao efetuar saque.",

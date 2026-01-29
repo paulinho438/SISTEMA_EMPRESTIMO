@@ -127,7 +127,7 @@ export default {
         },
         async sacar(event) {
             try {
-                if (this.banco.wallet) {
+                if (this.banco.wallet || this.banco.bank_type === 'xgate') {
                     this.bancoService
                         .saqueConsulta(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
@@ -153,7 +153,7 @@ export default {
         },
         async efetivarSaque(event) {
             try {
-                if (this.banco.wallet) {
+                if (this.banco.wallet || this.banco.bank_type === 'xgate') {
                     this.bancoService
                         .efetuarSaque(this.banco.id, this.displaySacar.valor)
                         .then((response) => {
@@ -472,12 +472,12 @@ export default {
                                 <Button label="Alterar Caixa" @click.prevent="modalFechamento()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
                         </div>
-                        <div v-if="banco && banco.wallet == 1 && permissionsService.hasPermissions('view_sacarfechamentocaixa')" class="col-12 md:col-2">
+                        <div v-if="banco && (banco.wallet == 1 || banco.bank_type === 'xgate') && permissionsService.hasPermissions('view_sacarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Sacar" @click.prevent="modalSacar()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>
                         </div>
-                        <div v-if="banco && banco.wallet == 1 && permissionsService.hasPermissions('view_depositarfechamentocaixa')" class="col-12 md:col-2">
+                        <div v-if="banco && (banco.wallet == 1 || banco.bank_type === 'xgate') && permissionsService.hasPermissions('view_depositarfechamentocaixa')" class="col-12 md:col-2">
                             <div class="flex flex-column gap-2 m-2 mt-1">
                                 <Button label="Depositar" @click.prevent="modalDepositar()" class="p-button-primary mr-2 mb-2 mt-4" />
                             </div>

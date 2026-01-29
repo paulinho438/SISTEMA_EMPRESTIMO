@@ -363,6 +363,91 @@ class XGateService
     }
 
     /**
+     * Cria cobrança PIX para depósito no Fechamento de Caixa (sem cliente específico).
+     * Gera um PIX para a empresa depositar valor na carteira XGate.
+     *
+     * @param float $valor Valor do depósito em reais
+     * @param string $referenceId Identificador único (ex: dep-caixa-{banco_id}-{timestamp})
+     * @return array ['success' => bool, 'pixCopiaECola' => string, 'transaction_id' => string, ...]
+     */
+    public function criarDepositoCaixa(float $valor, string $referenceId): array
+    {
+        try {
+            $doc = preg_replace('/\D/', '', 'DEP-CAIXA-' . $referenceId);
+            $customerData = [
+                'name' => 'Depósito Fechamento Caixa',
+                'document' => str_pad(substr($doc, -11), 11, '0', STR_PAD_LEFT),
+            ];
+
+            $customerId = $this->criarOuObterCliente($customerData);
+
+            $depositData = [
+                'amount' => $valor,
+                'customerId' => $customerId,
+            ];
+
+            $currencies = $this->getCurrenciesDeposit();
+            $pixCurrency = null;
+            foreach ($currencies as $currency) {
+                if (isset($currency['type']) && $currency['type'] === 'PIX') {
+                    $pixCurrency = $currency;
+                    break;
+                }
+            }
+
+            if (!$pixCurrency) {
+                throw new \Exception('Moeda PIX não encontrada na conta XGate');
+            }
+
+            $depositData['currency'] = $pixCurrency;
+
+            $response = $this->makeRequest('POST', '/deposit', $depositData);
+
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $errorMessage = $errorData['message'] ?? 'Erro ao criar depósito na API XGate';
+                throw new \Exception($errorMessage);
+            }
+
+            $responseData = $response->json();
+            if (isset($responseData['data'])) {
+                $data = $responseData['data'];
+                $pixCopiaECola = $data['code'] ?? null;
+                $txId = $data['id'] ?? $referenceId;
+
+                Log::channel('xgate')->info('XGate depósito fechamento caixa criado', [
+                    'reference_id' => $referenceId,
+                    'valor' => $valor,
+                    'transaction_id' => $txId,
+                ]);
+
+                return [
+                    'success' => true,
+                    'transaction_id' => $txId,
+                    'pixCopiaECola' => $pixCopiaECola,
+                    'code' => $pixCopiaECola,
+                    'status' => $data['status'] ?? 'PENDING',
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => 'Resposta inválida da API XGate',
+                'response' => $responseData,
+            ];
+        } catch (\Exception $e) {
+            Log::channel('xgate')->error('Erro ao criar depósito caixa XGate: ' . $e->getMessage(), [
+                'last_response' => $this->lastResponse,
+            ]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'last_response' => $this->lastResponse,
+            ];
+        }
+    }
+
+    /**
      * Realiza uma transferência PIX para o cliente
      *
      * @param float $valor Valor da transferência em reais
