@@ -26,7 +26,8 @@ export default {
             sliderValue: ref(1),
             min: ref(0),
             max: ref(1000),
-            toast: useToast()
+            toast: useToast(),
+            loadingPix: ref(false)
         };
     },
 
@@ -38,6 +39,9 @@ export default {
                     status: parcela.dt_baixa ? 'Pago' : 'Pendente'
                 };
             });
+        },
+        isXGate() {
+            return this.products?.data?.emprestimo?.banco?.bank_type === 'xgate';
         }
     },
 
@@ -80,17 +84,53 @@ export default {
             }
         },
         copyToClipboard(text) {
+            if (!text) return;
             const textArea = document.createElement('textarea');
             textArea.value = text;
             document.body.appendChild(textArea);
-
             textArea.select();
             textArea.setSelectionRange(0, 99999);
-
             document.execCommand('copy');
             document.body.removeChild(textArea);
-
             alert('Chave PIX copiado para a área de transferência!');
+        },
+        async copiarChavePix(tipo, id, textoAtual) {
+            if (this.isXGate && id) {
+                this.loadingPix = true;
+                try {
+                    let res;
+                    if (tipo === 'saldoPendente') {
+                        res = await this.emprestimoService.gerarPixPagamentoSaldoPendente(id);
+                    } else if (tipo === 'quitacao') {
+                        res = await this.emprestimoService.gerarPixPagamentoQuitacao(id);
+                    } else {
+                        res = await this.emprestimoService.gerarPixPagamentoParcela(id);
+                    }
+                    const chave = res?.data?.chave_pix || res?.chave_pix;
+                    if (chave) {
+                        this.copyToClipboard(chave);
+                        if (tipo === 'saldoPendente' && this.products?.data?.emprestimo?.pagamentosaldopendente) {
+                            this.products.data.emprestimo.pagamentosaldopendente.chave_pix = chave;
+                        }
+                        if (tipo === 'quitacao' && this.products?.data?.emprestimo?.quitacao) {
+                            this.products.data.emprestimo.quitacao.chave_pix = chave;
+                        }
+                        if (tipo === 'parcela' && this.products?.data?.emprestimo?.parcelas) {
+                            const p = this.products.data.emprestimo.parcelas.find((x) => x.id === id);
+                            if (p) p.chave_pix = chave;
+                        }
+                    } else {
+                        alert(res?.data?.message || 'Não foi possível gerar a chave PIX.');
+                    }
+                } catch (e) {
+                    const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Erro ao gerar chave PIX.';
+                    alert(msg);
+                } finally {
+                    this.loadingPix = false;
+                }
+            } else {
+                this.copyToClipboard(textoAtual);
+            }
         },
         encontrarPrimeiraParcelaPendente() {
             for (let i = 0; i < this.products?.data?.emprestimo?.parcelas.length; i++) {
@@ -180,7 +220,7 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentosaldopendente.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
@@ -189,14 +229,14 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('parcela', this.encontrarPrimeiraParcelaPendente()?.id, this.encontrarPrimeiraParcelaPendente()?.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
             </section>
 
             <!-- Quitar Empréstimo -->
             <section v-if="(this.products?.data?.emprestimo?.quitacao?.saldo && this.products?.data?.emprestimo?.quitacao?.saldo != this.products?.data?.emprestimo?.pagamentosaldopendente?.valor) && (this.products?.data?.emprestimo?.saldoareceber != this.encontrarPrimeiraParcelaPendente().saldo)" class="payment-section">
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.quitacao.chave_pix)">
+                <button class="btn-primary" :disabled="loadingPix" @click="copiarChavePix('quitacao', this.products?.data?.emprestimo?.quitacao?.id, this.products?.data?.emprestimo?.quitacao?.chave_pix)">
                     Copiar Chave Pix - Quitar Empréstimo <br />
                     {{ this.products?.data?.emprestimo?.quitacao?.saldo }}
                 </button>
@@ -269,15 +309,10 @@ export default {
                     <template #body="slotProps">
                         <Button v-if="slotProps.data.status === 'Pago'" label="Pago" class="p-button-raised p-button-success mr-2 mb-2" />
                         <Button
-                            v-if="slotProps.data?.chave_pix != '' && slotProps.data.status != 'Pago'"
+                            v-if="slotProps.data.status != 'Pago'"
+                            :disabled="loadingPix"
                             label="Copiar Chave Pix"
-                            @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix)"
-                            class="p-button-raised p-button-danger mr-2 mb-2"
-                        />
-                        <Button
-                            v-if="slotProps.data?.chave_pix == '' && slotProps.data.status != 'Pago'"
-                            label="Copiar Chave Pix"
-                            @click="copyToClipboard(this.products?.data?.emprestimo?.banco.chavepix)"
+                            @click="copiarChavePix('parcela', slotProps.data.id, slotProps.data.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)"
                             class="p-button-raised p-button-danger mr-2 mb-2"
                         />
                     </template>

@@ -2745,6 +2745,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         // -------- PAGAMENTO SALDO PENDENTE (opcional) --------
         $pagamentoSaldoPendente = $emprestimo?->pagamentosaldopendente;
         $pagamentoSaldoPendenteArr = $pagamentoSaldoPendente ? [
+            'id'        => (int) ($pagamentoSaldoPendente->id ?? 0),
             'valor'     => (float) ($pagamentoSaldoPendente->valor ?? 0),
             'chave_pix' => (string) ($pagamentoSaldoPendente->chave_pix ?? ''),
         ] : null;
@@ -2761,6 +2762,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         // -------- QUITAÇÃO (opcional) --------
         $quitacao = $emprestimo?->quitacao;
         $quitacaoArr = $quitacao ? [
+            'id'        => (int) ($quitacao->id ?? 0),
             'saldo'     => (float) ($quitacao->saldo ?? 0),
             'chave_pix' => (string) ($quitacao->chave_pix ?? ''),
         ] : null;
@@ -2770,6 +2772,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $bancoArr = $banco ? [
             'chavepix'          => (string) ($banco->chavepix ?? ''),
             'info_recebedor_pix' => (string) ($banco->info_recebedor_pix ?? ''),
+            'bank_type'         => (string) ($banco->bank_type ?? 'normal'),
         ] : null;
 
         // -------- OUTROS CAMPOS USADOS PELO FRONT --------
@@ -2821,220 +2824,132 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function gerarPixPagamentoSaldoPendente(Request $request, $id)
     {
-
-        $array = ['error' => '', 'data' => []];
-
-        $user = auth()->user();
-
-        $dados = $request->all();
-
-        $parcela = PagamentoSaldoPendente::find($id);
-
+        $parcela = PagamentoSaldoPendente::with(['emprestimo.banco'])->find($id);
         $hoje = Carbon::today()->toDateString();
 
-        if ($parcela) {
-            if ($parcela->ult_dt_geracao_pix) {
-                if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
-                    //API COBRANCA - Verifica tipo de banco
-                    $result = $this->criarCobrancaPorTipoBanco($parcela->valor, $parcela->emprestimo->banco, $parcela, $parcela->identificador);
-
-                    if ($result && $result['success']) {
-                        // Para Bcodex, salvar dados do PIX
-                        if (isset($result['pixCopiaECola'])) {
-                            if (isset($result['txid'])) {
-                                ControleBcodex::create(['identificador' => $result['txid']]);
-                            }
-                            $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
-                            $parcela->chave_pix = $result['pixCopiaECola'];
-                            $parcela->ult_dt_geracao_pix = $hoje;
-                            $parcela->save();
-
-                            return ['chave_pix' => $result['pixCopiaECola']];
-                        } else {
-                            // Para Velana/Cora, salvar transaction_id
-                            $parcela->identificador = $result['transaction_id'] ?? $result['invoice_id'] ?? $result['txid'] ?? $parcela->identificador;
-                            $parcela->chave_pix = $result['pixCopiaECola'] ?? 'Cobrança criada: ' . ($result['transaction_id'] ?? $result['invoice_id'] ?? 'N/A');
-                            $parcela->ult_dt_geracao_pix = $hoje;
-                            $parcela->save();
-
-                            return ['chave_pix' => $parcela->chave_pix];
-                        }
-                    } else {
-                        return response()->json([
-                            "message" => "Erro ao gerar pagamento personalizado",
-                            "error" => $result ?? 'Erro desconhecido'
-                        ], Response::HTTP_FORBIDDEN);
-                    }
-                } else {
-                    return ['chave_pix' => $parcela->chave_pix];
-                }
-            } else {
-                //API COBRANCA - Verifica tipo de banco
-                $result = $this->criarCobrancaPorTipoBanco($parcela->valor, $parcela->emprestimo->banco, $parcela, $parcela->identificador);
-
-                if ($result && $result['success']) {
-                    // Para Bcodex, salvar dados do PIX
-                    if (isset($result['pixCopiaECola'])) {
-                        if (isset($result['txid'])) {
-                            ControleBcodex::create(['identificador' => $result['txid']]);
-                        }
-                        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
-                        $parcela->chave_pix = $result['pixCopiaECola'];
-                        $parcela->ult_dt_geracao_pix = $hoje;
-                        $parcela->save();
-
-                        return ['chave_pix' => $result['pixCopiaECola']];
-                    } else {
-                        // Para Velana/Cora, salvar transaction_id
-                        $parcela->identificador = $result['transaction_id'] ?? $result['invoice_id'] ?? $result['txid'] ?? $parcela->identificador;
-                        $parcela->chave_pix = $result['pixCopiaECola'] ?? 'Cobrança criada: ' . ($result['transaction_id'] ?? $result['invoice_id'] ?? 'N/A');
-                        $parcela->ult_dt_geracao_pix = $hoje;
-                        $parcela->save();
-
-                        return ['chave_pix' => $parcela->chave_pix];
-                    }
-                } else {
-                    return response()->json([
-                        "message" => "Erro ao gerar cobrança",
-                        "error" => $result ?? 'Erro desconhecido'
-                    ], Response::HTTP_FORBIDDEN);
-                }
-            }
-        } else {
+        if (!$parcela) {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
                 "error" => ''
             ], Response::HTTP_FORBIDDEN);
         }
+
+        $banco = $parcela->emprestimo->banco;
+        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+        $sempreGerarNova = ($bankType === 'xgate'); // XGate: QR expira em 24h — sempre nova cobrança ao clicar
+
+        if ($parcela->ult_dt_geracao_pix) {
+            $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
+            if (!$sempreGerarNova && $mesmoDia) {
+                return ['chave_pix' => $parcela->chave_pix];
+            }
+        }
+
+        $result = $this->criarCobrancaPorTipoBanco($parcela->valor, $banco, $parcela, $parcela->identificador);
+
+        if (!$result || empty($result['success'])) {
+            return response()->json([
+                "message" => "Erro ao gerar cobrança",
+                "error" => $result['error'] ?? ($result ?? 'Erro desconhecido')
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($bankType === 'bcodex' && isset($result['txid'])) {
+            ControleBcodex::create(['identificador' => $result['txid']]);
+        }
+        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
+        $parcela->chave_pix = $result['pixCopiaECola'] ?? $parcela->chave_pix;
+        $parcela->ult_dt_geracao_pix = $hoje;
+        $parcela->save();
+
+        return ['chave_pix' => $parcela->chave_pix];
     }
 
     public function gerarPixPagamentoQuitacao(Request $request, $id)
     {
-
-        $array = ['error' => '', 'data' => []];
-
-        $user = auth()->user();
-
-        $dados = $request->all();
-
-        $parcela = Quitacao::find($id);
-
+        $parcela = Quitacao::with(['emprestimo.banco'])->find($id);
         $hoje = Carbon::today()->toDateString();
 
-        if ($parcela) {
-            if ($parcela->ult_dt_geracao_pix) {
-                if (Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() != $hoje) {
-                    //API COBRANCA - Verifica tipo de banco
-                    $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $parcela->emprestimo->banco, $parcela);
-
-                    if ($result && $result['success']) {
-                        // Para Bcodex, salvar dados do PIX
-                        if (isset($result['pixCopiaECola'])) {
-                            $parcela->identificador = $result['txid'];
-                            $parcela->chave_pix = $result['pixCopiaECola'];
-                            $parcela->ult_dt_geracao_pix = $hoje;
-                            $parcela->save();
-
-                            return ['chave_pix' => $result['pixCopiaECola']];
-                        } else {
-                            // Para Cora, salvar invoice_id
-                            $parcela->identificador = $result['invoice_id'] ?? $result['code'];
-                            $parcela->ult_dt_geracao_pix = $hoje;
-                            $parcela->save();
-
-                            return ['chave_pix' => 'Cobrança Cora criada: ' . ($result['invoice_id'] ?? $result['code'])];
-                        }
-                    } else {
-                        return response()->json([
-                            "message" => "Erro ao gerar pagamento personalizado",
-                            "error" => $result ?? 'Erro desconhecido'
-                        ], Response::HTTP_FORBIDDEN);
-                    }
-                } else {
-                    return ['chave_pix' => $parcela->chave_pix];
-                }
-            } else {
-                //API COBRANCA - Verifica tipo de banco
-                $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $parcela->emprestimo->banco, $parcela);
-
-                if ($result && $result['success']) {
-                    // Para Bcodex, salvar dados do PIX
-                    if (isset($result['pixCopiaECola'])) {
-                        $parcela->identificador = $result['txid'];
-                        $parcela->chave_pix = $result['pixCopiaECola'];
-                        $parcela->ult_dt_geracao_pix = $hoje;
-                        $parcela->save();
-
-                        return ['chave_pix' => $result['pixCopiaECola']];
-                    } else {
-                        // Para Cora, salvar invoice_id
-                        $parcela->identificador = $result['invoice_id'] ?? $result['code'];
-                        $parcela->ult_dt_geracao_pix = $hoje;
-                        $parcela->save();
-
-                        return ['chave_pix' => 'Cobrança Cora criada: ' . ($result['invoice_id'] ?? $result['code'])];
-                    }
-                } else {
-                    return response()->json([
-                        "message" => "Erro ao gerar cobrança",
-                        "error" => $result ?? 'Erro desconhecido'
-                    ], Response::HTTP_FORBIDDEN);
-                }
-            }
-        } else {
+        if (!$parcela) {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
                 "error" => ''
             ], Response::HTTP_FORBIDDEN);
         }
+
+        $banco = $parcela->emprestimo->banco;
+        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+        $sempreGerarNova = ($bankType === 'xgate'); // XGate: QR expira em 24h — sempre nova cobrança ao clicar
+
+        if ($parcela->ult_dt_geracao_pix) {
+            $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
+            if (!$sempreGerarNova && $mesmoDia) {
+                return ['chave_pix' => $parcela->chave_pix];
+            }
+        }
+
+        $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $banco, $parcela);
+
+        if (!$result || empty($result['success'])) {
+            return response()->json([
+                "message" => "Erro ao gerar cobrança",
+                "error" => $result['error'] ?? ($result ?? 'Erro desconhecido')
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $parcela->identificador;
+        $parcela->chave_pix = $result['pixCopiaECola'] ?? ('Cobrança criada: ' . ($parcela->identificador ?? 'N/A'));
+        $parcela->ult_dt_geracao_pix = $hoje;
+        $parcela->save();
+
+        return ['chave_pix' => $parcela->chave_pix];
     }
 
     public function gerarPixPagamentoParcela(Request $request, $id)
     {
-
-        $array = ['error' => '', 'data' => []];
-
-        $user = auth()->user();
-
-        $dados = $request->all();
-
-        $parcela = Parcela::find($id);
-
+        $parcela = Parcela::with(['emprestimo.banco'])->find($id);
         $hoje = Carbon::today()->toDateString();
 
-        if ($parcela) {
-            if ($parcela->emprestimo->banco->wallet == 0) {
-                return $parcela->emprestimo->banco->chave_pix;
-            }
-
-            if ($parcela->ult_dt_geracao_pix != $hoje) {
-                //API COBRANCA B.CODEX
-                $response = $this->bcodexService->criarCobranca($parcela->saldo, $parcela->emprestimo->banco->document);
-
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    ControleBcodex::create(['identificador' => $response->json()['txid']]);
-
-                    $parcela->identificador = $response->json()['txid'];
-                    $parcela->chave_pix = $response->json()['pixCopiaECola'];
-                    $parcela->ult_dt_geracao_pix = $hoje;
-                    $parcela->save();
-
-                    return ['chave_pix' => $response->json()['pixCopiaECola']];
-                } else {
-                    return response()->json([
-                        "message" => "Erro ao gerar pagamento personalizado",
-                        "error" => $response->json()
-                    ], Response::HTTP_FORBIDDEN);
-                }
-            } else {
-                return ['chave_pix' => $parcela->chave_pix];
-            }
-        } else {
+        if (!$parcela) {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
                 "error" => ''
             ], Response::HTTP_FORBIDDEN);
         }
+
+        $banco = $parcela->emprestimo->banco;
+        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+
+        if ($banco->wallet == 0 && $bankType !== 'xgate') {
+            return ['chave_pix' => $banco->chave_pix];
+        }
+
+        // XGate: QR expira em 24h — sempre gera nova cobrança ao clicar
+        $sempreGerarNova = ($bankType === 'xgate');
+        $deveGerar = $sempreGerarNova || ($parcela->ult_dt_geracao_pix != $hoje);
+
+        if (!$deveGerar) {
+            return ['chave_pix' => $parcela->chave_pix];
+        }
+
+        $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $banco, $parcela, $parcela->identificador);
+
+        if (!$result || empty($result['success'])) {
+            return response()->json([
+                "message" => "Erro ao gerar cobrança PIX.",
+                "error" => $result['error'] ?? ($result ?: 'Erro desconhecido')
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($bankType === 'bcodex' && isset($result['txid'])) {
+            ControleBcodex::create(['identificador' => $result['txid']]);
+        }
+        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
+        $parcela->chave_pix = $result['pixCopiaECola'] ?? $parcela->chave_pix;
+        $parcela->ult_dt_geracao_pix = $hoje;
+        $parcela->save();
+
+        return ['chave_pix' => $parcela->chave_pix];
     }
 
     public function personalizarPagamento(Request $request, $id)
