@@ -3,11 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\File;
 use App\Models\Client;
 use App\Services\WAPIService;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class MensagemAutomaticaRenovacao extends Command
 {
@@ -73,14 +71,13 @@ class MensagemAutomaticaRenovacao extends Command
             }
 
             if ($mensagem) {
-
-                if ($emprestimo->company->id == 8 || $emprestimo->company->id == 1) {
-                    $this->enviarMensagemAPIAntiga($emprestimo, $mensagem);
-
-                } else {
-                    $this->enviarMensagem($client, $emprestimo, $mensagem);
-
+                $company = $emprestimo->company;
+                if (empty($company->token_api_wtz) || empty($company->instance_id)) {
+                    Log::warning("Empréstimo ID: {$emprestimo->id} - Company sem token_api_wtz ou instance_id. Mensagem automática de renovação não enviada.");
+                    continue;
                 }
+
+                $this->enviarMensagem($client, $emprestimo, $mensagem);
                 $emprestimo->mensagem_renovacao = 1;
                 $emprestimo->save();
             }
@@ -96,34 +93,14 @@ class MensagemAutomaticaRenovacao extends Command
             $telefoneCliente = "55" . $telefone;
             $company = $emprestimo->company;
 
-            if (!$company || !$company->token_api_wtz || !$company->instance_id) {
-                return;
-            }
-
             $wapiService = new WAPIService();
             $wapiService->enviarMensagem($company->token_api_wtz, $company->instance_id, [
                 "phone" => $telefoneCliente,
                 "message" => $frase
             ]);
             sleep(1);
-
         } catch (\Throwable $th) {
             report($th);
         }
-    }
-
-    private function enviarMensagemAPIAntiga($emprestimo, $frase)
-    {
-        $telefone = preg_replace('/\D/', '', $emprestimo->client->telefone_celular_1);
-        $baseUrl = $emprestimo->company->whatsapp;
-
-        $data = [
-            "numero" => "55" . $telefone,
-            "mensagem" => $frase
-        ];
-
-        Http::asJson()->post("$baseUrl/enviar-mensagem", $data);
-        sleep(4);
-
     }
 }
