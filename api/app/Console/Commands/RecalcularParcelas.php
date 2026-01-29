@@ -158,29 +158,25 @@ class RecalcularParcelas extends Command
                                 $cobrancaOk = true;
                             }
                         } elseif ($bankType === 'xgate') {
-                            // XGate: sempre criar NOVA cobrança com valor atualizado (saldo + juros/taxa), nunca reutilizar a antiga
-                            try {
-                                $xgateService = new XGateService($banco);
-                                $cliente = $parcela->emprestimo->client;
-                                $referenceId = 'parcela_' . $parcela->id . '_' . time();
-                                $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
-                                $valorCobranca = $novoValor; // valor já com juros/taxa aplicados
-                                $response = $xgateService->criarCobranca($valorCobranca, $cliente, $referenceId, $dueDate);
-                                if (isset($response['success']) && $response['success']) {
-                                    $newTxId = $response['transaction_id'] ?? $referenceId;
-                                    $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
-                                    $parcela->lucro_real = $lucroRealAtual + $valorJuros;
-                                    $parcela->saldo = $novoValor;
-                                    $parcela->venc_real = date('Y-m-d');
-                                    $parcela->identificador = $newTxId;
-                                    $parcela->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
-                                    $parcela->save();
-                                    $cobrancaOk = true;
-                                    Log::info("[recalcular:Parcelas] XGate nova cobrança parcela={$parcela->id} | valor={$valorCobranca} | txId={$newTxId}");
-                                }
-                            } catch (\Exception $e) {
-                                Log::channel('xgate')->error("[recalcular:Parcelas] XGate parcela={$parcela->id} | " . $e->getMessage());
-                            }
+                            // XGate: NÃO gera chave PIX aqui – a chave é gerada quando o cliente entrar no site e clicar em "Copiar Chave Pix"
+                            // Apenas atualiza saldo, juros e vencimento na parcela
+                            $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
+                            $parcela->lucro_real = $lucroRealAtual + $valorJuros;
+                            $parcela->saldo = $novoValor;
+                            $parcela->venc_real = date('Y-m-d');
+                            $parcela->save();
+                            $cobrancaOk = true;
+                            Log::info("[recalcular:Parcelas] XGate parcela={$parcela->id} | valores atualizados (chave PIX gerada no site ao clicar)");
+                            // (criação de cobrança XGate comentada – feita sob demanda no front ao copiar chave)
+                            // try {
+                            //     $xgateService = new XGateService($banco);
+                            //     $cliente = $parcela->emprestimo->client;
+                            //     $referenceId = 'parcela_' . $parcela->id . '_' . time();
+                            //     $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
+                            //     $valorCobranca = $novoValor;
+                            //     $response = $xgateService->criarCobranca($valorCobranca, $cliente, $referenceId, $dueDate);
+                            //     ...
+                            // }
                         } else {
                             $response = $bcodexService->criarCobranca($parcela->saldo, $banco->document, $txId);
                             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
@@ -223,20 +219,15 @@ class RecalcularParcelas extends Command
                                 $parcela->emprestimo->quitacao->save();
                             }
                         } elseif ($bankType === 'xgate') {
-                            // XGate: sempre nova cobrança (atualiza identificador e chave_pix)
-                            try {
-                                $xgateService = new XGateService($banco);
-                                $cliente = $parcela->emprestimo->client;
-                                $referenceId = 'quitacao_' . $parcela->emprestimo->quitacao->id . '_' . time();
-                                $resp = $xgateService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
-                                if (isset($resp['success']) && $resp['success']) {
-                                    $parcela->emprestimo->quitacao->identificador = $resp['transaction_id'] ?? $referenceId;
-                                    $parcela->emprestimo->quitacao->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? null;
-                                    $parcela->emprestimo->quitacao->save();
-                                }
-                            } catch (\Exception $e) {
-                                Log::channel('xgate')->error("[recalcular:Parcelas] XGate quitação parcela={$parcela->id} | " . $e->getMessage());
-                            }
+                            // XGate: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
+                            // Quitação: saldo já foi atualizado acima; identificador/chave_pix ficam para serem gerados no site
+                            Log::info("[recalcular:Parcelas] XGate quitação | parcela={$parcela->id} | saldo atualizado (chave gerada no site)");
+                            // (criação de cobrança XGate comentada – feita sob demanda no front)
+                            // try {
+                            //     $xgateService = new XGateService($banco);
+                            //     $resp = $xgateService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                            //     ...
+                            // }
                         } else {
                             $txId = $parcela->emprestimo->quitacao->identificador ?: null;
                             $resp = $bcodexService->criarCobranca($parcela->totalPendente(), $banco->document, $txId);
@@ -266,20 +257,11 @@ class RecalcularParcelas extends Command
                                 $parcela->emprestimo->pagamentominimo->save();
                             }
                         } elseif ($bankType === 'xgate') {
-                            // XGate: sempre nova cobrança com valor atualizado (atualiza identificador e chave_pix)
-                            try {
-                                $xgateService = new XGateService($banco);
-                                $cliente = $parcela->emprestimo->client;
-                                $referenceId = 'pagamento_minimo_' . $parcela->emprestimo->pagamentominimo->id . '_' . time();
-                                $resp = $xgateService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
-                                if (isset($resp['success']) && $resp['success']) {
-                                    $parcela->emprestimo->pagamentominimo->identificador = $resp['transaction_id'] ?? $referenceId;
-                                    $parcela->emprestimo->pagamentominimo->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? null;
-                                    $parcela->emprestimo->pagamentominimo->save();
-                                }
-                            } catch (\Exception $e) {
-                                Log::channel('xgate')->error("[recalcular:Parcelas] XGate pag. mínimo parcela={$parcela->id} | " . $e->getMessage());
-                            }
+                            // XGate: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
+                            // Pagamento mínimo: valor já atualizado acima
+                            Log::info("[recalcular:Parcelas] XGate pag. mínimo | parcela={$parcela->id} | valor atualizado (chave gerada no site)");
+                            // (criação de cobrança XGate comentada – feita sob demanda no front)
+                            // try { $xgateService = new XGateService($banco); ... }
                         } else {
                             $txId = $parcela->emprestimo->pagamentominimo->identificador ?: null;
                             $resp = $bcodexService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $banco->document, $txId);
@@ -311,20 +293,11 @@ class RecalcularParcelas extends Command
                                     $parcela->emprestimo->pagamentosaldopendente->save();
                                 }
                             } elseif ($bankType === 'xgate') {
-                                // XGate: sempre nova cobrança (atualiza identificador e chave_pix)
-                                try {
-                                    $xgateService = new XGateService($banco);
-                                    $cliente = $parcela->emprestimo->client;
-                                    $referenceId = 'saldo_' . $parcela->emprestimo->pagamentosaldopendente->id . '_' . time();
-                                    $resp = $xgateService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
-                                    if (isset($resp['success']) && $resp['success']) {
-                                        $parcela->emprestimo->pagamentosaldopendente->identificador = $resp['transaction_id'] ?? $referenceId;
-                                        $parcela->emprestimo->pagamentosaldopendente->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? null;
-                                        $parcela->emprestimo->pagamentosaldopendente->save();
-                                    }
-                                } catch (\Exception $e) {
-                                    Log::channel('xgate')->error("[recalcular:Parcelas] XGate saldo pendente parcela={$parcela->id} | " . $e->getMessage());
-                                }
+                                // XGate: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
+                                // Saldo pendente: valor já atualizado acima
+                                Log::info("[recalcular:Parcelas] XGate saldo pendente | parcela={$parcela->id} | valor atualizado (chave gerada no site)");
+                                // (criação de cobrança XGate comentada – feita sob demanda no front)
+                                // try { $xgateService = new XGateService($banco); ... }
                             } else {
                                 $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ?: null;
                                 $resp = $bcodexService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $banco->document, $txId);
