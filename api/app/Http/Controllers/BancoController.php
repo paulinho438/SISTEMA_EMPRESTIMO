@@ -850,9 +850,15 @@ class BancoController extends Controller
             $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
 
             if ($bankType === 'xgate') {
+                if (empty($banco->chavepix)) {
+                    return response()->json([
+                        'message' => 'Para depositar no XGate, cadastre a Chave PIX do banco (CPF/titular) no cadastro do banco.',
+                        'error' => 'Chave PIX do banco não configurada.',
+                    ], Response::HTTP_FORBIDDEN);
+                }
                 $xgateService = new XGateService($banco);
                 $referenceId = 'dep-caixa-' . $banco->id . '-' . time();
-                $response = $xgateService->criarDepositoCaixa((float) $dados['valor'], $referenceId);
+                $response = $xgateService->criarDepositoCaixa((float) $dados['valor'], $referenceId, $banco->chavepix);
 
                 if (!empty($response['success']) && !empty($response['pixCopiaECola'])) {
                     Deposito::create([

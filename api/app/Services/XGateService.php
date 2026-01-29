@@ -363,21 +363,31 @@ class XGateService
     }
 
     /**
-     * Cria cobrança PIX para depósito no Fechamento de Caixa (sem cliente específico).
-     * Gera um PIX para a empresa depositar valor na carteira XGate.
+     * Cria cobrança PIX para depósito no Fechamento de Caixa.
+     * Usa a chave PIX do banco como cliente (documento do titular) para gerar a cobrança.
      *
      * @param float $valor Valor do depósito em reais
      * @param string $referenceId Identificador único (ex: dep-caixa-{banco_id}-{timestamp})
+     * @param string|null $chavePixBanco Chave PIX do banco (CPF/CNPJ/etc.) – usada como documento do cliente na cobrança
      * @return array ['success' => bool, 'pixCopiaECola' => string, 'transaction_id' => string, ...]
      */
-    public function criarDepositoCaixa(float $valor, string $referenceId): array
+    public function criarDepositoCaixa(float $valor, string $referenceId, ?string $chavePixBanco = null): array
     {
         try {
-            $doc = preg_replace('/\D/', '', 'DEP-CAIXA-' . $referenceId);
-            $customerData = [
-                'name' => 'Depósito Fechamento Caixa',
-                'document' => str_pad(substr($doc, -11), 11, '0', STR_PAD_LEFT),
-            ];
+            if (!empty($chavePixBanco)) {
+                $doc = preg_replace('/\D/', '', $chavePixBanco);
+                $document = strlen($doc) >= 11 ? str_pad(substr($doc, -11), 11, '0', STR_PAD_LEFT) : str_pad($doc, 11, '0', STR_PAD_LEFT);
+                $customerData = [
+                    'name' => 'Depósito Fechamento Caixa',
+                    'document' => $document,
+                ];
+            } else {
+                $doc = preg_replace('/\D/', '', 'DEP-CAIXA-' . $referenceId);
+                $customerData = [
+                    'name' => 'Depósito Fechamento Caixa',
+                    'document' => str_pad(substr($doc, -11), 11, '0', STR_PAD_LEFT),
+                ];
+            }
 
             $customerId = $this->criarOuObterCliente($customerData);
 
