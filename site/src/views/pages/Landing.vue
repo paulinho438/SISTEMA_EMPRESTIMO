@@ -85,16 +85,29 @@ export default {
                 console.error('Pix link is not available');
             }
         },
-        copyToClipboard(text) {
-            if (!text) return;
+        async copyToClipboard(text) {
+            if (!text) return false;
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+            } catch (_) {}
             const textArea = document.createElement('textarea');
             textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.setAttribute('readonly', '');
             document.body.appendChild(textArea);
             textArea.select();
             textArea.setSelectionRange(0, 99999);
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            alert('Chave PIX copiado para a área de transferência!');
+            let ok = false;
+            try {
+                ok = document.execCommand('copy');
+            } finally {
+                document.body.removeChild(textArea);
+            }
+            return ok;
         },
         isEsteBotaoLoading(tipo, id) {
             const ctx = this.loadingPixContext;
@@ -115,7 +128,7 @@ export default {
                     }
                     const chave = res?.data?.chave_pix || res?.chave_pix;
                     if (chave) {
-                        this.copyToClipboard(chave);
+                        const copiou = await this.copyToClipboard(chave);
                         if (tipo === 'saldoPendente' && this.products?.data?.emprestimo?.pagamentosaldopendente) {
                             this.products.data.emprestimo.pagamentosaldopendente.chave_pix = chave;
                         }
@@ -125,6 +138,11 @@ export default {
                         if (tipo === 'parcela' && this.products?.data?.emprestimo?.parcelas) {
                             const p = this.products.data.emprestimo.parcelas.find((x) => x.id === id);
                             if (p) p.chave_pix = chave;
+                        }
+                        if (copiou) {
+                            alert('Chave PIX copiado para a área de transferência!');
+                        } else {
+                            alert('Chave PIX gerada. Copie manualmente:\n\n' + chave);
                         }
                     } else {
                         alert(res?.data?.message || 'Não foi possível gerar a chave PIX.');
@@ -137,7 +155,12 @@ export default {
                     this.loadingPixContext = null;
                 }
             } else {
-                this.copyToClipboard(textoAtual);
+                const copiou = await this.copyToClipboard(textoAtual);
+                if (copiou) {
+                    alert('Chave PIX copiado para a área de transferência!');
+                } else if (textoAtual) {
+                    alert('Copie manualmente a chave:\n\n' + textoAtual);
+                }
             }
         },
         encontrarPrimeiraParcelaPendente() {
