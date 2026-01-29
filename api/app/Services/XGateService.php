@@ -364,30 +364,29 @@ class XGateService
 
     /**
      * Cria cobrança PIX para depósito no Fechamento de Caixa.
-     * Usa a chave PIX do banco como cliente (documento do titular) para gerar a cobrança.
+     * Usa o banco (nome + chave PIX/CPF) como cliente, no mesmo modo das cobranças de parcelas.
      *
      * @param float $valor Valor do depósito em reais
      * @param string $referenceId Identificador único (ex: dep-caixa-{banco_id}-{timestamp})
-     * @param string|null $chavePixBanco Chave PIX do banco (CPF/CNPJ/etc.) – usada como documento do cliente na cobrança
+     * @param string|null $chavePixBanco Chave PIX do banco (CPF) – se null, usa $this->banco->chavepix
      * @return array ['success' => bool, 'pixCopiaECola' => string, 'transaction_id' => string, ...]
      */
     public function criarDepositoCaixa(float $valor, string $referenceId, ?string $chavePixBanco = null): array
     {
         try {
-            if (!empty($chavePixBanco)) {
-                $doc = preg_replace('/\D/', '', $chavePixBanco);
-                $document = strlen($doc) >= 11 ? str_pad(substr($doc, -11), 11, '0', STR_PAD_LEFT) : str_pad($doc, 11, '0', STR_PAD_LEFT);
-                $customerData = [
-                    'name' => 'Depósito Fechamento Caixa',
-                    'document' => $document,
-                ];
-            } else {
-                $doc = preg_replace('/\D/', '', 'DEP-CAIXA-' . $referenceId);
-                $customerData = [
-                    'name' => 'Depósito Fechamento Caixa',
-                    'document' => str_pad(substr($doc, -11), 11, '0', STR_PAD_LEFT),
-                ];
+            $cpfOuChave = $chavePixBanco ?? ($this->banco->chavepix ?? null);
+            if (empty($cpfOuChave)) {
+                throw new \Exception('Chave PIX (CPF) do banco é obrigatória para gerar cobrança de depósito.');
             }
+
+            // Mesmo modo das parcelas: documento = CPF (só dígitos), nome = titular
+            $document = preg_replace('/\D/', '', $cpfOuChave);
+            $document = strlen($document) >= 11 ? str_pad(substr($document, -11), 11, '0', STR_PAD_LEFT) : str_pad($document, 11, '0', STR_PAD_LEFT);
+
+            $customerData = [
+                'name' => $this->banco->name ?: 'Depósito Fechamento Caixa',
+                'document' => $document,
+            ];
 
             $customerId = $this->criarOuObterCliente($customerData);
 

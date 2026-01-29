@@ -940,9 +940,7 @@ class BancoController extends Controller
 
             if ($bankType === 'xgate') {
                 $xgateService = new XGateService($banco);
-                $saldoResult = $xgateService->consultarSaldo();
-                $resp = $saldoResult['response'] ?? [];
-                $saldoDisponivel = (float) ($resp['totalAmount'] ?? $resp['balance'] ?? $resp['amount'] ?? 0);
+                $saldoDisponivel = $this->extrairSaldoXGateParaSaque($xgateService, $banco);
                 $valor = (float) ($dados['valor'] ?? 0);
 
                 if ($valor <= 0 || $saldoDisponivel < $valor) {
@@ -1088,7 +1086,55 @@ class BancoController extends Controller
         }
     }
 
-
+    /**
+     * Extrai saldo disponível para saque XGate: tenta API; se 0 ou falha, usa saldo do banco no sistema.
+     */
+    private function extrairSaldoXGateParaSaque(XGateService $xgateService, Banco $banco): float
+    {
+        try {
+            $saldoResult = $xgateService->consultarSaldo();
+            if (empty($saldoResult['success']) || !isset($saldoResult['response'])) {
+                return (float) ($banco->saldo ?? 0);
+            }
+            $resp = $saldoResult['response'];
+            if (is_array($resp) && isset($resp['balance']) && is_numeric($resp['balance'])) {
+                $s = (float) $resp['balance'];
+                if ($s > 0) {
+                    return $s;
+                }
+            }
+            if (is_array($resp) && isset($resp['amount']) && is_numeric($resp['amount'])) {
+                $s = (float) $resp['amount'];
+                if ($s > 0) {
+                    return $s;
+                }
+            }
+            if (is_array($resp) && isset($resp['totalAmount']) && is_numeric($resp['totalAmount'])) {
+                $s = (float) $resp['totalAmount'];
+                if ($s > 0) {
+                    return $s;
+                }
+            }
+            if (is_array($resp)) {
+                foreach ($resp as $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    foreach (['totalAmount', 'balance', 'amount'] as $key) {
+                        if (isset($item[$key]) && is_numeric($item[$key])) {
+                            $s = (float) $item[$key];
+                            if ($s > 0) {
+                                return $s;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::channel('xgate')->warning('BancoController saqueConsulta: falha ao consultar saldo XGate - ' . $e->getMessage());
+        }
+        return (float) ($banco->saldo ?? 0);
+    }
 
     public function delete(Request $r, $id)
     {
