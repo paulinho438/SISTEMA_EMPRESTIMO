@@ -244,6 +244,16 @@ export default {
         </header>
 
         <main>
+            <!-- Aviso XGate: pagamento PIX deve ser do mesmo CPF do titular -->
+            <section v-if="isXGate && this.products?.data?.emprestimo?.cpf_titular" class="payment-section xgate-aviso-cpf">
+                <div class="xgate-aviso-box">
+                    <p class="xgate-aviso-titulo">⚠️ Importante – Pagamento PIX (XGate)</p>
+                    <p>O pagamento desta chave PIX deve ser realizado de uma <strong>conta cujo titular seja o mesmo CPF do empréstimo</strong>.</p>
+                    <p><strong>CPF cadastrado do titular:</strong> <span class="cpf-destaque">{{ this.products?.data?.emprestimo?.cpf_titular }}</span></p>
+                    <p class="xgate-aviso-rodape">O titular da conta de origem do PIX precisa ser exatamente este CPF.</p>
+                </div>
+            </section>
+
             <!-- Parcela do Dia -->
             <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
                 <h2>Valor Pendente do Dia {{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
@@ -468,6 +478,42 @@ button:hover {
 button:disabled {
     cursor: wait;
     opacity: 0.85;
+}
+
+.xgate-aviso-cpf {
+    margin-bottom: 1rem;
+}
+
+.xgate-aviso-box {
+    background: #fff8e6;
+    border: 1px solid #e6c200;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    color: #5c4a00;
+}
+
+.xgate-aviso-titulo {
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+}
+
+.xgate-aviso-box p {
+    margin: 0.4rem 0;
+    line-height: 1.4;
+}
+
+.xgate-aviso-box .cpf-destaque {
+    font-family: monospace;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.xgate-aviso-rodape {
+    margin-top: 0.6rem;
+    font-size: 0.95rem;
+    opacity: 0.95;
 }
 
 .card {

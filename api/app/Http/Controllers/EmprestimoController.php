@@ -1674,6 +1674,21 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         return $mascarado;
     }
 
+    /**
+     * Formata CPF para exibição no front (000.000.000-00).
+     */
+    protected function formatarCpfParaFront(?string $cpf): ?string
+    {
+        if ($cpf === null || $cpf === '') {
+            return null;
+        }
+        $digits = preg_replace('/\D/', '', $cpf);
+        if (strlen($digits) !== 11) {
+            return $cpf;
+        }
+        return substr($digits, 0, 3) . '.' . substr($digits, 3, 3) . '.' . substr($digits, 6, 3) . '-' . substr($digits, 9, 2);
+    }
+
     function obterSaudacao()
     {
         $hora = date('H');
@@ -2710,6 +2725,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             'emprestimo.pagamentosaldopendente',
             'emprestimo.company',
             'emprestimo.banco',
+            'emprestimo.client',
         ])->find($id);
 
         if (!$parcela) {
@@ -2789,6 +2805,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             // usado no template para exibir WhatsApp
             'telefone_empresa' => (string) ($emprestimo?->company?->telefone ?? ''),
+            // CPF do titular (para aviso XGate: pagamento deve ser da mesma conta)
+            'cpf_titular' => $this->formatarCpfParaFront($emprestimo?->client?->cpf ?? null),
         ];
 
         return response()->json([
