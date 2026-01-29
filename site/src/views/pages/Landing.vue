@@ -27,7 +27,9 @@ export default {
             min: ref(0),
             max: ref(1000),
             toast: useToast(),
-            loadingPix: ref(false)
+            loadingPix: ref(false),
+            /** Quando XGate: { tipo: 'saldoPendente'|'quitacao'|'parcela', id } do botão que está gerando o QR */
+            loadingPixContext: ref(null)
         };
     },
 
@@ -94,9 +96,14 @@ export default {
             document.body.removeChild(textArea);
             alert('Chave PIX copiado para a área de transferência!');
         },
+        isEsteBotaoLoading(tipo, id) {
+            const ctx = this.loadingPixContext;
+            return !!ctx && ctx.tipo === tipo && ctx.id == id;
+        },
         async copiarChavePix(tipo, id, textoAtual) {
             if (this.isXGate && id) {
                 this.loadingPix = true;
+                this.loadingPixContext = { tipo, id };
                 try {
                     let res;
                     if (tipo === 'saldoPendente') {
@@ -127,6 +134,7 @@ export default {
                     alert(msg);
                 } finally {
                     this.loadingPix = false;
+                    this.loadingPixContext = null;
                 }
             } else {
                 this.copyToClipboard(textoAtual);
@@ -220,7 +228,10 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">
+                    <span v-if="isXGate && isEsteBotaoLoading('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id)">Gerando...</span>
+                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
+                </button>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
@@ -229,7 +240,10 @@ export default {
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('parcela', this.encontrarPrimeiraParcelaPendente()?.id, this.encontrarPrimeiraParcelaPendente()?.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)">Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</button>
+                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('parcela', this.encontrarPrimeiraParcelaPendente()?.id, this.encontrarPrimeiraParcelaPendente()?.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)">
+                    <span v-if="isXGate && isEsteBotaoLoading('parcela', this.encontrarPrimeiraParcelaPendente()?.id)">Gerando...</span>
+                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
+                </button>
             </section>
 
             <!-- Quitar Empréstimo -->
@@ -237,8 +251,8 @@ export default {
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" :disabled="loadingPix" @click="copiarChavePix('quitacao', this.products?.data?.emprestimo?.quitacao?.id, this.products?.data?.emprestimo?.quitacao?.chave_pix)">
-                    Copiar Chave Pix - Quitar Empréstimo <br />
-                    {{ this.products?.data?.emprestimo?.quitacao?.saldo }}
+                    <span v-if="isXGate && isEsteBotaoLoading('quitacao', this.products?.data?.emprestimo?.quitacao?.id)">Gerando...</span>
+                    <template v-else>Copiar Chave Pix - Quitar Empréstimo <br />{{ this.products?.data?.emprestimo?.quitacao?.saldo }}</template>
                 </button>
             </section>
 
@@ -311,6 +325,7 @@ export default {
                         <Button
                             v-if="slotProps.data.status != 'Pago'"
                             :disabled="loadingPix"
+                            :loading="isXGate && isEsteBotaoLoading('parcela', slotProps.data.id)"
                             label="Copiar Chave Pix"
                             @click="copiarChavePix('parcela', slotProps.data.id, slotProps.data.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)"
                             class="p-button-raised p-button-danger mr-2 mb-2"
@@ -425,6 +440,11 @@ button {
 
 button:hover {
     opacity: 0.9;
+}
+
+button:disabled {
+    cursor: wait;
+    opacity: 0.85;
 }
 
 .card {
