@@ -101,20 +101,22 @@ class ApixService
 
     /**
      * Monta o comando CURL equivalente à requisição (para exibir na tela de teste).
+     * Formato: curl -X GET URL \n -H "Header: value"
      */
     protected function buildCurlString(string $method, string $url, array $headers, array $data): string
     {
         $method = strtoupper($method);
-        $parts = ["curl -X {$method} '" . $url . "'"];
+        $urlPart = $url;
+        if ($method === 'GET' && !empty($data)) {
+            $sep = strpos($url, '?') !== false ? '&' : '?';
+            $urlPart = $url . $sep . http_build_query($data);
+        }
+        $parts = ["curl -X {$method} " . $urlPart];
         foreach ($headers as $key => $value) {
-            $parts[] = "  -H '" . $key . ": " . addcslashes($value, "'\\") . "'";
+            $parts[] = "  -H \"" . $key . ": " . str_replace('"', '\\"', $value) . "\"";
         }
         if ($method !== 'GET' && !empty($data)) {
             $parts[] = "  -d '" . addcslashes(json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), "'\\") . "'";
-        }
-        if ($method === 'GET' && !empty($data)) {
-            $sep = strpos($url, '?') !== false ? '&' : '?';
-            $parts[0] = "curl -X GET '" . $url . $sep . http_build_query($data) . "'";
         }
         return implode(" \\\n", $parts);
     }
@@ -202,12 +204,11 @@ class ApixService
 
     /**
      * Consulta saldo.
-     * Ajuste o endpoint conforme documentação APIX.
+     * Endpoint APIX: GET /api/user/balance com Authorization Bearer.
      */
     public function consultarSaldo(): array
     {
-        // Endpoint conforme documentação APIX; ajuste se necessário (ex: /api/balance, /api/v1/balance)
-        $response = $this->makeRequest('GET', '/api/balance', []);
+        $response = $this->makeRequest('GET', '/api/user/balance', []);
 
         if (!$response->successful()) {
             $err = $response->json();
