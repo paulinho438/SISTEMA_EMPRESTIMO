@@ -571,7 +571,7 @@ class XGateService
             }
 
             // Criar chave PIX para o cliente (telefone no formato internacional +55 exigido pela XGate)
-            $keyValue = ($pixKeyType === 'PHONENUMBER') ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
+            $keyValue = in_array($pixKeyType, ['PHONE', 'PHONENUMBER'], true) ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
             $pixKeyData = [
                 'key' => $keyValue,
                 'type' => $pixKeyType
@@ -727,7 +727,7 @@ class XGateService
             }
 
             // Criar chave PIX (telefone no formato internacional +55 exigido pela XGate)
-            $keyValue = ($pixKeyType === 'PHONENUMBER') ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
+            $keyValue = in_array($pixKeyType, ['PHONE', 'PHONENUMBER'], true) ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
             $pixKeyData = [
                 'key' => $keyValue,
                 'type' => $pixKeyType
@@ -1035,19 +1035,19 @@ class XGateService
         $pixKeyClean = preg_replace('/\D/', '', $pixKey);
         $len = strlen($pixKeyClean);
 
-        // Telefone com código do país 55 (Brasil): 12 ou 13 dígitos → PHONENUMBER (evita cair no default CPF)
+        // Telefone com código do país 55 (Brasil): 12 ou 13 dígitos → PHONENUMBER
         if (($len === 12 || $len === 13) && strpos($pixKeyClean, '55') === 0) {
-            return 'PHONE';
+            return 'PHONENUMBER';
         }
 
         // 11 dígitos: só é CPF se passar na validação por dígito verificador; senão é celular
         if ($len === 11) {
-            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'PHONE';
+            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'PHONENUMBER';
         }
 
         // 10 dígitos → telefone (DDD + número)
         if ($len === 10) {
-            return 'PHONE';
+            return 'PHONENUMBER';
         }
 
         // 14 dígitos → CNPJ
