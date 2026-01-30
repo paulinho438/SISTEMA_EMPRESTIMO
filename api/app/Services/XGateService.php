@@ -934,10 +934,10 @@ class XGateService
     }
 
     /**
-     * Determina o tipo de chave PIX: EMAIL (@), CPF (11 dígitos válidos), TELEFONE (11 dígitos inválidos como CPF), CNPJ, RANDOM.
+     * Determina o tipo de chave PIX: EMAIL (@), CPF (11 dígitos válidos), PHONENUMBER (11 dígitos inválidos como CPF), CNPJ, RANDOM.
      *
      * @param string $pixKey Chave PIX
-     * @return string Tipo da chave (EMAIL, CPF, TELEFONE, CNPJ, RANDOM)
+     * @return string Tipo da chave (EMAIL, CPF, PHONENUMBER, CNPJ, RANDOM)
      */
     protected function determinarTipoChavePix(string $pixKey): string
     {
@@ -949,19 +949,19 @@ class XGateService
         $pixKeyClean = preg_replace('/\D/', '', $pixKey);
         $len = strlen($pixKeyClean);
 
-        // Telefone com código do país 55 (Brasil): 12 ou 13 dígitos → TELEFONE (evita cair no default CPF)
+        // Telefone com código do país 55 (Brasil): 12 ou 13 dígitos → PHONENUMBER (evita cair no default CPF)
         if (($len === 12 || $len === 13) && strpos($pixKeyClean, '55') === 0) {
-            return 'TELEFONE';
+            return 'PHONENUMBER';
         }
 
         // 11 dígitos: só é CPF se passar na validação por dígito verificador; senão é celular
         if ($len === 11) {
-            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'TELEFONE';
+            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'PHONENUMBER';
         }
 
         // 10 dígitos → telefone (DDD + número)
         if ($len === 10) {
-            return 'TELEFONE';
+            return 'PHONENUMBER';
         }
 
         // 14 dígitos → CNPJ
