@@ -317,6 +317,10 @@ export default {
                         <label for="zip">RG</label>
                         <InputMask id="inputmask" :modelValue="usuario?.rg" v-model="usuario.rg" mask="9.999.999"> </InputMask>
                     </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="cnpj">CNPJ</label>
+                        <InputMask id="cnpj" :modelValue="usuario?.cnpj" v-model="usuario.cnpj" mask="99.999.999/9999-99" placeholder="Opcional"> </InputMask>
+                    </div>
                     <div class="field col-12 md:col-6">
                         <label for="firstname2">Senha</label>
                         <InputText id="firstname2" :modelValue="usuario?.password" v-model="usuario.password" type="password" />

@@ -119,6 +119,7 @@ class UsuarioController extends Controller
         if (!$validator->fails()) {
 
             $cpf = preg_replace('/[^0-9]/', '', $dados['cpf']);
+            $dados['cnpj'] = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
 
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
             $dados['cpf'] = $cpf;
@@ -290,8 +291,9 @@ class UsuarioController extends Controller
                 }
 
                 $EditUser->nome_completo = $dados['nome_completo'];
-                $EditUser->cpf =  $cpf;
+                $EditUser->cpf = $cpf;
                 $EditUser->rg = $dados['rg'];
+                $EditUser->cnpj = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
                 $EditUser->data_nascimento = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
                 $EditUser->sexo = $dados['sexo'];
                 $EditUser->telefone_celular = $dados['telefone_celular'];
