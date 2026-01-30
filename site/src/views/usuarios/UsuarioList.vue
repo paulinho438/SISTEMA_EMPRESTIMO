@@ -109,7 +109,6 @@ export default {
 				email: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 				cpf: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 				rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
-				cnpj: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 				telefone_celular: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
 				companies: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
                 // global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -168,7 +167,7 @@ export default {
                         :loading="loading1"
                         :filters="filters1"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['login', 'nome_completo', 'email', 'cpf', 'rg', 'cnpj', 'telefone_celular', 'companies']"
+                        :globalFilterFields="['login', 'nome_completo', 'email', 'cpf', 'rg', 'telefone_celular', 'companies']"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">
@@ -223,15 +222,6 @@ export default {
                             </template>
                             <template #filter="{ filterModel }">
                                 <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar RG" />
-                            </template>
-                        </Column>
-
-						<Column field="cnpj" header="CNPJ" style="min-width: 12rem">
-                            <template #body="{ data }">
-                                {{ data.cnpj || '—' }}
-                            </template>
-                            <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar CNPJ" />
                             </template>
                         </Column>
 

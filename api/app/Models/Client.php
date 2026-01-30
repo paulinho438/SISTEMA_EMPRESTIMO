@@ -23,6 +23,7 @@ class Client extends Authenticatable implements JWTSubject
         'nome_completo',
         'cpf',
         'rg',
+        'cnpj',
         'data_nascimento',
         'sexo',
         'telefone_celular_1',

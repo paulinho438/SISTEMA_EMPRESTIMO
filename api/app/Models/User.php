@@ -24,7 +24,6 @@ class User extends Authenticatable implements JWTSubject
     public $fillable = [
         'nome_completo',
         'rg',
-        'cnpj',
         'cpf',
         'login',
         'data_nascimento',

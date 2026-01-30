@@ -58,6 +58,7 @@ export default function CadastroCliente({navigation}) {
 
   const [cpf, setCpf] = useState('');
   const [rg, setRg] = useState('');
+  const [cnpj, setCnpj] = useState('');
   const [cellphone, setCellphone] = useState('');
   const [cellphone2, setCellphone2] = useState('');
   const [nascimento, setNascimento] = useState('');
@@ -118,6 +119,23 @@ export default function CadastroCliente({navigation}) {
     setRg(formatted);
   };
 
+  const handleCnpjChange = (text) => {
+    let cleaned = text.replace(/\D/g, '');
+    if (cleaned.length > 14) {
+      cleaned = cleaned.substring(0, 14);
+    }
+    let formatted = cleaned;
+    if (cleaned.length > 2 && cleaned.length <= 5) {
+      formatted = cleaned.replace(/(\d{2})(\d+)/, '$1.$2');
+    } else if (cleaned.length > 5 && cleaned.length <= 8) {
+      formatted = cleaned.replace(/(\d{2})(\d{3})(\d+)/, '$1.$2.$3');
+    } else if (cleaned.length > 8 && cleaned.length <= 12) {
+      formatted = cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d+)/, '$1.$2.$3/$4');
+    } else if (cleaned.length > 12) {
+      formatted = cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d+)/, '$1.$2.$3/$4-$5');
+    }
+    setCnpj(formatted);
+  };
 
   const handleCellphoneChange = (text) => {
     // Remove qualquer caractere que não seja número
@@ -168,7 +186,7 @@ export default function CadastroCliente({navigation}) {
     }
 
     navigation.navigate(StackNav.ClientMap, {
-      clientes : {parcelas: [], name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, pix}
+      clientes : {parcelas: [], name, email, cellphone, cellphone2, cpf, rg, cnpj: cnpj || null, nascimento, sexo, pix}
     });
   };
 
@@ -342,7 +360,16 @@ export default function CadastroCliente({navigation}) {
                 onFocus={onFocus6}
                 onBlur={onBlur6}
                 text={'RG'}
-              /> 
+              />
+
+              <CTextInput
+                value={cnpj}
+                onChangeText={handleCnpjChange}
+                mainTxtInp={[localStyles.border, focus6]}
+                onFocus={onFocus6}
+                onBlur={onBlur6}
+                text={'CNPJ (opcional)'}
+              />
 
               <View style={localStyles.container}>
                 <Text style={localStyles.title}>Selecione o Sexo</Text>

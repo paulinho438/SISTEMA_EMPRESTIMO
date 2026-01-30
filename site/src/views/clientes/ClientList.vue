@@ -38,6 +38,7 @@ export default {
                     constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }]
                 },
                 rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
+                cnpj: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
                 telefone_celular_1: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
                 telefone_celular_2: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
                 rg: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.STARTS_WITH }] },
@@ -181,7 +182,7 @@ export default {
                         :loading="loading"
                         :filters="filters"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['nome_completo', 'cpf', 'rg', 'telefone_celular_1', 'telefone_celular_2']"
+                        :globalFilterFields="['nome_completo', 'cpf', 'rg', 'cnpj', 'telefone_celular_1', 'telefone_celular_2']"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">
@@ -219,6 +220,15 @@ export default {
                             </template>
                             <template #filter="{ filterModel }">
                                 <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar RG" />
+                            </template>
+                        </Column>
+
+                        <Column field="cnpj" header="CNPJ" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.cnpj || '—' }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar CNPJ" />
                             </template>
                         </Column>
 

@@ -23,7 +23,6 @@ class UsuarioResource extends JsonResource
             "login"                 => $this->login,
             "nome_completo"         => $this->nome_completo,
             "rg"                    => $this->rg,
-            "cnpj"                  => $this->cnpj,
             "cpf"                   => $this->cpf,
             "data_nascimento"       => Carbon::parse($this->data_nascimento)->format('d/m/Y'),
             "sexo"                  => $this->sexo,

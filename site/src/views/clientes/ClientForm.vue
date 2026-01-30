@@ -209,7 +209,10 @@ export default {
                         <label for="zip">RG</label>
                         <InputMask id="inputmask" :modelValue="client?.rg" v-model="client.rg" mask="9.999.999" ></InputMask>
                     </div>
-					
+                    <div class="field col-12 md:col-3">
+                        <label for="cnpj">CNPJ</label>
+                        <InputMask id="cnpj" :modelValue="client?.cnpj" v-model="client.cnpj" mask="99.999.999/9999-99" placeholder="Opcional"> </InputMask>
+                    </div>
 					<div class="field col-12 md:col-6">
                         <label for="zip">Limite de Emprestimo</label>
 						<InputNumber id="inputnumber" :modelValue="client?.limit" v-model="client.limit" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>

@@ -198,23 +198,9 @@ export default {
         return json;
     },
 
-    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, nascimento, sexo, localizacao, pix) => {
+    cadastroCliente: async (name, email, cellphone, cellphone2, cpf, rg, cnpj, nascimento, sexo, localizacao, pix) => {
         let token = await getAuthToken();
-        console.log('cadasro', {
-            nome_completo       : name,
-            cpf                 : cpf,
-            rg                  : rg,
-            data_nascimento     : nascimento,
-            sexo                : sexo,
-            telefone_celular_1  : cellphone,
-            telefone_celular_2  : cellphone2,
-            email               : email,
-            observation         : '',
-            limit               : 1000,
-            password            : 1234,
-            address             : [localizacao]
-        })
-        let json = await request('post', `/cliente`, {
+        const body = {
             nome_completo       : name,
             cpf                 : cpf,
             rg                  : rg,
@@ -228,7 +214,11 @@ export default {
             password            : 1234,
             address             : [localizacao],
             pix_cliente         : pix
-        }, token);
+        };
+        if (cnpj != null && cnpj !== '') {
+            body.cnpj = cnpj;
+        }
+        let json = await request('post', `/cliente`, body, token);
         return json;
     },
     cobrarAmanha: async (id, dt) => {

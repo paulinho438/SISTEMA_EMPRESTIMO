@@ -24,6 +24,7 @@ class ClientResource extends JsonResource
             "nome_completo"         => $this->nome_completo,
             "cpf"                   => $this->cpf,
             "rg"                    => $this->rg,
+            "cnpj"                  => $this->cnpj,
             "data_nascimento"       => Carbon::parse($this->data_nascimento)->format('d/m/Y'),
             "sexo"                  => $this->sexo,
             "telefone_celular_1"    => $this->telefone_celular_1,

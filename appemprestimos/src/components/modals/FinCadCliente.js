@@ -78,6 +78,7 @@ export default function InfoParcelas(props) {
       clientes.cellphone2,
       clientes.cpf,
       clientes.rg,
+      clientes.cnpj ?? null,
       clientes.nascimento,
       clientes.sexo,
       localizacao,

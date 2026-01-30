@@ -473,6 +473,7 @@ class ClientController extends Controller
             $dados['company_id'] = $request->header('company-id');
             $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
             $dados['nome_usuario_criacao'] = auth()->user()->nome_completo;
+            $dados['cnpj'] = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
 
             $newGroup = Client::create($dados);
 
@@ -573,6 +574,7 @@ class ClientController extends Controller
                 $EditClient->nome_completo = $dados['nome_completo'];
                 $EditClient->cpf = $dados['cpf'];
                 $EditClient->rg = $dados['rg'];
+                $EditClient->cnpj = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
                 $EditClient->data_nascimento = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
                 $EditClient->sexo = $dados['sexo'];
                 $EditClient->telefone_celular_1 = $dados['telefone_celular_1'];
