@@ -947,19 +947,25 @@ class XGateService
         }
 
         $pixKeyClean = preg_replace('/\D/', '', $pixKey);
+        $len = strlen($pixKeyClean);
 
-        // 11 dígitos: validar com dígito verificador. Válido → CPF; inválido → TELEFONE (celular)
-        if (strlen($pixKeyClean) === 11) {
+        // Telefone com código do país 55 (Brasil): 12 ou 13 dígitos → TELEFONE (evita cair no default CPF)
+        if (($len === 12 || $len === 13) && strpos($pixKeyClean, '55') === 0) {
+            return 'TELEFONE';
+        }
+
+        // 11 dígitos: só é CPF se passar na validação por dígito verificador; senão é celular
+        if ($len === 11) {
             return $this->validarCPF($pixKeyClean) ? 'CPF' : 'TELEFONE';
         }
 
         // 10 dígitos → telefone (DDD + número)
-        if (strlen($pixKeyClean) === 10) {
+        if ($len === 10) {
             return 'TELEFONE';
         }
 
         // 14 dígitos → CNPJ
-        if (strlen($pixKeyClean) === 14) {
+        if ($len === 14) {
             return 'CNPJ';
         }
 
