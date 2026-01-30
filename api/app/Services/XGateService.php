@@ -599,6 +599,9 @@ class XGateService
                 throw new \Exception('Chave PIX não encontrada para o cliente');
             }
 
+            // Usar tipo correto (PHONENUMBER/CPF/EMAIL) na requisição, não o tipo armazenado na API
+            $pixKeyToUse['type'] = $this->determinarTipoChavePix($pixKey);
+
             // Preparar dados do saque
             $withdrawData = [
                 'amount' => $valor,
@@ -744,6 +747,9 @@ class XGateService
             if (!$pixKeyToUse) {
                 throw new \Exception('Chave PIX não encontrada para o cliente');
             }
+
+            // Usar tipo correto (PHONENUMBER/CPF/EMAIL) na requisição, não o tipo armazenado na API
+            $pixKeyToUse['type'] = $this->determinarTipoChavePix($pixKey);
 
             // Preparar dados do saque
             $withdrawData = [
