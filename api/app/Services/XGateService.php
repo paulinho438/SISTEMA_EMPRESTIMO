@@ -901,43 +901,73 @@ class XGateService
     }
 
     /**
-     * Determina o tipo de chave PIX baseado no formato
+     * Valida CPF usando dígitos verificadores.
+     * Usado para distinguir CPF de número de telefone (11 dígitos).
+     *
+     * @param string $cpf CPF (pode conter pontuação)
+     * @return bool true se CPF válido
+     */
+    protected function validarCPF(string $cpf): bool
+    {
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+
+        if (strlen($cpf) != 11) {
+            return false;
+        }
+
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($t = 9; $t < 11; $t++) {
+            $soma = 0;
+            for ($i = 0; $i < $t; $i++) {
+                $soma += (int) $cpf[$i] * (($t + 1) - $i);
+            }
+            $digito = ((10 * $soma) % 11) % 10;
+            if ((int) $cpf[$t] != $digito) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Determina o tipo de chave PIX: EMAIL (@), CPF (11 dígitos válidos), TELEFONE (11 dígitos inválidos como CPF), CNPJ, RANDOM.
      *
      * @param string $pixKey Chave PIX
-     * @return string Tipo da chave (PHONE, CPF, CNPJ, EMAIL, RANDOM)
+     * @return string Tipo da chave (EMAIL, CPF, TELEFONE, CNPJ, RANDOM)
      */
     protected function determinarTipoChavePix(string $pixKey): string
     {
-        // Verificar email primeiro (antes de remover caracteres)
+        // Se tiver @ → EMAIL
         if (strpos($pixKey, '@') !== false) {
             return 'EMAIL';
         }
 
-        // Remover caracteres especiais para análise numérica
         $pixKeyClean = preg_replace('/\D/', '', $pixKey);
 
-        // CPF (11 dígitos)
+        // 11 dígitos: validar com dígito verificador. Válido → CPF; inválido → TELEFONE (celular)
         if (strlen($pixKeyClean) === 11) {
-            return 'CPF';
+            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'TELEFONE';
         }
 
-        // CNPJ (14 dígitos)
+        // 10 dígitos → telefone (DDD + número)
+        if (strlen($pixKeyClean) === 10) {
+            return 'TELEFONE';
+        }
+
+        // 14 dígitos → CNPJ
         if (strlen($pixKeyClean) === 14) {
             return 'CNPJ';
         }
 
-        // Telefone (10 ou 11 dígitos)
-        if (strlen($pixKeyClean) === 10 || strlen($pixKeyClean) === 11) {
-            return 'PHONE';
-        }
-
-        // Chave aleatória (UUID - 32 ou 36 caracteres com hífens)
-        $pixKeyOriginal = $pixKey;
-        if (strlen($pixKeyOriginal) === 32 || strlen($pixKeyOriginal) === 36) {
+        // Chave aleatória (EVP - 32 ou 36 caracteres)
+        if (strlen($pixKey) === 32 || strlen($pixKey) === 36) {
             return 'RANDOM';
         }
 
-        // Padrão: CPF
         return 'CPF';
     }
 
