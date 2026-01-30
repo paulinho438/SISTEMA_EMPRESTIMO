@@ -215,6 +215,12 @@ const model = ref([
                         to: '/apix/teste',
                         permission: 'view_dashboard'
                     },
+                    {
+                        label: 'Fila WAPI',
+                        icon: 'pi pi-fw pi-list',
+                        to: '/wapi/fila',
+                        permission: 'view_mastergeral'
+                    },
                 ]
             }
         ]

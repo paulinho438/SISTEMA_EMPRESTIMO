@@ -87,4 +87,40 @@ class WAPIService
 
         return true;
     }
+
+    /**
+     * Lista a fila de mensagens da instância W-API.
+     * GET https://api.w-api.app/v1/quere/quere?instanceId=&perPage=10&page=1
+     */
+    public function listarFila(string $token, string $instanceId, int $perPage = 10, int $page = 1)
+    {
+        $url = "{$this->baseUrl}/quere/quere?instanceId=" . urlencode($instanceId) . "&perPage={$perPage}&page={$page}";
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->get($url);
+
+        return $response;
+    }
+
+    /**
+     * Remove um item da fila W-API (ou limpa a fila, conforme documentação).
+     * DELETE https://api.w-api.app/v1/quere/delete-quere?instanceId=
+     * Se a API exigir id do item: delete-quere?instanceId=xxx&id=yyy
+     */
+    public function deletarFila(string $token, string $instanceId, ?string $id = null)
+    {
+        $url = "{$this->baseUrl}/quere/delete-quere?instanceId=" . urlencode($instanceId);
+        if ($id !== null && $id !== '') {
+            $url .= '&id=' . urlencode($id);
+        }
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ])->delete($url);
+
+        return $response;
+    }
 }

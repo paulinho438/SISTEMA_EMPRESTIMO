@@ -35,7 +35,8 @@ use App\Http\Controllers\{
     XGateWebhookController,
     ApixTestController,
     RelatorioFiscalController,
-    RelatorioLucroRealController
+    RelatorioLucroRealController,
+    WapiFilaController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -147,7 +148,10 @@ Route::middleware(['auth:clientes', 'single.token'])->group(function () {
 Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/dashboard/info-conta', [DashboardController::class, 'infoConta']);
 
-
+    // Fila W-API (apenas MASTERGERAL)
+    Route::get('/wapi/fila/companies', [WapiFilaController::class, 'companies']);
+    Route::get('/wapi/fila', [WapiFilaController::class, 'index']);
+    Route::delete('/wapi/fila/{id}', [WapiFilaController::class, 'destroy']);
 
     Route::post('/auth/validate', [AuthController::class, 'validateToken']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);

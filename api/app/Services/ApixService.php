@@ -170,9 +170,11 @@ class ApixService
         $document = preg_replace('/\D/', '', $cliente->cpf ?? '');
         $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1 ?? $cliente->telefone_celular_2 ?? '');
 
+        // website é obrigatório na API APIX
         $payload = [
             'amount' => $valor,
             'external_id' => $referenceId,
+            'website' => !empty($website) ? $website : (config('app.url') ?: 'https://sistema.emprestimos'),
             'payer' => [
                 'name' => $cliente->nome_completo ?? '',
                 'document' => $document,
@@ -186,9 +188,6 @@ class ApixService
         }
         if (!empty($phone)) {
             $payload['payer']['phone'] = $phone;
-        }
-        if (!empty($website)) {
-            $payload['website'] = $website;
         }
         if (!empty($clientCallbackUrl)) {
             $payload['clientCallbackUrl'] = $clientCallbackUrl;
