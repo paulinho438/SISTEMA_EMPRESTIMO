@@ -559,7 +559,7 @@ class XGateService
                 $pixKeysList = $pixKeysListResponse->json();
                 $pixKeysList = is_array($pixKeysList) ? $pixKeysList : [];
                 foreach ($pixKeysList as $keyItem) {
-                    if (isset($keyItem['key']) && $keyItem['key'] === $pixKey && !empty($keyItem['_id'])) {
+                    if (isset($keyItem['key']) && $this->chavePixCorresponde($pixKey, $keyItem['key']) && !empty($keyItem['_id'])) {
                         $this->removerChavePix($customerId, $keyItem['_id']);
                         Log::channel('xgate')->info('Chave PIX existente removida para recadastro com tipo correto.', [
                             'customer_id' => $customerId,
@@ -570,9 +570,10 @@ class XGateService
                 }
             }
 
-            // Criar chave PIX para o cliente
+            // Criar chave PIX para o cliente (telefone no formato internacional +55 exigido pela XGate)
+            $keyValue = ($pixKeyType === 'PHONENUMBER') ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
             $pixKeyData = [
-                'key' => $pixKey,
+                'key' => $keyValue,
                 'type' => $pixKeyType
             ];
 
@@ -605,7 +606,7 @@ class XGateService
             
             $pixKeyToUse = null;
             foreach ($pixKeys as $key) {
-                if ($key['key'] === $pixKey) {
+                if ($this->chavePixCorresponde($pixKey, $key['key'] ?? '')) {
                     $pixKeyToUse = $key;
                     break;
                 }
@@ -714,7 +715,7 @@ class XGateService
                 $pixKeysList = $pixKeysListResponse->json();
                 $pixKeysList = is_array($pixKeysList) ? $pixKeysList : [];
                 foreach ($pixKeysList as $keyItem) {
-                    if (isset($keyItem['key']) && $keyItem['key'] === $pixKey && !empty($keyItem['_id'])) {
+                    if (isset($keyItem['key']) && $this->chavePixCorresponde($pixKey, $keyItem['key']) && !empty($keyItem['_id'])) {
                         $this->removerChavePix($customerId, $keyItem['_id']);
                         Log::channel('xgate')->info('Chave PIX existente removida para recadastro com tipo correto.', [
                             'customer_id' => $customerId,
@@ -725,9 +726,10 @@ class XGateService
                 }
             }
 
-            // Criar chave PIX
+            // Criar chave PIX (telefone no formato internacional +55 exigido pela XGate)
+            $keyValue = ($pixKeyType === 'PHONENUMBER') ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
             $pixKeyData = [
-                'key' => $pixKey,
+                'key' => $keyValue,
                 'type' => $pixKeyType
             ];
 
@@ -758,7 +760,7 @@ class XGateService
             
             $pixKeyToUse = null;
             foreach ($pixKeys as $key) {
-                if ($key['key'] === $pixKey) {
+                if ($this->chavePixCorresponde($pixKey, $key['key'] ?? '')) {
                     $pixKeyToUse = $key;
                     break;
                 }
@@ -924,6 +926,50 @@ class XGateService
         }
 
         return $response->json();
+    }
+
+    /**
+     * Verifica se duas chaves PIX correspondem (mesmo valor; telefone aceita 11 dígitos ou +55 + 11 dígitos).
+     *
+     * @param string $pixKey Chave que temos (ex: 62993785684)
+     * @param string $keyFromApi Chave retornada pela API (ex: +5562993785684)
+     * @return bool
+     */
+    protected function chavePixCorresponde(string $pixKey, string $keyFromApi): bool
+    {
+        if ($pixKey === $keyFromApi) {
+            return true;
+        }
+        $a = preg_replace('/\D/', '', $pixKey);
+        $b = preg_replace('/\D/', '', $keyFromApi);
+        if ($a === $b) {
+            return true;
+        }
+        if (strlen($a) === 11 && strlen($b) === 13 && strpos($b, '55') === 0 && substr($b, 2) === $a) {
+            return true;
+        }
+        if (strlen($b) === 11 && strlen($a) === 13 && strpos($a, '55') === 0 && substr($a, 2) === $b) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Formata chave PIX do tipo telefone no formato internacional com DDI (+55) exigido pela XGate.
+     *
+     * @param string $pixKey Chave (ex: 62993785684 ou 5562993785684)
+     * @return string Chave formatada (ex: +5562993785684)
+     */
+    protected function formatarChavePixTelefone(string $pixKey): string
+    {
+        $digits = preg_replace('/\D/', '', $pixKey);
+        if (strlen($digits) >= 12 && strpos($digits, '55') === 0) {
+            return '+' . $digits;
+        }
+        if (strlen($digits) === 11 || strlen($digits) === 10) {
+            return '+55' . $digits;
+        }
+        return '+' . $digits;
     }
 
     /**
