@@ -33,7 +33,8 @@ export default {
 				{ label: 'Bcodex', value: 'bcodex' },
 				{ label: 'Cora', value: 'cora' },
 				{ label: 'Velana', value: 'velana' },
-				{ label: 'XGate', value: 'xgate' }
+				{ label: 'XGate', value: 'xgate' },
+				{ label: 'APIX', value: 'apix' }
 			]
 		}
 	},
@@ -343,6 +344,53 @@ export default {
 					/>
 					<small v-if="errors?.xgate_password" class="text-red-500 pl-2">{{ errors?.xgate_password[0] }}</small>
 					<small class="text-gray-500 pl-2">Senha utilizada para login na plataforma XGate (será criptografada)</small>
+				</div>
+			</div>
+
+			<!-- Campos APIX (apixpag.com) - Token via POST /api/auth/token com client_id e client_secret -->
+			<div v-if="banco?.bank_type === 'apix'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="apix_base_url">APIX - URL da API</label>
+					<InputText 
+						:modelValue="banco?.apix_base_url" 
+						v-model="banco.apix_base_url" 
+						id="apix_base_url" 
+						class="w-full p-inputtext-sm" 
+						placeholder="https://api.apixpag.com (deixe vazio para usar o padrão)"
+						:class="{ 'p-invalid': errors?.apix_base_url }"
+					/>
+					<small v-if="errors?.apix_base_url" class="text-red-500 pl-2">{{ errors?.apix_base_url[0] }}</small>
+					<small class="text-gray-500 pl-2">URL base da API APIX. Documentação: app.apixpag.com/docs/deposits</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'apix'" class="formgrid grid">
+				<div class="field col-12 md:col-6 lg:col-6 xl:col-6">
+					<label for="apix_client_id">APIX - Client ID</label>
+					<InputText 
+						:modelValue="banco?.apix_client_id" 
+						v-model="banco.apix_client_id" 
+						id="apix_client_id" 
+						class="w-full p-inputtext-sm" 
+						placeholder="seu_client_id"
+						:class="{ 'p-invalid': errors?.apix_client_id }"
+					/>
+					<small v-if="errors?.apix_client_id" class="text-red-500 pl-2">{{ errors?.apix_client_id[0] }}</small>
+					<small class="text-gray-500 pl-2">Usado em POST /api/auth/token</small>
+				</div>
+				<div class="field col-12 md:col-6 lg:col-6 xl:col-6">
+					<label for="apix_client_secret">APIX - Client Secret</label>
+					<InputText 
+						:modelValue="banco?.apix_client_secret" 
+						v-model="banco.apix_client_secret" 
+						id="apix_client_secret" 
+						type="password"
+						class="w-full p-inputtext-sm" 
+						placeholder="seu_client_secret"
+						:class="{ 'p-invalid': errors?.apix_client_secret }"
+					/>
+					<small v-if="errors?.apix_client_secret" class="text-red-500 pl-2">{{ errors?.apix_client_secret[0] }}</small>
+					<small class="text-gray-500 pl-2">Será criptografado. Obtenha no painel APIX.</small>
 				</div>
 			</div>
 

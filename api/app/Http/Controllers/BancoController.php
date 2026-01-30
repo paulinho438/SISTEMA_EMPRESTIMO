@@ -117,6 +117,21 @@ class BancoController extends Controller
                 $dados['xgate_password'] = null;
             }
 
+            // Campos APIX (autenticação: client_id + client_secret → token via POST /api/auth/token)
+            if (($dados['bank_type'] ?? 'normal') === 'apix') {
+                if (isset($dados['apix_client_secret']) && !empty($dados['apix_client_secret'])) {
+                    $dados['apix_client_secret'] = Crypt::encryptString($dados['apix_client_secret']);
+                }
+                if (isset($dados['apix_base_url']) && empty($dados['apix_base_url'])) {
+                    unset($dados['apix_base_url']);
+                }
+            } else {
+                $dados['apix_base_url'] = null;
+                $dados['apix_api_key'] = null;
+                $dados['apix_client_id'] = null;
+                $dados['apix_client_secret'] = null;
+            }
+
             $newGroup = Banco::create($dados);
 
             return response()->json([
@@ -227,6 +242,24 @@ class BancoController extends Controller
                     // Limpar campos XGate se não for banco XGate
                     $EditBanco->xgate_email = null;
                     $EditBanco->xgate_password = null;
+                }
+
+                // Campos APIX (client_id + client_secret para gerar token)
+                if (($EditBanco->bank_type ?? 'normal') === 'apix') {
+                    if (isset($dados['apix_client_secret']) && !empty($dados['apix_client_secret'])) {
+                        $EditBanco->apix_client_secret = Crypt::encryptString($dados['apix_client_secret']);
+                    }
+                    if (isset($dados['apix_client_id'])) {
+                        $EditBanco->apix_client_id = $dados['apix_client_id'] ?: null;
+                    }
+                    if (isset($dados['apix_base_url'])) {
+                        $EditBanco->apix_base_url = $dados['apix_base_url'] ?: null;
+                    }
+                } else {
+                    $EditBanco->apix_base_url = null;
+                    $EditBanco->apix_api_key = null;
+                    $EditBanco->apix_client_id = null;
+                    $EditBanco->apix_client_secret = null;
                 }
 
                 $EditBanco->save();

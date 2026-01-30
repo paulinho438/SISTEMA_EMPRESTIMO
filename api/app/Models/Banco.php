@@ -28,7 +28,11 @@ class Banco extends Model
         'velana_secret_key',
         'velana_public_key',
         'xgate_email',
-        'xgate_password'
+        'xgate_password',
+        'apix_base_url',
+        'apix_api_key',
+        'apix_client_id',
+        'apix_client_secret'
     ];
 
     public function company()

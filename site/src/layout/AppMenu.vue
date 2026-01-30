@@ -209,6 +209,12 @@ const model = ref([
                         to: '/xgate/teste',
                         permission: 'view_dashboard'
                     },
+                    {
+                        label: 'Teste APIX',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/apix/teste',
+                        permission: 'view_dashboard'
+                    },
                 ]
             }
         ]

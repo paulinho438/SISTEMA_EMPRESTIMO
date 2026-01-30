@@ -33,6 +33,7 @@ use App\Http\Controllers\{
     VelanaTestController,
     XGateTestController,
     XGateWebhookController,
+    ApixTestController,
     RelatorioFiscalController,
     RelatorioLucroRealController
 };
@@ -120,6 +121,13 @@ Route::middleware(['throttle:test'])->group(function () {
     Route::post('/xgate/teste/transferencia-cliente', [XGateTestController::class, 'testarTransferenciaComCliente']);
     Route::post('/xgate/teste/consultar-saldo', [XGateTestController::class, 'consultarSaldo']);
     Route::post('/xgate/teste/criar-cliente', [XGateTestController::class, 'criarOuAtualizarCliente']);
+});
+
+// Rotas de teste APIX (apixpag.com)
+Route::middleware(['throttle:test'])->group(function () {
+    Route::post('/apix/teste/cobranca', [ApixTestController::class, 'testarCobranca']);
+    Route::post('/apix/teste/transferencia', [ApixTestController::class, 'testarTransferencia']);
+    Route::post('/apix/teste/consultar-saldo', [ApixTestController::class, 'consultarSaldo']);
 });
 
 Route::post('/auth/login', [AuthController::class, 'login']);

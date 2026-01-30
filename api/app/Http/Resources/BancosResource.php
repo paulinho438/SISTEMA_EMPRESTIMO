@@ -43,6 +43,8 @@ class BancosResource extends JsonResource
             "private_key_path" => $this->private_key_path,
             "created_at" => $this->created_at->format('d/m/Y H:i:s'),
             "name_agencia_conta" => "{$this->name} - Agência {$this->agencia} Cc {$this->conta}",
+            "apix_base_url" => $this->apix_base_url ?? null,
+            "apix_client_id" => $this->apix_client_id ?? null,
         ];
     }
 
