@@ -957,17 +957,17 @@ class XGateService
 
         // Telefone com código do país 55 (Brasil): 12 ou 13 dígitos → PHONENUMBER (evita cair no default CPF)
         if (($len === 12 || $len === 13) && strpos($pixKeyClean, '55') === 0) {
-            return 'PHONENUMBER';
+            return 'PHONE';
         }
 
         // 11 dígitos: só é CPF se passar na validação por dígito verificador; senão é celular
         if ($len === 11) {
-            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'PHONENUMBER';
+            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'PHONE';
         }
 
         // 10 dígitos → telefone (DDD + número)
         if ($len === 10) {
-            return 'PHONENUMBER';
+            return 'PHONE';
         }
 
         // 14 dígitos → CNPJ
