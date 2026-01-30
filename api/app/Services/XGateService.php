@@ -553,6 +553,23 @@ class XGateService
 
             $customerId = $this->criarOuObterCliente($customerData);
 
+            // Se o cliente já tiver essa chave PIX, excluir para cadastrar novamente com o tipo correto
+            $pixKeysListResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key", []);
+            if ($pixKeysListResponse->successful()) {
+                $pixKeysList = $pixKeysListResponse->json();
+                $pixKeysList = is_array($pixKeysList) ? $pixKeysList : [];
+                foreach ($pixKeysList as $keyItem) {
+                    if (isset($keyItem['key']) && $keyItem['key'] === $pixKey && !empty($keyItem['_id'])) {
+                        $this->removerChavePix($customerId, $keyItem['_id']);
+                        Log::channel('xgate')->info('Chave PIX existente removida para recadastro com tipo correto.', [
+                            'customer_id' => $customerId,
+                            'key_id' => $keyItem['_id'],
+                        ]);
+                        break;
+                    }
+                }
+            }
+
             // Criar chave PIX para o cliente
             $pixKeyData = [
                 'key' => $pixKey,
@@ -562,7 +579,6 @@ class XGateService
             $pixResponse = $this->makeRequest('POST', "/pix/customer/{$customerId}/key", $pixKeyData);
             
             if (!$pixResponse->successful()) {
-                // Se a chave já existe, continuar
                 $pixData = $pixResponse->json();
                 if (!isset($pixData['key'])) {
                     throw new \Exception('Erro ao criar chave PIX: ' . ($pixData['message'] ?? 'Erro desconhecido'));
@@ -692,6 +708,23 @@ class XGateService
 
             $customerId = $this->criarOuObterCliente($customerData);
 
+            // Se o cliente já tiver essa chave PIX, excluir para cadastrar novamente com o tipo correto
+            $pixKeysListResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key", []);
+            if ($pixKeysListResponse->successful()) {
+                $pixKeysList = $pixKeysListResponse->json();
+                $pixKeysList = is_array($pixKeysList) ? $pixKeysList : [];
+                foreach ($pixKeysList as $keyItem) {
+                    if (isset($keyItem['key']) && $keyItem['key'] === $pixKey && !empty($keyItem['_id'])) {
+                        $this->removerChavePix($customerId, $keyItem['_id']);
+                        Log::channel('xgate')->info('Chave PIX existente removida para recadastro com tipo correto.', [
+                            'customer_id' => $customerId,
+                            'key_id' => $keyItem['_id'],
+                        ]);
+                        break;
+                    }
+                }
+            }
+
             // Criar chave PIX
             $pixKeyData = [
                 'key' => $pixKey,
@@ -700,22 +733,9 @@ class XGateService
 
             $pixResponse = $this->makeRequest('POST', "/pix/customer/{$customerId}/key", $pixKeyData);
             
-            // Se a chave já existe, continuar
             if (!$pixResponse->successful()) {
                 $pixData = $pixResponse->json();
-                if (!isset($pixData['key'])) {
-                    // Tentar buscar chaves existentes
-                    $pixKeysResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key");
-                    if ($pixKeysResponse->successful()) {
-                        $pixKeys = $pixKeysResponse->json();
-                        foreach ($pixKeys as $key) {
-                            if ($key['key'] === $pixKey) {
-                                // Chave já existe, continuar
-                                break;
-                            }
-                        }
-                    }
-                }
+                throw new \Exception('Erro ao criar chave PIX: ' . ($pixData['message'] ?? 'Erro desconhecido'));
             }
 
             // Obter currency (PIX) para saque
@@ -904,6 +924,20 @@ class XGateService
         }
 
         return $response->json();
+    }
+
+    /**
+     * Remove uma chave PIX do cliente na XGate.
+     * DELETE /pix/customer/{customerId}/key/remove/{keyId}
+     *
+     * @param string $customerId ID do cliente XGate
+     * @param string $keyId _id da chave PIX
+     * @return bool true se removida com sucesso
+     */
+    protected function removerChavePix(string $customerId, string $keyId): bool
+    {
+        $response = $this->makeRequest('DELETE', "/pix/customer/{$customerId}/key/remove/{$keyId}", []);
+        return $response->successful();
     }
 
     /**
