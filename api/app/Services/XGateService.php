@@ -316,10 +316,7 @@ class XGateService
                 $payload['email'] = $customerData['email'];
             }
 
-            // Adicionar phone apenas se presente
-            if (isset($customerData['phone']) && !empty($customerData['phone'])) {
-                $payload['phone'] = $customerData['phone'];
-            }
+            // Telefone não é enviado no cadastro de customer (não obrigatório para empréstimo/cobrança)
 
             // Tentar criar cliente
             $response = $this->makeRequest('POST', '/customer', $payload);
