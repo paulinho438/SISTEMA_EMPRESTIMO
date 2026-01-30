@@ -170,11 +170,15 @@ class ApixService
         $document = preg_replace('/\D/', '', $cliente->cpf ?? '');
         $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1 ?? $cliente->telefone_celular_2 ?? '');
 
-        // website é obrigatório na API APIX
+        // website e clientCallbackUrl são validados pela API APIX (URL de callback inválida se localhost)
+        $defaultWebsite = config('services.apix.website') ?: config('app.url') ?: 'https://api.agecontrole.com.br';
+        $defaultCallback = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
+
         $payload = [
             'amount' => $valor,
             'external_id' => $referenceId,
-            'website' => !empty($website) ? $website : (config('app.url') ?: 'https://sistema.emprestimos'),
+            'website' => !empty($website) ? $website : $defaultWebsite,
+            'clientCallbackUrl' => !empty($clientCallbackUrl) ? $clientCallbackUrl : $defaultCallback,
             'payer' => [
                 'name' => $cliente->nome_completo ?? '',
                 'document' => $document,
@@ -188,9 +192,6 @@ class ApixService
         }
         if (!empty($phone)) {
             $payload['payer']['phone'] = $phone;
-        }
-        if (!empty($clientCallbackUrl)) {
-            $payload['clientCallbackUrl'] = $clientCallbackUrl;
         }
 
         $response = $this->makeRequest('POST', '/api/payments/deposit', $payload);

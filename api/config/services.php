@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'apix' => [
+        'callback_url' => env('APIX_CALLBACK_URL', 'https://api.agecontrole.com.br/api/webhook/apix'),
+        'website' => env('APIX_WEBSITE_URL', 'https://api.agecontrole.com.br'),
+    ],
+
 ];
