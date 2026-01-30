@@ -318,11 +318,11 @@ class XGateService
     }
 
     /**
-     * Atualiza dados do cliente no XGate (nome, CPF/documento, email, telefone).
-     * PUT /customer/{id} – atualiza principalmente o CPF do cliente quando corrigido no sistema.
+     * Atualiza dados do cliente no XGate (nome, CPF/documento, email).
+     * PUT /customer/{id} – atualiza principalmente o CPF. Celular não é enviado (API retorna erro).
      *
      * @param string $customerId ID do cliente XGate
-     * @param array $payload name, document (CPF apenas dígitos), email, phone
+     * @param array $payload name, document (CPF apenas dígitos), email
      * @return bool true se atualizado com sucesso
      */
     protected function atualizarCliente(string $customerId, array $payload): bool
@@ -360,9 +360,7 @@ class XGateService
             if (!empty($customerData['email'])) {
                 $payload['email'] = $customerData['email'];
             }
-            if (isset($customerData['phone']) && $customerData['phone'] !== null && $customerData['phone'] !== '') {
-                $payload['phone'] = $customerData['phone'];
-            }
+            // Celular não é enviado no cadastro/atualização na XGate (evita erro 500 na API)
 
             // Sempre consultar primeiro: se tiver, atualizar (principalmente CPF); se não tiver, cadastrar
             $existingId = $this->buscarClientePorDocumento($document);
