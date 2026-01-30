@@ -126,7 +126,7 @@ Route::middleware(['throttle:test'])->group(function () {
 // Rotas de teste APIX (apixpag.com)
 Route::middleware(['throttle:test'])->group(function () {
     Route::post('/apix/teste/cobranca', [ApixTestController::class, 'testarCobranca']);
-    Route::post('/apix/teste/transferencia', [ApixTestController::class, 'testarTransferencia']);
+    Route::post('/apix/teste/saque', [ApixTestController::class, 'testarSaque']);
     Route::post('/apix/teste/consultar-saldo', [ApixTestController::class, 'consultarSaldo']);
 });
 

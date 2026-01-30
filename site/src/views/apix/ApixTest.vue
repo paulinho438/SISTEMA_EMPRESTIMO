@@ -84,76 +84,110 @@
 						</div>
 					</TabPanel>
 
-					<TabPanel header="Transferência PIX">
+					<TabPanel header="Saque (Withdraw)">
 						<div class="formgrid grid mt-4">
 							<div class="field col-12 md:col-6">
-								<label for="transferencia_banco">Banco APIX *</label>
+								<label for="saque_banco">Banco APIX *</label>
 								<Dropdown 
-									v-model="transferenciaForm.banco_id" 
+									v-model="saqueForm.banco_id" 
 									:options="bancosAPIX" 
 									optionLabel="name" 
 									optionValue="id"
 									placeholder="Selecione um banco APIX"
 									class="w-full"
-									:class="{ 'p-invalid': errors.transferencia?.banco_id }"
+									:class="{ 'p-invalid': errors.saque?.banco_id }"
 								/>
-								<small v-if="errors.transferencia?.banco_id" class="text-red-500">{{ errors.transferencia.banco_id[0] }}</small>
+								<small v-if="errors.saque?.banco_id" class="text-red-500">{{ errors.saque.banco_id[0] }}</small>
 							</div>
 
 							<div class="field col-12 md:col-6">
-								<label for="transferencia_valor">Valor (R$) *</label>
+								<label for="saque_valor">Valor (R$) *</label>
 								<InputNumber 
-									v-model="transferenciaForm.valor" 
+									v-model="saqueForm.valor" 
 									mode="decimal" 
 									:min="0.01" 
 									:maxFractionDigits="2"
 									placeholder="0.00"
 									class="w-full"
-									:class="{ 'p-invalid': errors.transferencia?.valor }"
+									:class="{ 'p-invalid': errors.saque?.valor }"
 								/>
-								<small v-if="errors.transferencia?.valor" class="text-red-500">{{ errors.transferencia.valor[0] }}</small>
+								<small v-if="errors.saque?.valor" class="text-red-500">{{ errors.saque.valor[0] }}</small>
 							</div>
 
 							<div class="field col-12 md:col-6">
-								<label for="transferencia_pix_key">Chave PIX *</label>
+								<label for="saque_pix_key">Chave PIX *</label>
 								<InputText 
-									v-model="transferenciaForm.pix_key" 
-									placeholder="CPF, CNPJ, Email, Telefone ou Chave Aleatória"
+									v-model="saqueForm.pix_key" 
+									placeholder="Email, CPF, CNPJ, telefone ou chave aleatória"
 									class="w-full"
-									:class="{ 'p-invalid': errors.transferencia?.pix_key }"
+									:class="{ 'p-invalid': errors.saque?.pix_key }"
 								/>
-								<small v-if="errors.transferencia?.pix_key" class="text-red-500">{{ errors.transferencia.pix_key[0] }}</small>
+								<small v-if="errors.saque?.pix_key" class="text-red-500">{{ errors.saque.pix_key[0] }}</small>
 							</div>
 
 							<div class="field col-12 md:col-6">
-								<label for="transferencia_description">Descrição</label>
+								<label for="saque_key_type">Tipo da Chave *</label>
+								<Dropdown 
+									v-model="saqueForm.key_type" 
+									:options="keyTypeOptions" 
+									optionLabel="label" 
+									optionValue="value"
+									placeholder="Selecione"
+									class="w-full"
+									:class="{ 'p-invalid': errors.saque?.key_type }"
+								/>
+								<small v-if="errors.saque?.key_type" class="text-red-500">{{ errors.saque.key_type[0] }}</small>
+							</div>
+
+							<div class="field col-12 md:col-6">
+								<label for="saque_key_document">Documento (key_document) *</label>
 								<InputText 
-									v-model="transferenciaForm.description" 
-									placeholder="Descrição da transferência"
+									v-model="saqueForm.key_document" 
+									placeholder="Ex: 12345678901"
+									class="w-full"
+									:class="{ 'p-invalid': errors.saque?.key_document }"
+								/>
+								<small v-if="errors.saque?.key_document" class="text-red-500">{{ errors.saque.key_document[0] }}</small>
+							</div>
+
+							<div class="field col-12 md:col-6">
+								<label for="saque_external_id">External ID (opcional)</label>
+								<InputText 
+									v-model="saqueForm.external_id" 
+									placeholder="Ex: saque_7d4e9f2a"
+									class="w-full"
+								/>
+							</div>
+
+							<div class="field col-12 md:col-6">
+								<label for="saque_client_callback_url">URL de callback (opcional)</label>
+								<InputText 
+									v-model="saqueForm.client_callback_url" 
+									placeholder="https://seuservidor.com/webhook/saques"
 									class="w-full"
 								/>
 							</div>
 
 							<div class="field col-12">
 								<Button 
-									label="Testar Transferência" 
+									label="Testar Saque" 
 									icon="pi pi-send" 
-									@click="testarTransferencia"
-									:loading="loading.transferencia"
+									@click="testarSaque"
+									:loading="loading.saque"
 									class="w-full"
 									severity="danger"
 								/>
 							</div>
 
-							<div v-if="resultado.transferencia" class="field col-12">
+							<div v-if="resultado.saque" class="field col-12">
 								<Divider />
-								<div v-if="resultado.transferencia?.last_response?.curl" class="mb-3">
+								<div v-if="resultado.saque?.last_response?.curl" class="mb-3">
 									<h6>CURL utilizado:</h6>
-									<pre class="p-3 border-round surface-ground font-mono text-sm" style="max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;">{{ resultado.transferencia.last_response.curl }}</pre>
-									<Button label="Copiar CURL" icon="pi pi-copy" class="p-button-outlined p-button-sm mt-2" @click="copiarCurl(resultado.transferencia.last_response.curl)" />
+									<pre class="p-3 border-round surface-ground font-mono text-sm" style="max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;">{{ resultado.saque.last_response.curl }}</pre>
+									<Button label="Copiar CURL" icon="pi pi-copy" class="p-button-outlined p-button-sm mt-2" @click="copiarCurl(resultado.saque.last_response.curl)" />
 								</div>
 								<h6>Resultado:</h6>
-								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.transferencia, null, 2) }}</pre>
+								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.saque, null, 2) }}</pre>
 							</div>
 						</div>
 					</TabPanel>
@@ -227,30 +261,40 @@ export default {
 			clientes: ref([]),
 			loading: {
 				cobranca: false,
-				transferencia: false,
+				saque: false,
 				saldo: false
 			},
 			errors: {
 				cobranca: {},
-				transferencia: {},
+				saque: {},
 				saldo: {}
 			},
 			resultado: {
 				cobranca: null,
-				transferencia: null,
+				saque: null,
 				saldo: null
 			},
+			keyTypeOptions: [
+				{ label: 'Email', value: 'email' },
+				{ label: 'CPF', value: 'cpf' },
+				{ label: 'CNPJ', value: 'cnpj' },
+				{ label: 'Telefone', value: 'phone' },
+				{ label: 'Chave aleatória (EVP)', value: 'evp' }
+			],
 			cobrancaForm: {
 				banco_id: null,
 				cliente_id: null,
 				valor: null,
 				due_date: null
 			},
-			transferenciaForm: {
+			saqueForm: {
 				banco_id: null,
 				valor: null,
 				pix_key: null,
-				description: null
+				key_type: null,
+				key_document: null,
+				external_id: null,
+				client_callback_url: null
 			},
 			saldoForm: {
 				banco_id: null
@@ -327,14 +371,14 @@ export default {
 				this.loading.cobranca = false;
 			}
 		},
-		async testarTransferencia() {
-			this.loading.transferencia = true;
-			this.errors.transferencia = {};
-			this.resultado.transferencia = null;
+		async testarSaque() {
+			this.loading.saque = true;
+			this.errors.saque = {};
+			this.resultado.saque = null;
 
 			try {
-				const response = await axios.post(`${apiPath}/apix/teste/transferencia`, this.transferenciaForm);
-				this.resultado.transferencia = response.data;
+				const response = await axios.post(`${apiPath}/apix/teste/saque`, this.saqueForm);
+				this.resultado.saque = response.data;
 
 				if (response.data.success) {
 					this.toast.add({
@@ -351,16 +395,16 @@ export default {
 				}
 			} catch (error) {
 				if (error.response?.data?.errors) {
-					this.errors.transferencia = error.response.data.errors;
+					this.errors.saque = error.response.data.errors;
 				}
-				this.resultado.transferencia = error.response?.data || { error: error.message };
+				this.resultado.saque = error.response?.data || { error: error.message };
 				this.toast.add({
 					severity: ToastSeverity.ERROR,
-					detail: error.response?.data?.message || 'Erro ao testar transferência',
+					detail: error.response?.data?.message || 'Erro ao testar saque',
 					life: 3000
 				});
 			} finally {
-				this.loading.transferencia = false;
+				this.loading.saque = false;
 			}
 		},
 		copiarCurl(curl) {

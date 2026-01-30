@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\File;
 
 
 use App\Services\BcodexService;
+use App\Services\ApixService;
 use App\Services\CoraService;
 use App\Services\VelanaService;
 use App\Services\XGateService;
@@ -230,6 +231,45 @@ class EmprestimoController extends Controller
                 }
             } catch (\Exception $e) {
                 Log::channel('xgate')->error('Exceção ao criar cobrança XGate: ' . $e->getMessage());
+                return false;
+            }
+        } elseif ($bankType === 'apix') {
+            // Usar ApixService para banco APIX (POST /api/payments/deposit)
+            if (!$entidade || !$entidade->emprestimo || !$entidade->emprestimo->client) {
+                Log::channel('apix')->error('Erro ao criar cobrança APIX: Entidade, empréstimo ou cliente não encontrado');
+                return false;
+            }
+
+            try {
+                $apixService = new ApixService($banco);
+                $cliente = $entidade->emprestimo->client;
+                $referenceId = $entidade->id . '_' . time();
+
+                $dueDate = null;
+                if (isset($entidade->venc_real) && $entidade->venc_real) {
+                    $dueDate = is_string($entidade->venc_real)
+                        ? date('Y-m-d', strtotime($entidade->venc_real))
+                        : $entidade->venc_real->format('Y-m-d');
+                }
+
+                $response = $apixService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
+
+                if (isset($response['success']) && $response['success']) {
+                    return [
+                        'success' => true,
+                        'transaction_id' => $response['transaction_id'] ?? $referenceId,
+                        'txid' => $response['transaction_id'] ?? $referenceId,
+                        'code' => $response['code'] ?? null,
+                        'reference_id' => $referenceId,
+                        'pixCopiaECola' => $response['pixCopiaECola'] ?? $response['qr_code'] ?? null,
+                        'response' => $response['response'] ?? $response,
+                    ];
+                } else {
+                    Log::channel('apix')->error('Erro ao criar cobrança APIX: ' . ($response['error'] ?? 'Resposta inválida'));
+                    return false;
+                }
+            } catch (\Exception $e) {
+                Log::channel('apix')->error('Exceção ao criar cobrança APIX: ' . $e->getMessage());
                 return false;
             }
         } elseif ($bankType === 'bcodex' || $banco->wallet == 1) {

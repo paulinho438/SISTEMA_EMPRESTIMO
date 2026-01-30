@@ -69,14 +69,17 @@ class ApixTestController extends Controller
         }
     }
 
-    public function testarTransferencia(Request $request)
+    public function testarSaque(Request $request)
     {
         try {
             $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
                 'banco_id' => 'required|exists:bancos,id',
                 'valor' => 'required|numeric|min:0.01',
                 'pix_key' => 'required|string',
-                'description' => 'nullable|string|max:255'
+                'key_type' => 'required|in:email,cpf,cnpj,phone,evp',
+                'key_document' => 'required|string|max:20',
+                'external_id' => 'nullable|string|max:100',
+                'client_callback_url' => 'nullable|url|max:500'
             ]);
 
             if ($validator->fails()) {
@@ -95,31 +98,37 @@ class ApixTestController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
+            $externalId = $request->external_id ?: ('saque_' . substr(md5(uniqid((string) mt_rand(), true)), 0, 8));
             $apixService = new ApixService($banco);
-            $response = $apixService->realizarTransferenciaPix(
+            $response = $apixService->realizarSaque(
                 (float) $request->valor,
                 $request->pix_key,
-                $request->description ?? 'Teste de Transferência PIX'
+                $request->key_type,
+                $request->key_document,
+                $externalId,
+                $request->client_callback_url
             );
 
             return response()->json([
                 'success' => $response['success'] ?? false,
-                'message' => $response['success'] ? 'Transferência realizada com sucesso' : ($response['error'] ?? 'Erro ao realizar transferência'),
+                'message' => $response['success'] ? 'Saque solicitado com sucesso' : ($response['error'] ?? 'Erro ao realizar saque'),
                 'request' => [
                     'banco_id' => $banco->id,
                     'banco_nome' => $banco->name,
                     'valor' => $request->valor,
                     'pix_key' => $request->pix_key,
-                    'description' => $request->description
+                    'key_type' => $request->key_type,
+                    'key_document' => $request->key_document,
+                    'external_id' => $externalId
                 ],
                 'response' => $response,
                 'last_response' => $response['last_response'] ?? $apixService->getLastResponse()
             ]);
         } catch (\Exception $e) {
-            Log::channel('apix')->error('Erro ao testar transferência APIX: ' . $e->getMessage());
+            Log::channel('apix')->error('Erro ao testar saque APIX: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao testar transferência: ' . $e->getMessage(),
+                'message' => 'Erro ao testar saque: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

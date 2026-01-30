@@ -156,28 +156,45 @@ class ApixService
 
     /**
      * Cria cobrança PIX (depósito).
-     * Ajuste o endpoint e payload conforme documentação: https://app.apixpag.com/docs/deposits
+     * Endpoint APIX: POST /api/payments/deposit
+     * Payload: amount, external_id, website, clientCallbackUrl, payer (name, email, document, phone), products.
      */
-    public function criarCobranca(float $valor, Client $cliente, string $referenceId, ?string $dueDate = null): array
-    {
+    public function criarCobranca(
+        float $valor,
+        Client $cliente,
+        string $referenceId,
+        ?string $dueDate = null,
+        ?string $website = null,
+        ?string $clientCallbackUrl = null
+    ): array {
         $document = preg_replace('/\D/', '', $cliente->cpf ?? '');
+        $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1 ?? $cliente->telefone_celular_2 ?? '');
 
         $payload = [
             'amount' => $valor,
-            'reference_id' => $referenceId,
+            'external_id' => $referenceId,
             'payer' => [
                 'name' => $cliente->nome_completo ?? '',
                 'document' => $document,
+            ],
+            'products' => [
+                ['id' => 'prod_' . preg_replace('/[^a-zA-Z0-9]/', '_', substr($referenceId, 0, 32)), 'amount' => $valor],
             ],
         ];
         if (!empty($cliente->email)) {
             $payload['payer']['email'] = $cliente->email;
         }
-        if ($dueDate) {
-            $payload['due_date'] = $dueDate;
+        if (!empty($phone)) {
+            $payload['payer']['phone'] = $phone;
+        }
+        if (!empty($website)) {
+            $payload['website'] = $website;
+        }
+        if (!empty($clientCallbackUrl)) {
+            $payload['clientCallbackUrl'] = $clientCallbackUrl;
         }
 
-        $response = $this->makeRequest('POST', '/v1/deposits', $payload);
+        $response = $this->makeRequest('POST', '/api/payments/deposit', $payload);
 
         if (!$response->successful()) {
             $err = $response->json();
@@ -194,9 +211,9 @@ class ApixService
         return [
             'success' => true,
             'transaction_id' => $body['id'] ?? $referenceId,
-            'code' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? null,
-            'pixCopiaECola' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? null,
-            'qr_code' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? null,
+            'code' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? $body['pix_code'] ?? null,
+            'pixCopiaECola' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? $body['pix_code'] ?? null,
+            'qr_code' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? $body['pix_code'] ?? null,
             'status' => $body['status'] ?? 'PENDING',
             'response' => $data,
         ];
@@ -233,22 +250,35 @@ class ApixService
     }
 
     /**
-     * Realiza transferência PIX.
-     * Ajuste o endpoint e payload conforme documentação APIX.
+     * Realiza saque (withdraw) PIX.
+     * Endpoint APIX: POST /api/withdrawals/withdraw
+     * Payload: amount, external_id, pix_key, key_type, key_document, clientCallbackUrl.
+     * key_type: email, cpf, cnpj, phone, evp
      */
-    public function realizarTransferenciaPix(float $valor, string $chavePix, string $descricao = ''): array
-    {
+    public function realizarSaque(
+        float $valor,
+        string $pixKey,
+        string $keyType,
+        string $keyDocument,
+        string $externalId,
+        ?string $clientCallbackUrl = null
+    ): array {
         $payload = [
             'amount' => $valor,
-            'pix_key' => preg_replace('/\D/', '', $chavePix),
-            'description' => $descricao ?: 'Transferência PIX',
+            'external_id' => $externalId,
+            'pix_key' => $pixKey,
+            'key_type' => $keyType,
+            'key_document' => preg_replace('/\D/', '', $keyDocument),
         ];
+        if (!empty($clientCallbackUrl)) {
+            $payload['clientCallbackUrl'] = $clientCallbackUrl;
+        }
 
-        $response = $this->makeRequest('POST', '/v1/pix/transfer', $payload);
+        $response = $this->makeRequest('POST', '/api/withdrawals/withdraw', $payload);
 
         if (!$response->successful()) {
             $err = $response->json();
-            $msg = $err['message'] ?? $err['error'] ?? 'Erro ao realizar transferência APIX';
+            $msg = $err['message'] ?? $err['error'] ?? 'Erro ao realizar saque APIX';
             return [
                 'success' => false,
                 'error' => $msg,
@@ -260,7 +290,7 @@ class ApixService
         $body = $data['data'] ?? $data;
         return [
             'success' => true,
-            'transaction_id' => $body['id'] ?? null,
+            'transaction_id' => $body['id'] ?? $externalId,
             'response' => $data,
             'last_response' => $this->lastResponse,
         ];
