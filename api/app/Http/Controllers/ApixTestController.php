@@ -60,7 +60,7 @@ class ApixTestController extends Controller
                 'last_response' => $response['last_response'] ?? $apixService->getLastResponse()
             ]);
         } catch (\Exception $e) {
-            Log::channel('xgate')->error('Erro ao testar cobrança APIX: ' . $e->getMessage());
+            Log::channel('apix')->error('Erro ao testar cobrança APIX: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao testar cobrança: ' . $e->getMessage(),
@@ -116,7 +116,7 @@ class ApixTestController extends Controller
                 'last_response' => $response['last_response'] ?? $apixService->getLastResponse()
             ]);
         } catch (\Exception $e) {
-            Log::channel('xgate')->error('Erro ao testar transferência APIX: ' . $e->getMessage());
+            Log::channel('apix')->error('Erro ao testar transferência APIX: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao testar transferência: ' . $e->getMessage(),
@@ -162,11 +162,13 @@ class ApixTestController extends Controller
                 'last_response' => $response['last_response'] ?? $apixService->getLastResponse()
             ]);
         } catch (\Exception $e) {
-            Log::channel('xgate')->error('Erro ao consultar saldo APIX: ' . $e->getMessage());
+            Log::channel('apix')->error('Erro ao consultar saldo APIX: ' . $e->getMessage());
+            $lastResponse = isset($apixService) ? $apixService->getLastResponse() : null;
             return response()->json([
                 'success' => false,
                 'message' => 'Erro ao consultar saldo: ' . $e->getMessage(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'last_response' => $lastResponse
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

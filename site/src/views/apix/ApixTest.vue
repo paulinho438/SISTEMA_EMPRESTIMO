@@ -73,6 +73,11 @@
 
 							<div v-if="resultado.cobranca" class="field col-12">
 								<Divider />
+								<div v-if="resultado.cobranca?.last_response?.curl" class="mb-3">
+									<h6>CURL utilizado:</h6>
+									<pre class="p-3 border-round surface-ground font-mono text-sm" style="max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;">{{ resultado.cobranca.last_response.curl }}</pre>
+									<Button label="Copiar CURL" icon="pi pi-copy" class="p-button-outlined p-button-sm mt-2" @click="copiarCurl(resultado.cobranca.last_response.curl)" />
+								</div>
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.cobranca, null, 2) }}</pre>
 							</div>
@@ -142,6 +147,11 @@
 
 							<div v-if="resultado.transferencia" class="field col-12">
 								<Divider />
+								<div v-if="resultado.transferencia?.last_response?.curl" class="mb-3">
+									<h6>CURL utilizado:</h6>
+									<pre class="p-3 border-round surface-ground font-mono text-sm" style="max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;">{{ resultado.transferencia.last_response.curl }}</pre>
+									<Button label="Copiar CURL" icon="pi pi-copy" class="p-button-outlined p-button-sm mt-2" @click="copiarCurl(resultado.transferencia.last_response.curl)" />
+								</div>
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.transferencia, null, 2) }}</pre>
 							</div>
@@ -176,6 +186,11 @@
 
 							<div v-if="resultado.saldo" class="field col-12">
 								<Divider />
+								<div v-if="resultado.saldo?.last_response?.curl" class="mb-3">
+									<h6>CURL utilizado (Consulta Saldo):</h6>
+									<pre class="p-3 border-round surface-ground font-mono text-sm" style="max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;">{{ resultado.saldo.last_response.curl }}</pre>
+									<Button label="Copiar CURL" icon="pi pi-copy" class="p-button-outlined p-button-sm mt-2" @click="copiarCurl(resultado.saldo.last_response.curl)" />
+								</div>
 								<h6>Resultado:</h6>
 								<pre class="p-3 border-round surface-ground" style="max-height: 400px; overflow: auto;">{{ JSON.stringify(resultado.saldo, null, 2) }}</pre>
 							</div>
@@ -346,6 +361,18 @@ export default {
 				});
 			} finally {
 				this.loading.transferencia = false;
+			}
+		},
+		copiarCurl(curl) {
+			if (!curl) return;
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				navigator.clipboard.writeText(curl).then(() => {
+					this.toast.add({ severity: ToastSeverity.SUCCESS, detail: 'CURL copiado!', life: 2000 });
+				}).catch(() => {
+					this.toast.add({ severity: ToastSeverity.WARN, detail: 'Copie o CURL manualmente.', life: 2000 });
+				});
+			} else {
+				this.toast.add({ severity: ToastSeverity.WARN, detail: 'Copie o CURL manualmente.', life: 2000 });
 			}
 		},
 		async consultarSaldo() {

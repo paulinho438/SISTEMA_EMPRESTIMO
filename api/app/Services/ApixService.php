@@ -99,6 +99,26 @@ class ApixService
         return $this->token;
     }
 
+    /**
+     * Monta o comando CURL equivalente à requisição (para exibir na tela de teste).
+     */
+    protected function buildCurlString(string $method, string $url, array $headers, array $data): string
+    {
+        $method = strtoupper($method);
+        $parts = ["curl -X {$method} '" . $url . "'"];
+        foreach ($headers as $key => $value) {
+            $parts[] = "  -H '" . $key . ": " . addcslashes($value, "'\\") . "'";
+        }
+        if ($method !== 'GET' && !empty($data)) {
+            $parts[] = "  -d '" . addcslashes(json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), "'\\") . "'";
+        }
+        if ($method === 'GET' && !empty($data)) {
+            $sep = strpos($url, '?') !== false ? '&' : '?';
+            $parts[0] = "curl -X GET '" . $url . $sep . http_build_query($data) . "'";
+        }
+        return implode(" \\\n", $parts);
+    }
+
     protected function makeRequest(string $method, string $endpoint, array $data = []): \Illuminate\Http\Client\Response
     {
         $token = $this->ensureAuthenticated();
@@ -109,10 +129,12 @@ class ApixService
             'Authorization' => 'Bearer ' . $token,
         ];
 
-        Log::channel('xgate')->info('APIX REQUEST', [
+        $curlString = $this->buildCurlString($method, $url, $headers, $data);
+        Log::channel('apix')->info('APIX REQUEST', [
             'method' => $method,
             'url' => $url,
             'data' => $data,
+            'curl' => $curlString,
         ]);
 
         $http = Http::withHeaders($headers);
@@ -123,8 +145,9 @@ class ApixService
         $this->lastResponse = [
             'status' => $response->status(),
             'body' => $response->json() ?? $response->body(),
+            'curl' => $curlString,
         ];
-        Log::channel('xgate')->info('APIX RESPONSE', $this->lastResponse);
+        Log::channel('apix')->info('APIX RESPONSE', $this->lastResponse);
 
         return $response;
     }
@@ -183,7 +206,8 @@ class ApixService
      */
     public function consultarSaldo(): array
     {
-        $response = $this->makeRequest('GET', '/v1/balance', []);
+        // Endpoint conforme documentação APIX; ajuste se necessário (ex: /api/balance, /api/v1/balance)
+        $response = $this->makeRequest('GET', '/api/balance', []);
 
         if (!$response->successful()) {
             $err = $response->json();
