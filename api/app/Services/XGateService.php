@@ -292,33 +292,69 @@ class XGateService
     }
 
     /**
-     * Cria ou obtém cliente no XGate
+     * Busca cliente no XGate pelo documento (CPF).
+     * GET /customer?document=xxx ou GET /customers?document=xxx (conforme API).
      *
-     * @param array $customerData Dados do cliente
+     * @param string $document Documento (apenas dígitos)
+     * @return string|null ID do cliente ou null se não encontrado
+     */
+    protected function buscarClientePorDocumento(string $document): ?string
+    {
+        foreach (['/customer', '/customers'] as $endpoint) {
+            $response = $this->makeRequest('GET', $endpoint, ['document' => $document]);
+            if (!$response->successful()) {
+                continue;
+            }
+            $data = $response->json();
+            $customer = $data['customer'] ?? $data['data'] ?? (is_array($data) && isset($data['_id']) ? $data : null);
+            if (is_array($customer) && !empty($customer['_id'])) {
+                return $customer['_id'];
+            }
+            if (is_array($data) && isset($data[0]['_id'])) {
+                return $data[0]['_id'];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Atualiza dados do cliente no XGate.
+     * PUT /customer/{id}
+     *
+     * @param string $customerId ID do cliente XGate
+     * @param array $payload name, document, email, phone (conforme API)
+     * @return bool true se atualizado com sucesso
+     */
+    protected function atualizarCliente(string $customerId, array $payload): bool
+    {
+        $response = $this->makeRequest('PUT', '/customer/' . $customerId, $payload);
+        return $response->successful();
+    }
+
+    /**
+     * Cria ou obtém cliente no XGate. Se o cliente já existir (409), atualiza os dados e retorna o ID.
+     *
+     * @param array $customerData Dados do cliente (name, document, email?, phone?)
      * @return string ID do cliente
      */
     protected function criarOuObterCliente(array $customerData): string
     {
         try {
-            // Garantir que temos pelo menos name e document (obrigatórios)
             if (empty($customerData['name']) || empty($customerData['document'])) {
                 throw new \Exception('Nome e documento são obrigatórios para criar cliente');
             }
 
-            // Preparar payload com apenas os campos necessários
             $payload = [
                 'name' => $customerData['name'],
-                'document' => $customerData['document']
+                'document' => $customerData['document'],
             ];
-
-            // Adicionar email apenas se presente
-            if (isset($customerData['email']) && !empty($customerData['email'])) {
+            if (!empty($customerData['email'])) {
                 $payload['email'] = $customerData['email'];
             }
+            if (isset($customerData['phone']) && $customerData['phone'] !== null && $customerData['phone'] !== '') {
+                $payload['phone'] = $customerData['phone'];
+            }
 
-            // Telefone não é enviado no cadastro de customer (não obrigatório para empréstimo/cobrança)
-
-            // Tentar criar cliente
             $response = $this->makeRequest('POST', '/customer', $payload);
 
             if ($response->successful()) {
@@ -328,16 +364,31 @@ class XGateService
                 }
             }
 
-            // Se falhar, pode ser que o cliente já exista
-            // Por enquanto, vamos lançar o erro
-            $errorData = $response->json();
+            $errorData = $response->json() ?? [];
+            $status = $response->status();
+
+            // 409 Conflict = cliente já existe: buscar ID e atualizar dados
+            if ($status === 409 || stripos($errorData['message'] ?? '', 'já existe') !== false || stripos($errorData['message'] ?? '', 'duplicad') !== false) {
+                $existingId = $errorData['customer']['_id'] ?? $errorData['customerId'] ?? $errorData['_id'] ?? null;
+                if (empty($existingId)) {
+                    $existingId = $this->buscarClientePorDocumento($customerData['document']);
+                }
+                if (!empty($existingId)) {
+                    $atualizado = $this->atualizarCliente($existingId, $payload);
+                    Log::channel('xgate')->info('Cliente XGate já existia: dados atualizados.', [
+                        'customer_id' => $existingId,
+                        'updated' => $atualizado,
+                    ]);
+                    return $existingId;
+                }
+            }
+
             $errorMessage = $errorData['message'] ?? 'Erro ao criar cliente na API XGate';
-            
             throw new \Exception($errorMessage);
         } catch (\Exception $e) {
             Log::channel('xgate')->error('Erro ao criar cliente XGate: ' . $e->getMessage(), [
                 'customer_data' => $customerData,
-                'last_response' => $this->lastResponse
+                'last_response' => $this->lastResponse,
             ]);
             throw $e;
         }
