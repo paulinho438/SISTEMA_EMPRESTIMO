@@ -6,6 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 use App\Models\Permgroup;
 use App\Models\Parcela;
+use App\Services\ApixService;
 use App\Services\BcodexService;
 use App\Services\XGateService;
 use App\Models\CustomLog;
@@ -64,6 +65,24 @@ class BancosComSaldoResource extends JsonResource
                 }
             } catch (\Throwable $e) {
                 Log::channel('xgate')->warning('BancosComSaldoResource: erro ao consultar saldo XGate - ' . $e->getMessage());
+            }
+            return null;
+        }
+
+        if ($bankType === 'apix') {
+            try {
+                $apixService = new ApixService($this->resource);
+                $result = $apixService->consultarSaldo();
+                if (!empty($result['success'])) {
+                    if (isset($result['balance']) && is_numeric($result['balance'])) {
+                        return (float) $result['balance'];
+                    }
+                    if (isset($result['response']['balance']) && is_numeric($result['response']['balance'])) {
+                        return (float) $result['response']['balance'];
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::channel('apix')->warning('BancosComSaldoResource: erro ao consultar saldo APIX - ' . $e->getMessage());
             }
             return null;
         }

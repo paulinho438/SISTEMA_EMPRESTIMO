@@ -157,7 +157,8 @@ class ApixService
     /**
      * Cria cobrança PIX (depósito).
      * Endpoint APIX: POST /api/payments/deposit
-     * Payload: amount, external_id, website, clientCallbackUrl, payer (name, email, document, phone), products.
+     * Payload: amount, external_id (aleatório), website, clientCallbackUrl, payer (name, document, email, phone), products (id, name, price, quantity).
+     * Resposta: qrCodeResponse.transactionId (salvo como identificador), qrCodeResponse.qrcode (PIX copia e cola).
      */
     public function criarCobranca(
         float $valor,
@@ -170,13 +171,14 @@ class ApixService
         $document = preg_replace('/\D/', '', $cliente->cpf ?? '');
         $phone = preg_replace('/\D/', '', $cliente->telefone_celular_1 ?? $cliente->telefone_celular_2 ?? '');
 
-        // website e clientCallbackUrl são validados pela API APIX (URL de callback inválida se localhost)
         $defaultWebsite = config('services.apix.website') ?: config('app.url') ?: 'https://api.agecontrole.com.br';
         $defaultCallback = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
 
+        $externalId = 'apix_' . bin2hex(random_bytes(8)) . '_' . time();
+
         $payload = [
             'amount' => $valor,
-            'external_id' => $referenceId,
+            'external_id' => $externalId,
             'website' => !empty($website) ? $website : $defaultWebsite,
             'clientCallbackUrl' => !empty($clientCallbackUrl) ? $clientCallbackUrl : $defaultCallback,
             'payer' => [
@@ -184,7 +186,12 @@ class ApixService
                 'document' => $document,
             ],
             'products' => [
-                ['id' => 'prod_' . preg_replace('/[^a-zA-Z0-9]/', '_', substr($referenceId, 0, 32)), 'amount' => $valor],
+                [
+                    'id' => '1',
+                    'name' => 'Produto',
+                    'price' => $valor,
+                    'quantity' => 1,
+                ],
             ],
         ];
         if (!empty($cliente->email)) {
@@ -207,14 +214,18 @@ class ApixService
         }
 
         $data = $response->json();
-        $body = $data['data'] ?? $data;
+        $qrCodeResponse = $data['qrCodeResponse'] ?? [];
+        $transactionId = $qrCodeResponse['transactionId'] ?? $data['transactionId'] ?? $referenceId;
+        $qrcode = $qrCodeResponse['qrcode'] ?? $qrCodeResponse['qr_code'] ?? $data['qrcode'] ?? null;
+
         return [
             'success' => true,
-            'transaction_id' => $body['id'] ?? $referenceId,
-            'code' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? $body['pix_code'] ?? null,
-            'pixCopiaECola' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? $body['pix_code'] ?? null,
-            'qr_code' => $body['pix_copy_paste'] ?? $body['qr_code'] ?? $body['pix_code'] ?? null,
-            'status' => $body['status'] ?? 'PENDING',
+            'transaction_id' => $transactionId,
+            'txid' => $transactionId,
+            'code' => $qrcode,
+            'pixCopiaECola' => $qrcode,
+            'qr_code' => $qrcode,
+            'external_id' => $externalId,
             'response' => $data,
         ];
     }
@@ -253,7 +264,8 @@ class ApixService
      * Realiza saque (withdraw) PIX.
      * Endpoint APIX: POST /api/withdrawals/withdraw
      * Payload: amount, external_id, pix_key, key_type, key_document, clientCallbackUrl.
-     * key_type: email, cpf, cnpj, phone, evp
+     * key_type: APIX aceita "cpf"|"cnpj"|"email"|"phonenumber"|"random_key_code" ou maiúsculas (PHONENUMBER para celular).
+     * O tipo da chave é determinado pela mesma lógica da XGate (celular → PHONENUMBER).
      */
     public function realizarSaque(
         float $valor,
@@ -263,11 +275,14 @@ class ApixService
         string $externalId,
         ?string $clientCallbackUrl = null
     ): array {
+        $keyTypeDetectado = $this->determinarTipoChavePix($pixKey);
+        $pixKeyValor = in_array($keyTypeDetectado, ['PHONENUMBER'], true) ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
+
         $payload = [
             'amount' => $valor,
             'external_id' => $externalId,
-            'pix_key' => $pixKey,
-            'key_type' => $keyType,
+            'pix_key' => $pixKeyValor,
+            'key_type' => $keyTypeDetectado,
             'key_document' => preg_replace('/\D/', '', $keyDocument),
         ];
         if (!empty($clientCallbackUrl)) {
@@ -299,5 +314,88 @@ class ApixService
     public function getLastResponse(): ?array
     {
         return $this->lastResponse;
+    }
+
+    /**
+     * Determina o tipo da chave PIX para a API APIX (mesma lógica da XGate).
+     * APIX aceita: cpf|cnpj|email|phonenumber|random_key_code ou maiúsculas (PHONENUMBER para celular).
+     *
+     * @param string $pixKey Chave PIX
+     * @return string EMAIL, CPF, CNPJ, PHONENUMBER ou RANDOM_KEY_CODE
+     */
+    protected function determinarTipoChavePix(string $pixKey): string
+    {
+        if (strpos($pixKey, '@') !== false) {
+            return 'EMAIL';
+        }
+
+        $pixKeyClean = preg_replace('/\D/', '', $pixKey);
+        $len = strlen($pixKeyClean);
+
+        if (($len === 12 || $len === 13) && strpos($pixKeyClean, '55') === 0) {
+            return 'PHONENUMBER';
+        }
+
+        if ($len === 11) {
+            return $this->validarCPF($pixKeyClean) ? 'CPF' : 'PHONENUMBER';
+        }
+
+        if ($len === 10) {
+            return 'PHONENUMBER';
+        }
+
+        if ($len === 14) {
+            return 'CNPJ';
+        }
+
+        if (strlen($pixKey) === 32 || strlen($pixKey) === 36) {
+            return 'RANDOM_KEY_CODE';
+        }
+
+        return 'CPF';
+    }
+
+    /**
+     * Formata chave PIX do tipo telefone com DDI 55 (ex.: +5561999999999).
+     */
+    protected function formatarChavePixTelefone(string $pixKey): string
+    {
+        $digits = preg_replace('/\D/', '', $pixKey);
+        if (strlen($digits) >= 12 && strpos($digits, '55') === 0) {
+            return '+' . $digits;
+        }
+        if (strlen($digits) === 11 || strlen($digits) === 10) {
+            return '+55' . $digits;
+        }
+        return '+' . $digits;
+    }
+
+    /**
+     * Valida CPF por dígitos verificadores (mesma lógica da XGate).
+     */
+    protected function validarCPF(string $cpf): bool
+    {
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+
+        if (strlen($cpf) != 11) {
+            return false;
+        }
+
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($t = 9; $t < 11; $t++) {
+            $soma = 0;
+            for ($i = 0; $i < $t; $i++) {
+                $soma += (int) $cpf[$i] * (($t + 1) - $i);
+            }
+            $digito = ((10 * $soma) % 11) % 10;
+            if ((int) $cpf[$t] != $digito) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
