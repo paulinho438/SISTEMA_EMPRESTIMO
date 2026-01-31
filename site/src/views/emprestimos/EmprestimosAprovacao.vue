@@ -124,14 +124,15 @@ export default {
 
             if (this.route.params?.id) {
                 const isXgate = this.banco?.bank_type === 'xgate';
-                if (this.banco.wallet || isXgate) {
+                const isApix = this.banco?.bank_type === 'apix';
+                if (this.banco.wallet || isXgate || isApix) {
                     this.emprestimoService
                         .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                         .then((response) => {
                             this.loadingFullScreen = false;
                             const nomeBeneficiario = response.data?.creditParty?.name ?? this.city?.nome_completo ?? 'Não informado';
                             let mensagem = `Tem certeza que deseja realizar a transferência de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
-                            if (isXgate && response.data?.chave_pix) {
+                            if ((isXgate || isApix) && response.data?.chave_pix) {
                                 this.displayConfirmationChavePix = response.data.chave_pix;
                                 this.displayConfirmationNome = nomeBeneficiario;
                                 this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

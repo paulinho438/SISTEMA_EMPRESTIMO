@@ -96,7 +96,6 @@ export default class EmprestimoService {
 
 	efetuarPagamentoEmprestimoConsulta = async (id) => {
 		return await axios.post(`${apiPath}/contaspagar/pagamentos/transferenciaconsultar/${id}`);
-		transferenciaconsultar
 	};
 
 	efetuarPagamentoTitulo = async (id) => {

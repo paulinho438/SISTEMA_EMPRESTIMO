@@ -1381,11 +1381,12 @@ class EmprestimoController extends Controller
                 $valorPagamento = $emprestimo->valor;
             }
 
-            $isWalletOuXgateOuVelana = ($emprestimo->banco->wallet == 1)
+            $isWalletOuXgateOuVelanaOuApix = ($emprestimo->banco->wallet == 1)
                 || (($emprestimo->banco->bank_type ?? 'normal') === 'xgate')
-                || (($emprestimo->banco->bank_type ?? 'normal') === 'velana');
+                || (($emprestimo->banco->bank_type ?? 'normal') === 'velana')
+                || (($emprestimo->banco->bank_type ?? 'normal') === 'apix');
 
-            if ($isWalletOuXgateOuVelana) {
+            if ($isWalletOuXgateOuVelanaOuApix) {
                 if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
@@ -1554,6 +1555,86 @@ class EmprestimoController extends Controller
                             "error" => $e->getMessage()
                         ], Response::HTTP_FORBIDDEN);
                     }
+                } elseif (($emprestimo->banco->bank_type ?? 'normal') === 'apix') {
+                    // Usar ApixService para banco APIX (saque/withdraw PIX)
+                    try {
+                        $apixService = new ApixService($emprestimo->banco);
+                        $externalId = 'emp_' . $emprestimo->id . '_' . time();
+                        $clientCallbackUrl = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
+                        $keyDocument = preg_replace('/\D/', '', $emprestimo->client->cpf ?? '');
+
+                        $response = $apixService->realizarSaque(
+                            (float) $valorPagamento,
+                            $emprestimo->client->pix_cliente,
+                            'CPF',
+                            $keyDocument,
+                            $externalId,
+                            $clientCallbackUrl
+                        );
+
+                        if (isset($response['success']) && $response['success']) {
+                            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+                            $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+                            $emprestimo->contaspagar->save();
+
+                            $array['response'] = $response;
+
+                            $dados = [
+                                'valor' => $valorPagamento,
+                                'tipo_transferencia' => 'PIX',
+                                'descricao' => 'Transferência realizada com sucesso',
+                                'destino_nome' => $emprestimo->client->nome_completo,
+                                'destino_cpf' => self::mascararString($emprestimo->client->cpf),
+                                'destino_chave_pix' => $emprestimo->client->pix_cliente,
+                                'destino_instituicao' => 'APIX',
+                                'destino_banco' => '000',
+                                'destino_agencia' => '0000',
+                                'destino_conta' => '000000-0',
+                                'origem_nome' => 'APIX',
+                                'origem_cnpj' => '',
+                                'origem_instituicao' => 'APIX',
+                                'data_hora' => date('d/m/Y H:i:s'),
+                                'id_transacao' => $response['transaction_id'] ?? $externalId,
+                            ];
+
+                            $array['dados'] = $dados;
+
+                            $idTransacao = $response['transaction_id'] ?? null;
+
+                            Movimentacaofinanceira::create([
+                                'banco_id' => $emprestimo->banco->id,
+                                'company_id' => $emprestimo->company_id,
+                                'descricao' => 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                                'tipomov' => 'S',
+                                'dt_movimentacao' => date('Y-m-d'),
+                                'valor' => $valorPagamento,
+                            ]);
+
+                            $emprestimo->banco->saldo -= $valorPagamento;
+                            $emprestimo->banco->save();
+
+                            $this->envioMensagem($emprestimo->parcelas[0]);
+
+                            Log::channel('apix')->info('Pagamento APIX autorizado', [
+                                'emprestimo_id' => $emprestimo->id,
+                                'valor' => $valorPagamento,
+                                'transaction_id' => $idTransacao,
+                            ]);
+                        } else {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => $response['error'] ?? 'Erro ao realizar transferência via APIX'
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                    } catch (\Exception $e) {
+                        Log::channel('apix')->error('Erro ao efetuar transferência APIX: ' . $e->getMessage(), [
+                            'emprestimo_id' => $emprestimo->id,
+                        ]);
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => $e->getMessage()
+                        ], Response::HTTP_FORBIDDEN);
+                    }
                 } else {
                     // Lógica Bcodex (mantida como estava)
                     $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
@@ -1609,17 +1690,17 @@ class EmprestimoController extends Controller
                     ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, $array);
                 }
             } else {
-                // Banco não é wallet/xgate/velana: fluxo sem API (ex.: transferência manual)
+                // Banco não é wallet/xgate/velana/apix: fluxo sem API (ex.: transferência manual)
                 $bankType = $emprestimo->banco->bank_type ?? 'normal';
-                if ($bankType === 'xgate' || $bankType === 'velana') {
-                    Log::channel('xgate')->error('Pagamento ao cliente: banco XGate/Velana sem chamada à API (wallet=0?). Não marcar como pago.', [
+                if ($bankType === 'xgate' || $bankType === 'velana' || $bankType === 'apix') {
+                    Log::channel($bankType === 'apix' ? 'apix' : 'xgate')->error('Pagamento ao cliente: banco ' . strtoupper($bankType) . ' sem chamada à API (wallet=0?). Não marcar como pago.', [
                         'emprestimo_id' => $emprestimo->id,
                         'banco_id' => $emprestimo->banco->id,
                         'bank_type' => $bankType,
                     ]);
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                        "error" => 'Configuração inválida: banco XGate/Velana deve ter wallet ativo. Contate o suporte.'
+                        "error" => 'Configuração inválida: banco XGate/Velana/APIX deve ter wallet ativo. Contate o suporte.'
                     ], Response::HTTP_FORBIDDEN);
                 }
 
@@ -2038,7 +2119,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             $bankType = $emprestimo->banco->bank_type ?? 'normal';
 
-            if ($bankType === 'xgate') {
+            if ($bankType === 'xgate' || $bankType === 'apix') {
                 if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferência do Empréstimo.",
