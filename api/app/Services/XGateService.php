@@ -367,7 +367,7 @@ class XGateService
 
             if (!empty($existingId)) {
                 $atualizado = $this->atualizarCliente($existingId, $payload);
-                Log::channel('xgate')->info('Cliente XGate encontrado: dados atualizados (nome, CPF, email, telefone).', [
+                Log::channel('xgate')->info('Cliente XGate encontrado: dados atualizados (nome, CPF, email).', [
                     'customer_id' => $existingId,
                     'document' => $document,
                     'updated' => $atualizado,
@@ -381,11 +381,23 @@ class XGateService
             if ($response->successful()) {
                 $data = $response->json();
                 if (isset($data['customer']['_id'])) {
-                    Log::channel('xgate')->info('Cliente XGate cadastrado.', [
-                        'customer_id' => $data['customer']['_id'],
-                        'document' => $document,
-                    ]);
-                    return $data['customer']['_id'];
+                    $customerId = $data['customer']['_id'];
+                    $msg = (string) ($data['message'] ?? '');
+                    // Mesmo quando a API retorna 200 com "Cliente já está cadastrado", atualizar dados (principalmente CPF)
+                    if (stripos($msg, 'já está cadastrado') !== false || stripos($msg, 'já existe') !== false) {
+                        $atualizado = $this->atualizarCliente($customerId, $payload);
+                        Log::channel('xgate')->info('Cliente XGate já cadastrado: dados atualizados (nome, CPF, email).', [
+                            'customer_id' => $customerId,
+                            'document' => $document,
+                            'updated' => $atualizado,
+                        ]);
+                    } else {
+                        Log::channel('xgate')->info('Cliente XGate cadastrado.', [
+                            'customer_id' => $customerId,
+                            'document' => $document,
+                        ]);
+                    }
+                    return $customerId;
                 }
             }
 
@@ -698,14 +710,7 @@ class XGateService
             if (!empty($cliente->email)) {
                 $customerData['email'] = $cliente->email;
             }
-
-            // Adicionar telefone apenas se disponível e válido
-            if (!empty($cliente->telefone_celular_1)) {
-                $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
-                if ($phoneObj) {
-                    $customerData['phone'] = $phoneObj;
-                }
-            }
+            // Celular não é cadastrado nem atualizado na XGate (apenas CPF/nome/email)
 
             $customerId = $this->criarOuObterCliente($customerData);
 
@@ -882,14 +887,7 @@ class XGateService
             if (!empty($cliente->email)) {
                 $customerData['email'] = $cliente->email;
             }
-
-            // Adicionar telefone apenas se disponível e válido
-            if (!empty($cliente->telefone_celular_1)) {
-                $phoneObj = $this->criarObjetoPhone($cliente->telefone_celular_1);
-                if ($phoneObj) {
-                    $customerData['phone'] = $phoneObj;
-                }
-            }
+            // Celular não é cadastrado nem atualizado na XGate (apenas CPF/nome/email)
 
             $customerId = $this->criarOuObterCliente($customerData);
 
