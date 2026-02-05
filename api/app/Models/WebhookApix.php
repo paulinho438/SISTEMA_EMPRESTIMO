@@ -13,6 +13,11 @@ class WebhookApix extends Model
         'raw_body',
         'headers',
         'ip',
+        'identificador',
+        'valor',
+        'tipo_evento',
+        'status',
+        'processado',
     ];
 
     protected $casts = [

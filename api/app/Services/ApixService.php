@@ -174,7 +174,8 @@ class ApixService
         $defaultWebsite = config('services.apix.website') ?: config('app.url') ?: 'https://api.agecontrole.com.br';
         $defaultCallback = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
 
-        $externalId = 'apix_' . bin2hex(random_bytes(8)) . '_' . time();
+        // Usar referenceId (entidade_id_timestamp) para permitir matching no webhook
+        $externalId = preg_match('/^\d+_\d+$/', $referenceId) ? $referenceId : ('apix_' . bin2hex(random_bytes(8)) . '_' . time());
         $dueDate = !empty($dueDate) ? $dueDate : date('Y-m-d', strtotime('+6 months'));
 
         $payload = [

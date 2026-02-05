@@ -28,6 +28,7 @@ class Kernel extends ConsoleKernel
         Commands\BackupClientes::class,
         Commands\ProcessarWebhookCobranca::class,
         Commands\ProcessarWebhookXgate::class,
+        Commands\ProcessarWebhookApix::class,
         Commands\RetirarProtestoEmprestimo::class,
         Commands\CorrigirDatasVencimentoFeriados::class
 
@@ -53,6 +54,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('mensagem:AutomaticaRenovacao')->everyMinute();
         $schedule->command('webhook:baixaBcodex')->everyMinute()->withoutOverlapping();
         $schedule->command('webhook:baixaXgate')->everyMinute()->withoutOverlapping();
+        $schedule->command('webhook:baixaApix')->everyMinute()->withoutOverlapping();
 
         //$schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 
