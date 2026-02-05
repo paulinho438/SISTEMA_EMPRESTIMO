@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 class ProcessarWebhookApix extends Command
 {
     /** Taxa APIX em reais (0 = sem taxa; ajustar se necessário) */
-    private const TAXA_APIX = 0;
+    private const TAXA_APIX = 0.30;
 
     protected $signature = 'webhook:baixaApix';
 
