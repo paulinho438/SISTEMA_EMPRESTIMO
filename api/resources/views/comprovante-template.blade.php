@@ -100,7 +100,7 @@
             <p><strong>Nome:</strong> {{ $destino_nome }}</p>
             <p><strong>CPF:</strong> {{ $destino_cpf }}</p>
             <p><strong>Chave Pix:</strong> {{ $destino_chave_pix }}</p>
-            @if(empty($is_xgate))
+            @if(empty($is_xgate) && empty($is_apix))
             <p><strong>Instituição:</strong> {{ $destino_instituicao }}</p>
             <p><strong>Banco:</strong> {{ $destino_banco }}</p>
             <p><strong>Agencia:</strong> {{ $destino_agencia }}</p>
@@ -114,7 +114,9 @@
         <h2>Origem</h2>
         <div class="section2">
             @if(!empty($is_xgate))
-            <p><strong>Xgate</strong></p>
+            <p><strong>XGate</strong></p>
+            @elseif(!empty($is_apix))
+            <p><strong>APIX</strong></p>
             @else
             <p><strong>Nome:</strong> {{ $origem_nome }}</p>
             <p><strong>CNPJ:</strong> {{ $origem_cnpj }}</p>

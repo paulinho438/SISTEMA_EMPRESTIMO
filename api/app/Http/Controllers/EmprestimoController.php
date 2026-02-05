@@ -45,6 +45,7 @@ use App\Services\XGateService;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
+use App\Jobs\ProcessarPixApixJob;
 use App\Jobs\ProcessarPixJob;
 use App\Jobs\ProcessarPixXgateJob;
 use App\Jobs\EnviarComprovanteFornecedor;
@@ -1595,6 +1596,7 @@ class EmprestimoController extends Controller
                                 'origem_instituicao' => 'APIX',
                                 'data_hora' => date('d/m/Y H:i:s'),
                                 'id_transacao' => $response['transaction_id'] ?? $externalId,
+                                'is_apix' => true,
                             ];
 
                             $array['dados'] = $dados;
@@ -1613,9 +1615,10 @@ class EmprestimoController extends Controller
                             $emprestimo->banco->saldo -= $valorPagamento;
                             $emprestimo->banco->save();
 
-                            $this->envioMensagem($emprestimo->parcelas[0]);
+                            // Job específico APIX: comprovante, cobranças via API APIX, envio msg/vídeo/áudio
+                            ProcessarPixApixJob::dispatch($emprestimo, $array);
 
-                            Log::channel('apix')->info('Pagamento APIX autorizado', [
+                            Log::channel('apix')->info('Pagamento APIX autorizado e comprovante enfileirado', [
                                 'emprestimo_id' => $emprestimo->id,
                                 'valor' => $valorPagamento,
                                 'transaction_id' => $idTransacao,
