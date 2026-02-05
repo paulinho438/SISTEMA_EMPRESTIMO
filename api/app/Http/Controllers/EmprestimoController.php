@@ -2975,7 +2975,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         $banco = $parcela->emprestimo->banco;
         $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
-        $sempreGerarNova = ($bankType === 'xgate'); // XGate: QR expira em 24h — sempre nova cobrança ao clicar
+        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix'); // XGate/APIX: sempre nova cobrança ao clicar
 
         if ($parcela->ult_dt_geracao_pix) {
             $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
@@ -3018,7 +3018,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         $banco = $parcela->emprestimo->banco;
         $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
-        $sempreGerarNova = ($bankType === 'xgate'); // XGate: QR expira em 24h — sempre nova cobrança ao clicar
+        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix'); // XGate/APIX: sempre nova cobrança ao clicar
 
         if ($parcela->ult_dt_geracao_pix) {
             $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
@@ -3059,12 +3059,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $banco = $parcela->emprestimo->banco;
         $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
 
-        if ($banco->wallet == 0 && $bankType !== 'xgate') {
+        if ($banco->wallet == 0 && $bankType !== 'xgate' && $bankType !== 'apix') {
             return ['chave_pix' => $banco->chave_pix];
         }
 
-        // XGate: QR expira em 24h — sempre gera nova cobrança ao clicar
-        $sempreGerarNova = ($bankType === 'xgate');
+        // XGate/APIX: gera nova cobrança ao clicar (QR expira ou geração sob demanda)
+        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix');
         $deveGerar = $sempreGerarNova || ($parcela->ult_dt_geracao_pix != $hoje);
 
         if (!$deveGerar) {

@@ -1,93 +1,33 @@
-55439708000135
+DEMANDAS BRBCARD 
 
-d8db4747-c909-4e8f-8b63-d12d0aad5d39
+1 - OVERLIMIT 10% para todos os clientes
 
+2 - Transferencia de limite entre cartoes 
 
-CONFIGURAR NODE WHATSZAPP
+3 - Cashback por spending, DOCK
 
-CRIAR SUBDOMINIO
+4 - Aba shopping, integração com a GOPOINTS
 
-WHM
-    - Listar Contas
-    - cPanel
-    - dominios
-    - Create a new domain
+5 - Gráfico de gasto por categorias
 
+6 - DDC - Documento Descritivo de Credito
 
-CRIAR SUBDOMINIO DNS
+7 - Chat IA - FRONT
 
-https://cliente.hostgator.com.br/dominios
+8 - Aplicação de multa, reserva de vagas BRB
 
-    - Configurar Dominio
-    - Editar zona avançada dominios 
-    - Adicionar Registro
+9 - Demanda de Sala Vip e Reserva de vagas, clientes dux tem exceção
+referente as multas e uso da sala vip
 
+10 - Carousel banners de divulgação flutter e backend
 
+COOPERFORTE
 
-no projeto do whatzap tem o app.js
+1 - Arquitetura do banco
 
-e criado um pm2 do app
+2 - Fluxo de Onboarding Dock x Cooperforte
 
-cada modificacao e necessario executar pm2 stop app e pm2 start app
-
-pm2 start app.js --name "node5"
-
-pm2 list
-
-para uma nova aplicacao e necessario configurar um link na hostgator
-
-na host gator tem o menu 
-
-Engintron for cPanel/WHM
-
-depois va em 
-
-Edit your custom_rules for Nginx(view default)
-
-precisa adicionar uma linha
-
- if ($host ~ "node.agecontrole.com.br") {
-     set $PROXY_SCHEME "http";
-     set $PROXY_TO_PORT 3000;
- }
-
- pronto agora para configurar um dominio tem que seguir esses passos
-
-
- cria um apontamento do subdominio para o ip da vpn
- cria um subdominio apontando para o projeto
- cria o ssl do subdominio
-
- faz o apontamento no nginix 
-
- pronto ssl configurado
-
-
- screen para laravel queue
-
- screen -S sistema-agecontrole // criar
- screen -r sistema-agecontrole // entrar
-
- screen -ls // listar todas as screen
-
- cd /path/to/your/project
-php artisan queue:work --timeout=300 --tries=3
-
-curl -X POST https://api.agecontrole.com.br/api/manutencao/aplicar_multa_parcela/24962 -H "Content-Type: application/json" -d '{}'
-
-
-control + a e d
-
-
-possivel problema do zap
-ls -l storage/app/public/comprovante.html
-
-ls -ld storage/app/public
-
-
-source ~/.bashrc 
+3 - Fluxo de criptografia de dados de cartao Dock
 
 
 
-/home/agecontrole/node2.agecontrole.com.br/whatsapp-api
-cp -R node_modules/* /home/agecontrolecom/SISTEMA_EMPRESTIMO/whatsapp-api-node3/

@@ -175,6 +175,7 @@ class ApixService
         $defaultCallback = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
 
         $externalId = 'apix_' . bin2hex(random_bytes(8)) . '_' . time();
+        $dueDate = !empty($dueDate) ? $dueDate : date('Y-m-d', strtotime('+6 months'));
 
         $payload = [
             'amount' => $valor,
@@ -200,6 +201,7 @@ class ApixService
         if (!empty($phone)) {
             $payload['payer']['phone'] = $phone;
         }
+        $payload['due_date'] = is_object($dueDate) && method_exists($dueDate, 'format') ? $dueDate->format('Y-m-d') : (string) $dueDate;
 
         $response = $this->makeRequest('POST', '/api/payments/deposit', $payload);
 
