@@ -50,13 +50,30 @@ class ApixWebhookController extends Controller
                 $valor = isset($payload['amount']) ? (float) $payload['amount'] : null;
             }
 
+            // Só salvar e processar quando for Deposit + COMPLETED (pagamento confirmado)
+            if (strtoupper((string) $tipoEvento) !== 'DEPOSIT' || strtoupper((string) $status) !== 'COMPLETED') {
+                Log::channel('apix')->info('Webhook APIX ignorado (não é Deposit/COMPLETED)', [
+                    'type' => $tipoEvento,
+                    'status' => $status,
+                ]);
+                return response()->json(['message' => 'Webhook recebido'], Response::HTTP_OK);
+            }
+
             if ($identificador) {
-                $webhookExistente = WebhookApix::where('identificador', $identificador)
-                    ->where('processado', false)
-                    ->first();
+                $webhookExistente = WebhookApix::where('identificador', $identificador)->first();
                 if ($webhookExistente) {
-                    Log::channel('apix')->info('Webhook APIX já recebido anteriormente', ['identificador' => $identificador]);
-                    return response()->json(['message' => 'Webhook já recebido anteriormente'], Response::HTTP_OK);
+                    if ($webhookExistente->processado) {
+                        Log::channel('apix')->info('Webhook APIX já processado', ['identificador' => $identificador]);
+                        return response()->json(['message' => 'Webhook já processado'], Response::HTTP_OK);
+                    }
+                    $webhookExistente->update([
+                        'payload' => $payload,
+                        'status' => $status,
+                        'valor' => $valor,
+                        'tipo_evento' => $tipoEvento,
+                    ]);
+                    Log::channel('apix')->info('Webhook APIX atualizado', ['identificador' => $identificador]);
+                    return response()->json(['message' => 'Webhook atualizado com sucesso'], Response::HTTP_OK);
                 }
             }
 
