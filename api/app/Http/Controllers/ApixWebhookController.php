@@ -43,38 +43,54 @@ class ApixWebhookController extends Controller
             $tipoEvento = null;
             $status = null;
 
+            $data = null;
             if (is_array($payload)) {
-                $tipoEvento = $payload['type'] ?? null;
-                $status = $payload['status'] ?? null;
-                $identificador = $payload['transaction_id'] ?? $payload['external_id'] ?? null;
-                $valor = isset($payload['amount']) ? (float) $payload['amount'] : null;
+                $data = $payload['data'] ?? $payload;
+                $tipoEvento = $data['type'] ?? $payload['type'] ?? null;
+                $status = $data['status'] ?? $payload['status'] ?? null;
+                $identificador = $data['transaction_id'] ?? $payload['transaction_id'] ?? $data['external_id'] ?? $payload['external_id'] ?? null;
+                $valor = isset($data['amount']) ? (float) $data['amount'] : (isset($payload['amount']) ? (float) $payload['amount'] : null);
             }
 
-            // Só salvar e processar quando for Deposit + COMPLETED (pagamento confirmado)
-            if (strtoupper((string) $tipoEvento) !== 'DEPOSIT' || strtoupper((string) $status) !== 'COMPLETED') {
-                Log::channel('apix')->info('Webhook APIX ignorado (não é Deposit/COMPLETED)', [
+            $statusUpper = strtoupper((string) $status);
+            $tipoUpper = strtoupper((string) $tipoEvento);
+
+            // SÓ salvar quando status for COMPLETED (pagamento confirmado). NUNCA salvar CREATED.
+            if ($statusUpper !== 'COMPLETED') {
+                Log::channel('apix')->info('Webhook APIX ignorado (só salva status COMPLETED)', [
                     'type' => $tipoEvento,
                     'status' => $status,
                 ]);
                 return response()->json(['message' => 'Webhook recebido'], Response::HTTP_OK);
             }
 
-            if ($identificador) {
-                $webhookExistente = WebhookApix::where('identificador', $identificador)->first();
-                if ($webhookExistente) {
-                    if ($webhookExistente->processado) {
-                        Log::channel('apix')->info('Webhook APIX já processado', ['identificador' => $identificador]);
-                        return response()->json(['message' => 'Webhook já processado'], Response::HTTP_OK);
-                    }
-                    $webhookExistente->update([
-                        'payload' => $payload,
-                        'status' => $status,
-                        'valor' => $valor,
-                        'tipo_evento' => $tipoEvento,
-                    ]);
-                    Log::channel('apix')->info('Webhook APIX atualizado', ['identificador' => $identificador]);
-                    return response()->json(['message' => 'Webhook atualizado com sucesso'], Response::HTTP_OK);
+            if ($tipoUpper !== 'DEPOSIT') {
+                Log::channel('apix')->info('Webhook APIX ignorado (só processa type Deposit)', [
+                    'type' => $tipoEvento,
+                    'status' => $status,
+                ]);
+                return response()->json(['message' => 'Webhook recebido'], Response::HTTP_OK);
+            }
+
+            if (!$identificador) {
+                Log::channel('apix')->warning('Webhook APIX COMPLETED sem transaction_id/external_id');
+                return response()->json(['message' => 'Webhook recebido'], Response::HTTP_OK);
+            }
+
+            $webhookExistente = WebhookApix::where('identificador', $identificador)->first();
+            if ($webhookExistente) {
+                if ($webhookExistente->processado) {
+                    Log::channel('apix')->info('Webhook APIX já processado', ['identificador' => $identificador]);
+                    return response()->json(['message' => 'Webhook já processado'], Response::HTTP_OK);
                 }
+                $webhookExistente->update([
+                    'payload' => $payload,
+                    'status' => $status,
+                    'valor' => $valor,
+                    'tipo_evento' => $tipoEvento,
+                ]);
+                Log::channel('apix')->info('Webhook APIX atualizado para COMPLETED', ['identificador' => $identificador]);
+                return response()->json(['message' => 'Webhook atualizado com sucesso'], Response::HTTP_OK);
             }
 
             WebhookApix::create([
