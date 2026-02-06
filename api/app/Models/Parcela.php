@@ -96,11 +96,10 @@ class Parcela extends Model
 
     public function totalPendenteHoje()
     {
-        $today = now()->toDateString(); // Obtém a data de hoje no formato YYYY-MM-DD
-
+        // Usar whereDate para comparar apenas a data (ignora hora)
         $totalPendente = Parcela::where('emprestimo_id', $this->emprestimo_id)
-            ->where('dt_baixa', null)
-            ->where('venc_real', $today)
+            ->whereNull('dt_baixa')
+            ->whereDate('venc_real', now()->toDateString())
             ->sum('saldo');
 
         // Arredonda o valor para 2 casas decimais e retorna como float
