@@ -305,7 +305,7 @@ export default {
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('parcela', this.encontrarPrimeiraParcelaPendente()?.id, this.encontrarPrimeiraParcelaPendente()?.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)">
                     <span v-if="(isXGate || isApix) && isEsteBotaoLoading('parcela', this.encontrarPrimeiraParcelaPendente()?.id)">Gerando...</span>
-                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
+                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
                 </button>
             </section>
 
