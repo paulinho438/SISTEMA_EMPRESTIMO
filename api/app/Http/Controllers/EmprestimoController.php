@@ -2995,28 +2995,52 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function gerarPixPagamentoSaldoPendente(Request $request, $id)
     {
-        $parcela = PagamentoSaldoPendente::with(['emprestimo.banco'])->find($id);
+        $pagamentoSaldoPendente = PagamentoSaldoPendente::with(['emprestimo.banco', 'emprestimo.parcelas'])->find($id);
         $hoje = Carbon::today()->toDateString();
 
-        if (!$parcela) {
+        if (!$pagamentoSaldoPendente) {
             return response()->json([
-                "message" => "Erro ao buscar pix da parcela",
+                "message" => "Erro ao buscar pix do saldo pendente",
                 "error" => ''
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $banco = $parcela->emprestimo->banco;
+        $banco = $pagamentoSaldoPendente->emprestimo->banco;
         $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
-        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix'); // XGate/APIX: sempre nova cobrança ao clicar
 
-        if ($parcela->ult_dt_geracao_pix) {
-            $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
+        // Se valor <= 0: retorna a chave PIX da próxima parcela em aberto
+        if ((float) $pagamentoSaldoPendente->valor <= 0) {
+            $proximaParcela = Parcela::where('emprestimo_id', $pagamentoSaldoPendente->emprestimo_id)
+                ->whereNull('dt_baixa')
+                ->orderBy('parcela', 'asc')
+                ->first();
+
+            if (!$proximaParcela) {
+                return response()->json([
+                    "message" => "Não há parcelas em aberto para gerar chave PIX.",
+                    "error" => ''
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            return $this->gerarPixPagamentoParcela($request, $proximaParcela->id);
+        }
+
+        // valor > 0: gera cobrança do valor e salva na tabela pagamento_saldo_pendente
+        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix');
+
+        if ($pagamentoSaldoPendente->ult_dt_geracao_pix) {
+            $mesmoDia = Carbon::parse($pagamentoSaldoPendente->ult_dt_geracao_pix)->toDateString() === $hoje;
             if (!$sempreGerarNova && $mesmoDia) {
-                return ['chave_pix' => $parcela->chave_pix];
+                return ['chave_pix' => $pagamentoSaldoPendente->chave_pix];
             }
         }
 
-        $result = $this->criarCobrancaPorTipoBanco($parcela->valor, $banco, $parcela, $parcela->identificador);
+        $result = $this->criarCobrancaPorTipoBanco(
+            (float) $pagamentoSaldoPendente->valor,
+            $banco,
+            $pagamentoSaldoPendente,
+            $pagamentoSaldoPendente->identificador
+        );
 
         if (!$result || empty($result['success'])) {
             return response()->json([
@@ -3028,12 +3052,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         if ($bankType === 'bcodex' && isset($result['txid'])) {
             ControleBcodex::create(['identificador' => $result['txid']]);
         }
-        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
-        $parcela->chave_pix = $result['pixCopiaECola'] ?? $parcela->chave_pix;
-        $parcela->ult_dt_geracao_pix = $hoje;
-        $parcela->save();
+        $pagamentoSaldoPendente->identificador = $result['txid'] ?? $result['transaction_id'] ?? $pagamentoSaldoPendente->identificador;
+        $pagamentoSaldoPendente->chave_pix = $result['pixCopiaECola'] ?? $pagamentoSaldoPendente->chave_pix;
+        $pagamentoSaldoPendente->ult_dt_geracao_pix = $hoje;
+        $pagamentoSaldoPendente->save();
 
-        return ['chave_pix' => $parcela->chave_pix];
+        return ['chave_pix' => $pagamentoSaldoPendente->chave_pix];
     }
 
     public function gerarPixPagamentoQuitacao(Request $request, $id)

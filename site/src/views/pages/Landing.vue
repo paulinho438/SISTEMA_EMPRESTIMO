@@ -284,27 +284,12 @@ export default {
                 </div>
             </section>
 
-            <!-- Parcela do Dia -->
-            <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
+            <!-- Parcela do Dia / Valor Pendente -->
+            <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente" class="payment-section">
                 <h2>Valor Pendente do Dia {{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
-                <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
-                <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">
                     <span v-if="(isXGate || isApix) && isEsteBotaoLoading('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id)">Gerando...</span>
-                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
-                </button>
-            </section>
-
-            <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
-                <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
-                <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
-                <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
-                <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('parcela', this.encontrarPrimeiraParcelaPendente()?.id, this.encontrarPrimeiraParcelaPendente()?.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)">
-                    <span v-if="(isXGate || isApix) && isEsteBotaoLoading('parcela', this.encontrarPrimeiraParcelaPendente()?.id)">Gerando...</span>
                     <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
                 </button>
             </section>
