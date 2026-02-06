@@ -3026,6 +3026,22 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         // valor > 0: gera cobrança do valor e salva na tabela pagamento_saldo_pendente
+        // Usar totalPendenteHoje() (parcelas que vencem hoje) para coincidir com o valor exibido no frontend
+        $primeiraParcela = Parcela::where('emprestimo_id', $pagamentoSaldoPendente->emprestimo_id)->first();
+        $valorCobranca = $primeiraParcela && method_exists($primeiraParcela, 'totalPendenteHoje')
+            ? $primeiraParcela->totalPendenteHoje()
+            : (float) $pagamentoSaldoPendente->valor;
+
+        if ($valorCobranca <= 0) {
+            $proximaParcela = Parcela::where('emprestimo_id', $pagamentoSaldoPendente->emprestimo_id)
+                ->whereNull('dt_baixa')
+                ->orderBy('parcela', 'asc')
+                ->first();
+            if ($proximaParcela) {
+                return $this->gerarPixPagamentoParcela($request, $proximaParcela->id);
+            }
+        }
+
         $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix');
 
         if ($pagamentoSaldoPendente->ult_dt_geracao_pix) {
@@ -3036,7 +3052,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         $result = $this->criarCobrancaPorTipoBanco(
-            (float) $pagamentoSaldoPendente->valor,
+            $valorCobranca,
             $banco,
             $pagamentoSaldoPendente,
             $pagamentoSaldoPendente->identificador
@@ -3052,6 +3068,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         if ($bankType === 'bcodex' && isset($result['txid'])) {
             ControleBcodex::create(['identificador' => $result['txid']]);
         }
+        $pagamentoSaldoPendente->valor = $valorCobranca;
         $pagamentoSaldoPendente->identificador = $result['txid'] ?? $result['transaction_id'] ?? $pagamentoSaldoPendente->identificador;
         $pagamentoSaldoPendente->chave_pix = $result['pixCopiaECola'] ?? $pagamentoSaldoPendente->chave_pix;
         $pagamentoSaldoPendente->ult_dt_geracao_pix = $hoje;
