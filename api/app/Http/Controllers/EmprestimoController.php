@@ -2888,9 +2888,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $valorPendenteHoje = 0;
         if ($parcela && method_exists($parcela, 'totalPendenteHoje')) {
             $valorPendenteHoje = $parcela->totalPendenteHoje();
+            // Log para debug (remover depois se necessário)
+            \Log::info('Valor pendente hoje calculado', [
+                'emprestimo_id' => $parcela->emprestimo_id,
+                'valor_calculado' => $valorPendenteHoje,
+                'valor_salvo' => $pagamentoSaldoPendente->valor ?? 0,
+            ]);
         }
-        // Sempre usar o valor calculado se houver parcelas pendentes hoje, senão usar o valor salvo
-        $valorFinal = $valorPendenteHoje > 0 ? $valorPendenteHoje : ($pagamentoSaldoPendente->valor ?? 0);
+        // SEMPRE usar o valor calculado (mesmo que seja 0), pois reflete a realidade atual
+        $valorFinal = $valorPendenteHoje;
         $pagamentoSaldoPendenteArr = $pagamentoSaldoPendente ? [
             'id'        => (int) ($pagamentoSaldoPendente->id ?? 0),
             'valor'     => (float) $valorFinal,

@@ -96,11 +96,28 @@ class Parcela extends Model
 
     public function totalPendenteHoje()
     {
-        // Usar whereDate para comparar apenas a data (ignora hora)
-        $totalPendente = Parcela::where('emprestimo_id', $this->emprestimo_id)
+        $hoje = now()->toDateString(); // YYYY-MM-DD
+        
+        // Buscar todas as parcelas pendentes que vencem hoje
+        $parcelasHoje = Parcela::where('emprestimo_id', $this->emprestimo_id)
             ->whereNull('dt_baixa')
-            ->whereDate('venc_real', now()->toDateString())
-            ->sum('saldo');
+            ->whereDate('venc_real', $hoje)
+            ->get();
+        
+        // Somar os saldos manualmente para garantir precisão
+        $totalPendente = $parcelasHoje->sum(function($parcela) {
+            return (float) ($parcela->saldo ?? 0);
+        });
+
+        // Log para debug (remover depois se necessário)
+        \Log::info('totalPendenteHoje calculado', [
+            'emprestimo_id' => $this->emprestimo_id,
+            'hoje' => $hoje,
+            'total' => $totalPendente,
+            'parcelas_count' => $parcelasHoje->count(),
+            'parcelas_ids' => $parcelasHoje->pluck('id')->toArray(),
+            'parcelas_saldos' => $parcelasHoje->pluck('saldo')->toArray(),
+        ]);
 
         // Arredonda o valor para 2 casas decimais e retorna como float
         return round((float) $totalPendente, 2);
