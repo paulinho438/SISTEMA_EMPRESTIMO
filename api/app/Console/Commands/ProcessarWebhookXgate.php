@@ -127,9 +127,20 @@ class ProcessarWebhookXgate extends Command
             return true;
         }
 
-        // 7) Depósito
+        // 7) Depósito - buscar por identificador (pode ser id ou code do webhook)
         $deposito = Deposito::where('identificador', $txId)->whereNull('data_pagamento')->first();
+        if (!$deposito) {
+            // Tentar buscar por code também (webhook pode usar code como identificador)
+            $code = $deposit['code'] ?? null;
+            if ($code && $code !== $txId) {
+                $deposito = Deposito::where('identificador', $code)->whereNull('data_pagamento')->first();
+            }
+        }
         if ($deposito) {
+            // Atualizar identificador se necessário (garantir que está sincronizado)
+            if ($deposito->identificador !== $txId) {
+                $deposito->identificador = $txId;
+            }
             $deposito->data_pagamento = $horario;
             $deposito->save();
             $this->registrarMovimentacaoETaxa($deposito->banco_id, $deposito->company_id, null, $valor,
