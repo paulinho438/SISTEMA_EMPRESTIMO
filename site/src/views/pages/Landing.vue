@@ -47,6 +47,28 @@ export default {
         },
         isApix() {
             return this.products?.data?.emprestimo?.banco?.bank_type === 'apix';
+        },
+        valorPendenteHoje() {
+            // Calcular dinamicamente: soma todas as parcelas pendentes que vencem hoje
+            if (!this.products?.data?.emprestimo?.parcelas) {
+                return 0;
+            }
+            
+            const hoje = moment();
+            let total = 0;
+            
+            this.products.data.emprestimo.parcelas.forEach((parcela) => {
+                // Parcela não paga (dt_baixa vazio ou null)
+                if (!parcela.dt_baixa && parcela.venc_real) {
+                    // Comparar datas usando moment (suporta formato DD/MM/YYYY)
+                    const vencReal = moment(parcela.venc_real, 'DD/MM/YYYY');
+                    if (vencReal.isValid() && vencReal.isSame(hoje, 'day')) {
+                        total += parseFloat(parcela.saldo || 0);
+                    }
+                }
+            });
+            
+            return Math.round(total * 100) / 100; // Arredondar para 2 casas decimais
         }
     },
 
@@ -259,19 +281,19 @@ export default {
 
             <!-- Parcela do Dia -->
             <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2>Valor Pendente do Dia {{ (valorPendenteHoje > 0 ? valorPendenteHoje : (this.products?.data?.emprestimo?.pagamentosaldopendente?.valor || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">
                     <span v-if="(isXGate || isApix) && isEsteBotaoLoading('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id)">Gerando...</span>
-                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ this.products?.data?.emprestimo?.pagamentosaldopendente?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
+                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ (valorPendenteHoje > 0 ? valorPendenteHoje : (this.products?.data?.emprestimo?.pagamentosaldopendente?.valor || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
                 </button>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ this.encontrarPrimeiraParcelaPendente()?.saldo?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2>Valor Pendente do Dia {{ (valorPendenteHoje > 0 ? valorPendenteHoje : (this.encontrarPrimeiraParcelaPendente()?.saldo || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
