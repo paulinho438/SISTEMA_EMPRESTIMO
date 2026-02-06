@@ -50,25 +50,42 @@ export default {
         },
         valorPendenteHoje() {
             // Calcular dinamicamente: soma todas as parcelas pendentes que vencem hoje
-            if (!this.products?.data?.emprestimo?.parcelas) {
-                return 0;
+            if (!this.products?.data?.emprestimo?.parcelas || !Array.isArray(this.products.data.emprestimo.parcelas)) {
+                return null; // Retorna null para indicar que não há dados
             }
             
             const hoje = moment();
             let total = 0;
+            let encontrouParcelasHoje = false;
+            const parcelasEncontradas = [];
             
             this.products.data.emprestimo.parcelas.forEach((parcela) => {
-                // Parcela não paga (dt_baixa vazio ou null)
-                if (!parcela.dt_baixa && parcela.venc_real) {
+                // Parcela não paga (dt_baixa vazio, null ou string vazia)
+                if ((!parcela.dt_baixa || parcela.dt_baixa === '') && parcela.venc_real) {
                     // Comparar datas usando moment (suporta formato DD/MM/YYYY)
                     const vencReal = moment(parcela.venc_real, 'DD/MM/YYYY');
                     if (vencReal.isValid() && vencReal.isSame(hoje, 'day')) {
-                        total += parseFloat(parcela.saldo || 0);
+                        encontrouParcelasHoje = true;
+                        const saldo = parseFloat(parcela.saldo || 0);
+                        total += saldo;
+                        parcelasEncontradas.push({ id: parcela.id, saldo: saldo, venc_real: parcela.venc_real });
                     }
                 }
             });
             
-            return Math.round(total * 100) / 100; // Arredondar para 2 casas decimais
+            // Debug (remover depois)
+            if (encontrouParcelasHoje) {
+                console.log('Valor Pendente Hoje calculado:', {
+                    total: Math.round(total * 100) / 100,
+                    hoje: hoje.format('DD/MM/YYYY'),
+                    parcelas: parcelasEncontradas,
+                    valor_backend: this.products?.data?.emprestimo?.pagamentosaldopendente?.valor
+                });
+            }
+            
+            // Se encontrou parcelas que vencem hoje, retorna o total calculado
+            // Se não encontrou nenhuma, retorna null para usar o valor do backend
+            return encontrouParcelasHoje ? Math.round(total * 100) / 100 : null;
         }
     },
 
@@ -281,19 +298,19 @@ export default {
 
             <!-- Parcela do Dia -->
             <section v-if="this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ (valorPendenteHoje > 0 ? valorPendenteHoje : (this.products?.data?.emprestimo?.pagamentosaldopendente?.valor || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2>Valor Pendente do Dia {{ (valorPendenteHoje !== null ? valorPendenteHoje : (this.products?.data?.emprestimo?.pagamentosaldopendente?.valor || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <!-- <p><strong>Saldo Pendente: </strong>{{ this.encontrarPrimeiraParcelaPendente().total_pendente_hoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
                 <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">
                     <span v-if="(isXGate || isApix) && isEsteBotaoLoading('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id)">Gerando...</span>
-                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ (valorPendenteHoje > 0 ? valorPendenteHoje : (this.products?.data?.emprestimo?.pagamentosaldopendente?.valor || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
+                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ (valorPendenteHoje !== null ? valorPendenteHoje : (this.products?.data?.emprestimo?.pagamentosaldopendente?.valor || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
                 </button>
             </section>
 
             <section v-if="!this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix" class="payment-section">
-                <h2>Valor Pendente do Dia {{ (valorPendenteHoje > 0 ? valorPendenteHoje : (this.encontrarPrimeiraParcelaPendente()?.saldo || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
+                <h2>Valor Pendente do Dia {{ (valorPendenteHoje !== null ? valorPendenteHoje : (this.encontrarPrimeiraParcelaPendente()?.saldo || 0))?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <!-- <p><strong>Vencimento:</strong> {{ this.encontrarPrimeiraParcelaPendente().venc_real }}</p> -->
                 <!-- <p><strong>Valor Parcela: </strong>{{ this.encontrarPrimeiraParcelaPendente().saldo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</p> -->
