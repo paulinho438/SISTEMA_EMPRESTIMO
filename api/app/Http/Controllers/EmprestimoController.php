@@ -89,6 +89,9 @@ class EmprestimoController extends Controller
     /** Taxa XGate em reais (cobrada em cada transferência e em cada recebimento) */
     private const TAXA_XGATE = 0.30;
 
+    /** Taxa APIX em reais (cobrada em cada transferência e em cada recebimento) */
+    private const TAXA_APIX = 0.30;
+
     protected $custom_log;
     protected $bcodexService;
 
@@ -1612,7 +1615,17 @@ class EmprestimoController extends Controller
                                 'valor' => $valorPagamento,
                             ]);
 
-                            $emprestimo->banco->saldo -= $valorPagamento;
+                            // Movimentação: taxa APIX (R$ 0,30 por transferência)
+                            Movimentacaofinanceira::create([
+                                'banco_id' => $emprestimo->banco->id,
+                                'company_id' => $emprestimo->company_id,
+                                'descricao' => 'Taxa APIX (R$ ' . number_format(self::TAXA_APIX, 2, ',', '.') . ')' . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                                'tipomov' => 'S',
+                                'dt_movimentacao' => date('Y-m-d'),
+                                'valor' => self::TAXA_APIX,
+                            ]);
+
+                            $emprestimo->banco->saldo -= ($valorPagamento + self::TAXA_APIX);
                             $emprestimo->banco->save();
 
                             // Job específico APIX: comprovante, cobranças via API APIX, envio msg/vídeo/áudio
