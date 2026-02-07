@@ -991,7 +991,14 @@ class BancoController extends Controller
                 ]);
             }
 
-            $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $banco->accountId);
+            $accountId = $banco->accountId ?? null;
+            if (empty($accountId)) {
+                return response()->json([
+                    "message" => "Erro ao efetuar saque.",
+                    "error" => "Banco não possui Account ID configurado. Configure o Account ID do Bcodex nas configurações do banco."
+                ], Response::HTTP_FORBIDDEN);
+            }
+            $response = $this->bcodexService->consultarChavePix(($dados['valor'] * 100), $banco->chavepix, $accountId);
 
             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 return $response->json();
@@ -1077,11 +1084,18 @@ class BancoController extends Controller
                 return response()->json(['message' => 'Saque efetuado com sucesso.']);
             }
 
-            $response = $this->bcodexService->consultarChavePix(($valor * 100), $banco->chavepix, $banco->accountId);
+            $accountId = $banco->accountId ?? null;
+            if (empty($accountId)) {
+                return response()->json([
+                    "message" => "Erro ao efetuar a transferência.",
+                    "error" => "Banco não possui Account ID configurado. Configure o Account ID do Bcodex nas configurações do banco."
+                ], Response::HTTP_FORBIDDEN);
+            }
+            $response = $this->bcodexService->consultarChavePix(($valor * 100), $banco->chavepix, $accountId);
 
             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                 if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
-                    $response = $this->bcodexService->realizarPagamentoPix(($valor * 100), $banco->accountId, $response->json()['paymentId']);
+                    $response = $this->bcodexService->realizarPagamentoPix(($valor * 100), $accountId, $response->json()['paymentId']);
 
                     if (!$response->successful()) {
                         return response()->json([

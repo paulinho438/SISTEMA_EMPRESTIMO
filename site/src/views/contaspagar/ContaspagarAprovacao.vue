@@ -54,6 +54,9 @@ export default {
             ]),
             displayConfirmation: ref(false),
             displayConfirmationMessage: ref(''),
+            displayConfirmationChavePix: ref(null),
+            displayConfirmationNome: ref(null),
+            displayConfirmationValor: ref(null),
             loadingFullScreen: ref(false)
         };
     },
@@ -132,13 +135,26 @@ export default {
         realizarTransferencia() {
             this.loadingFullScreen = true;
             if (this.route.params?.id) {
-                if (this.banco.wallet) {
-                    console.log('chamou');
+                const isXgate = this.banco?.bank_type === 'xgate';
+                const isApix = this.banco?.bank_type === 'apix';
+                if (this.banco.wallet || isXgate || isApix) {
                     this.emprestimoService
                         .efetuarPagamentoTituloConsulta(this.route.params.id)
                         .then((response) => {
                             this.loadingFullScreen = false;
-                            this.displayConfirmationMessage = `Tem certeza que deseja realizar o pagamento de ${this.contaspagar?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`;
+                            const nomeBeneficiario = response.data?.creditParty?.name ?? this.fornecedor?.nome_completo ?? 'Não informado';
+                            const valor = this.contaspagar?.valor ?? 0;
+                            const mensagem = `Tem certeza que deseja realizar o pagamento de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
+                            if ((isXgate || isApix) && response.data?.chave_pix) {
+                                this.displayConfirmationChavePix = response.data.chave_pix;
+                                this.displayConfirmationNome = nomeBeneficiario;
+                                this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            } else {
+                                this.displayConfirmationChavePix = null;
+                                this.displayConfirmationNome = null;
+                                this.displayConfirmationValor = null;
+                            }
+                            this.displayConfirmationMessage = mensagem;
                             this.displayConfirmation = true;
                         })
                         .catch((error) => {
@@ -155,7 +171,7 @@ export default {
                         });
                 } else {
                     this.emprestimoService
-                        .efetuarPagamentoEmprestimo(this.route.params.id)
+                        .efetuarPagamentoTitulo(this.route.params.id)
                         .then((response) => {
                             if (response) {
                                 this.toast.add({
@@ -181,10 +197,7 @@ export default {
                             this.loadingFullScreen = false;
                         });
                 }
-
-                
             }
-
         },
         reprovarEmprestimo() {
 			this.changeLoading();
@@ -328,10 +341,19 @@ export default {
 <template>
     <FullScreenLoading :isLoading="loadingFullScreen" />
 
-    <Dialog header="Confirmation" v-model:visible="displayConfirmation" :style="{ width: '350px' }" :modal="true">
-        <div class="flex align-items-center justify-content-center">
-            <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-            <span>{{ displayConfirmationMessage }}</span>
+    <Dialog header="Confirmation" v-model:visible="displayConfirmation" :style="{ width: displayConfirmationChavePix ? '420px' : '350px' }" :modal="true">
+        <div class="flex flex-column gap-2">
+            <div class="flex align-items-center">
+                <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
+                <span>{{ displayConfirmationMessage }}</span>
+            </div>
+            <div v-if="displayConfirmationChavePix" class="mt-3 p-3 surface-100 border-round">
+                <p class="font-semibold mb-2 text-color-secondary">Verifique os dados antes de autorizar o pagamento:</p>
+                <p class="my-1"><strong>Beneficiário:</strong> {{ displayConfirmationNome }}</p>
+                <p class="my-1"><strong>Chave PIX para pagamento:</strong></p>
+                <p class="my-1 p-2 surface-200 border-round word-break">{{ displayConfirmationChavePix }}</p>
+                <p class="my-1"><strong>Valor:</strong> {{ displayConfirmationValor }}</p>
+            </div>
         </div>
         <template #footer>
             <Button label="Não" icon="pi pi-times" @click="closeConfirmation" class="p-button-text" />

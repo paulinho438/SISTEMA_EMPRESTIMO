@@ -1653,12 +1653,19 @@ class EmprestimoController extends Controller
                     }
                 } else {
                     // Lógica Bcodex (mantida como estava)
-                    $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
+                    $accountId = $emprestimo->banco->accountId ?? null;
+                    if (empty($accountId)) {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => "Banco não possui Account ID configurado. Configure o Account ID do Bcodex nas configurações do banco."
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                    $response = $this->bcodexService->consultarChavePix(($valorPagamento * 100), $emprestimo->client->pix_cliente, $accountId);
 
                     if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                         if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
-                            $response = $this->bcodexService->realizarPagamentoPix(($valorPagamento * 100), $emprestimo->banco->accountId, $response->json()['paymentId']);
+                            $response = $this->bcodexService->realizarPagamentoPix(($valorPagamento * 100), $accountId, $response->json()['paymentId']);
 
                             if (!$response->successful()) {
                                 return response()->json([
@@ -1874,6 +1881,23 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_FORBIDDEN);
             }
 
+            $bankType = $contaspagar->banco->bank_type ?? 'normal';
+            if ($bankType === 'xgate' || $bankType === 'apix') {
+                if (!$contaspagar->fornecedor->pix_fornecedor) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência.",
+                        "error" => 'Fornecedor não possui chave PIX cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                DB::commit();
+                return response()->json([
+                    'creditParty' => [
+                        'name' => $contaspagar->fornecedor->nome_completo,
+                    ],
+                    'chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
+                ]);
+            }
+
             if ($contaspagar->banco->wallet == 1) {
                 if (!$contaspagar->fornecedor->pix_fornecedor) {
                     return response()->json([
@@ -1882,7 +1906,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $contaspagar->banco->accountId);
+                $accountId = $contaspagar->banco->accountId ?? '';
+                if (empty($accountId)) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência.",
+                        "error" => 'Banco não possui Account ID configurado. Configure o Account ID do Bcodex nas configurações do banco.'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $accountId);
 
                 if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
 
@@ -1971,6 +2003,194 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_FORBIDDEN);
             }
 
+            $bankType = $contaspagar->banco->bank_type ?? 'normal';
+
+            if ($bankType === 'xgate') {
+                if (!$contaspagar->fornecedor->pix_fornecedor) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => 'Fornecedor não possui chave PIX cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                try {
+                    $xgateService = new XGateService($contaspagar->banco);
+                    $description = 'Transferência Título Nº ' . $contaspagar->id . ' para ' . $contaspagar->fornecedor->nome_completo;
+                    $response = $xgateService->realizarTransferenciaPix(
+                        (float) $contaspagar->valor,
+                        $contaspagar->fornecedor->pix_fornecedor,
+                        $description
+                    );
+                    if (isset($response['success']) && $response['success']) {
+                        $statusXGate = strtoupper((string) ($response['status'] ?? ''));
+                        $statusFalha = ['FAILED', 'ERROR', 'CANCELLED', 'REJECTED'];
+                        if (in_array($statusXGate, $statusFalha)) {
+                            Log::channel('xgate')->warning('XGate transferência título retornou status de falha', [
+                                'contaspagar_id' => $contaspagar->id,
+                                'status' => $statusXGate,
+                            ]);
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferência do Título.",
+                                "error" => 'A XGate retornou status: ' . $statusXGate . '. A transferência não foi concluída.'
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                        $contaspagar->status = 'Pagamento Efetuado';
+                        $contaspagar->dt_baixa = date('Y-m-d');
+                        $contaspagar->save();
+
+                        $idTransacao = $response['transaction_id'] ?? null;
+                        $dados = [
+                            'valor' => $contaspagar->valor,
+                            'tipo_transferencia' => 'PIX',
+                            'descricao' => 'Transferência realizada com sucesso',
+                            'destino_nome' => $contaspagar->fornecedor->nome_completo,
+                            'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
+                            'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
+                            'destino_instituicao' => 'XGate',
+                            'destino_banco' => '000',
+                            'destino_agencia' => '0000',
+                            'destino_conta' => '000000-0',
+                            'origem_nome' => 'XGate',
+                            'origem_cnpj' => '',
+                            'origem_instituicao' => 'XGate',
+                            'data_hora' => date('d/m/Y H:i:s'),
+                            'id_transacao' => $idTransacao,
+                        ];
+                        $array['response'] = $response;
+                        $array['dados'] = $dados;
+
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $contaspagar->banco->id,
+                            'company_id' => $contaspagar->company_id,
+                            'descricao' => 'T Título Nº ' . $contaspagar->id . ' para ' . $contaspagar->fornecedor->nome_completo . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => $contaspagar->valor,
+                        ]);
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $contaspagar->banco->id,
+                            'company_id' => $contaspagar->company_id,
+                            'descricao' => 'Taxa XGate (R$ ' . number_format(self::TAXA_XGATE, 2, ',', '.') . ')' . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => self::TAXA_XGATE,
+                        ]);
+                        $contaspagar->banco->saldo -= ($contaspagar->valor + self::TAXA_XGATE);
+                        $contaspagar->banco->save();
+
+                        EnviarComprovanteFornecedor::dispatch($contaspagar, $this->bcodexService, $array);
+
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do titulo ' . $id . ' no valor de R$ ' . $contaspagar->valor . ' para o fornecedor ' . $contaspagar->fornecedor->nome_completo,
+                            'operation' => 'edit'
+                        ]);
+                        DB::commit();
+                        return $array;
+                    }
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => $response['error'] ?? 'Erro ao realizar transferência via XGate'
+                    ], Response::HTTP_FORBIDDEN);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => $e->getMessage()
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
+            if ($bankType === 'apix') {
+                if (!$contaspagar->fornecedor->pix_fornecedor) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => 'Fornecedor não possui chave PIX cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                try {
+                    $apixService = new ApixService($contaspagar->banco);
+                    $externalId = 'tit_' . $contaspagar->id . '_' . time();
+                    $clientCallbackUrl = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
+                    $keyDocument = preg_replace('/\D/', '', $contaspagar->fornecedor->cpfcnpj ?? '');
+                    $keyType = strlen($keyDocument) === 11 ? 'CPF' : 'CNPJ';
+
+                    $response = $apixService->realizarSaque(
+                        (float) $contaspagar->valor,
+                        $contaspagar->fornecedor->pix_fornecedor,
+                        $keyType,
+                        $keyDocument,
+                        $externalId,
+                        $clientCallbackUrl
+                    );
+                    if (isset($response['success']) && $response['success']) {
+                        $contaspagar->status = 'Pagamento Efetuado';
+                        $contaspagar->dt_baixa = date('Y-m-d');
+                        $contaspagar->save();
+
+                        $idTransacao = $response['transaction_id'] ?? $externalId;
+                        $dados = [
+                            'valor' => $contaspagar->valor,
+                            'tipo_transferencia' => 'PIX',
+                            'descricao' => 'Transferência realizada com sucesso',
+                            'destino_nome' => $contaspagar->fornecedor->nome_completo,
+                            'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
+                            'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
+                            'destino_instituicao' => 'APIX',
+                            'destino_banco' => '000',
+                            'destino_agencia' => '0000',
+                            'destino_conta' => '000000-0',
+                            'origem_nome' => 'APIX',
+                            'origem_cnpj' => '',
+                            'origem_instituicao' => 'APIX',
+                            'data_hora' => date('d/m/Y H:i:s'),
+                            'id_transacao' => $idTransacao,
+                        ];
+                        $array['response'] = $response;
+                        $array['dados'] = $dados;
+
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $contaspagar->banco->id,
+                            'company_id' => $contaspagar->company_id,
+                            'descricao' => 'T Título Nº ' . $contaspagar->id . ' para ' . $contaspagar->fornecedor->nome_completo . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => $contaspagar->valor,
+                        ]);
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $contaspagar->banco->id,
+                            'company_id' => $contaspagar->company_id,
+                            'descricao' => 'Taxa APIX (R$ ' . number_format(self::TAXA_APIX, 2, ',', '.') . ')' . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => self::TAXA_APIX,
+                        ]);
+                        $contaspagar->banco->saldo -= ($contaspagar->valor + self::TAXA_APIX);
+                        $contaspagar->banco->save();
+
+                        EnviarComprovanteFornecedor::dispatch($contaspagar, $this->bcodexService, $array);
+
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do titulo ' . $id . ' no valor de R$ ' . $contaspagar->valor . ' para o fornecedor ' . $contaspagar->fornecedor->nome_completo,
+                            'operation' => 'edit'
+                        ]);
+                        DB::commit();
+                        return $array;
+                    }
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => $response['error'] ?? 'Erro ao realizar transferência via APIX'
+                    ], Response::HTTP_FORBIDDEN);
+                } catch (\Exception $e) {
+                    Log::channel('apix')->error('Erro ao efetuar transferência APIX título: ' . $e->getMessage(), [
+                        'contaspagar_id' => $contaspagar->id,
+                    ]);
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => $e->getMessage()
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
             if ($contaspagar->banco->wallet == 1) {
                 if (!$contaspagar->fornecedor->pix_fornecedor) {
                     return response()->json([
@@ -1979,12 +2199,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     ], Response::HTTP_FORBIDDEN);
                 }
 
-                $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $contaspagar->banco->accountId);
+                $accountId = $contaspagar->banco->accountId ?? '';
+                if (empty($accountId)) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência.",
+                        "error" => 'Banco não possui Account ID configurado. Configure o Account ID do Bcodex nas configurações do banco.'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+
+                $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $accountId);
 
                 if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     if ($response->json()['status'] == 'AWAITING_CONFIRMATION') {
 
-                        $response = $this->bcodexService->realizarPagamentoPix(($contaspagar->valor * 100), $contaspagar->banco->accountId, $response->json()['paymentId']);
+                        $response = $this->bcodexService->realizarPagamentoPix(($contaspagar->valor * 100), $accountId, $response->json()['paymentId']);
 
                         if (!$response->successful()) {
                             return response()->json([
@@ -2158,8 +2386,14 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         "error" => 'Cliente não possui chave pix cadastrada'
                     ], Response::HTTP_FORBIDDEN);
                 }
-
-                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $emprestimo->banco->accountId);
+                $accountId = $emprestimo->banco->accountId ?? null;
+                if (empty($accountId)) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                        "error" => "Banco não possui Account ID configurado. Configure o Account ID do Bcodex nas configurações do banco."
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                $response = $this->bcodexService->consultarChavePix(($emprestimo->valor * 100), $emprestimo->client->pix_cliente, $accountId);
 
                 if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                     return $response->json();
