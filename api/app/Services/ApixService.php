@@ -264,6 +264,39 @@ class ApixService
     }
 
     /**
+     * Obtém key_type e key_document para saque PIX.
+     * Para chaves EMAIL, PHONENUMBER ou RANDOM_KEY_CODE, a APIX exige CPF/CNPJ do destinatário.
+     *
+     * @param string $pixKey Chave PIX
+     * @param string|null $cpfCnpjDestino CPF/CNPJ do destinatário (fornecedor ou cliente)
+     * @return array ['ok' => bool, 'key_type' => string, 'key_document' => string] ou ['ok' => false, 'error' => string]
+     */
+    public function obterKeyTypeEDocumentParaSaque(string $pixKey, ?string $cpfCnpjDestino): array
+    {
+        $tipo = $this->determinarTipoChavePix($pixKey);
+        $keyDocument = preg_replace('/\D/', '', $cpfCnpjDestino ?? '');
+
+        if (in_array($tipo, ['EMAIL', 'PHONENUMBER', 'RANDOM_KEY_CODE'], true)) {
+            if (empty($keyDocument)) {
+                return [
+                    'ok' => false,
+                    'error' => 'Cadastre o CPF/CNPJ do destinatário para realizar transferências PIX para chaves do tipo email, telefone ou chave aleatória.'
+                ];
+            }
+            return ['ok' => true, 'key_type' => $tipo, 'key_document' => $keyDocument];
+        }
+
+        if (!empty($keyDocument)) {
+            return ['ok' => true, 'key_type' => $tipo, 'key_document' => $keyDocument];
+        }
+        $digitsFromKey = preg_replace('/\D/', '', $pixKey);
+        if (strlen($digitsFromKey) === 11 || strlen($digitsFromKey) === 14) {
+            return ['ok' => true, 'key_type' => $tipo, 'key_document' => $digitsFromKey];
+        }
+        return ['ok' => false, 'error' => 'Documento (CPF/CNPJ) do destinatário não identificado.'];
+    }
+
+    /**
      * Realiza saque (withdraw) PIX.
      * Endpoint APIX: POST /api/withdrawals/withdraw
      * Payload: amount, external_id, pix_key, key_type, key_document, clientCallbackUrl.

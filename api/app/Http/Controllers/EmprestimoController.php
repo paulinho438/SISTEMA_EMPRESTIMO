@@ -1563,15 +1563,24 @@ class EmprestimoController extends Controller
                     // Usar ApixService para banco APIX (saque/withdraw PIX)
                     try {
                         $apixService = new ApixService($emprestimo->banco);
+                        $keyInfo = $apixService->obterKeyTypeEDocumentParaSaque(
+                            $emprestimo->client->pix_cliente,
+                            $emprestimo->client->cpf ?? null
+                        );
+                        if (!$keyInfo['ok']) {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => $keyInfo['error']
+                            ], Response::HTTP_FORBIDDEN);
+                        }
                         $externalId = 'emp_' . $emprestimo->id . '_' . time();
                         $clientCallbackUrl = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
-                        $keyDocument = preg_replace('/\D/', '', $emprestimo->client->cpf ?? '');
 
                         $response = $apixService->realizarSaque(
                             (float) $valorPagamento,
                             $emprestimo->client->pix_cliente,
-                            'CPF',
-                            $keyDocument,
+                            $keyInfo['key_type'],
+                            $keyInfo['key_document'],
                             $externalId,
                             $clientCallbackUrl
                         );
@@ -2108,16 +2117,24 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 }
                 try {
                     $apixService = new ApixService($contaspagar->banco);
+                    $keyInfo = $apixService->obterKeyTypeEDocumentParaSaque(
+                        $contaspagar->fornecedor->pix_fornecedor,
+                        $contaspagar->fornecedor->cpfcnpj ?? null
+                    );
+                    if (!$keyInfo['ok']) {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferência do Título.",
+                            "error" => $keyInfo['error']
+                        ], Response::HTTP_FORBIDDEN);
+                    }
                     $externalId = 'tit_' . $contaspagar->id . '_' . time();
                     $clientCallbackUrl = config('services.apix.callback_url') ?: 'https://api.agecontrole.com.br/api/webhook/apix';
-                    $keyDocument = preg_replace('/\D/', '', $contaspagar->fornecedor->cpfcnpj ?? '');
-                    $keyType = strlen($keyDocument) === 11 ? 'CPF' : 'CNPJ';
 
                     $response = $apixService->realizarSaque(
                         (float) $contaspagar->valor,
                         $contaspagar->fornecedor->pix_fornecedor,
-                        $keyType,
-                        $keyDocument,
+                        $keyInfo['key_type'],
+                        $keyInfo['key_document'],
                         $externalId,
                         $clientCallbackUrl
                     );
