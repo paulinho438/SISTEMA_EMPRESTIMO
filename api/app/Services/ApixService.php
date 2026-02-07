@@ -303,6 +303,22 @@ class ApixService
      * key_type: APIX aceita "cpf"|"cnpj"|"email"|"phonenumber"|"random_key_code" ou maiúsculas (PHONENUMBER para celular).
      * O tipo da chave é determinado pela mesma lógica da XGate (celular → PHONENUMBER).
      */
+    /**
+     * Mapeia nosso tipo de chave para o formato esperado pela API APIX.
+     * APIX aceita: email, cpf, cnpj, phone, evp (chave aleatória).
+     */
+    protected function mapearKeyTypeParaApix(string $tipo): string
+    {
+        $map = [
+            'EMAIL' => 'email',
+            'CPF' => 'cpf',
+            'CNPJ' => 'cnpj',
+            'PHONENUMBER' => 'phone',
+            'RANDOM_KEY_CODE' => 'evp',
+        ];
+        return $map[$tipo] ?? strtolower($tipo);
+    }
+
     public function realizarSaque(
         float $valor,
         string $pixKey,
@@ -312,14 +328,36 @@ class ApixService
         ?string $clientCallbackUrl = null
     ): array {
         $keyTypeDetectado = $this->determinarTipoChavePix($pixKey);
+        $keyDocumentLimpo = preg_replace('/\D/', '', $keyDocument ?? '');
+
+        if (in_array($keyTypeDetectado, ['EMAIL', 'PHONENUMBER', 'RANDOM_KEY_CODE'], true) && empty($keyDocumentLimpo)) {
+            return [
+                'success' => false,
+                'error' => 'Cadastre o CPF/CNPJ do destinatário para realizar transferências PIX para chaves do tipo email, telefone ou chave aleatória.',
+                'last_response' => $this->lastResponse,
+            ];
+        }
+
         $pixKeyValor = in_array($keyTypeDetectado, ['PHONENUMBER'], true) ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
+
+        $documentoFinal = $keyDocumentLimpo;
+        if (empty($documentoFinal) && in_array($keyTypeDetectado, ['CPF', 'CNPJ'], true)) {
+            $documentoFinal = preg_replace('/\D/', '', $pixKey);
+        }
+        if (empty($documentoFinal)) {
+            return [
+                'success' => false,
+                'error' => 'Cadastre o CPF/CNPJ do destinatário para realizar transferências PIX para chaves do tipo email, telefone ou chave aleatória.',
+                'last_response' => $this->lastResponse,
+            ];
+        }
 
         $payload = [
             'amount' => $valor,
             'external_id' => $externalId,
             'pix_key' => $pixKeyValor,
-            'key_type' => $keyTypeDetectado,
-            'key_document' => preg_replace('/\D/', '', $keyDocument),
+            'key_type' => $this->mapearKeyTypeParaApix($keyTypeDetectado),
+            'key_document' => $documentoFinal,
         ];
         if (!empty($clientCallbackUrl)) {
             $payload['clientCallbackUrl'] = $clientCallbackUrl;
