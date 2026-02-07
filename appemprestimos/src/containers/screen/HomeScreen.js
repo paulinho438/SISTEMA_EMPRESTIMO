@@ -594,6 +594,7 @@ export default function HomeScreen({navigation}) {
     const Labels = ({slices}) => {
       return slices.map((slice, index) => {
         const {labelCentroid, data} = slice;
+        const displayValue = typeof data?.value === 'number' && !isNaN(data.value) ? data.value : '';
         return (
           <SVGText
             key={index}
@@ -604,7 +605,7 @@ export default function HomeScreen({navigation}) {
             fontWeight="bold"
             textAnchor="middle"
             alignmentBaseline="middle">
-            {data.value}
+            {displayValue}
           </SVGText>
         );
       });
@@ -639,6 +640,11 @@ export default function HomeScreen({navigation}) {
   };
 
   const renderHomeData = ({item}) => {
+    if (!item || typeof item !== 'object') return null;
+    const nome = item.nome_completo ?? '';
+    const emprestimoId = item.emprestimo_id ?? '';
+    const valor = item.valor ?? 0;
+    const distance = item.distance != null ? Number(item.distance) : null;
     return (
       <TouchableOpacity
         style={localStyles.parentTrans}
@@ -661,17 +667,16 @@ export default function HomeScreen({navigation}) {
               style={[localStyles.name, {maxWidth: 160}]}
               numberOfLines={1}
               ellipsizeMode="tail">
-              {item.nome_completo}
+              {nome}
             </CText>
             <CText type={'M12'} color={colors.tabColor}>
-              Emprestimo Número {item.emprestimo_id}
+              Emprestimo Número {emprestimoId}
             </CText>
-            {item.distance && (
+            {distance != null && !isNaN(distance) ? (
               <CText type={'M12'} color={colors.tabColor}>
-                {item?.distance?.toFixed(2)} Km de distancia
+                {distance.toFixed(2)} Km de distancia
               </CText>
-            )}
-            {!item.distance && (
+            ) : (
               <CText type={'M12'} color={colors.tabColor}>
                 Endereço não informado
               </CText>
@@ -680,7 +685,7 @@ export default function HomeScreen({navigation}) {
         </View>
         <View>
           <CText type={'B16'} color={colors.red}>
-            {formatCurrency(item.valor)}
+            {formatCurrency(valor)}
           </CText>
         </View>
       </TouchableOpacity>
