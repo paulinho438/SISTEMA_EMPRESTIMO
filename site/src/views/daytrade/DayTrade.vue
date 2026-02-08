@@ -281,7 +281,8 @@ function recalcularSeries() {
 
     const saldoUltimo = serieBase.length > 0 ? serieBase[serieBase.length - 1].saldoReal : cap0;
     const diaEf = diaEfetivoNaCurva(saldoUltimo, cap0, model.metaDiariaPct);
-    const diasAtraso = Math.max(0, Math.floor((dias - 1) - diaEf));
+    const diasAtrasoRaw = Math.max(0, Math.floor((dias - 1) - diaEf));
+    const diasAtraso = Math.min(diasAtrasoRaw, Math.max(10, Math.floor(dias * 0.25)));
 
     for (let d = dias; d < dias + diasAtraso; d++) {
         const meta = saldoMeta(cap0, model.metaDiariaPct, d);
@@ -325,7 +326,9 @@ function computeDiasAtraso() {
         saldo = saldo + pnlBRL;
     }
     const diaEf = diaEfetivoNaCurva(saldo, cap0, model.metaDiariaPct);
-    return Math.max(0, Math.floor((dias - 1) - diaEf));
+    const raw = Math.max(0, Math.floor((dias - 1) - diaEf));
+    const cap = Math.max(10, Math.floor(dias * 0.25));
+    return Math.min(raw, cap);
 }
 
 function applyInputsToModel() {
@@ -350,7 +353,9 @@ const diasAtraso = computed(() => {
     if (serie.value.length === 0) return 0;
     const ultimo = serie.value[serie.value.length - 1];
     const diaEf = diaEfetivoNaCurva(ultimo.saldoReal, model.capitalInicial, model.metaDiariaPct);
-    return Math.max(0, Math.floor((model.dias - 1) - diaEf));
+    const raw = Math.max(0, Math.floor((model.dias - 1) - diaEf));
+    const cap = Math.max(10, Math.floor(model.dias * 0.25));
+    return Math.min(raw, cap);
 });
 
 const diasTotais = computed(() => model.dias + diasAtraso.value);
@@ -359,7 +364,8 @@ const diasAtrasoTooltip = computed(() => {
     if (serie.value.length === 0 || diasAtraso.value === 0) return '';
     const ultimo = serie.value[serie.value.length - 1];
     const diaEf = Math.floor(diaEfetivoNaCurva(ultimo.saldoReal, model.capitalInicial, model.metaDiariaPct));
-    return `Seu saldo equivale ao dia ${diaEf} na curva da meta (como se tivesse no dia ${diaEf})`;
+    const cap = Math.max(10, Math.floor(model.dias * 0.25));
+    return `Seu saldo equivale ao dia ${diaEf} na curva. Retroativo limitado a ${cap} dias extras.`;
 });
 
 const d = computed(() => clampInt(model.diaAtual, 0, Math.max(0, diasTotais.value - 1)));
