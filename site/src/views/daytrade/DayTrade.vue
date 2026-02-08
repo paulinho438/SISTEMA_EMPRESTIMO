@@ -269,7 +269,12 @@ function recalcularSeries() {
         const metaParaPreciso = atingiuOntem ? meta : (saldoAntesDia >= metaUltima ? metaProxima : metaUltima);
         const precisoBRL = metaParaPreciso - saldoAntesDia;
 
-        if (saldo >= meta) diaUltimoAtingido = d;
+        for (let j = d; j >= 0; j--) {
+            if (saldo >= saldoMeta(cap0, model.metaDiariaPct, j)) {
+                diaUltimoAtingido = j;
+                break;
+            }
+        }
 
         let precisoEmEntrada = null;
         if (modo === 'pct') {
