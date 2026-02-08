@@ -118,7 +118,8 @@
                                     <input
                                         class="mini-input"
                                         :value="formatLancamento(r.lancamento)"
-                                        @input="onLancamentoInput($event, r.dia)"
+                                        @change="onLancamentoChange($event, r.dia)"
+                                        @keydown.enter="(e) => e.target.blur()"
                                         :placeholder="form.modoLancamento === 'brl' ? 'Ex: 150,00' : 'Ex: 2,5'"
                                     />
                                 </td>
@@ -442,7 +443,7 @@ function zerarLancamentos() {
     atualizarTudo();
 }
 
-function onLancamentoInput(event, dia) {
+function onLancamentoChange(event, dia) {
     const raw = String(event.target.value || '').trim();
     const val = parseBRLNumber(raw);
     model.lancamentos[dia] = val;
