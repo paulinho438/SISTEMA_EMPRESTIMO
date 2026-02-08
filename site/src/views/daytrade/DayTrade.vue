@@ -53,8 +53,8 @@
                     {{ salvando ? 'Salvando...' : 'Salvar tudo' }}
                 </button>
                 <span class="pill pill-status">{{ pillStatus }}</span>
-                <span v-if="diasNegativos > 0" class="pill pill-atraso" :title="`${diasNegativos} dia(s) com resultado negativo adicionados à linha do tempo`">
-                    +{{ diasNegativos }} dia(s) retroativo
+                <span v-if="diasAtraso > 0" class="pill pill-atraso" :title="diasAtrasoTooltip">
+                    +{{ diasAtraso }} dia(s) retroativo
                 </span>
             </div>
 
@@ -88,10 +88,10 @@
                     <div class="v" :class="kpiDiffClass">{{ kpiDiff }}</div>
                     <div class="s">{{ kpiDiffSub }}</div>
                 </div>
-                <div v-if="diasNegativos > 0" class="kpi kpi-atraso">
+                <div v-if="diasAtraso > 0" class="kpi kpi-atraso">
                     <div class="t">Dias para meta (ajustado)</div>
-                    <div class="v">{{ model.dias }} + {{ diasNegativos }} = {{ diasTotais }}</div>
-                    <div class="s">Retroativo por dias negativos</div>
+                    <div class="v">{{ model.dias }} + {{ diasAtraso }} = {{ diasTotais }}</div>
+                    <div class="s">Retroativo pela magnitude da perda</div>
                 </div>
             </div>
 
@@ -124,12 +124,14 @@
                                 <td><b>{{ r.dia }}</b></td>
                                 <td>
                                     <input
+                                        v-if="r.dia < model.dias"
                                         class="mini-input"
                                         :value="formatLancamento(r.lancamento)"
                                         @change="onLancamentoChange($event, r.dia)"
                                         @keydown.enter="(e) => e.target.blur()"
                                         :placeholder="form.modoLancamento === 'brl' ? 'Ex: 150,00' : 'Ex: 2,5'"
                                     />
+                                    <span v-else class="mini-input" style="background:var(--surface-100);color:var(--text-color-secondary)">—</span>
                                 </td>
                                 <td>{{ formatBRL(r.saldoReal) }}</td>
                                 <td>{{ formatBRL(r.saldoMeta) }}</td>
@@ -143,10 +145,10 @@
             </div>
 
             <div class="hint">
-                "Preciso no dia" = quanto você teria que ganhar/perder <b>naquele dia</b> para fechar exatamente na meta daquele dia.
-                (considera o saldo do dia anterior como base).
+                "Preciso no dia" = quanto você teria que ganhar/perder <b>naquele dia</b> para fechar exatamente na meta.
+                Ao retroceder, a meta passa a ser a última atingida.
                 <br />
-                <b>Retroativo:</b> cada dia com resultado negativo adiciona 1 dia à linha do tempo (ex: 44 dias + 2 negativos = 46 dias para meta).
+                <b>Retroativo:</b> pela magnitude da perda — se no dia 22 você perde R$ 300 e o saldo equivale ao dia 17 na curva, são +5 dias na linha do tempo.
             </div>
         </div>
     </div>
@@ -223,26 +225,29 @@ function saldoMeta(capitalInicial, metaPct, dia) {
     return capitalInicial * Math.pow(1 + m, dia);
 }
 
+function diaEfetivoNaCurva(saldoReal, capital, metaPct) {
+    if (saldoReal <= capital * 0.001) return 0;
+    const r = metaPct / 100;
+    return Math.log(saldoReal / capital) / Math.log(1 + r);
+}
+
 function recalcularSeries() {
     const cap0 = model.capitalInicial;
     const dias = model.dias;
     const modo = model.modoLancamento;
     const regra = model.regraDia;
 
-    const diasNeg = Array.from({ length: Math.min((model.lancamentos || []).length, dias) }, (_, i) => model.lancamentos[i])
-        .filter((v) => Number(v) < 0).length;
-    const diasTotaisCalc = dias + diasNeg;
-
-    const serie = [];
+    const serieBase = [];
     let saldo = cap0;
     let saldoAntesDia = cap0;
+    let metaEfetiva = cap0;
 
-    for (let d = 0; d < diasTotaisCalc; d++) {
+    for (let d = 0; d < dias; d++) {
         const meta = saldoMeta(cap0, model.metaDiariaPct, d);
-        const lanc = d < dias ? Number(model.lancamentos[d] ?? 0) || 0 : 0;
+        const lanc = Number(model.lancamentos[d] ?? 0) || 0;
 
         let pnlBRL = 0;
-        if (d < dias) {
+        {
             if (modo === 'brl') {
                 pnlBRL = lanc;
             } else {
@@ -256,7 +261,13 @@ function recalcularSeries() {
 
         const diff = saldo - meta;
         const diffPct = meta !== 0 ? (diff / meta) * 100 : 0;
-        const precisoBRL = meta - saldoAntesDia;
+
+        const metaOntem = d >= 1 ? saldoMeta(cap0, model.metaDiariaPct, d - 1) : cap0;
+        const atingiuOntem = saldoAntesDia >= metaOntem;
+        const metaParaPreciso = atingiuOntem ? meta : metaEfetiva;
+        const precisoBRL = metaParaPreciso - saldoAntesDia;
+
+        if (saldo >= meta) metaEfetiva = meta;
 
         let precisoEmEntrada = null;
         if (modo === 'pct') {
@@ -264,7 +275,7 @@ function recalcularSeries() {
             precisoEmEntrada = basePreciso !== 0 ? (precisoBRL / basePreciso) * 100 : 0;
         }
 
-        serie.push({
+        serieBase.push({
             dia: d,
             lancamento: lanc,
             pnlBRL,
@@ -278,10 +289,55 @@ function recalcularSeries() {
         });
     }
 
-    return serie;
+    const saldoUltimo = serieBase.length > 0 ? serieBase[serieBase.length - 1].saldoReal : cap0;
+    const diaEf = diaEfetivoNaCurva(saldoUltimo, cap0, model.metaDiariaPct);
+    const diasAtraso = Math.max(0, Math.floor((dias - 1) - diaEf));
+
+    for (let d = dias; d < dias + diasAtraso; d++) {
+        const meta = saldoMeta(cap0, model.metaDiariaPct, d);
+        saldoAntesDia = saldo;
+        const diff = saldo - meta;
+        const diffPct = meta !== 0 ? (diff / meta) * 100 : 0;
+        const metaParaPreciso = saldo >= (d >= 1 ? saldoMeta(cap0, model.metaDiariaPct, d - 1) : cap0) ? meta : metaEfetiva;
+        const precisoBRL = metaParaPreciso - saldoAntesDia;
+        let precisoEmEntrada = null;
+        if (modo === 'pct') {
+            const basePreciso = regra === 'sobre_inicial' ? cap0 : saldoAntesDia;
+            precisoEmEntrada = basePreciso !== 0 ? (precisoBRL / basePreciso) * 100 : 0;
+        }
+        serieBase.push({
+            dia: d,
+            lancamento: 0,
+            pnlBRL: 0,
+            saldoReal: saldo,
+            saldoMeta: meta,
+            diff,
+            diffPct,
+            saldoAntesDia,
+            precisoBRL,
+            precisoEmEntrada,
+        });
+    }
+
+    return serieBase;
 }
 
 const serie = ref([]);
+
+function computeDiasAtraso() {
+    const cap0 = model.capitalInicial;
+    const dias = model.dias;
+    const modo = model.modoLancamento;
+    const regra = model.regraDia;
+    let saldo = cap0;
+    for (let d = 0; d < dias; d++) {
+        const lanc = Number(model.lancamentos[d] ?? 0) || 0;
+        let pnlBRL = modo === 'brl' ? lanc : (regra === 'sobre_inicial' ? cap0 : saldo) * (lanc / 100);
+        saldo = saldo + pnlBRL;
+    }
+    const diaEf = diaEfetivoNaCurva(saldo, cap0, model.metaDiariaPct);
+    return Math.max(0, Math.floor((dias - 1) - diaEf));
+}
 
 function applyInputsToModel() {
     model.capitalInicial = Math.max(0, parseBRLNumber(form.capitalInicial));
@@ -291,30 +347,31 @@ function applyInputsToModel() {
     model.regraDia = form.regraDia;
 
     if (!Array.isArray(model.lancamentos)) model.lancamentos = [];
-
-    const negCount = Array.from({ length: Math.min(model.lancamentos.length, model.dias) }, (_, i) => model.lancamentos[i])
-        .filter((v) => Number(v) < 0).length;
-    const diasTotaisAjustado = model.dias + negCount;
-
-    if (model.lancamentos.length !== diasTotaisAjustado) {
-        model.lancamentos = Array.from({ length: diasTotaisAjustado }, (_, i) => model.lancamentos[i] ?? 0);
+    if (model.lancamentos.length !== model.dias) {
+        model.lancamentos = Array.from({ length: model.dias }, (_, i) => model.lancamentos[i] ?? 0);
     }
 
-    model.diaAtual = clampInt(form.diaAtual, 0, diasTotaisAjustado - 1);
+    const atraso = computeDiasAtraso();
+    model.diaAtual = clampInt(form.diaAtual, 0, model.dias + atraso - 1);
 }
 
 const pillStatus = computed(() => `Meta: ${formatPct(model.metaDiariaPct)} ao dia`);
 
-const diasNegativos = computed(() => {
-    const dias = model.dias;
-    let count = 0;
-    for (let i = 0; i < Math.min(dias, (model.lancamentos || []).length); i++) {
-        if (Number(model.lancamentos[i]) < 0) count++;
-    }
-    return count;
+const diasAtraso = computed(() => {
+    if (serie.value.length === 0) return 0;
+    const ultimo = serie.value[serie.value.length - 1];
+    const diaEf = diaEfetivoNaCurva(ultimo.saldoReal, model.capitalInicial, model.metaDiariaPct);
+    return Math.max(0, Math.floor((model.dias - 1) - diaEf));
 });
 
-const diasTotais = computed(() => model.dias + diasNegativos.value);
+const diasTotais = computed(() => model.dias + diasAtraso.value);
+
+const diasAtrasoTooltip = computed(() => {
+    if (serie.value.length === 0 || diasAtraso.value === 0) return '';
+    const ultimo = serie.value[serie.value.length - 1];
+    const diaEf = Math.floor(diaEfetivoNaCurva(ultimo.saldoReal, model.capitalInicial, model.metaDiariaPct));
+    return `Seu saldo equivale ao dia ${diaEf} na curva da meta (como se tivesse no dia ${diaEf})`;
+});
 
 const d = computed(() => clampInt(model.diaAtual, 0, Math.max(0, diasTotais.value - 1)));
 const r = computed(() => serie.value[d.value] || {});
