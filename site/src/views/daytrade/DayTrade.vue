@@ -240,7 +240,7 @@ function recalcularSeries() {
     const serieBase = [];
     let saldo = cap0;
     let saldoAntesDia = cap0;
-    let metaEfetiva = cap0;
+    let diaUltimoAtingido = -1;
 
     for (let d = 0; d < dias; d++) {
         const meta = saldoMeta(cap0, model.metaDiariaPct, d);
@@ -264,10 +264,12 @@ function recalcularSeries() {
 
         const metaOntem = d >= 1 ? saldoMeta(cap0, model.metaDiariaPct, d - 1) : cap0;
         const atingiuOntem = saldoAntesDia >= metaOntem;
-        const metaParaPreciso = atingiuOntem ? meta : metaEfetiva;
+        const metaUltima = diaUltimoAtingido >= 0 ? saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido) : cap0;
+        const metaProxima = saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido + 1);
+        const metaParaPreciso = atingiuOntem ? meta : (saldoAntesDia >= metaUltima ? metaProxima : metaUltima);
         const precisoBRL = metaParaPreciso - saldoAntesDia;
 
-        if (saldo >= meta) metaEfetiva = meta;
+        if (saldo >= meta) diaUltimoAtingido = d;
 
         let precisoEmEntrada = null;
         if (modo === 'pct') {
@@ -298,7 +300,11 @@ function recalcularSeries() {
         saldoAntesDia = saldo;
         const diff = saldo - meta;
         const diffPct = meta !== 0 ? (diff / meta) * 100 : 0;
-        const metaParaPreciso = saldo >= (d >= 1 ? saldoMeta(cap0, model.metaDiariaPct, d - 1) : cap0) ? meta : metaEfetiva;
+        const metaOntem = saldoMeta(cap0, model.metaDiariaPct, d - 1);
+        const atingiuOntem = saldo >= metaOntem;
+        const metaUltima = diaUltimoAtingido >= 0 ? saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido) : cap0;
+        const metaProxima = saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido + 1);
+        const metaParaPreciso = atingiuOntem ? meta : (saldoAntesDia >= metaUltima ? metaProxima : metaUltima);
         const precisoBRL = metaParaPreciso - saldoAntesDia;
         let precisoEmEntrada = null;
         if (modo === 'pct') {
