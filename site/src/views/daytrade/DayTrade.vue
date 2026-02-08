@@ -145,8 +145,7 @@
             </div>
 
             <div class="hint">
-                "Preciso no dia" = quanto você teria que ganhar/perder <b>naquele dia</b> para fechar exatamente na meta.
-                Ao retroceder, a meta passa a ser a última atingida.
+                "Preciso no dia" = quanto você teria que ganhar/perder <b>naquele dia</b> para fechar exatamente na meta daquele dia.
                 <br />
                 <b>Retroativo:</b> pela magnitude da perda — se no dia 22 você perde R$ 300 e o saldo equivale ao dia 17 na curva, são +5 dias na linha do tempo.
             </div>
@@ -240,20 +239,17 @@ function recalcularSeries() {
     const serieBase = [];
     let saldo = cap0;
     let saldoAntesDia = cap0;
-    let diaUltimoAtingido = -1;
 
     for (let d = 0; d < dias; d++) {
         const meta = saldoMeta(cap0, model.metaDiariaPct, d);
         const lanc = Number(model.lancamentos[d] ?? 0) || 0;
 
         let pnlBRL = 0;
-        {
-            if (modo === 'brl') {
-                pnlBRL = lanc;
-            } else {
-                const base = regra === 'sobre_inicial' ? cap0 : saldo;
-                pnlBRL = base * (lanc / 100);
-            }
+        if (modo === 'brl') {
+            pnlBRL = lanc;
+        } else {
+            const base = regra === 'sobre_inicial' ? cap0 : saldo;
+            pnlBRL = base * (lanc / 100);
         }
 
         saldoAntesDia = saldo;
@@ -261,20 +257,7 @@ function recalcularSeries() {
 
         const diff = saldo - meta;
         const diffPct = meta !== 0 ? (diff / meta) * 100 : 0;
-
-        const metaOntem = d >= 1 ? saldoMeta(cap0, model.metaDiariaPct, d - 1) : cap0;
-        const atingiuOntem = saldoAntesDia >= metaOntem;
-        const metaUltima = diaUltimoAtingido >= 0 ? saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido) : cap0;
-        const metaProxima = saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido + 1);
-        const metaParaPreciso = atingiuOntem ? meta : (saldoAntesDia >= metaUltima ? metaProxima : metaUltima);
-        const precisoBRL = metaParaPreciso - saldoAntesDia;
-
-        for (let j = d; j >= 0; j--) {
-            if (saldo >= saldoMeta(cap0, model.metaDiariaPct, j)) {
-                diaUltimoAtingido = j;
-                break;
-            }
-        }
+        const precisoBRL = meta - saldoAntesDia;
 
         let precisoEmEntrada = null;
         if (modo === 'pct') {
@@ -305,12 +288,7 @@ function recalcularSeries() {
         saldoAntesDia = saldo;
         const diff = saldo - meta;
         const diffPct = meta !== 0 ? (diff / meta) * 100 : 0;
-        const metaOntem = saldoMeta(cap0, model.metaDiariaPct, d - 1);
-        const atingiuOntem = saldo >= metaOntem;
-        const metaUltima = diaUltimoAtingido >= 0 ? saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido) : cap0;
-        const metaProxima = saldoMeta(cap0, model.metaDiariaPct, diaUltimoAtingido + 1);
-        const metaParaPreciso = atingiuOntem ? meta : (saldoAntesDia >= metaUltima ? metaProxima : metaUltima);
-        const precisoBRL = metaParaPreciso - saldoAntesDia;
+        const precisoBRL = meta - saldoAntesDia;
         let precisoEmEntrada = null;
         if (modo === 'pct') {
             const basePreciso = regra === 'sobre_inicial' ? cap0 : saldoAntesDia;
