@@ -37,7 +37,8 @@ use App\Http\Controllers\{
     ApixTestController,
     RelatorioFiscalController,
     RelatorioLucroRealController,
-    WapiFilaController
+    WapiFilaController,
+    DaytradeController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -312,6 +313,8 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/juros', [JurosController::class, 'get']);
     Route::put('/juros/update', [JurosController::class, 'update']);
 
+    Route::get('/daytrade', [DaytradeController::class, 'get']);
+    Route::post('/daytrade', [DaytradeController::class, 'save']);
 
     Route::get('/cobrancaautomatica', [EmprestimoController::class, 'cobrancaAutomatica']);
 

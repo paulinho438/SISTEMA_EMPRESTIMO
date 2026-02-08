@@ -41,6 +41,11 @@ const router = createRouter({
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue')
                 },
+                {
+                    path: '/daytrade',
+                    name: 'daytrade',
+                    component: () => import('@/views/daytrade/DayTrade.vue')
+                },
                 ...PermissionsRoutes,
                 ...CategoriesRoutes,
                 ...CostcenterRoutes,
