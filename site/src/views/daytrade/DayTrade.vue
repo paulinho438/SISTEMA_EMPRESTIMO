@@ -53,6 +53,9 @@
                     {{ salvando ? 'Salvando...' : 'Salvar tudo' }}
                 </button>
                 <span class="pill pill-status">{{ pillStatus }}</span>
+                <span v-if="diasNegativos > 0" class="pill pill-atraso" :title="`${diasNegativos} dia(s) com resultado negativo adicionados à linha do tempo`">
+                    +{{ diasNegativos }} dia(s) retroativo
+                </span>
             </div>
 
             <div class="hint">
@@ -84,6 +87,11 @@
                     <div class="t">Status vs meta (Hoje)</div>
                     <div class="v" :class="kpiDiffClass">{{ kpiDiff }}</div>
                     <div class="s">{{ kpiDiffSub }}</div>
+                </div>
+                <div v-if="diasNegativos > 0" class="kpi kpi-atraso">
+                    <div class="t">Dias para meta (ajustado)</div>
+                    <div class="v">{{ model.dias }} + {{ diasNegativos }} = {{ diasTotais }}</div>
+                    <div class="s">Retroativo por dias negativos</div>
                 </div>
             </div>
 
@@ -137,6 +145,8 @@
             <div class="hint">
                 "Preciso no dia" = quanto você teria que ganhar/perder <b>naquele dia</b> para fechar exatamente na meta daquele dia.
                 (considera o saldo do dia anterior como base).
+                <br />
+                <b>Retroativo:</b> cada dia com resultado negativo adiciona 1 dia à linha do tempo (ex: 44 dias + 2 negativos = 46 dias para meta).
             </div>
         </div>
     </div>
@@ -219,20 +229,26 @@ function recalcularSeries() {
     const modo = model.modoLancamento;
     const regra = model.regraDia;
 
+    const diasNeg = Array.from({ length: Math.min((model.lancamentos || []).length, dias) }, (_, i) => model.lancamentos[i])
+        .filter((v) => Number(v) < 0).length;
+    const diasTotaisCalc = dias + diasNeg;
+
     const serie = [];
     let saldo = cap0;
     let saldoAntesDia = cap0;
 
-    for (let d = 0; d < dias; d++) {
+    for (let d = 0; d < diasTotaisCalc; d++) {
         const meta = saldoMeta(cap0, model.metaDiariaPct, d);
-        const lanc = Number(model.lancamentos[d] ?? 0) || 0;
+        const lanc = d < dias ? Number(model.lancamentos[d] ?? 0) || 0 : 0;
 
         let pnlBRL = 0;
-        if (modo === 'brl') {
-            pnlBRL = lanc;
-        } else {
-            const base = regra === 'sobre_inicial' ? cap0 : saldo;
-            pnlBRL = base * (lanc / 100);
+        if (d < dias) {
+            if (modo === 'brl') {
+                pnlBRL = lanc;
+            } else {
+                const base = regra === 'sobre_inicial' ? cap0 : saldo;
+                pnlBRL = base * (lanc / 100);
+            }
         }
 
         saldoAntesDia = saldo;
@@ -273,17 +289,34 @@ function applyInputsToModel() {
     model.dias = clampInt(form.dias, 1, 3650);
     model.modoLancamento = form.modoLancamento;
     model.regraDia = form.regraDia;
-    model.diaAtual = clampInt(form.diaAtual, 0, model.dias - 1);
 
     if (!Array.isArray(model.lancamentos)) model.lancamentos = [];
-    if (model.lancamentos.length !== model.dias) {
-        model.lancamentos = Array.from({ length: model.dias }, (_, i) => model.lancamentos[i] ?? 0);
+
+    const negCount = Array.from({ length: Math.min(model.lancamentos.length, model.dias) }, (_, i) => model.lancamentos[i])
+        .filter((v) => Number(v) < 0).length;
+    const diasTotaisAjustado = model.dias + negCount;
+
+    if (model.lancamentos.length !== diasTotaisAjustado) {
+        model.lancamentos = Array.from({ length: diasTotaisAjustado }, (_, i) => model.lancamentos[i] ?? 0);
     }
+
+    model.diaAtual = clampInt(form.diaAtual, 0, diasTotaisAjustado - 1);
 }
 
 const pillStatus = computed(() => `Meta: ${formatPct(model.metaDiariaPct)} ao dia`);
 
-const d = computed(() => clampInt(model.diaAtual, 0, model.dias - 1));
+const diasNegativos = computed(() => {
+    const dias = model.dias;
+    let count = 0;
+    for (let i = 0; i < Math.min(dias, (model.lancamentos || []).length); i++) {
+        if (Number(model.lancamentos[i]) < 0) count++;
+    }
+    return count;
+});
+
+const diasTotais = computed(() => model.dias + diasNegativos.value);
+
+const d = computed(() => clampInt(model.diaAtual, 0, Math.max(0, diasTotais.value - 1)));
 const r = computed(() => serie.value[d.value] || {});
 
 const kpiReal = computed(() => formatBRL(r.value.saldoReal ?? 0));
@@ -648,6 +681,11 @@ select:focus {
     color: #b91c1c;
 }
 
+.pill-atraso {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1d4ed8;
+}
+
 .hint {
     color: var(--text-color-secondary);
     font-size: 13px;
@@ -718,6 +756,11 @@ code {
 
 .kpi.big .s {
     color: rgba(255, 255, 255, 0.85);
+}
+
+.kpi-atraso {
+    border-color: rgba(59, 130, 246, 0.5);
+    background: rgba(59, 130, 246, 0.08);
 }
 
 .pos {
