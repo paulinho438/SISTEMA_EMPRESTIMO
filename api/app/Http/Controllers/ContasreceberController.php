@@ -26,7 +26,13 @@ class ContasreceberController extends Controller
     }
 
     public function id(Request $r, $id){
-        return new ContasreceberResource(Contasreceber::find($id));
+        $contasreceber = Contasreceber::with([
+            'banco.company',  // BancosResource precisa de company
+            'parcela',
+            'cliente'
+        ])->findOrFail($id);
+        
+        return new ContasreceberResource($contasreceber);
     }
 
     public function all(Request $request){
@@ -37,7 +43,22 @@ class ContasreceberController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContasreceberResource::collection(Contasreceber::where('company_id', $request->header('company-id'))->get());
+        // Parâmetros de paginação
+        $perPage = $request->input('per_page', 15); // Padrão: 15 itens por página
+        $page = $request->input('page', 1);
+
+        // Eager loading de todos os relacionamentos para evitar N+1 queries
+        // Usando paginate() em vez de get() para paginação no backend
+        $contasreceber = Contasreceber::where('company_id', $request->header('company-id'))
+            ->with([
+                'banco.company',  // BancosResource precisa de company
+                'parcela',
+                'cliente'
+            ])
+            ->orderBy('id', 'desc') // Ordenar por ID descendente (mais recentes primeiro)
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return ContasreceberResource::collection($contasreceber);
     }
 
     public function insert(Request $request){

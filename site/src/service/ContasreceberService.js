@@ -12,8 +12,8 @@ export default class ContasreceberService {
 		return await axios.get(`${apiPath}/contasreceber/${id}`);
 	};
 
-    getAll = async () => {
-		return await axios.get(`${apiPath}/contasreceber`);
+    getAll = async (params = {}) => {
+		return await axios.get(`${apiPath}/contasreceber`, { params });
 	};
 
     delete = async (id) => {

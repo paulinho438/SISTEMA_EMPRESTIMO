@@ -21,7 +21,11 @@ export default {
 		return {
 			Contasreceber: ref([]),
 			loading: ref(false),
-			filters: ref(null)
+			filters: ref(null),
+			totalPages: ref(0),
+			totalRecords: ref(0),
+			currentPage: ref(1),
+			perPage: ref(10)
 		};
 	},
 	methods: {
@@ -64,14 +68,31 @@ export default {
                 minimumFractionDigits: 2
             });
         },
-		getContasreceber() {
+		getContasreceber(page = 1) {
 			this.loading = true;
+			this.currentPage = page;
 
-			this.contasreceberService.getAll()
+			const params = {
+				page: this.currentPage,
+				per_page: this.perPage
+			};
+
+			this.contasreceberService.getAll(params)
 			.then((response) => {
-				this.Contasreceber = response.data.data;
+				// Atualizar informações de paginação ANTES de processar os dados
+				if (response.data.meta) {
+					this.totalPages = response.data.meta.last_page || 1;
+					this.totalRecords = response.data.meta.total || 0;
+					this.currentPage = response.data.meta.current_page || 1;
+				} else {
+					// Fallback: se não houver meta, usar o tamanho do array
+					this.totalRecords = response.data.data ? response.data.data.length : 0;
+					this.totalPages = this.totalRecords > 0 ? 1 : 0;
+				}
 
-				this.Contasreceber = response.data.data.map((Contasreceber) => {
+				this.Contasreceber = response.data.data || [];
+
+				this.Contasreceber = this.Contasreceber.map((Contasreceber) => {
                         if (Contasreceber.created_at) {
                             const parts = Contasreceber.created_at.split(' ');
                             const datePart = parts[0].split('/').reverse().join('-'); // Converte dd/mm/yyyy para yyyy-mm-dd
@@ -106,6 +127,10 @@ export default {
 			.finally(() => {
 				this.loading = false;
 			});
+		},
+		changePage(event) {
+			const newPage = event.page + 1; // PrimeVue usa índice 0, backend usa índice 1
+			this.getContasreceber(newPage);
 		},
 		editCategory(id) {
 			if (undefined === id) this.router.push('/contasreceber/add');
@@ -167,7 +192,9 @@ export default {
                         :value="Contasreceber"
                         :paginator="true"
                         class="p-datatable-gridlines"
-                        :rows="10"
+                        :rows="perPage"
+                        :totalRecords="totalRecords"
+                        :lazy="true"
                         dataKey="id"
                         :rowHover="true"
                         v-model:filters="filters"
@@ -175,6 +202,12 @@ export default {
                         :loading="loading"
                         :filters="filters"
                         responsiveLayout="scroll"
+                        :first="(currentPage - 1) * perPage"
+                        @page="changePage"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[10, 15, 25, 50]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} Título(s)"
+                        @rowsPerPageChange="(event) => { perPage = event.rows; getContasreceber(1); }"
                     >
                         <template #empty> Nenhum Titulo Encontrado. </template>
                         <template #loading> Carregando os Titulos. Aguarde! </template>
