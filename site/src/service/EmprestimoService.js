@@ -13,6 +13,26 @@ export default class EmprestimoService {
 		return await axios.get(`${apiPath}/emprestimo/${id}`);
 	};
 
+    getBasico = async (id) => {
+		return await axios.get(`${apiPath}/emprestimo/${id}/basico`);
+	};
+
+    getParcelas = async (id) => {
+		return await axios.get(`${apiPath}/emprestimo/${id}/parcelas`);
+	};
+
+    getCliente = async (id) => {
+		return await axios.get(`${apiPath}/emprestimo/${id}/cliente`);
+	};
+
+    getBanco = async (id) => {
+		return await axios.get(`${apiPath}/emprestimo/${id}/banco`);
+	};
+
+    getRelacionados = async (id) => {
+		return await axios.get(`${apiPath}/emprestimo/${id}/relacionados`);
+	};
+
     getAll = async (params) => {
 		return await axios.get(`${apiPath}/emprestimo`, { params });
 	};

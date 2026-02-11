@@ -202,38 +202,62 @@ export default {
 
             this.saveRenovacao();
         },
-        getemprestimo() {
+        async getemprestimo() {
             if (this.route.params?.id) {
                 this.client = ref(null);
                 this.loading = true;
-                this.emprestimoService
-                    .get(this.route.params.id)
-                    .then((response) => {
-                        this.client = response.data?.data;
-                        this.city = response.data?.data.cliente;
-                        this.banco = response.data?.data.banco;
-                        this.costcenter = response.data?.data.costcenter;
-                        this.consultor = response.data?.data.consultor;
-                        this.parcelas = response.data?.data.parcelas;
+                
+                try {
+                    // Fazendo chamadas paralelas para melhor performance
+                    const [basicoRes, parcelasRes, clienteRes, bancoRes, relacionadosRes] = await Promise.all([
+                        this.emprestimoService.getBasico(this.route.params.id),
+                        this.emprestimoService.getParcelas(this.route.params.id),
+                        this.emprestimoService.getCliente(this.route.params.id),
+                        this.emprestimoService.getBanco(this.route.params.id),
+                        this.emprestimoService.getRelacionados(this.route.params.id)
+                    ]);
 
-                        const parcelasNaoBaixadas = response.data?.data.parcelas.filter((parcela) => parcela.dt_baixa === '');
+                    // Montando o objeto client com dados básicos
+                    this.client = {
+                        id: basicoRes.data.id,
+                        dt_lancamento: basicoRes.data.dt_lancamento,
+                        valor: basicoRes.data.valor,
+                        valor_deposito: basicoRes.data.valor_deposito,
+                        lucro: basicoRes.data.lucro,
+                        juros: basicoRes.data.juros,
+                        cliente_cadastrado: basicoRes.data.cliente_cadastrado,
+                        saldoareceber: basicoRes.data.saldoareceber,
+                        saldoatrasado: basicoRes.data.saldoatrasado,
+                        porcentagem: basicoRes.data.porcentagem,
+                        saldo_total_parcelas_pagas: basicoRes.data.saldo_total_parcelas_pagas,
+                        status: basicoRes.data.status,
+                        telefone_empresa: basicoRes.data.telefone_empresa,
+                        dt_envio_mensagem_renovacao: basicoRes.data.dt_envio_mensagem_renovacao
+                    };
 
-                        console.log('parcelasNaoBaixadas', parcelasNaoBaixadas);
+                    // Dados relacionados
+                    this.city = clienteRes.data?.data || clienteRes.data;
+                    this.banco = bancoRes.data?.data || bancoRes.data;
+                    this.costcenter = basicoRes.data.costcenter;
+                    this.consultor = basicoRes.data.consultor;
+                    this.parcelas = parcelasRes.data?.data || parcelasRes.data;
 
-                        this.saldoTotal = parcelasNaoBaixadas.reduce((total, parcela) => {
-                            return total + parcela.saldo;
-                        }, 0);
-                    })
-                    .catch((error) => {
-                        this.toast.add({
-                            severity: ToastSeverity.ERROR,
-                            detail: UtilService.message(e),
-                            life: 3000
-                        });
-                    })
-                    .finally(() => {
-                        this.loading = false;
+                    const parcelasNaoBaixadas = this.parcelas.filter((parcela) => parcela.dt_baixa === '' || parcela.dt_baixa === null);
+
+                    console.log('parcelasNaoBaixadas', parcelasNaoBaixadas);
+
+                    this.saldoTotal = parcelasNaoBaixadas.reduce((total, parcela) => {
+                        return total + parcela.saldo;
+                    }, 0);
+                } catch (error) {
+                    this.toast.add({
+                        severity: ToastSeverity.ERROR,
+                        detail: UtilService.message(error),
+                        life: 3000
                     });
+                } finally {
+                    this.loading = false;
+                }
             } else {
                 this.client = ref({});
                 this.client.address = [];

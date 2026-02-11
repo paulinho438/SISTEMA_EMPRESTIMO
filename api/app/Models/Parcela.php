@@ -118,17 +118,6 @@ class Parcela extends Model
             return (float) ($parcela->saldo ?? 0);
         });
 
-        // Log para debug (remover depois se necessário)
-        \Log::info('totalPendenteHoje calculado', [
-            'emprestimo_id' => $this->emprestimo_id,
-            'hoje' => $hoje,
-            'total' => $totalPendente,
-            'parcelas_count' => $parcelasHoje->count(),
-            'parcelas_ids' => $parcelasHoje->pluck('id')->toArray(),
-            'parcelas_saldos' => $parcelasHoje->pluck('saldo')->toArray(),
-            'parcelas_venc_real' => $parcelasHoje->pluck('venc_real')->toArray(),
-        ]);
-
         // Arredonda o valor para 2 casas decimais e retorna como float
         return round((float) $totalPendente, 2);
     }

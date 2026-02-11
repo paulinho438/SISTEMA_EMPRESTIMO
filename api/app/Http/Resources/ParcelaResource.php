@@ -68,39 +68,48 @@ class ParcelaResource extends JsonResource
 
     protected function getTotalPagoEmprestimo()
     {
-        if ($this->relationLoaded('emprestimo') && $this->emprestimo->relationLoaded('parcelas')) {
+        // Sempre usar dados carregados se disponíveis
+        if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             $total = 0;
             foreach ($this->emprestimo->parcelas as $p) {
                 if ($p->relationLoaded('movimentacao')) {
                     $total += $p->movimentacao->sum('valor');
                 } else {
+                    // Se movimentação não está carregada, fazer query
                     return $this->totalPagoEmprestimo();
                 }
             }
             return $total;
         }
+        // Fallback: usar método do modelo (faz query)
         return $this->totalPagoEmprestimo();
     }
 
     protected function getTotalPendente()
     {
-        if ($this->relationLoaded('emprestimo') && $this->emprestimo->relationLoaded('parcelas')) {
+        // Sempre usar dados carregados se disponíveis
+        if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             return round((float) $this->emprestimo->parcelas->whereNull('dt_baixa')->sum('saldo'), 2);
         }
+        // Fallback: usar método do modelo (faz query)
         return $this->totalPendente();
     }
 
     protected function getTotalPendenteHoje()
     {
-        if ($this->relationLoaded('emprestimo') && $this->emprestimo->relationLoaded('parcelas')) {
+        // Sempre usar dados carregados se disponíveis
+        if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             $hoje = now()->toDateString();
             return round((float) $this->emprestimo->parcelas
                 ->whereNull('dt_baixa')
                 ->filter(function($p) use ($hoje) {
-                    return $p->venc_real && $p->venc_real->toDateString() === $hoje;
+                    if (!$p->venc_real) return false;
+                    $vencDate = is_string($p->venc_real) ? $p->venc_real : $p->venc_real->toDateString();
+                    return $vencDate === $hoje;
                 })
                 ->sum('saldo'), 2);
         }
+        // Fallback: usar método do modelo (faz query + log)
         return $this->totalPendenteHoje();
     }
 

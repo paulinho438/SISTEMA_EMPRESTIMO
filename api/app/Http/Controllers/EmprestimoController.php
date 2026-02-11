@@ -67,10 +67,14 @@ use App\Http\Resources\EmprestimoAllResource;
 use App\Http\Resources\ClientResource;
 use App\Http\Resources\ParcelaResource;
 use App\Http\Resources\BancosComSaldoResource;
+use App\Http\Resources\BancosResource;
 use App\Http\Resources\CostcenterResource;
 use App\Http\Resources\FeriadoEmprestimoResource;
 use App\Http\Resources\FornecedorResource;
 use App\Http\Resources\EmprestimoLandingPageResource;
+use App\Http\Resources\QuitacaoResource;
+use App\Http\Resources\PagamentoMinimoResource;
+use App\Http\Resources\PagamentoSaldoPendenteResource;
 
 
 use App\Jobs\gerarPixParcelas;
@@ -522,11 +526,8 @@ class EmprestimoController extends Controller
                 $query->orderBy('parcela')
                       ->with(['movimentacao']);
             },
-            'parcelas.emprestimo' => function($query) {
-                $query->with(['banco', 'client.address', 'company']);
-            },
             'client.address',
-            'banco',
+            'banco.company',
             'user',
             'company',
             'costcenter',
@@ -535,7 +536,154 @@ class EmprestimoController extends Controller
             'pagamentosaldopendente'
         ])->findOrFail($id);
         
+        // Garantir que parcelas tenham acesso ao empréstimo e seus relacionamentos
+        // sem fazer queries adicionais
+        $emprestimo->parcelas->each(function($parcela) use ($emprestimo) {
+            $parcela->setRelation('emprestimo', $emprestimo);
+        });
+        
         return new EmprestimoResource($emprestimo);
+    }
+
+    /**
+     * Retorna apenas dados básicos do empréstimo (sem parcelas)
+     */
+    public function basico(Request $r, $id)
+    {
+        $emprestimo = Emprestimo::with([
+            'company',
+            'costcenter',
+            'user',
+            'client'
+        ])->findOrFail($id);
+        
+        $parcelas = $emprestimo->parcelas()->orderBy('parcela')->get();
+        $saldoareceber = $parcelas->where('dt_baixa', null)->sum('saldo');
+        $saldoatrasado = $parcelas->where('dt_baixa', null)
+            ->filter(function($p) {
+                if (!$p->venc_real) return false;
+                $vencDate = is_string($p->venc_real) ? $p->venc_real : $p->venc_real->toDateString();
+                return $vencDate === now()->toDateString();
+            })
+            ->sum('saldo');
+        $porcentagem = $parcelas->sum('valor') > 0 
+            ? number_format(($parcelas->where('dt_baixa', '<>', null)->sum('valor') / $parcelas->sum('valor')) * 100, 1)
+            : 0;
+        $saldo_total_parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->sum('valor');
+        
+        return response()->json([
+            'id' => $emprestimo->id,
+            'dt_lancamento' => (new DateTime($emprestimo->dt_lancamento))->format('d/m/Y'),
+            'valor' => $emprestimo->valor,
+            'valor_deposito' => $emprestimo->valor_deposito,
+            'lucro' => $emprestimo->lucro,
+            'juros' => $emprestimo->juros,
+            'cliente_cadastrado' => $emprestimo->client->nome_usuario_criacao ?? null,
+            'saldoareceber' => $saldoareceber,
+            'saldoatrasado' => $saldoatrasado,
+            'porcentagem' => $porcentagem,
+            'saldo_total_parcelas_pagas' => $saldo_total_parcelas_pagas,
+            'costcenter' => $emprestimo->costcenter,
+            'consultor' => $emprestimo->user,
+            'status' => $this->calcularStatus($parcelas),
+            'telefone_empresa' => $emprestimo->company->numero_contato ?? null,
+            'dt_envio_mensagem_renovacao' => $emprestimo->dt_envio_mensagem_renovacao
+        ]);
+    }
+
+    /**
+     * Retorna apenas as parcelas do empréstimo (otimizado)
+     */
+    public function parcelas(Request $r, $id)
+    {
+        $parcelas = Parcela::where('emprestimo_id', $id)
+            ->orderBy('parcela')
+            ->with(['movimentacao'])
+            ->get();
+        
+        $emprestimo = Emprestimo::with(['banco', 'client.address', 'company'])->findOrFail($id);
+        
+        // Garantir que parcelas tenham acesso ao empréstimo sem queries
+        $parcelas->each(function($parcela) use ($emprestimo) {
+            $parcela->setRelation('emprestimo', $emprestimo);
+        });
+        
+        return ParcelaResource::collection($parcelas);
+    }
+
+    /**
+     * Retorna apenas dados do cliente
+     */
+    public function cliente(Request $r, $id)
+    {
+        $emprestimo = Emprestimo::with(['client.address'])->findOrFail($id);
+        return new ClientResource($emprestimo->client);
+    }
+
+    /**
+     * Retorna apenas dados do banco
+     */
+    public function banco(Request $r, $id)
+    {
+        $emprestimo = Emprestimo::with(['banco.company'])->findOrFail($id);
+        return new BancosResource($emprestimo->banco);
+    }
+
+    /**
+     * Retorna dados relacionados (quitacao, pagamentos, etc)
+     */
+    public function relacionados(Request $r, $id)
+    {
+        $emprestimo = Emprestimo::with([
+            'quitacao',
+            'pagamentominimo',
+            'pagamentosaldopendente'
+        ])->findOrFail($id);
+        
+        return response()->json([
+            'quitacao' => $emprestimo->quitacao ? new QuitacaoResource($emprestimo->quitacao) : null,
+            'pagamentominimo' => $emprestimo->pagamentominimo ? new PagamentoMinimoResource($emprestimo->pagamentominimo) : null,
+            'pagamentosaldopendente' => $emprestimo->pagamentosaldopendente ? new PagamentoSaldoPendenteResource($emprestimo->pagamentosaldopendente) : null,
+        ]);
+    }
+
+    /**
+     * Calcula status do empréstimo
+     */
+    private function calcularStatus($parcelas)
+    {
+        $status = 'Em Dias';
+        $qtParcelas = count($parcelas);
+        $qtPagas = 0;
+        $qtAtrasadas = 0;
+
+        foreach ($parcelas as $parcela) {
+            if ($parcela->atrasadas > 0 && $parcela->saldo > 0) {
+                $qtAtrasadas++;
+            }
+        }
+
+        if ($qtAtrasadas > 0) {
+            if ($qtAtrasadas >= 10) {
+                $status = 'Vencido';
+            } elseif ($qtAtrasadas >= 4) {
+                $status = 'Muito Atrasado';
+            } else {
+                $status = 'Atrasado';
+            }
+        }
+
+        foreach ($parcelas as $parcela) {
+            if ($parcela->dt_baixa != null) {
+                $qtPagas++;
+            }
+        }
+
+        if ($qtParcelas == $qtPagas) {
+            $status = 'Pago';
+        }
+
+        return $status;
     }
 
     public function all(Request $request)
