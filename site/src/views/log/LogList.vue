@@ -29,7 +29,7 @@ export default {
             totalPages: ref(0),
             totalRecords: ref(0),
             currentPage: ref(1),
-            perPage: ref(10)
+            perPage: ref(15)
         };
     },
     methods: {
@@ -80,18 +80,28 @@ export default {
             this.logService
                 .getAll(params)
                 .then((response) => {
-                    // Atualizar informações de paginação
-                    if (response.data.meta) {
-                        this.totalPages = response.data.meta.last_page || 1;
-                        this.totalRecords = response.data.meta.total || 0;
-                        this.currentPage = response.data.meta.current_page || 1;
-                    } else {
-                        // Fallback: se não houver meta, usar o tamanho do array
-                        this.totalRecords = response.data.data ? response.data.data.length : 0;
-                        this.totalPages = this.totalRecords > 0 ? 1 : 0;
+                    // Laravel paginate retorna os dados em response.data.data
+                    // e os metadados diretamente em response.data
+                    let data = [];
+                    
+                    if (response.data.data && Array.isArray(response.data.data)) {
+                        // Formato paginado padrão do Laravel
+                        data = response.data.data;
+                        
+                        // Atualizar informações de paginação dos metadados do Laravel
+                        this.totalPages = response.data.last_page || 1;
+                        this.totalRecords = response.data.total || 0;
+                        this.currentPage = response.data.current_page || 1;
+                        this.perPage = response.data.per_page || this.perPage;
+                    } else if (Array.isArray(response.data)) {
+                        // Fallback: se retornar array direto
+                        data = response.data;
+                        this.totalRecords = data.length;
+                        this.totalPages = 1;
+                        this.currentPage = 1;
                     }
 
-                    this.Log = (response.data.data || []).map(log => {
+                    this.Log = data.map(log => {
                         // Garantir que created_at seja processado corretamente
                         if (log.created_at) {
                             // Se for string ISO, converter para Date
@@ -140,7 +150,11 @@ export default {
             this.getLog(1);
         },
         changePage(event) {
-            const newPage = event.page + 1; // PrimeVue usa índice 0, backend usa índice 1
+            console.log('Change page event:', event);
+            // PrimeVue passa o índice da página (0-based) no event.page
+            // Mas também passa first e rows
+            const newPage = (event.page || 0) + 1; // Converter de 0-based para 1-based
+            console.log('Nova página:', newPage);
             this.getLog(newPage);
         },
         editCategory(id) {
