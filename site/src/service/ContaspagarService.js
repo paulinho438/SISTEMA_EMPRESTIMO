@@ -12,8 +12,8 @@ export default class ContaspagarService {
 		return await axios.get(`${apiPath}/contaspagar/${id}`);
 	};
 
-    getAll = async () => {
-		return await axios.get(`${apiPath}/contaspagar`);
+    getAll = async (params = {}) => {
+		return await axios.get(`${apiPath}/contaspagar`, { params });
 	};
 
 	getPagamentosPendentes = async () => {

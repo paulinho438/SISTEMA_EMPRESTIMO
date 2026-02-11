@@ -21,7 +21,11 @@ export default {
 		return {
 			Contaspagar: ref([]),
 			loading: ref(false),
-			filters: ref(null)
+			filters: ref(null),
+			totalPages: ref(0),
+			totalRecords: ref(0),
+			currentPage: ref(1),
+			perPage: ref(10)
 		};
 	},
 	methods: {
@@ -64,12 +68,24 @@ export default {
                 minimumFractionDigits: 2
             });
         },
-		getContaspagar() {
+		getContaspagar(page = 1) {
 			this.loading = true;
+			this.currentPage = page;
 
-			this.contaspagarService.getAll()
+			const params = {
+				page: this.currentPage,
+				per_page: this.perPage
+			};
+
+			this.contaspagarService.getAll(params)
 			.then((response) => {
 				this.Contaspagar = response.data.data;
+
+				// Atualizar informações de paginação se disponíveis
+				if (response.data.meta) {
+					this.totalPages = response.data.meta.last_page;
+					this.totalRecords = response.data.meta.total;
+				}
 
 				this.Contaspagar = response.data.data.map((Contaspagar) => {
                         if (Contaspagar.created_at) {
@@ -108,6 +124,9 @@ export default {
 			.finally(() => {
 				this.loading = false;
 			});
+		},
+		changePage(event) {
+			this.getContaspagar(event.page + 1);
 		},
 		editCategory(id) {
 			if (undefined === id) this.router.push('/contaspagar/add');
@@ -169,7 +188,8 @@ export default {
                         :value="Contaspagar"
                         :paginator="true"
                         class="p-datatable-gridlines"
-                        :rows="10"
+                        :rows="perPage"
+                        :totalRecords="totalRecords"
                         dataKey="id"
                         :rowHover="true"
                         v-model:filters="filters"
@@ -177,6 +197,12 @@ export default {
                         :loading="loading"
                         :filters="filters"
                         responsiveLayout="scroll"
+                        :first="(currentPage - 1) * perPage"
+                        @page="changePage"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[10, 15, 25, 50]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} Título(s)"
+                        @rowsPerPageChange="(event) => { perPage = event.rows; getContaspagar(1); }"
                     >
                         <template #empty> Nenhum Titulo Encontrado. </template>
                         <template #loading> Carregando os Titulos. Aguarde! </template>

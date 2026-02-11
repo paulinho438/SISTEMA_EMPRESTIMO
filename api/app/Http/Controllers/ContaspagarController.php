@@ -50,7 +50,12 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
+        // Parâmetros de paginação
+        $perPage = $request->input('per_page', 15); // Padrão: 15 itens por página
+        $page = $request->input('page', 1);
+
         // Eager loading de todos os relacionamentos para evitar N+1 queries
+        // Usando paginate() em vez de get() para paginação no backend
         $contaspagar = Contaspagar::where('company_id', $request->header('company-id'))
             ->with([
                 'banco.company',  // BancosResource precisa de company
@@ -58,7 +63,8 @@ class ContaspagarController extends Controller
                 'fornecedor',
                 'costcenter'
             ])
-            ->get();
+            ->orderBy('id', 'desc') // Ordenar por ID descendente (mais recentes primeiro)
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return ContaspagarResource::collection($contaspagar);
     }
@@ -72,6 +78,10 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
+        // Parâmetros de paginação
+        $perPage = $request->input('per_page', 15);
+        $page = $request->input('page', 1);
+
         // Eager loading de todos os relacionamentos para evitar N+1 queries
         $contaspagar = Contaspagar::where('company_id', $request->header('company-id'))
             ->where('status', 'Aguardando Pagamento')
@@ -82,7 +92,7 @@ class ContaspagarController extends Controller
                 'costcenter'
             ])
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return ContaspagarResource::collection($contaspagar);
     }
