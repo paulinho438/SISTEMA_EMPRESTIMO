@@ -68,6 +68,11 @@ class ParcelaResource extends JsonResource
 
     protected function getTotalPagoEmprestimo()
     {
+        // Usar valor pré-calculado se disponível (otimização para endpoint /parcelas)
+        if ($this->resource->getAttribute('_total_pago_emprestimo') !== null) {
+            return $this->resource->getAttribute('_total_pago_emprestimo');
+        }
+        
         // Sempre usar dados carregados se disponíveis
         if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             $total = 0;
@@ -87,6 +92,11 @@ class ParcelaResource extends JsonResource
 
     protected function getTotalPendente()
     {
+        // Usar valor pré-calculado se disponível (otimização para endpoint /parcelas)
+        if ($this->resource->getAttribute('_total_pendente') !== null) {
+            return $this->resource->getAttribute('_total_pendente');
+        }
+        
         // Sempre usar dados carregados se disponíveis
         if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             return round((float) $this->emprestimo->parcelas->whereNull('dt_baixa')->sum('saldo'), 2);
@@ -97,6 +107,11 @@ class ParcelaResource extends JsonResource
 
     protected function getTotalPendenteHoje()
     {
+        // Usar valor pré-calculado se disponível (otimização para endpoint /parcelas)
+        if ($this->resource->getAttribute('_total_pendente_hoje') !== null) {
+            return $this->resource->getAttribute('_total_pendente_hoje');
+        }
+        
         // Sempre usar dados carregados se disponíveis
         if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             $hoje = now()->toDateString();

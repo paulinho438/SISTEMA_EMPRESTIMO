@@ -596,19 +596,43 @@ class EmprestimoController extends Controller
      */
     public function parcelas(Request $r, $id)
     {
-        $parcelas = Parcela::where('emprestimo_id', $id)
-            ->orderBy('parcela')
-            ->with(['movimentacao'])
-            ->get();
+        // Carregar empréstimo com todos os relacionamentos necessários
+        $emprestimo = Emprestimo::with([
+            'banco',
+            'client.address',
+            'company',
+            'parcelas' => function($query) {
+                $query->orderBy('parcela')
+                      ->with(['movimentacao']);
+            }
+        ])->findOrFail($id);
         
-        $emprestimo = Emprestimo::with(['banco', 'client.address', 'company'])->findOrFail($id);
+        // Calcular valores totais uma única vez (evita recalcular para cada parcela)
+        $totalPagoEmprestimo = $emprestimo->parcelas->sum(function($p) {
+            return $p->relationLoaded('movimentacao') ? $p->movimentacao->sum('valor') : 0;
+        });
+        $totalPendente = round((float) $emprestimo->parcelas->whereNull('dt_baixa')->sum('saldo'), 2);
+        $hoje = now()->toDateString();
+        $totalPendenteHoje = round((float) $emprestimo->parcelas
+            ->whereNull('dt_baixa')
+            ->filter(function($p) use ($hoje) {
+                if (!$p->venc_real) return false;
+                $vencDate = is_string($p->venc_real) ? $p->venc_real : $p->venc_real->toDateString();
+                return $vencDate === $hoje;
+            })
+            ->sum('saldo'), 2);
         
-        // Garantir que parcelas tenham acesso ao empréstimo sem queries
-        $parcelas->each(function($parcela) use ($emprestimo) {
+        // Garantir que cada parcela tenha acesso ao empréstimo completo
+        // com todas as parcelas já carregadas (necessário para cálculos no Resource)
+        $emprestimo->parcelas->each(function($parcela) use ($emprestimo, $totalPagoEmprestimo, $totalPendente, $totalPendenteHoje) {
             $parcela->setRelation('emprestimo', $emprestimo);
+            // Injetar valores pré-calculados para evitar recálculo no Resource
+            $parcela->setAttribute('_total_pago_emprestimo', $totalPagoEmprestimo);
+            $parcela->setAttribute('_total_pendente', $totalPendente);
+            $parcela->setAttribute('_total_pendente_hoje', $totalPendenteHoje);
         });
         
-        return ParcelaResource::collection($parcelas);
+        return ParcelaResource::collection($emprestimo->parcelas);
     }
 
     /**
