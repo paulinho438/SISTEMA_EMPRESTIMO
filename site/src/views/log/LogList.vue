@@ -36,6 +36,28 @@ export default {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
         },
+        formatDateTime(dateTime) {
+            if (!dateTime) return '-';
+            
+            // Se já for uma string formatada, retornar como está
+            if (typeof dateTime === 'string' && dateTime.includes('/')) {
+                return dateTime;
+            }
+            
+            // Se for um objeto Date ou string ISO
+            const date = new Date(dateTime);
+            if (isNaN(date.getTime())) return '-';
+            
+            // Formatar como dd/mm/yyyy HH:mm:ss
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+        },
         getLog(page = 1) {
             this.loading = true;
             this.currentPage = page;
@@ -69,8 +91,17 @@ export default {
                         this.totalPages = this.totalRecords > 0 ? 1 : 0;
                     }
 
-                    this.Log = response.data.data || [];
-                    this.LogReal = response.data.data || [];
+                    this.Log = (response.data.data || []).map(log => {
+                        // Garantir que created_at seja processado corretamente
+                        if (log.created_at) {
+                            // Se for string ISO, converter para Date
+                            if (typeof log.created_at === 'string' && log.created_at.includes('T')) {
+                                log.created_at = new Date(log.created_at);
+                            }
+                        }
+                        return log;
+                    });
+                    this.LogReal = this.Log;
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -207,6 +238,12 @@ export default {
                                 {{ slotProps.data.id }}
                             </template>
                         </Column>
+                        <Column field="created_at" header="Data/Hora" :sortable="true" class="w-2">
+							<template #body="slotProps">
+								<span class="p-column-title">Data/Hora</span>
+								{{ formatDateTime(slotProps.data.created_at) }}
+							</template>
+						</Column>
                         <Column field="user_id" header="Usuário" :sortable="true" class="w-1">
 							<template #body="slotProps">
 								<span class="p-column-title">User Id</span>
