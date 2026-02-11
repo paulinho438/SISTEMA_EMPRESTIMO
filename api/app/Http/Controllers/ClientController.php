@@ -448,9 +448,20 @@ class ClientController extends Controller
             'cpf' => [
                 'required',
                 function ($attribute, $value, $fail) use ($request) {
-                    $exists = DB::table('clients')
-                        ->where('cpf', $value)
-                        ->where('company_id', $request->header('company-id'))
+                    // Normalizar CPF removendo pontos e traços para comparação
+                    $cpfNormalizado = preg_replace('/[^0-9]/', '', $value);
+                    
+                    // Usar o modelo Client para considerar soft deletes automaticamente
+                    // O modelo Client com SoftDeletes já ignora registros deletados (deleted_at IS NULL)
+                    // Verificar se existe CPF normalizado (com ou sem formatação)
+                    $exists = Client::where('company_id', $request->header('company-id'))
+                        ->where(function($query) use ($value, $cpfNormalizado) {
+                            // Comparar tanto com formatação quanto sem formatação
+                            // Usar DB::raw para normalizar o CPF do banco antes de comparar
+                            $query->where('cpf', $value)
+                                  ->orWhere('cpf', $cpfNormalizado)
+                                  ->orWhereRaw('REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), " ", "") = ?', [$cpfNormalizado]);
+                        })
                         ->exists();
 
                     if ($exists) {

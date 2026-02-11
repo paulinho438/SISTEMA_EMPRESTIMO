@@ -69,26 +69,61 @@ export default function InfoParcelas(props) {
   const onPressCadastroCliente = async () => {
     setLoading(true);
     
-    localizacao.complement = complemento;
+    try {
+      localizacao.complement = complemento;
 
-    let req = await api.cadastroCliente(
-      clientes.name,
-      clientes.email,
-      clientes.cellphone,
-      clientes.cellphone2,
-      clientes.cpf,
-      clientes.rg,
-      clientes.cnpj ?? null,
-      clientes.nascimento,
-      clientes.sexo,
-      localizacao,
-      clientes.pix,
-    );
+      let req = await api.cadastroCliente(
+        clientes.name,
+        clientes.email,
+        clientes.cellphone,
+        clientes.cellphone2,
+        clientes.cpf,
+        clientes.rg,
+        clientes.cnpj ?? null,
+        clientes.nascimento,
+        clientes.sexo,
+        localizacao,
+        clientes.pix,
+      );
 
-    setLoading(false);
-    Alert.alert('Cliente Cadastrado com Sucesso!');
+      setLoading(false);
 
-    navigation.navigate(StackNav.Clientes);
+      // Verificar se há erro na resposta
+      // Quando há erro HTTP (403, etc), o backend retorna: { message: "...", error: "..." }
+      // Quando há sucesso, o backend retorna: { usuario: { login: "...", senha: "..." }, error: "" }
+      
+      // Verificar primeiro se há status HTTP de erro
+      if (req.status && (req.status >= 400 && req.status < 600)) {
+        const errorMessage = req.message || req.error || 'Erro ao cadastrar cliente.';
+        Alert.alert('Erro', errorMessage);
+        return; // Não navegar, parar o fluxo
+      }
+
+      // Verificar se há mensagem de erro sem status (quando a função request retorna erro)
+      if (req.error && req.error !== '' && !req.usuario) {
+        const errorMessage = req.message || req.error || 'Erro ao cadastrar cliente.';
+        Alert.alert('Erro', errorMessage);
+        return; // Não navegar, parar o fluxo
+      }
+
+      // Verificar se há message de erro sem usuario (indicando erro de validação)
+      if (req.message && !req.usuario && req.error !== '') {
+        Alert.alert('Erro', req.message);
+        return; // Não navegar, parar o fluxo
+      }
+
+      // Se não houver erro, mostrar sucesso e navegar
+      Alert.alert('Sucesso', 'Cliente Cadastrado com Sucesso!');
+      navigation.navigate(StackNav.Clientes);
+    } catch (error) {
+      setLoading(false);
+      // Tratar erros de rede ou outros erros
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error || 
+                          error?.message || 
+                          'Erro ao cadastrar cliente. Tente novamente.';
+      Alert.alert('Erro', errorMessage);
+    }
   };
 
   const cancelModel = () => {

@@ -46,6 +46,18 @@ const request = async (method, endpoint, params, token = null) => {
     // Fazer a requisição
     let req = await fetch(fullUrl, { method, headers, body });
     let json = await req.json();
+    
+    // Verificar se houve erro HTTP (status 4xx ou 5xx)
+    if (!req.ok) {
+        // Retornar objeto com erro para tratamento no componente
+        return {
+            error: json.error || json.message || 'Erro na requisição',
+            message: json.message || json.error || 'Erro na requisição',
+            status: req.status,
+            data: json
+        };
+    }
+    
     return json;
 }
 
