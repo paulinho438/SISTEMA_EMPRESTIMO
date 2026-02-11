@@ -25,22 +25,52 @@ export default {
             filters: ref(null),
             form: ref({}),
             valorRecebido: ref(0),
-            valorPago: ref(0)
+            valorPago: ref(0),
+            totalPages: ref(0),
+            totalRecords: ref(0),
+            currentPage: ref(1),
+            perPage: ref(10)
         };
     },
     methods: {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
         },
-        getLog() {
+        getLog(page = 1) {
             this.loading = true;
+            this.currentPage = page;
+
+            const params = {
+                page: this.currentPage,
+                per_page: this.perPage
+            };
+
+            // Adicionar filtros de data se existirem
+            if (this.form.dt_inicio) {
+                const dtInicio = new Date(this.form.dt_inicio);
+                params.dt_inicio = dtInicio.toISOString().split('T')[0]; // YYYY-MM-DD
+            }
+            if (this.form.dt_final) {
+                const dtFinal = new Date(this.form.dt_final);
+                params.dt_final = dtFinal.toISOString().split('T')[0]; // YYYY-MM-DD
+            }
 
             this.logService
-                .getAll()
+                .getAll(params)
                 .then((response) => {
-                    this.Log = response.data;
-                    this.LogReal = response.data;
-                    this.setLastWeekDates();
+                    // Atualizar informações de paginação
+                    if (response.data.meta) {
+                        this.totalPages = response.data.meta.last_page || 1;
+                        this.totalRecords = response.data.meta.total || 0;
+                        this.currentPage = response.data.meta.current_page || 1;
+                    } else {
+                        // Fallback: se não houver meta, usar o tamanho do array
+                        this.totalRecords = response.data.data ? response.data.data.length : 0;
+                        this.totalPages = this.totalRecords > 0 ? 1 : 0;
+                    }
+
+                    this.Log = response.data.data || [];
+                    this.LogReal = response.data.data || [];
                 })
                 .catch((error) => {
                     this.toast.add({
@@ -58,12 +88,12 @@ export default {
             const lastWeekEnd = new Date(today);
             lastWeekEnd.setDate(today.getDate());
             const lastWeekStart = new Date(lastWeekEnd);
-            lastWeekStart.setDate(lastWeekEnd.getDate());
+            lastWeekStart.setDate(lastWeekEnd.getDate() - 7); // Últimos 7 dias
 
             this.form.dt_inicio = lastWeekStart;
             this.form.dt_final = lastWeekEnd;
 
-            this.busca(); // Call the search method to filter data
+            // Não buscar automaticamente - deixar o usuário clicar em Pesquisar
         },
         busca() {
             if (!this.form.dt_inicio || !this.form.dt_final) {
@@ -75,47 +105,24 @@ export default {
                 return;
             }
 
-
-            const dt_inicio = new Date(this.form.dt_inicio);
-            const dt_final = new Date(this.form.dt_final);
-
-
-            dt_inicio.setHours(0, 0, 0, 999); // Ensure the end date covers the entire day
-            dt_final.setHours(23, 59, 59, 999); // Ensure the end date covers the entire day
-
-            this.Log = this.LogReal.filter((mov) => {
-                const dt_mov = new Date(mov.created_at); // Converte a string de data para um objeto Date
-                return dt_mov >= dt_inicio && dt_mov <= dt_final;
-            });
+            // Buscar dados do servidor com os filtros de data
+            this.getLog(1);
+        },
+        changePage(event) {
+            const newPage = event.page + 1; // PrimeVue usa índice 0, backend usa índice 1
+            this.getLog(newPage);
         },
         editCategory(id) {
             if (undefined === id) this.router.push('/Movimentacaofinanceira/add');
             else this.router.push(`/Movimentacaofinanceira/${id}/edit`);
         },
         deleteCategory(permissionId) {
-            this.loading = true;
-
-            this.movimentacaofinanceiraService
-                .delete(permissionId)
-                .then((e) => {
-                    console.log(e);
-                    this.toast.add({
-                        severity: ToastSeverity.SUCCESS,
-                        detail: e?.data?.message,
-                        life: 3000
-                    });
-                    this.getLog();
-                })
-                .catch((error) => {
-                    this.toast.add({
-                        severity: ToastSeverity.ERROR,
-                        detail: error?.data?.message,
-                        life: 3000
-                    });
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
+            // Logs geralmente não são deletáveis, mas mantendo o método caso seja necessário
+            this.toast.add({
+                severity: ToastSeverity.INFO,
+                detail: 'Logs não podem ser deletados',
+                life: 3000
+            });
         },
         initFilters() {
             this.filters = {
@@ -131,7 +138,8 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
-        this.getLog();
+        this.setLastWeekDates();
+        // Não carregar dados automaticamente - esperar o usuário clicar em Pesquisar
     }
 };
 </script>
@@ -170,12 +178,17 @@ export default {
                         dataKey="id"
                         :value="Log"
                         :paginator="true"
-                        :rows="10"
+                        :rows="perPage"
+                        :totalRecords="totalRecords"
+                        :lazy="true"
                         :loading="loading"
                         :filters="filters"
+                        :first="(currentPage - 1) * perPage"
+                        @page="changePage"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                        :rowsPerPageOptions="[5, 10, 25]"
+                        :rowsPerPageOptions="[10, 15, 25, 50]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} movimentações(s)"
+                        @rowsPerPageChange="(event) => { perPage = event.rows; getLog(1); }"
                         responsiveLayout="scroll"
                     >
                         <!-- <template #header>

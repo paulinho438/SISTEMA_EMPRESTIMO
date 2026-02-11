@@ -26,8 +26,40 @@ class LogController extends Controller
     }
 
     public function all(Request $request){
+        // Parâmetros de paginação
+        $perPage = $request->input('per_page', 15); // Padrão: 15 itens por página
+        $page = $request->input('page', 1);
 
-        return $this->custom_log->orderBy('created_at', 'desc')->get();
+        // Parâmetros de filtro por data
+        $dtInicio = $request->input('dt_inicio');
+        $dtFinal = $request->input('dt_final');
 
+        // Construir query base
+        $query = CustomLog::query();
+
+        // Aplicar filtros de data se fornecidos
+        if ($dtInicio) {
+            $query->whereDate('created_at', '>=', $dtInicio);
+        }
+        if ($dtFinal) {
+            $query->whereDate('created_at', '<=', $dtFinal);
+        }
+
+        // Aplicar filtro por company_id se necessário (via header)
+        $companyId = $request->header('company-id');
+        if ($companyId) {
+            // Se CustomLog tiver company_id, descomente a linha abaixo
+            // $query->where('company_id', $companyId);
+        }
+
+        // Eager loading de relacionamentos se existirem
+        // Se CustomLog tiver relacionamento com User, descomente:
+        // $query->with(['user']);
+
+        // Ordenar e paginar
+        $logs = $query->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json($logs);
     }
 }

@@ -6,8 +6,8 @@ export default class LogService {
     constructor() {
         this.router = useRouter();
     }
-    getAll = async () => {
-        return await axios.get(`${apiPath}/log`);
+    getAll = async (params = {}) => {
+        return await axios.get(`${apiPath}/log`, { params });
     };
 
     getAllClientesMaps = async () => {
