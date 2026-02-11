@@ -31,7 +31,14 @@ class ContaspagarController extends Controller
 
     public function id(Request $r, $id)
     {
-        return new ContaspagarResource(Contaspagar::find($id));
+        $contaspagar = Contaspagar::with([
+            'banco.company',  // BancosResource precisa de company
+            'emprestimo',
+            'fornecedor',
+            'costcenter'
+        ])->findOrFail($id);
+        
+        return new ContaspagarResource($contaspagar);
     }
 
     public function all(Request $request)
@@ -43,7 +50,17 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->get());
+        // Eager loading de todos os relacionamentos para evitar N+1 queries
+        $contaspagar = Contaspagar::where('company_id', $request->header('company-id'))
+            ->with([
+                'banco.company',  // BancosResource precisa de company
+                'emprestimo',
+                'fornecedor',
+                'costcenter'
+            ])
+            ->get();
+
+        return ContaspagarResource::collection($contaspagar);
     }
 
     public function pagamentoPendentes(Request $request)
@@ -55,7 +72,19 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContaspagarResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->orderBy('id', 'desc')->get());
+        // Eager loading de todos os relacionamentos para evitar N+1 queries
+        $contaspagar = Contaspagar::where('company_id', $request->header('company-id'))
+            ->where('status', 'Aguardando Pagamento')
+            ->with([
+                'banco.company',  // BancosResource precisa de company
+                'emprestimo',
+                'fornecedor',
+                'costcenter'
+            ])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return ContaspagarResource::collection($contaspagar);
     }
 
     public function pagamentoPendentesAplicativo(Request $request)
@@ -67,7 +96,19 @@ class ContaspagarController extends Controller
             'operation' => 'index'
         ]);
 
-        return ContaspagarAprovacaoResource::collection(Contaspagar::where('company_id', $request->header('company-id'))->where('status', 'Aguardando Pagamento')->orderBy('id', 'desc')->get());
+        // Eager loading de todos os relacionamentos para evitar N+1 queries
+        $contaspagar = Contaspagar::where('company_id', $request->header('company-id'))
+            ->where('status', 'Aguardando Pagamento')
+            ->with([
+                'banco.company',  // BancosComSaldoResource precisa de company
+                'emprestimo.client',  // ContaspagarAprovacaoResource acessa emprestimo->client
+                'emprestimo.parcelas',  // ContaspagarAprovacaoResource acessa emprestimo->parcelas
+                'fornecedor'
+            ])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return ContaspagarAprovacaoResource::collection($contaspagar);
     }
 
     public function insert(Request $request)
