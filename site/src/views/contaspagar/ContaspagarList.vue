@@ -79,15 +79,28 @@ export default {
 
 			this.contaspagarService.getAll(params)
 			.then((response) => {
-				this.Contaspagar = response.data.data;
-
-				// Atualizar informações de paginação se disponíveis
+				console.log('Response pagination meta:', response.data.meta);
+				console.log('Response data:', response.data.data?.length);
+				
+				// Atualizar informações de paginação ANTES de processar os dados
 				if (response.data.meta) {
-					this.totalPages = response.data.meta.last_page;
-					this.totalRecords = response.data.meta.total;
+					this.totalPages = response.data.meta.last_page || 1;
+					this.totalRecords = response.data.meta.total || 0;
+					this.currentPage = response.data.meta.current_page || 1;
+				} else {
+					// Fallback: se não houver meta, usar o tamanho do array
+					this.totalRecords = response.data.data ? response.data.data.length : 0;
+					this.totalPages = this.totalRecords > 0 ? 1 : 0;
 				}
 
-				this.Contaspagar = response.data.data.map((Contaspagar) => {
+				console.log('Total Records:', this.totalRecords);
+				console.log('Total Pages:', this.totalPages);
+				console.log('Current Page:', this.currentPage);
+				console.log('Per Page:', this.perPage);
+
+				this.Contaspagar = response.data.data || [];
+
+				this.Contaspagar = this.Contaspagar.map((Contaspagar) => {
                         if (Contaspagar.created_at) {
                             const parts = Contaspagar.created_at.split(' ');
                             const datePart = parts[0].split('/').reverse().join('-'); // Converte dd/mm/yyyy para yyyy-mm-dd
@@ -126,7 +139,9 @@ export default {
 			});
 		},
 		changePage(event) {
-			this.getContaspagar(event.page + 1);
+			console.log('Change page event:', event);
+			const newPage = event.page + 1; // PrimeVue usa índice 0, backend usa índice 1
+			this.getContaspagar(newPage);
 		},
 		editCategory(id) {
 			if (undefined === id) this.router.push('/contaspagar/add');
@@ -190,6 +205,7 @@ export default {
                         class="p-datatable-gridlines"
                         :rows="perPage"
                         :totalRecords="totalRecords"
+                        :lazy="true"
                         dataKey="id"
                         :rowHover="true"
                         v-model:filters="filters"
