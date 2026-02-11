@@ -517,7 +517,25 @@ class EmprestimoController extends Controller
 
     public function id(Request $r, $id)
     {
-        return new EmprestimoResource(Emprestimo::find($id));
+        $emprestimo = Emprestimo::with([
+            'parcelas' => function($query) {
+                $query->orderBy('parcela')
+                      ->with(['movimentacao']);
+            },
+            'parcelas.emprestimo' => function($query) {
+                $query->with(['banco', 'client.address', 'company']);
+            },
+            'client.address',
+            'banco',
+            'user',
+            'company',
+            'costcenter',
+            'quitacao',
+            'pagamentominimo',
+            'pagamentosaldopendente'
+        ])->findOrFail($id);
+        
+        return new EmprestimoResource($emprestimo);
     }
 
     public function all(Request $request)

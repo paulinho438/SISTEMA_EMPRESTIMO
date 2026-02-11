@@ -20,6 +20,11 @@ class ParcelaResource extends JsonResource
      */
     public function toArray($request)
     {
+        $totalPagoParcela = $this->getTotalPagoParcela();
+        $totalPagoEmprestimo = $this->getTotalPagoEmprestimo();
+        $totalPendente = $this->getTotalPendente();
+        $totalPendenteHoje = $this->getTotalPendenteHoje();
+        
         return [
             "id" => $this->id,
             "emprestimo_id" => $this->emprestimo_id,
@@ -27,7 +32,7 @@ class ParcelaResource extends JsonResource
             "valor" => $this->formatarMoeda($this->valor),
             "saldo" => $this->saldo,
             "lucro_real" => (float) ($this->lucro_real ?? 0),
-            "multa" => $this->formatarMoeda(($this->saldo + $this->totalPagoParcela()) - $this->valor),
+            "multa" => $this->formatarMoeda(($this->saldo + $totalPagoParcela) - $this->valor),
             "venc" => (new DateTime($this->venc))->format('d/m/Y'),
             "venc_real" => (new DateTime($this->venc_real))->format('d/m/Y'),
             "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
@@ -43,14 +48,60 @@ class ParcelaResource extends JsonResource
             "latitude" => $this->getLatitudeFromAddress(),
             "longitude" => $this->getLongitudeFromAddress(),
             "endereco" => $this->getEnderecoFromAddress(),
-            "total_pago_emprestimo" => $this->formatarMoeda($this->totalPagoEmprestimo()),
-            "total_pago_parcela" => $this->formatarMoeda($this->totalPagoParcela()),
-            "total_pendente" => $this->formatarMoeda($this->totalPendente()),
-            "total_pendente_hoje" => $this->totalPendenteHoje(),
+            "total_pago_emprestimo" => $this->formatarMoeda($totalPagoEmprestimo),
+            "total_pago_parcela" => $this->formatarMoeda($totalPagoParcela),
+            "total_pendente" => $this->formatarMoeda($totalPendente),
+            "total_pendente_hoje" => $totalPendenteHoje,
             "valor_recebido" => $this->valor_recebido,
             "valor_recebido_pix" => $this->valor_recebido_pix,
             "beneficiario" => $this->emprestimo->banco->info_recebedor_pix,
         ];
+    }
+
+    protected function getTotalPagoParcela()
+    {
+        if ($this->relationLoaded('movimentacao')) {
+            return $this->movimentacao->sum('valor');
+        }
+        return $this->totalPagoParcela();
+    }
+
+    protected function getTotalPagoEmprestimo()
+    {
+        if ($this->relationLoaded('emprestimo') && $this->emprestimo->relationLoaded('parcelas')) {
+            $total = 0;
+            foreach ($this->emprestimo->parcelas as $p) {
+                if ($p->relationLoaded('movimentacao')) {
+                    $total += $p->movimentacao->sum('valor');
+                } else {
+                    return $this->totalPagoEmprestimo();
+                }
+            }
+            return $total;
+        }
+        return $this->totalPagoEmprestimo();
+    }
+
+    protected function getTotalPendente()
+    {
+        if ($this->relationLoaded('emprestimo') && $this->emprestimo->relationLoaded('parcelas')) {
+            return round((float) $this->emprestimo->parcelas->whereNull('dt_baixa')->sum('saldo'), 2);
+        }
+        return $this->totalPendente();
+    }
+
+    protected function getTotalPendenteHoje()
+    {
+        if ($this->relationLoaded('emprestimo') && $this->emprestimo->relationLoaded('parcelas')) {
+            $hoje = now()->toDateString();
+            return round((float) $this->emprestimo->parcelas
+                ->whereNull('dt_baixa')
+                ->filter(function($p) use ($hoje) {
+                    return $p->venc_real && $p->venc_real->toDateString() === $hoje;
+                })
+                ->sum('saldo'), 2);
+        }
+        return $this->totalPendenteHoje();
     }
 
     /**
