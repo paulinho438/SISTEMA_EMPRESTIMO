@@ -267,7 +267,7 @@ export default {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
     background-size: 200% 200%;
     animation: gradientShift 15s ease infinite;
 }
@@ -279,10 +279,10 @@ export default {
     width: 100%;
     height: 100%;
     background-image: 
-        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-    opacity: 0.6;
+        radial-gradient(circle at 20% 50%, rgba(255, 193, 7, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 193, 7, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(255, 193, 7, 0.03) 0%, transparent 50%);
+    opacity: 0.4;
 }
 
 @keyframes gradientShift {
@@ -310,24 +310,22 @@ export default {
 }
 
 .login-card-inner {
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    background: #1a1a1a;
     border-radius: 24px;
     padding: 3rem 2.5rem;
     box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(255, 255, 255, 0.3) inset,
-        0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 0 2px rgba(255, 193, 7, 0.3) inset;
+    border: 2px solid rgba(255, 193, 7, 0.5);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .login-card-inner:hover {
     transform: translateY(-2px);
     box-shadow: 
-        0 25px 70px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+        0 25px 70px rgba(0, 0, 0, 0.6),
+        0 0 0 2px rgba(255, 193, 7, 0.5) inset;
+    border-color: rgba(255, 193, 7, 0.7);
 }
 
 .login-logo {
@@ -342,15 +340,16 @@ export default {
 .login-title {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #1a202c;
+    color: #ffc107;
     margin: 0 0 0.5rem 0;
     letter-spacing: -0.5px;
 }
 
 .login-subtitle {
-    color: #718096;
+    color: #ffffff;
     font-size: 0.95rem;
     font-weight: 500;
+    opacity: 0.8;
 }
 
 .login-form {
@@ -359,7 +358,7 @@ export default {
 
 .login-label {
     display: block;
-    color: #2d3748;
+    color: #ffc107;
     font-weight: 600;
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
@@ -368,34 +367,50 @@ export default {
 
 .login-input {
     border-radius: 12px;
-    border: 2px solid #e2e8f0;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    background: #2d2d2d;
+    color: #ffffff;
     transition: all 0.3s ease;
     font-size: 1rem;
     padding: 0.875rem 1rem;
 }
 
 .login-input:hover {
-    border-color: #cbd5e0;
+    border-color: rgba(255, 193, 7, 0.5);
+    background: #333333;
 }
 
 .login-input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #ffc107;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    background: #333333;
+}
+
+.login-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .login-password :deep(.p-inputtext) {
     border-radius: 12px;
-    border: 2px solid #e2e8f0;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    background: #2d2d2d;
+    color: #ffffff;
     transition: all 0.3s ease;
 }
 
 .login-password :deep(.p-inputtext:hover) {
-    border-color: #cbd5e0;
+    border-color: rgba(255, 193, 7, 0.5);
+    background: #333333;
 }
 
 .login-password :deep(.p-inputtext:focus) {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #ffc107;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    background: #333333;
+}
+
+.login-password :deep(.p-inputtext::placeholder) {
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .login-button {
@@ -403,17 +418,18 @@ export default {
     padding: 0.875rem;
     font-size: 1rem;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
     border: none;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    color: #000000;
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
     transition: all 0.3s ease;
     margin-top: 1rem;
 }
 
 .login-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.6);
+    background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%);
 }
 
 .login-button:active {
