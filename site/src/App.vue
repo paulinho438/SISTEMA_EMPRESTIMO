@@ -30,7 +30,7 @@ onMounted(() => {
     loading.value = true; // Ativa o loading
     setTimeout(() => {
         document.documentElement.style.fontSize = 12 + 'px';
-        onChangeTheme('saga-orange', 'light');
+        onChangeTheme('arya-orange', 'dark');
         loading.value = false; // Desativa o loading após a operação
     }, 2000); // Simula um carregamento com timeout
 });
