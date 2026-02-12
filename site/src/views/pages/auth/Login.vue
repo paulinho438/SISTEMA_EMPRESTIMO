@@ -158,7 +158,6 @@ export default {
 </script>
 
 <template>
-    <SvgBackground />
     <Toast />
 
     <Dialog header="Selecione a Empresa" modal class="w-8 mx-8" v-model:visible="changed" :closable="false">
@@ -185,25 +184,58 @@ export default {
         </div>
     </Dialog>
 
-    <div class="z-1 surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
-        <div class="z-1 flex flex-column align-items-center justify-content-center">
-            <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-                <div class="z-1 w-full surface-card py-8 px-5 sm:px-8" style="border-radius: 53px">
+    <div class="login-container">
+        <div class="login-background">
+            <div class="login-background-gradient"></div>
+            <div class="login-background-pattern"></div>
+        </div>
+        <div class="login-content flex align-items-center justify-content-center min-h-screen min-w-screen">
+            <div class="login-card">
+                <div class="login-card-inner">
                     <div class="text-center mb-5">
-                        <img src="/images/AGELOGO.png" alt="logo" width="50%" />
+                        <img src="/images/AGELOGO.png" alt="logo" width="50%" class="login-logo" />
                     </div>
                     <div class="text-center mb-5">
-                        <span class="text-600 font-medium">Faça login para continuar</span>
+                        <h2 class="login-title">Bem-vindo de volta</h2>
+                        <span class="login-subtitle">Faça login para continuar</span>
                     </div>
 
-                    <div class="z-1">
-                        <label for="usuario" class="block text-900 text-xl font-medium mb-2">Usuario</label>
-                        <InputText :modelValue="usuario" v-model="usuario" id="usuario" type="text" class="w-full md:w-30rem mb-5" :disabled="loadingLogin" />
+                    <div class="login-form">
+                        <div class="mb-4">
+                            <label for="usuario" class="login-label">Usuário</label>
+                            <InputText 
+                                :modelValue="usuario" 
+                                v-model="usuario" 
+                                id="usuario" 
+                                type="text" 
+                                class="w-full login-input" 
+                                :disabled="loadingLogin"
+                                placeholder="Digite seu usuário"
+                            />
+                        </div>
 
-                        <label for="password1" class="block text-900 font-medium text-xl mb-2">SENHA</label>
-                        <Password id="password1" v-model="password" placeholder="Senha" :toggleMask="true" :feedback="false" class="w-full mb-3" inputClass="w-full" :inputStyle="{ padding: '1rem' }"></Password>
+                        <div class="mb-4">
+                            <label for="password1" class="login-label">Senha</label>
+                            <Password 
+                                id="password1" 
+                                v-model="password" 
+                                placeholder="Digite sua senha" 
+                                :toggleMask="true" 
+                                :feedback="false" 
+                                class="w-full login-password" 
+                                inputClass="w-full login-input" 
+                                :inputStyle="{ padding: '1rem' }"
+                            ></Password>
+                        </div>
 
-                        <Button label="Entrar" class="w-full p-3 text-xl" @click.prevent="login" :loading="loadingLogin"></Button>
+                        <Button 
+                            label="Entrar" 
+                            class="w-full login-button" 
+                            @click.prevent="login" 
+                            :loading="loadingLogin"
+                            icon="pi pi-sign-in"
+                            iconPos="right"
+                        ></Button>
                     </div>
                 </div>
             </div>
@@ -213,6 +245,181 @@ export default {
 </template>
 
 <style scoped>
+.login-container {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+
+.login-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.login-background-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+}
+
+.login-background-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    opacity: 0.6;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.login-content {
+    position: relative;
+    z-index: 1;
+    padding: 2rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 450px;
+    position: relative;
+}
+
+.login-card-inner {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 24px;
+    padding: 3rem 2.5rem;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.3) inset,
+        0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card-inner:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 25px 70px rgba(0, 0, 0, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+}
+
+.login-logo {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    transition: transform 0.3s ease;
+}
+
+.login-logo:hover {
+    transform: scale(1.05);
+}
+
+.login-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+    color: #718096;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.login-form {
+    margin-top: 2rem;
+}
+
+.login-label {
+    display: block;
+    color: #2d3748;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.2px;
+}
+
+.login-input {
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    padding: 0.875rem 1rem;
+}
+
+.login-input:hover {
+    border-color: #cbd5e0;
+}
+
+.login-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.login-password :deep(.p-inputtext) {
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.login-password :deep(.p-inputtext:hover) {
+    border-color: #cbd5e0;
+}
+
+.login-password :deep(.p-inputtext:focus) {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.login-button {
+    border-radius: 12px;
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
 .pi-eye {
     transform: scale(1.6);
     margin-right: 1rem;
@@ -221,5 +428,21 @@ export default {
 .pi-eye-slash {
     transform: scale(1.6);
     margin-right: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .login-card-inner {
+        padding: 2rem 1.5rem;
+    }
+    
+    .login-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* Dark theme support */
+:deep(.p-component) {
+    color: inherit;
 }
 </style>
