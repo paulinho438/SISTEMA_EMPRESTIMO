@@ -32,9 +32,11 @@ class LoanSimulationService
         // Calcular IOF
         $iof = $calcularIOF 
             ? $this->calcularIOF($valorSolicitado, $dataAssinatura, $dataPrimeiraParcela, $quantidadeParcelas)
-            : ['adicional' => '0.00', 'diario' => '0.00', 'total' => '0.00'];
+            : ['adicional' => '0', 'diario' => '0', 'total' => '0'];
 
-        $valorContrato = $this->add($valorSolicitado, $iof['total']);
+        // Usar valores numéricos puros para cálculos (não formatados)
+        $iofTotal = $this->toDecimal($iof['total']);
+        $valorContrato = $this->add($valorSolicitado, $iofTotal);
 
         // Calcular PMT (parcela fixa) usando Price
         $pmt = $this->calcularPMT($valorContrato, $taxaJurosDiaria, $quantidadeParcelas);
@@ -125,7 +127,7 @@ class LoanSimulationService
     private function calcularIOF(string $valorSolicitado, Carbon $dataAssinatura, Carbon $dataPrimeiraParcela, int $quantidadeParcelas): array
     {
         // IOF adicional: 0,38% sobre valor solicitado
-        $iofAdicional = $this->multiply($valorSolicitado, (string) self::IOF_ADICIONAL_TAX);
+        $iofAdicional = $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_ADICIONAL_TAX));
 
         // Calcular data da última parcela
         $dataUltimaParcela = $dataPrimeiraParcela->copy()->addDays($quantidadeParcelas - 1);
@@ -134,8 +136,8 @@ class LoanSimulationService
         $diasContrato = $dataAssinatura->diffInDays($dataUltimaParcela);
 
         // IOF diário: 0,0082% ao dia sobre valor solicitado * dias
-        $iofDiarioBase = $this->multiply($valorSolicitado, (string) self::IOF_DIARIO_TAX);
-        $iofDiario = $this->multiply($iofDiarioBase, (string) $diasContrato);
+        $iofDiarioBase = $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_DIARIO_TAX));
+        $iofDiario = $this->multiply($iofDiarioBase, $this->toDecimal($diasContrato));
 
         // IOF total
         $iofTotal = $this->add($iofAdicional, $iofDiario);
@@ -162,7 +164,7 @@ class LoanSimulationService
         $umMaisTaxa = $this->add('1', $taxaDiaria);
 
         // (1 + i)^(-n)
-        $expoenteNegativo = $this->multiply('-1', (string) $numeroParcelas);
+        $expoenteNegativo = $this->multiply('-1', $this->toDecimal($numeroParcelas));
         $potenciaNegativa = $this->power($umMaisTaxa, $expoenteNegativo);
 
         // 1 - (1 + i)^(-n)
@@ -239,7 +241,7 @@ class LoanSimulationService
     {
         $total = '0';
         foreach ($cronograma as $parcela) {
-            $total = $this->add($total, $parcela['parcela']);
+            $total = $this->add($total, $this->toDecimal($parcela['parcela']));
         }
         return $total;
     }
@@ -264,7 +266,7 @@ class LoanSimulationService
         foreach ($cronograma as $parcela) {
             $fluxo[] = [
                 'data' => Carbon::parse($parcela['vencimento']),
-                'valor' => $this->multiply('-1', $parcela['parcela']), // Saída (negativo)
+                'valor' => $this->multiply('-1', $this->toDecimal($parcela['parcela'])), // Saída (negativo)
             ];
         }
 
@@ -338,8 +340,8 @@ class LoanSimulationService
         foreach ($fluxo as $item) {
             $dias = $dataBase->diffInDays($item['data']);
             $umMaisTaxa = $this->add('1', $taxa);
-            $fatorDesconto = $this->power($umMaisTaxa, (string) $dias);
-            $valorDescontado = $this->divide($item['valor'], $fatorDesconto);
+            $fatorDesconto = $this->power($umMaisTaxa, $this->toDecimal($dias));
+            $valorDescontado = $this->divide($this->toDecimal($item['valor']), $fatorDesconto);
             $vpl = $this->add($vpl, $valorDescontado);
         }
 
@@ -356,12 +358,29 @@ class LoanSimulationService
      */
     private function toDecimal($value): string
     {
+        // Se for null ou vazio, retornar zero
+        if ($value === null || $value === '' || $value === false) {
+            return '0';
+        }
+
         if (is_string($value)) {
             // Remove formatação brasileira se houver
             $value = str_replace(['R$', ' ', '.'], '', $value);
             $value = str_replace(',', '.', $value);
+            // Remove qualquer caractere não numérico exceto ponto e sinal negativo
+            $value = preg_replace('/[^0-9.\-]/', '', $value);
         }
-        return (string) number_format((float) $value, 10, '.', '');
+
+        // Converter para float e depois para string formatada
+        $floatValue = (float) $value;
+        
+        // Verificar se é um número válido
+        if (!is_finite($floatValue)) {
+            return '0';
+        }
+
+        // Formatar com 10 casas decimais, sem separador de milhar
+        return number_format($floatValue, 10, '.', '');
     }
 
     /**
@@ -384,6 +403,8 @@ class LoanSimulationService
      */
     private function add(string $a, string $b): string
     {
+        $a = $this->toDecimal($a);
+        $b = $this->toDecimal($b);
         return bcadd($a, $b, 10);
     }
 
@@ -396,6 +417,8 @@ class LoanSimulationService
      */
     private function subtract(string $a, string $b): string
     {
+        $a = $this->toDecimal($a);
+        $b = $this->toDecimal($b);
         return bcsub($a, $b, 10);
     }
 
@@ -408,6 +431,8 @@ class LoanSimulationService
      */
     private function multiply(string $a, string $b): string
     {
+        $a = $this->toDecimal($a);
+        $b = $this->toDecimal($b);
         return bcmul($a, $b, 10);
     }
 
@@ -420,7 +445,9 @@ class LoanSimulationService
      */
     private function divide(string $a, string $b): string
     {
-        if ($b === '0' || $b === '0.0') {
+        $a = $this->toDecimal($a);
+        $b = $this->toDecimal($b);
+        if ($b === '0' || $b === '0.0000000000') {
             throw new \InvalidArgumentException('Divisão por zero');
         }
         return bcdiv($a, $b, 10);
@@ -435,6 +462,8 @@ class LoanSimulationService
      */
     private function compare(string $a, string $b): int
     {
+        $a = $this->toDecimal($a);
+        $b = $this->toDecimal($b);
         return bccomp($a, $b, 10);
     }
 
