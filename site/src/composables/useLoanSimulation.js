@@ -91,10 +91,29 @@ export function useLoanSimulation() {
      * Converte valor formatado BR para número
      */
     function parseCurrency(value) {
-        if (!value) return '0';
-        return String(value)
-            .replace(/\./g, '')
-            .replace(',', '.');
+        if (!value && value !== 0) return '0';
+        
+        // Se já for número, retornar como string
+        if (typeof value === 'number') {
+            return String(value);
+        }
+        
+        // Converter string para número
+        let str = String(value);
+        
+        // Remover formatação brasileira (R$, espaços)
+        str = str.replace(/R\$/g, '').replace(/\s/g, '');
+        
+        // Se tem vírgula, assumir formato brasileiro (1.234,56)
+        if (str.includes(',')) {
+            str = str.replace(/\./g, '').replace(',', '.');
+        }
+        // Se não tem vírgula mas tem ponto, pode ser formato americano (1234.56)
+        // Nesse caso, manter como está
+        
+        // Converter para número e depois para string para garantir formato correto
+        const num = parseFloat(str);
+        return isNaN(num) ? '0' : String(num);
     }
 
     /**
@@ -133,8 +152,13 @@ export function useLoanSimulation() {
         error.value = null;
 
         try {
+            // InputNumber retorna número puro, não precisa parseCurrency
+            const valorSolicitado = typeof form.valor_solicitado === 'number' 
+                ? form.valor_solicitado 
+                : parseFloat(parseCurrency(form.valor_solicitado)) || 0;
+            
             const payload = {
-                valor_solicitado: parseCurrency(form.valor_solicitado),
+                valor_solicitado: valorSolicitado,
                 taxa_juros_mensal: parseTaxa(form.taxa_juros_mensal),
                 quantidade_parcelas: form.quantidade_parcelas,
                 modelo_amortizacao: removeAccents(form.modelo_amortizacao),

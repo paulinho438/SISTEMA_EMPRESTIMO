@@ -363,12 +363,35 @@ class LoanSimulationService
             return '0';
         }
 
+        // Se já for número, converter diretamente
+        if (is_numeric($value) && !is_string($value)) {
+            $floatValue = (float) $value;
+            if (!is_finite($floatValue)) {
+                return '0';
+            }
+            return number_format($floatValue, 10, '.', '');
+        }
+
         if (is_string($value)) {
-            // Remove formatação brasileira se houver
-            $value = str_replace(['R$', ' ', '.'], '', $value);
-            $value = str_replace(',', '.', $value);
+            // Remove espaços e R$
+            $value = trim(str_replace(['R$', ' '], '', $value));
+            
+            // Se tem vírgula, assumir formato brasileiro (1.234,56)
+            if (strpos($value, ',') !== false) {
+                // Remove pontos (separadores de milhar) e substitui vírgula por ponto
+                $value = str_replace('.', '', $value);
+                $value = str_replace(',', '.', $value);
+            }
+            // Se não tem vírgula, pode ser formato americano (1234.56) ou inteiro (1234)
+            // Nesse caso, manter como está
+            
             // Remove qualquer caractere não numérico exceto ponto e sinal negativo
             $value = preg_replace('/[^0-9.\-]/', '', $value);
+            
+            // Se ficou vazio após limpeza, retornar zero
+            if ($value === '' || $value === '-') {
+                return '0';
+            }
         }
 
         // Converter para float e depois para string formatada
@@ -395,6 +418,17 @@ class LoanSimulationService
     }
 
     /**
+     * Valida se string é numérica válida para BCMath
+     *
+     * @param string $value
+     * @return bool
+     */
+    private function isValidBcNumber(string $value): bool
+    {
+        return preg_match('/^-?\d+(\.\d+)?$/', $value) === 1;
+    }
+
+    /**
      * Soma dois valores decimais
      *
      * @param string $a
@@ -403,8 +437,8 @@ class LoanSimulationService
      */
     private function add(string $a, string $b): string
     {
-        $a = $this->toDecimal($a);
-        $b = $this->toDecimal($b);
+        $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
+        $b = $this->isValidBcNumber($b) ? $b : $this->toDecimal($b);
         return bcadd($a, $b, 10);
     }
 
@@ -417,8 +451,8 @@ class LoanSimulationService
      */
     private function subtract(string $a, string $b): string
     {
-        $a = $this->toDecimal($a);
-        $b = $this->toDecimal($b);
+        $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
+        $b = $this->isValidBcNumber($b) ? $b : $this->toDecimal($b);
         return bcsub($a, $b, 10);
     }
 
@@ -431,8 +465,8 @@ class LoanSimulationService
      */
     private function multiply(string $a, string $b): string
     {
-        $a = $this->toDecimal($a);
-        $b = $this->toDecimal($b);
+        $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
+        $b = $this->isValidBcNumber($b) ? $b : $this->toDecimal($b);
         return bcmul($a, $b, 10);
     }
 
@@ -445,8 +479,8 @@ class LoanSimulationService
      */
     private function divide(string $a, string $b): string
     {
-        $a = $this->toDecimal($a);
-        $b = $this->toDecimal($b);
+        $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
+        $b = $this->isValidBcNumber($b) ? $b : $this->toDecimal($b);
         if ($b === '0' || $b === '0.0000000000') {
             throw new \InvalidArgumentException('Divisão por zero');
         }
@@ -462,8 +496,8 @@ class LoanSimulationService
      */
     private function compare(string $a, string $b): int
     {
-        $a = $this->toDecimal($a);
-        $b = $this->toDecimal($b);
+        $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
+        $b = $this->isValidBcNumber($b) ? $b : $this->toDecimal($b);
         return bccomp($a, $b, 10);
     }
 
