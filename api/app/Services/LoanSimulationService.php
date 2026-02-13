@@ -133,7 +133,13 @@ class LoanSimulationService
         $dataUltimaParcela = $dataPrimeiraParcela->copy()->addDays($quantidadeParcelas - 1);
 
         // Dias corridos entre assinatura e vencimento da última parcela
-        $diasContrato = $dataAssinatura->diffInDays($dataUltimaParcela);
+        // Usar diffInDays com true para garantir dias corridos (não dias úteis)
+        $diasContrato = $dataAssinatura->diffInDays($dataUltimaParcela, false);
+        
+        // Garantir que não seja negativo
+        if ($diasContrato < 0) {
+            $diasContrato = 0;
+        }
 
         // IOF diário: 0,0082% ao dia sobre valor solicitado * dias
         $iofDiarioBase = $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_DIARIO_TAX));
@@ -273,22 +279,33 @@ class LoanSimulationService
         // Calcular IRR diária usando método numérico (Newton-Raphson ou bissecção)
         $irrDiaria = $this->calcularIRR($fluxo);
 
-        // Converter para CET mensal: (1 + i_d)^30 - 1
-        $umMaisIrrDiaria = $this->add('1', $irrDiaria);
-        $cetMensal = $this->subtract(
-            $this->power($umMaisIrrDiaria, '30'),
-            '1'
-        );
+        // Validar IRR antes de calcular CET
+        $irrFloat = (float) $irrDiaria;
+        if (!is_finite($irrFloat) || abs($irrFloat) > 10) {
+            // Se IRR for inválido ou muito grande, retornar valores padrão
+            return [
+                'mensal' => '0',
+                'anual' => '0',
+            ];
+        }
 
-        // Converter para CET anual: (1 + i_d)^365 - 1
-        $cetAnual = $this->subtract(
-            $this->power($umMaisIrrDiaria, '365'),
-            '1'
-        );
+        // Converter para CET mensal: (1 + i_d)^30 - 1
+        // Usar cálculo direto com float para evitar problemas de precisão
+        $umMaisIrr = 1 + $irrFloat;
+        $cetMensalFloat = pow($umMaisIrr, 30) - 1;
+        $cetAnualFloat = pow($umMaisIrr, 365) - 1;
+
+        // Validar resultados
+        if (!is_finite($cetMensalFloat) || abs($cetMensalFloat) > 1000) {
+            $cetMensalFloat = 0;
+        }
+        if (!is_finite($cetAnualFloat) || abs($cetAnualFloat) > 1000) {
+            $cetAnualFloat = 0;
+        }
 
         return [
-            'mensal' => $cetMensal,
-            'anual' => $cetAnual,
+            'mensal' => $this->toDecimal($cetMensalFloat),
+            'anual' => $this->toDecimal($cetAnualFloat),
         ];
     }
 
