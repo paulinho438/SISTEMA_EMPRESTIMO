@@ -101,8 +101,20 @@ const model = ref([
                     {
                         label: 'Emprestimos',
                         icon: 'pi pi-fw pi-arrow-right-arrow-left',
-                        to: '/emprestimos',
-                        permission: 'view_emprestimos'
+                        items: [
+                            {
+                                label: 'Lista de Empréstimos',
+                                icon: 'pi pi-fw pi-list',
+                                to: '/emprestimos',
+                                permission: 'view_emprestimos'
+                            },
+                            {
+                                label: 'Simulação de Empréstimo',
+                                icon: 'pi pi-fw pi-calculator',
+                                to: '/emprestimos/simulacao',
+                                permission: 'view_emprestimos'
+                            }
+                        ]
                     }
                 ]
             },
