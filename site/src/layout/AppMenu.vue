@@ -101,6 +101,7 @@ const model = ref([
                     {
                         label: 'Emprestimos',
                         icon: 'pi pi-fw pi-arrow-right-arrow-left',
+                        permission: 'view_emprestimos',
                         items: [
                             {
                                 label: 'Lista de Empréstimos',
