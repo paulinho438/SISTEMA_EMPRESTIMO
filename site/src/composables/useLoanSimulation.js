@@ -107,6 +107,13 @@ export function useLoanSimulation() {
     }
 
     /**
+     * Remove acentos de uma string
+     */
+    function removeAccents(str) {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    /**
      * Converte Date para string YYYY-MM-DD
      */
     function dateToString(date) {
@@ -130,8 +137,8 @@ export function useLoanSimulation() {
                 valor_solicitado: parseCurrency(form.valor_solicitado),
                 taxa_juros_mensal: parseTaxa(form.taxa_juros_mensal),
                 quantidade_parcelas: form.quantidade_parcelas,
-                modelo_amortizacao: form.modelo_amortizacao.toLowerCase(),
-                periodo_amortizacao: form.periodo_amortizacao.toLowerCase(),
+                modelo_amortizacao: removeAccents(form.modelo_amortizacao),
+                periodo_amortizacao: removeAccents(form.periodo_amortizacao),
                 data_assinatura: dateToString(form.data_assinatura),
                 data_primeira_parcela: dateToString(form.data_primeira_parcela),
                 calcular_iof: form.calcular_iof,

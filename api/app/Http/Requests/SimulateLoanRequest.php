@@ -17,6 +17,45 @@ class SimulateLoanRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation()
+    {
+        // Normalizar período de amortização removendo acentos e convertendo para minúsculas
+        if ($this->has('periodo_amortizacao')) {
+            $periodo = $this->input('periodo_amortizacao');
+            $periodoNormalizado = mb_strtolower($this->removeAccents($periodo));
+            $this->merge([
+                'periodo_amortizacao' => $periodoNormalizado,
+            ]);
+        }
+
+        // Normalizar modelo de amortização
+        if ($this->has('modelo_amortizacao')) {
+            $modelo = $this->input('modelo_amortizacao');
+            $modeloNormalizado = mb_strtolower($this->removeAccents($modelo));
+            $this->merge([
+                'modelo_amortizacao' => $modeloNormalizado,
+            ]);
+        }
+    }
+
+    /**
+     * Remove acentos de uma string
+     *
+     * @param string $string
+     * @return string
+     */
+    private function removeAccents($string)
+    {
+        $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+        $string = preg_replace('/\p{Mn}/u', '', \Normalizer::normalize($string, \Normalizer::FORM_D));
+        return $string;
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
@@ -56,6 +95,10 @@ class SimulateLoanRequest extends FormRequest
             'data_primeira_parcela.required' => 'A data da primeira parcela é obrigatória.',
             'data_primeira_parcela.date' => 'A data da primeira parcela deve ser uma data válida.',
             'data_primeira_parcela.after_or_equal' => 'A data da primeira parcela deve ser igual ou posterior à data de assinatura.',
+            'periodo_amortizacao.required' => 'O período de amortização é obrigatório.',
+            'periodo_amortizacao.in' => 'O período de amortização selecionado é inválido.',
+            'modelo_amortizacao.required' => 'O modelo de amortização é obrigatório.',
+            'modelo_amortizacao.in' => 'O modelo de amortização selecionado é inválido.',
         ];
     }
 }
