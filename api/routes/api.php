@@ -38,7 +38,8 @@ use App\Http\Controllers\{
     RelatorioFiscalController,
     RelatorioLucroRealController,
     WapiFilaController,
-    DaytradeController
+    DaytradeController,
+    LoanSimulationController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -317,6 +318,8 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::post('/daytrade', [DaytradeController::class, 'save']);
 
     Route::get('/cobrancaautomatica', [EmprestimoController::class, 'cobrancaAutomatica']);
+
+    Route::post('/loan/simulate', [LoanSimulationController::class, 'simulate']);
 
 
     Route::get('/emprestimo', [EmprestimoController::class, 'all']);

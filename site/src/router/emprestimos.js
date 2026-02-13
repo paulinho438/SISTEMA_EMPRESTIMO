@@ -33,6 +33,11 @@ const emprestimosRoutes = [
 				name: 'emprestimosAprovacaoBoleto',
 				component: () => import('@/views/contaspagar/ContaspagarAprovacao.vue')
 			},
+			{
+				path: '/emprestimos/simulacao',
+				name: 'emprestimosSimulacao',
+				component: () => import('@/views/emprestimos/LoanSimulator.vue')
+			},
 		]
 	}
 ];
