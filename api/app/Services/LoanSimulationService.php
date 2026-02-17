@@ -229,43 +229,35 @@ class LoanSimulationService
  */
 private function calcularCET(string $valorSolicitado, array $cronograma, Carbon $dataAssinatura): array
 {
-    // Entrada (cliente recebe)
     $pv = (float) $this->toDecimal($valorSolicitado);
-    if (!is_finite($pv) || $pv <= 0) {
+    if ($pv <= 0) {
         return ['mensal' => '0', 'anual' => '0'];
     }
 
-    // Parcelas (usar valor exibido em 2 casas para bater com o print)
+    // Usar parcela exibida (2 casas) para bater com o print
     $parcelas = [];
     foreach ($cronograma as $p) {
-        // usa o que você já coloca como string "26.75" etc.
         $parcelas[] = (float) $this->toDecimal($p['parcela']);
     }
 
-    // Calcula TIR diária por bissecção (por períodos 1..n)
-    $irrDiaria = $this->irrDiariaPorPeriodos($pv, $parcelas);
-    if (!is_finite($irrDiaria) || $irrDiaria <= -0.999999999) {
+    $irrDiaria = $this->irrDiariaPrice($pv, $parcelas);
+
+    if (!is_finite($irrDiaria) || $irrDiaria <= -0.999999) {
         return ['mensal' => '0', 'anual' => '0'];
     }
 
-    // CET mensal (decimal)
-    $cetMensalDec = pow(1.0 + $irrDiaria, self::DIAS_MES_COMERCIAL) - 1.0;
+    // CET mensal (30 dias comerciais)
+    $cetMensal = pow(1 + $irrDiaria, 30) - 1;
 
-    // CET anual (decimal) — anualiza via mensal (como o print)
-    $cetAnualDec  = pow(1.0 + $cetMensalDec, 12) - 1.0;
-
-    if (!is_finite($cetMensalDec)) $cetMensalDec = 0.0;
-    if (!is_finite($cetAnualDec))  $cetAnualDec  = 0.0;
-
-    // ✅ Retornar em % (não em decimal), pois o simulate() faz formatDecimal direto
-    $cetMensalPct = $cetMensalDec * 100.0;
-    $cetAnualPct  = $cetAnualDec  * 100.0;
+    // CET anual via mensal
+    $cetAnual = pow(1 + $cetMensal, 12) - 1;
 
     return [
-        'mensal' => $this->toDecimal($cetMensalPct),
-        'anual'  => $this->toDecimal($cetAnualPct),
+        'mensal' => $this->toDecimal($cetMensal * 100),
+        'anual'  => $this->toDecimal($cetAnual * 100),
     ];
 }
+
 
 /**
  * IRR diária por períodos (k=1..n) usando bissecção.
@@ -331,6 +323,64 @@ private function irrDiariaPorPeriodos(float $pv, array $parcelas): float
 
     return ($low + $high) / 2.0;
 }
+
+private function irrDiariaPrice(float $pv, array $parcelas): float
+{
+    $n = count($parcelas);
+    if ($n === 0) return 0.0;
+
+    // Função NPV
+    $npv = function (float $r) use ($pv, $parcelas): float {
+        $sum = 0.0;
+        $k = 1;
+        foreach ($parcelas as $p) {
+            $sum += $p / pow(1 + $r, $k);
+            $k++;
+        }
+        return $pv - $sum;
+    };
+
+    // Intervalo REALISTA para taxa diária
+    $low  = 0.0;
+    $high = 0.1; // 10% ao dia já é absurdamente alto
+
+    $fLow  = $npv($low);
+    $fHigh = $npv($high);
+
+    // Se não houver mudança de sinal, expandir até limite seguro
+    $tentativas = 0;
+    while (($fLow * $fHigh) > 0 && $tentativas < 20) {
+        $high *= 1.5;
+        $fHigh = $npv($high);
+        $tentativas++;
+        if ($high > 1) break; // nunca deixar passar 100% ao dia
+    }
+
+    if (($fLow * $fHigh) > 0) {
+        return 0.0;
+    }
+
+    // Bissecção
+    for ($i = 0; $i < 200; $i++) {
+        $mid = ($low + $high) / 2;
+        $fMid = $npv($mid);
+
+        if (abs($fMid) < 1e-12) {
+            return $mid;
+        }
+
+        if (($fLow * $fMid) < 0) {
+            $high = $mid;
+            $fHigh = $fMid;
+        } else {
+            $low = $mid;
+            $fLow = $fMid;
+        }
+    }
+
+    return ($low + $high) / 2;
+}
+
 
     /**
      * IRR diária por bissecção (float) com NPV por dias corridos.
