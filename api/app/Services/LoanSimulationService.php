@@ -307,27 +307,9 @@ class LoanSimulationService
         }
         // Remover limitação de abs($irrFloat) > 1 para permitir taxas altas (CET pode ser > 100%)
 
-        // Validar IRR antes de calcular potências (limitar a valores razoáveis)
-        // IRR diária muito alta (> 10% ao dia) indica problema no cálculo
-        if (abs($irrFloat) > 0.1) {
-            // Se IRR for muito alta, usar aproximação baseada em total pago vs recebido
-            $valorRecebido = (float) $valorSolicitado;
-            $totalPago = 0;
-            $diasTotal = 0;
-            foreach ($cronograma as $parcela) {
-                $totalPago += (float) $parcela['parcela'];
-                $diasTotal += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
-            }
-            if ($diasTotal > 0 && $valorRecebido > 0) {
-                // Taxa média diária aproximada
-                $irrFloat = ($totalPago - $valorRecebido) / ($valorRecebido * $diasTotal);
-            } else {
-                return [
-                    'mensal' => '0',
-                    'anual' => '0',
-                ];
-            }
-        }
+        // Validar IRR antes de calcular potências
+        // Se IRR for muito alta (> 10% ao dia) ou muito baixa (< -50%), pode indicar problema
+        // Mas não limitar automaticamente, apenas validar se é finito
         
         // Converter para CET mensal: (1 + i_d)^30 - 1
         // Usar cálculo direto com float para evitar problemas de precisão
@@ -344,8 +326,8 @@ class LoanSimulationService
         $cetMensalFloat = pow($umMaisIrr, 30) - 1;
         $cetAnualFloat = pow($umMaisIrr, 365) - 1;
 
-        // Validar resultados e limitar valores extremos (acima de 10000% indica erro)
-        if (!is_finite($cetMensalFloat) || abs($cetMensalFloat) > 100) {
+        // Validar resultados (remover limitação de 100% para permitir CETs altos como 972%)
+        if (!is_finite($cetMensalFloat)) {
             // Se CET mensal > 10000%, recalcular usando aproximação
             $valorRecebido = (float) $valorSolicitado;
             $totalPago = 0;
@@ -367,7 +349,7 @@ class LoanSimulationService
             }
         }
         
-        if (!is_finite($cetAnualFloat) || abs($cetAnualFloat) > 1000) {
+        if (!is_finite($cetAnualFloat)) {
             // Se CET anual > 100000%, recalcular
             $valorRecebido = (float) $valorSolicitado;
             $totalPago = 0;
@@ -401,10 +383,27 @@ class LoanSimulationService
      */
     private function calcularIRR(array $fluxo): string
     {
+        // Encontrar intervalo inicial testando diferentes taxas
+        $min = '0';
+        $max = '0.01'; // 1% ao dia como máximo inicial
+        
+        // Testar VPL em diferentes pontos para encontrar intervalo correto
+        $vplMin = $this->calcularVPL($fluxo, $min);
+        $vplMax = $this->calcularVPL($fluxo, $max);
+        
+        // Se ambos têm mesmo sinal, ajustar intervalo
+        if ($this->compare($vplMin, '0') > 0 && $this->compare($vplMax, '0') > 0) {
+            // Ambos positivos, aumentar max
+            $max = '0.1';
+            $vplMax = $this->calcularVPL($fluxo, $max);
+        } elseif ($this->compare($vplMin, '0') < 0 && $this->compare($vplMax, '0') < 0) {
+            // Ambos negativos, diminuir min
+            $min = '-0.01';
+            $vplMin = $this->calcularVPL($fluxo, $min);
+        }
+        
         // Método de bissecção para encontrar IRR
         $tolerancia = '0.00000001';
-        $min = '-0.99'; // -99% (limite inferior)
-        $max = '0.1';   // 10% ao dia (limite superior mais realista para evitar valores extremos)
         $maxIteracoes = 100;
         $taxa = '0';
 
@@ -432,9 +431,8 @@ class LoanSimulationService
 
         // Validar resultado antes de retornar
         $taxaFloat = (float) $taxa;
-        if (!is_finite($taxaFloat) || abs($taxaFloat) > 0.1) {
-            // Se IRR for inválido ou muito alto, calcular aproximação simples
-            // Taxa aproximada = (total_pago - valor_recebido) / (valor_recebido * dias_medio)
+        if (!is_finite($taxaFloat)) {
+            // Se IRR for inválido, calcular aproximação simples
             $valorRecebido = (float) $fluxo[0]['valor'];
             $totalPago = 0;
             $diasTotal = 0;
@@ -446,10 +444,6 @@ class LoanSimulationService
             }
             if ($diasTotal > 0 && $valorRecebido > 0) {
                 $taxaAproximada = ($totalPago - $valorRecebido) / ($valorRecebido * $diasTotal);
-                // Limitar taxa aproximada a valores razoáveis
-                if (abs($taxaAproximada) > 0.1) {
-                    $taxaAproximada = 0.1 * ($taxaAproximada > 0 ? 1 : -1);
-                }
                 return $this->toDecimal($taxaAproximada);
             }
             return '0';
