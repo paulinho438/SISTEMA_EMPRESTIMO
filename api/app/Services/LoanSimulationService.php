@@ -219,42 +219,118 @@ class LoanSimulationService
     }
 
     /**
-     * CET:
-     * 1) IRR diária
-     * 2) CET_mês = (1+irr)^30 - 1
-     * 3) CET_ano = (1+CET_mês)^12 - 1
-     */
-    private function calcularCET(string $valorSolicitado, array $cronograma, Carbon $dataAssinatura): array
-    {
-        $fluxo = [[
-            'data'  => $dataAssinatura,
-            'valor' => (float) $this->toDecimal($valorSolicitado), // entrada (cliente recebe)
-        ]];
-
-        foreach ($cronograma as $p) {
-            $valorParcela = isset($p['_parcela_exata']) ? (float)$this->toDecimal($p['_parcela_exata']) : (float)$this->toDecimal($p['parcela']);
-            $fluxo[] = [
-                'data'  => Carbon::parse($p['vencimento']),
-                'valor' => -$valorParcela,
-            ];
-        }
-
-        $irrDiaria = $this->calcularIRRFloat($fluxo);
-        if (!is_finite($irrDiaria) || abs($irrDiaria) < 1e-15) {
-            return ['mensal' => '0', 'anual' => '0'];
-        }
-
-        $cetMensal = pow(1.0 + $irrDiaria, self::DIAS_MES_COMERCIAL) - 1.0;
-        $cetAnual  = pow(1.0 + $cetMensal, 12) - 1.0;
-
-        if (!is_finite($cetMensal)) $cetMensal = 0.0;
-        if (!is_finite($cetAnual))  $cetAnual  = 0.0;
-
-        return [
-            'mensal' => $this->toDecimal($cetMensal),
-            'anual'  => $this->toDecimal($cetAnual),
-        ];
+ * CET (Custo Efetivo Total) mensal e anual
+ *
+ * ✅ Para bater com o print:
+ * - Usa TIR diária por períodos (k = 1..n) com parcelas em 2 casas (como exibidas)
+ * - CET_mês = (1 + i_d)^30 - 1
+ * - CET_ano = (1 + CET_mês)^12 - 1
+ * - Retorna em PERCENTUAL (ex.: 21.86), pois o front usa formatDecimal direto
+ */
+private function calcularCET(string $valorSolicitado, array $cronograma, Carbon $dataAssinatura): array
+{
+    // Entrada (cliente recebe)
+    $pv = (float) $this->toDecimal($valorSolicitado);
+    if (!is_finite($pv) || $pv <= 0) {
+        return ['mensal' => '0', 'anual' => '0'];
     }
+
+    // Parcelas (usar valor exibido em 2 casas para bater com o print)
+    $parcelas = [];
+    foreach ($cronograma as $p) {
+        // usa o que você já coloca como string "26.75" etc.
+        $parcelas[] = (float) $this->toDecimal($p['parcela']);
+    }
+
+    // Calcula TIR diária por bissecção (por períodos 1..n)
+    $irrDiaria = $this->irrDiariaPorPeriodos($pv, $parcelas);
+    if (!is_finite($irrDiaria) || $irrDiaria <= -0.999999999) {
+        return ['mensal' => '0', 'anual' => '0'];
+    }
+
+    // CET mensal (decimal)
+    $cetMensalDec = pow(1.0 + $irrDiaria, self::DIAS_MES_COMERCIAL) - 1.0;
+
+    // CET anual (decimal) — anualiza via mensal (como o print)
+    $cetAnualDec  = pow(1.0 + $cetMensalDec, 12) - 1.0;
+
+    if (!is_finite($cetMensalDec)) $cetMensalDec = 0.0;
+    if (!is_finite($cetAnualDec))  $cetAnualDec  = 0.0;
+
+    // ✅ Retornar em % (não em decimal), pois o simulate() faz formatDecimal direto
+    $cetMensalPct = $cetMensalDec * 100.0;
+    $cetAnualPct  = $cetAnualDec  * 100.0;
+
+    return [
+        'mensal' => $this->toDecimal($cetMensalPct),
+        'anual'  => $this->toDecimal($cetAnualPct),
+    ];
+}
+
+/**
+ * IRR diária por períodos (k=1..n) usando bissecção.
+ * Resolve: PV = Σ parcela_k / (1+r)^k
+ */
+private function irrDiariaPorPeriodos(float $pv, array $parcelas): float
+{
+    $n = count($parcelas);
+    if ($n === 0) return 0.0;
+
+    // NPV(r) = PV - Σ parcela/(1+r)^k
+    $npv = function (float $r) use ($pv, $parcelas): float {
+        $base = 1.0 + $r;
+        if ($base <= 0) return NAN;
+
+        $soma = 0.0;
+        $k = 1;
+        foreach ($parcelas as $pmt) {
+            $soma += $pmt / pow($base, $k);
+            $k++;
+        }
+        return $pv - $soma;
+    };
+
+    // Intervalo inicial
+    $low  = -0.999; // quase -100%
+    $high =  1.0;   // 100% ao dia (começa aqui e expande se precisar)
+
+    $fLow  = $npv($low);
+    $fHigh = $npv($high);
+
+    // Expandir high até ter mudança de sinal (ou limite)
+    $tries = 0;
+    while (is_finite($fLow) && is_finite($fHigh) && ($fLow * $fHigh) > 0 && $tries < 60) {
+        $high *= 2.0; // 200%, 400%, 800% ao dia...
+        $fHigh = $npv($high);
+        $tries++;
+        if ($high > 1e6) break;
+    }
+
+    // Se não achou intervalo, retorna 0
+    if (!is_finite($fLow) || !is_finite($fHigh) || ($fLow * $fHigh) > 0) {
+        return 0.0;
+    }
+
+    // Bissecção
+    $tol = 1e-12;
+    for ($i = 0; $i < 400; $i++) {
+        $mid = ($low + $high) / 2.0;
+        $fMid = $npv($mid);
+
+        if (!is_finite($fMid)) return 0.0;
+        if (abs($fMid) < $tol) return $mid;
+
+        if (($fLow * $fMid) <= 0) {
+            $high = $mid;
+            $fHigh = $fMid;
+        } else {
+            $low = $mid;
+            $fLow = $fMid;
+        }
+    }
+
+    return ($low + $high) / 2.0;
+}
 
     /**
      * IRR diária por bissecção (float) com NPV por dias corridos.
