@@ -284,8 +284,8 @@ class LoanSimulationService
 
         // Validar IRR antes de calcular CET
         $irrFloat = (float) $irrDiaria;
-        if (!is_finite($irrFloat) || abs($irrFloat) > 1) {
-            // Se IRR for inválido ou muito grande, calcular aproximação
+        if (!is_finite($irrFloat)) {
+            // Se IRR for inválido, calcular aproximação
             $valorRecebido = (float) $valorSolicitado;
             $totalPago = 0;
             $diasMedio = 0;
@@ -305,6 +305,7 @@ class LoanSimulationService
                 ];
             }
         }
+        // Remover limitação de abs($irrFloat) > 1 para permitir taxas altas (CET pode ser > 100%)
 
         // Converter para CET mensal: (1 + i_d)^30 - 1
         // Usar cálculo direto com float para evitar problemas de precisão
@@ -321,11 +322,11 @@ class LoanSimulationService
         $cetMensalFloat = pow($umMaisIrr, 30) - 1;
         $cetAnualFloat = pow($umMaisIrr, 365) - 1;
 
-        // Validar resultados e limitar valores extremos
-        if (!is_finite($cetMensalFloat) || abs($cetMensalFloat) > 100) {
+        // Validar resultados (remover limitação de 100% para permitir CETs altos)
+        if (!is_finite($cetMensalFloat)) {
             $cetMensalFloat = 0;
         }
-        if (!is_finite($cetAnualFloat) || abs($cetAnualFloat) > 100) {
+        if (!is_finite($cetAnualFloat)) {
             $cetAnualFloat = 0;
         }
 
@@ -374,7 +375,7 @@ class LoanSimulationService
 
         // Validar resultado antes de retornar
         $taxaFloat = (float) $taxa;
-        if (!is_finite($taxaFloat) || abs($taxaFloat) > 1) {
+        if (!is_finite($taxaFloat)) {
             // Se IRR for inválido, calcular aproximação simples
             // Taxa aproximada = (total_pago - valor_recebido) / (valor_recebido * dias_medio)
             $valorRecebido = (float) $fluxo[0]['valor'];
@@ -393,6 +394,7 @@ class LoanSimulationService
             return '0';
         }
 
+        // Remover limitação de abs($taxaFloat) > 1 para permitir taxas altas
         return $taxa;
     }
 
