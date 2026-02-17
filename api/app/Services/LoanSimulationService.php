@@ -35,26 +35,31 @@ class LoanSimulationService
             ? $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_ADICIONAL_TAX))
             : '0';
 
-        // ✅ IOF diário para bater com o print:
-        // IOF_diario = principal * aliquota_diaria * dias_corridos(assinatura -> último vencimento)
-        $iofDiario = '0';
-        if ($calcularIOF) {
-            $taxaIofDiaria = $simplesNacional
-                ? $this->toDecimal(self::IOF_DIARIO_TAX_SIMPLES)
-                : $this->toDecimal(self::IOF_DIARIO_TAX_PADRAO);
+        // -------------------------
+// IOF diário (IGUAL AO PRINT CORRETO)
+// -------------------------
+$iofDiario = '0';
 
-            // último vencimento = primeira parcela + (n-1) dias (parcelas diárias)
-            $dataUltimaParcela = $dataPrimeiraParcela->copy()->addDays($quantidadeParcelas - 1);
+if ($calcularIOF) {
 
-            // dias corridos entre assinatura e último vencimento
-            $diasIOF = (string) $dataAssinatura->diffInDays($dataUltimaParcela);
+    // ✅ Força usar a alíquota correta
+    $taxaIofDiaria = $simplesNacional
+        ? 0.000027   // 0,0027%
+        : 0.000082;  // 0,0082%
 
-            // IOF diário = principal * taxa_diaria * dias
-            $iofDiario = $this->multiply(
-                $this->multiply($valorSolicitado, $taxaIofDiaria),
-                $this->toDecimal($diasIOF)
-            );
-        }
+    // Último vencimento (parcelas diárias)
+    $dataUltimaParcela = $dataPrimeiraParcela
+        ->copy()
+        ->addDays($quantidadeParcelas - 1);
+
+    // Dias corridos entre assinatura e último vencimento
+    $dias = $dataAssinatura->diffInDays($dataUltimaParcela);
+
+    // IOF diário
+    $iofDiarioValor = (float)$valorSolicitado * $taxaIofDiaria * $dias;
+
+    $iofDiario = $this->toDecimal($iofDiarioValor);
+}
 
         $iofTotal      = $this->add($iofAdicional, $iofDiario);
         $valorContrato = $this->add($valorSolicitado, $iofTotal);
