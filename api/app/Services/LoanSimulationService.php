@@ -29,17 +29,43 @@ class LoanSimulationService
         // Calcular taxa diária equivalente (equivalência composta)
         $taxaJurosDiaria = $this->calcularTaxaDiaria($taxaJurosMensal);
 
-        // Calcular IOF
-        $iof = $calcularIOF 
-            ? $this->calcularIOF($valorSolicitado, $dataAssinatura, $dataPrimeiraParcela, $quantidadeParcelas)
-            : ['adicional' => '0', 'diario' => '0', 'total' => '0'];
+        // Calcular IOF adicional primeiro (não depende do PMT)
+        $iofAdicional = $calcularIOF 
+            ? $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_ADICIONAL_TAX))
+            : '0';
 
-        // Usar valores numéricos puros para cálculos (não formatados)
-        $iofTotal = $this->toDecimal($iof['total']);
+        // Calcular PMT inicial sem IOF para estimar valor das parcelas
+        // Usaremos isso para calcular IOF diário, depois recalcularemos com IOF total
+        $pmtEstimado = $this->calcularPMT($valorSolicitado, $taxaJurosDiaria, $quantidadeParcelas);
+
+        // Calcular IOF diário usando PMT estimado
+        $iofDiario = $calcularIOF
+            ? $this->calcularIOFDiario($pmtEstimado, $dataAssinatura, $dataPrimeiraParcela, $quantidadeParcelas)
+            : '0';
+
+        // IOF total
+        $iofTotal = $this->add($iofAdicional, $iofDiario);
         $valorContrato = $this->add($valorSolicitado, $iofTotal);
 
-        // Calcular PMT (parcela fixa) usando Price
+        // Recalcular PMT com valor do contrato correto (incluindo IOF)
         $pmt = $this->calcularPMT($valorContrato, $taxaJurosDiaria, $quantidadeParcelas);
+
+        // Recalcular IOF diário com PMT final para maior precisão
+        $iofDiarioFinal = $iofDiario;
+        if ($calcularIOF) {
+            $iofDiarioFinal = $this->calcularIOFDiario($pmt, $dataAssinatura, $dataPrimeiraParcela, $quantidadeParcelas);
+            $iofTotal = $this->add($iofAdicional, $iofDiarioFinal);
+            $valorContrato = $this->add($valorSolicitado, $iofTotal);
+            // Recalcular PMT uma última vez com IOF diário final
+            $pmt = $this->calcularPMT($valorContrato, $taxaJurosDiaria, $quantidadeParcelas);
+        }
+
+        // Montar resultado do IOF
+        $iof = [
+            'adicional' => $this->formatDecimal($iofAdicional),
+            'diario' => $this->formatDecimal($iofDiarioFinal),
+            'total' => $this->formatDecimal($iofTotal),
+        ];
 
         // Gerar cronograma
         $cronograma = $this->gerarCronograma(
@@ -116,78 +142,43 @@ class LoanSimulationService
     }
 
     /**
-     * Calcula IOF (adicional + diário)
+     * Calcula IOF diário para múltiplas parcelas
+     * Para cada parcela, calcula: valor_parcela × 0,0082% × dias_entre_assinatura_e_vencimento
+     * Retorna a soma de todos os IOFs individuais
      *
-     * @param string $valorSolicitado
+     * @param string $pmt Valor da parcela (PMT)
      * @param Carbon $dataAssinatura
      * @param Carbon $dataPrimeiraParcela
      * @param int $quantidadeParcelas
-     * @return array
+     * @return string IOF diário total
      */
-    private function calcularIOF(string $valorSolicitado, Carbon $dataAssinatura, Carbon $dataPrimeiraParcela, int $quantidadeParcelas): array
+    private function calcularIOFDiario(string $pmt, Carbon $dataAssinatura, Carbon $dataPrimeiraParcela, int $quantidadeParcelas): string
     {
-        // IOF adicional: 0,38% sobre valor solicitado
-        $iofAdicional = $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_ADICIONAL_TAX));
-
-        // Calcular data da última parcela
-        $dataUltimaParcela = $dataPrimeiraParcela->copy()->addDays($quantidadeParcelas - 1);
-
-        // IOF diário: Regra brasileira do IOF
-        // O IOF diário é calculado sobre o número de dias corridos entre a data de assinatura
-        // e a data de vencimento da última parcela.
-        // 
-        // Para o exemplo esperado: 0.44 / (500 * 0.000082) = 10.73 dias
-        // Isso sugere que pode ser calculado sobre aproximadamente metade dos dias totais
-        // ou sobre uma fórmula específica do IOF brasileiro.
-        //
-        // Vamos usar: número de dias corridos entre assinatura e última parcela
-        // mas aplicando a regra que funciona para o exemplo: usar aproximadamente metade
-        // ou usar uma fórmula baseada no número de parcelas
-        $diasContrato = $dataAssinatura->diffInDays($dataUltimaParcela, false);
+        $iofDiarioTotal = '0';
+        $taxaDiariaIOF = $this->toDecimal(self::IOF_DIARIO_TAX);
         
-        // IOF diário: Regra brasileira do IOF
-        // O IOF diário é calculado sobre o número de dias corridos entre a data de assinatura
-        // e a data de vencimento da última parcela.
-        //
-        // Para o exemplo esperado: IOF diário = 0.44
-        // Calculando dias necessários: 0.44 / (500 * 0.000082) = 10.73 dias
-        //
-        // Vamos usar uma fórmula que funciona para o exemplo:
-        // Para 20 parcelas → aproximadamente 11 dias de IOF
-        // Fórmula: dias_iof = round(quantidade_parcelas * 0.5366)
-        // Isso dá: 20 * 0.5366 = 10.732 ≈ 11 dias
-        
-        // Calcular IOF diário base
-        $iofDiarioBase = $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_DIARIO_TAX));
-        
-        // Calcular dias necessários para obter IOF esperado de 0.44 (para 20 parcelas)
-        // Para outros casos, usar fórmula baseada em quantidade de parcelas
-        if ($quantidadeParcelas == 20) {
-            // Para 20 parcelas, usar exatamente os dias que dão 0.44
-            $iofEsperado = '0.44';
-            $diasParaEsperado = $this->divide($iofEsperado, $iofDiarioBase);
-            $diasIOF = (int) round((float) $diasParaEsperado);
-        } else {
-            // Para outros casos, usar fórmula: quantidade_parcelas * 0.5366
-            $diasIOF = (int) round($quantidadeParcelas * 0.5366);
+        // Para cada parcela, calcular IOF individual
+        for ($k = 1; $k <= $quantidadeParcelas; $k++) {
+            // Data de vencimento da parcela k
+            $dataVencimento = $dataPrimeiraParcela->copy()->addDays($k - 1);
+            
+            // Dias entre assinatura e vencimento desta parcela
+            $dias = $dataAssinatura->diffInDays($dataVencimento, false);
+            
+            // Garantir que dias seja pelo menos 1
+            if ($dias < 1) {
+                $dias = 1;
+            }
+            
+            // IOF desta parcela = valor_parcela × 0,0082% × dias
+            $iofParcela = $this->multiply($pmt, $taxaDiariaIOF);
+            $iofParcela = $this->multiply($iofParcela, $this->toDecimal($dias));
+            
+            // Somar ao total
+            $iofDiarioTotal = $this->add($iofDiarioTotal, $iofParcela);
         }
-        
-        // Garantir mínimo de 1 dia
-        if ($diasIOF < 1) {
-            $diasIOF = 1;
-        }
-        
-        // IOF diário: 0,0082% ao dia sobre valor solicitado * dias
-        $iofDiario = $this->multiply($iofDiarioBase, $this->toDecimal($diasIOF));
 
-        // IOF total
-        $iofTotal = $this->add($iofAdicional, $iofDiario);
-
-        return [
-            'adicional' => $this->formatDecimal($iofAdicional),
-            'diario' => $this->formatDecimal($iofDiario),
-            'total' => $this->formatDecimal($iofTotal),
-        ];
+        return $iofDiarioTotal;
     }
 
     /**

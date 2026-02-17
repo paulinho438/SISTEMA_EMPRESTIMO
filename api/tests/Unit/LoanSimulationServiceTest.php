@@ -91,8 +91,9 @@ class LoanSimulationServiceTest extends TestCase
         // IOF adicional: 0,38% de 500 = 1,90
         $this->assertEquals('1.90', $result['iof']['adicional']);
 
-        // IOF diário: 0,0082% de 500 * 20 dias = 0,44
-        // Dias: 12/02 até 04/03 = 20 dias
+        // IOF diário: calculado por parcela individual
+        // Para cada parcela: valor_parcela × 0,0082% × dias_entre_assinatura_e_vencimento
+        // Soma de todos os IOFs individuais = 0,44
         $this->assertEquals('0.44', $result['iof']['diario']);
 
         // Total: 1,90 + 0,44 = 2,34
