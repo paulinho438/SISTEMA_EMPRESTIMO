@@ -307,6 +307,28 @@ class LoanSimulationService
         }
         // Remover limitação de abs($irrFloat) > 1 para permitir taxas altas (CET pode ser > 100%)
 
+        // Validar IRR antes de calcular potências (limitar a valores razoáveis)
+        // IRR diária muito alta (> 10% ao dia) indica problema no cálculo
+        if (abs($irrFloat) > 0.1) {
+            // Se IRR for muito alta, usar aproximação baseada em total pago vs recebido
+            $valorRecebido = (float) $valorSolicitado;
+            $totalPago = 0;
+            $diasTotal = 0;
+            foreach ($cronograma as $parcela) {
+                $totalPago += (float) $parcela['parcela'];
+                $diasTotal += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
+            }
+            if ($diasTotal > 0 && $valorRecebido > 0) {
+                // Taxa média diária aproximada
+                $irrFloat = ($totalPago - $valorRecebido) / ($valorRecebido * $diasTotal);
+            } else {
+                return [
+                    'mensal' => '0',
+                    'anual' => '0',
+                ];
+            }
+        }
+        
         // Converter para CET mensal: (1 + i_d)^30 - 1
         // Usar cálculo direto com float para evitar problemas de precisão
         $umMaisIrr = 1 + $irrFloat;
@@ -322,12 +344,47 @@ class LoanSimulationService
         $cetMensalFloat = pow($umMaisIrr, 30) - 1;
         $cetAnualFloat = pow($umMaisIrr, 365) - 1;
 
-        // Validar resultados (remover limitação de 100% para permitir CETs altos)
-        if (!is_finite($cetMensalFloat)) {
-            $cetMensalFloat = 0;
+        // Validar resultados e limitar valores extremos (acima de 10000% indica erro)
+        if (!is_finite($cetMensalFloat) || abs($cetMensalFloat) > 100) {
+            // Se CET mensal > 10000%, recalcular usando aproximação
+            $valorRecebido = (float) $valorSolicitado;
+            $totalPago = 0;
+            $diasMedio = 0;
+            $count = 0;
+            foreach ($cronograma as $parcela) {
+                $totalPago += (float) $parcela['parcela'];
+                $diasMedio += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
+                $count++;
+            }
+            if ($count > 0 && $diasMedio > 0) {
+                $diasMedio = $diasMedio / $count;
+                $irrAprox = ($totalPago - $valorRecebido) / ($valorRecebido * $diasMedio);
+                $cetMensalFloat = pow(1 + $irrAprox, 30) - 1;
+                $cetAnualFloat = pow(1 + $irrAprox, 365) - 1;
+            } else {
+                $cetMensalFloat = 0;
+                $cetAnualFloat = 0;
+            }
         }
-        if (!is_finite($cetAnualFloat)) {
-            $cetAnualFloat = 0;
+        
+        if (!is_finite($cetAnualFloat) || abs($cetAnualFloat) > 1000) {
+            // Se CET anual > 100000%, recalcular
+            $valorRecebido = (float) $valorSolicitado;
+            $totalPago = 0;
+            $diasMedio = 0;
+            $count = 0;
+            foreach ($cronograma as $parcela) {
+                $totalPago += (float) $parcela['parcela'];
+                $diasMedio += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
+                $count++;
+            }
+            if ($count > 0 && $diasMedio > 0) {
+                $diasMedio = $diasMedio / $count;
+                $irrAprox = ($totalPago - $valorRecebido) / ($valorRecebido * $diasMedio);
+                $cetAnualFloat = pow(1 + $irrAprox, 365) - 1;
+            } else {
+                $cetAnualFloat = 0;
+            }
         }
 
         return [
@@ -347,7 +404,7 @@ class LoanSimulationService
         // Método de bissecção para encontrar IRR
         $tolerancia = '0.00000001';
         $min = '-0.99'; // -99% (limite inferior)
-        $max = '2.0';   // 200% (limite superior mais realista)
+        $max = '0.1';   // 10% ao dia (limite superior mais realista para evitar valores extremos)
         $maxIteracoes = 100;
         $taxa = '0';
 
@@ -375,8 +432,8 @@ class LoanSimulationService
 
         // Validar resultado antes de retornar
         $taxaFloat = (float) $taxa;
-        if (!is_finite($taxaFloat)) {
-            // Se IRR for inválido, calcular aproximação simples
+        if (!is_finite($taxaFloat) || abs($taxaFloat) > 0.1) {
+            // Se IRR for inválido ou muito alto, calcular aproximação simples
             // Taxa aproximada = (total_pago - valor_recebido) / (valor_recebido * dias_medio)
             $valorRecebido = (float) $fluxo[0]['valor'];
             $totalPago = 0;
@@ -389,12 +446,15 @@ class LoanSimulationService
             }
             if ($diasTotal > 0 && $valorRecebido > 0) {
                 $taxaAproximada = ($totalPago - $valorRecebido) / ($valorRecebido * $diasTotal);
+                // Limitar taxa aproximada a valores razoáveis
+                if (abs($taxaAproximada) > 0.1) {
+                    $taxaAproximada = 0.1 * ($taxaAproximada > 0 ? 1 : -1);
+                }
                 return $this->toDecimal($taxaAproximada);
             }
             return '0';
         }
 
-        // Remover limitação de abs($taxaFloat) > 1 para permitir taxas altas
         return $taxa;
     }
 
@@ -409,13 +469,37 @@ class LoanSimulationService
     {
         $vpl = '0';
         $dataBase = $fluxo[0]['data'];
+        $taxaFloat = (float) $taxa;
 
+        // Se taxa for muito alta, usar cálculo com float para evitar problemas de precisão
+        if (abs($taxaFloat) > 0.1) {
+            $vplFloat = 0;
+            foreach ($fluxo as $item) {
+                $dias = $dataBase->diffInDays($item['data']);
+                $valorFloat = (float) $item['valor'];
+                if ($dias == 0) {
+                    $vplFloat += $valorFloat;
+                } else {
+                    $fatorDesconto = pow(1 + $taxaFloat, $dias);
+                    if (is_finite($fatorDesconto) && $fatorDesconto > 0) {
+                        $vplFloat += $valorFloat / $fatorDesconto;
+                    }
+                }
+            }
+            return $this->toDecimal($vplFloat);
+        }
+
+        // Para taxas normais, usar cálculo preciso com BCMath
         foreach ($fluxo as $item) {
             $dias = $dataBase->diffInDays($item['data']);
-            $umMaisTaxa = $this->add('1', $taxa);
-            $fatorDesconto = $this->power($umMaisTaxa, $this->toDecimal($dias));
-            $valorDescontado = $this->divide($this->toDecimal($item['valor']), $fatorDesconto);
-            $vpl = $this->add($vpl, $valorDescontado);
+            if ($dias == 0) {
+                $vpl = $this->add($vpl, $this->toDecimal($item['valor']));
+            } else {
+                $umMaisTaxa = $this->add('1', $taxa);
+                $fatorDesconto = $this->power($umMaisTaxa, $this->toDecimal($dias));
+                $valorDescontado = $this->divide($this->toDecimal($item['valor']), $fatorDesconto);
+                $vpl = $this->add($vpl, $valorDescontado);
+            }
         }
 
         return $vpl;
