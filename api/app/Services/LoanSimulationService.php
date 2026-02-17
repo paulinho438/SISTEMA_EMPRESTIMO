@@ -6,17 +6,18 @@ use Carbon\Carbon;
 
 class LoanSimulationService
 {
-    // Constantes IOF
+    // IOF adicional
     const IOF_ADICIONAL_TAX = 0.0038; // 0,38%
-    const IOF_DIARIO_TAX = 0.000082; // 0,0082% ao dia
+
+    // IOF diário (Brasil)
+    // Padrão (PF e PJ fora do Simples): 0,0082% ao dia
+    const IOF_DIARIO_TAX_PADRAO = 0.000082; // 0,0082% a.d.
+
+    // Simples/MEI (até R$ 30 mil): 0,00274% ao dia (aprox. 0,0027% exibido na tela)
+    const IOF_DIARIO_TAX_SIMPLES = 0.0000274; // 0,00274% a.d.
+
     const DIAS_MES_COMERCIAL = 30;
 
-    /**
-     * Simula um empréstimo com cálculo preciso de IOF, Price diário e CET
-     *
-     * @param array $inputs
-     * @return array
-     */
     public function simulate(array $inputs): array
     {
         $valorSolicitado = $this->toDecimal($inputs['valor_solicitado']);
@@ -26,36 +27,65 @@ class LoanSimulationService
         $dataPrimeiraParcela = Carbon::parse($inputs['data_primeira_parcela']);
         $calcularIOF = $inputs['calcular_iof'] ?? true;
 
-        // Calcular taxa diária equivalente (equivalência composta)
+        $simplesNacional = (bool)($inputs['simples_nacional'] ?? false);
+
+        // taxa diária equivalente (juros compostos)
         $taxaJurosDiaria = $this->calcularTaxaDiaria($taxaJurosMensal);
 
-        // Calcular IOF adicional primeiro (não depende do PMT)
-        $iofAdicional = $calcularIOF 
+        // IOF adicional (sempre em cima do valor solicitado)
+        $iofAdicional = $calcularIOF
             ? $this->multiply($valorSolicitado, $this->toDecimal(self::IOF_ADICIONAL_TAX))
             : '0';
 
-        // Calcular IOF diário sobre valor solicitado (não sobre PMT)
-        // Para múltiplas parcelas, o IOF diário é calculado sobre o valor solicitado
-        // usando um fator baseado na quantidade de parcelas
-        $iofDiario = $calcularIOF
-            ? $this->calcularIOFDiario($valorSolicitado, $dataAssinatura, $dataPrimeiraParcela, $quantidadeParcelas)
-            : '0';
+        // -------------------------
+        // IOF diário (CORRETO): usa prazo médio ponderado (PMP)
+        // -------------------------
+        $iofDiario = '0';
 
-        // IOF total
+        if ($calcularIOF) {
+            $taxaIofDiaria = $simplesNacional
+                ? $this->toDecimal(self::IOF_DIARIO_TAX_SIMPLES)
+                : $this->toDecimal(self::IOF_DIARIO_TAX_PADRAO);
+
+            // 1ª passada: calcula PMT/schedule somente com o principal (sem IOF)
+            $pmtSemIof = $this->calcularPMT($valorSolicitado, $taxaJurosDiaria, $quantidadeParcelas);
+
+            $cronogramaSemIof = $this->gerarCronograma(
+                $valorSolicitado,
+                $taxaJurosDiaria,
+                $quantidadeParcelas,
+                $dataPrimeiraParcela,
+                $pmtSemIof
+            );
+
+            // Prazo médio ponderado (em dias) usando amortização e dias até cada vencimento
+            $prazoMedioDias = $this->calcularPrazoMedioPonderado(
+                $valorSolicitado,
+                $cronogramaSemIof,
+                $dataAssinatura
+            );
+
+            // IOF diário = principal * taxa_diaria * prazo_medio
+            $iofDiario = $this->multiply(
+                $this->multiply($valorSolicitado, $taxaIofDiaria),
+                $prazoMedioDias
+            );
+        }
+
+        // IOF total e valor do contrato
         $iofTotal = $this->add($iofAdicional, $iofDiario);
         $valorContrato = $this->add($valorSolicitado, $iofTotal);
 
-        // Calcular PMT com valor do contrato (incluindo IOF)
+        // PMT final com valor do contrato (inclui IOF)
         $pmt = $this->calcularPMT($valorContrato, $taxaJurosDiaria, $quantidadeParcelas);
 
-        // Montar resultado do IOF
         $iof = [
             'adicional' => $this->formatDecimal($iofAdicional),
             'diario' => $this->formatDecimal($iofDiario),
             'total' => $this->formatDecimal($iofTotal),
         ];
 
-        // Gerar cronograma
+        // Cronograma final
         $cronograma = $this->gerarCronograma(
             $valorContrato,
             $taxaJurosDiaria,
@@ -64,15 +94,10 @@ class LoanSimulationService
             $pmt
         );
 
-        // Calcular totais
         $totalParcelas = $this->somarParcelas($cronograma);
 
-        // Calcular CET
-        $cet = $this->calcularCET(
-            $valorSolicitado,
-            $cronograma,
-            $dataAssinatura
-        );
+        // CET: IRR diária -> mensal (30d) -> anual (12m)
+        $cet = $this->calcularCET($valorSolicitado, $cronograma, $dataAssinatura);
 
         return [
             'inputs' => [
@@ -83,6 +108,7 @@ class LoanSimulationService
                 'data_primeira_parcela' => $dataPrimeiraParcela->format('Y-m-d'),
                 'modelo_amortizacao' => $inputs['modelo_amortizacao'] ?? 'price',
                 'periodo_amortizacao' => $inputs['periodo_amortizacao'] ?? 'diario',
+                'simples_nacional' => $simplesNacional,
             ],
             'taxas' => [
                 'juros_mensal' => $this->formatDecimal($taxaJurosMensal),
@@ -102,116 +128,74 @@ class LoanSimulationService
     }
 
     /**
-     * Converte taxa mensal para taxa diária (equivalência composta)
      * i_d = (1 + i_m)^(1/30) - 1
-     *
-     * @param string $taxaMensal Taxa mensal em decimal (ex: 0.20 para 20%)
-     * @return string Taxa diária em decimal
      */
     private function calcularTaxaDiaria(string $taxaMensal): string
     {
-        // Converter para decimal se necessário
         $taxaMensalDecimal = $this->toDecimal($taxaMensal);
-        
-        // (1 + i_m)
         $umMaisTaxaMensal = $this->add('1', $taxaMensalDecimal);
-        
-        // (1 + i_m)^(1/30) usando método numérico iterativo
-        // Usar método de Newton ou aproximação binomial para maior precisão
-        // Para (1+x)^(1/n), podemos usar: exp((1/n) * ln(1+x))
-        
+
         $lnBase = $this->ln($umMaisTaxaMensal);
         $expoente = $this->divide('1', (string) self::DIAS_MES_COMERCIAL);
         $produto = $this->multiply($expoente, $lnBase);
         $resultado = $this->exp($produto);
-        
-        // Subtrair 1
+
         return $this->subtract($resultado, '1');
     }
 
     /**
-     * Calcula IOF diário para múltiplas parcelas
-     * O IOF diário é calculado sobre o valor solicitado usando um fator baseado na quantidade de parcelas
-     * Fórmula: valor_solicitado × 0,0082% × (quantidade_parcelas × fator_dias_por_parcela)
-     * Onde fator_dias_por_parcela ≈ 0.3293 para chegar ao valor esperado
-     *
-     * @param string $valorSolicitado Valor solicitado
-     * @param Carbon $dataAssinatura
-     * @param Carbon $dataPrimeiraParcela
-     * @param int $quantidadeParcelas
-     * @return string IOF diário total
+     * Prazo Médio Ponderado (dias):
+     * PMP = sum(amortizacao_k * dias_k) / principal
      */
-    private function calcularIOFDiario(string $valorSolicitado, Carbon $dataAssinatura, Carbon $dataPrimeiraParcela, int $quantidadeParcelas): string
+    private function calcularPrazoMedioPonderado(string $principal, array $cronograma, Carbon $dataAssinatura): string
     {
-        $taxaDiariaIOF = $this->toDecimal(self::IOF_DIARIO_TAX);
-        
-        // Calcular dias efetivos para IOF diário
-        // Para múltiplas parcelas diárias, usar fator aproximado de 0.3293 dias por parcela
-        // Isso resulta em aproximadamente quantidade_parcelas / 3 dias
-        $fatorDiasPorParcela = '0.3293';
-        $diasIOF = $this->multiply($this->toDecimal($quantidadeParcelas), $fatorDiasPorParcela);
-        
-        // IOF diário = valor_solicitado × 0,0082% × dias
-        $iofDiarioBase = $this->multiply($valorSolicitado, $taxaDiariaIOF);
-        $iofDiarioTotal = $this->multiply($iofDiarioBase, $diasIOF);
+        $numerador = '0';
 
-        return $iofDiarioTotal;
+        foreach ($cronograma as $parcela) {
+            $dias = (string) $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
+            $amortizacao = $this->toDecimal($parcela['amortizacao']);
+
+            $numerador = $this->add(
+                $numerador,
+                $this->multiply($amortizacao, $this->toDecimal($dias))
+            );
+        }
+
+        // Evitar divisão por zero
+        if ($this->compare($principal, '0') <= 0) {
+            return '0';
+        }
+
+        return $this->divide($numerador, $principal);
     }
 
-    /**
-     * Calcula PMT (parcela fixa) usando Price
-     * PMT = PV * [ i / (1 - (1 + i)^(-n)) ]
-     *
-     * @param string $valorPresente Valor do contrato (PV)
-     * @param string $taxaDiaria Taxa de juros diária
-     * @param int $numeroParcelas
-     * @return string
-     */
     private function calcularPMT(string $valorPresente, string $taxaDiaria, int $numeroParcelas): string
     {
-        // (1 + i)
         $umMaisTaxa = $this->add('1', $taxaDiaria);
-
-        // (1 + i)^(-n)
         $expoenteNegativo = $this->multiply('-1', $this->toDecimal($numeroParcelas));
         $potenciaNegativa = $this->power($umMaisTaxa, $expoenteNegativo);
-
-        // 1 - (1 + i)^(-n)
         $denominador = $this->subtract('1', $potenciaNegativa);
 
-        // i / (1 - (1 + i)^(-n))
-        $fator = $this->divide($taxaDiaria, $denominador);
+        // Se i = 0, PMT = PV/n
+        if ($this->compare($taxaDiaria, '0') == 0) {
+            return $this->divide($valorPresente, $this->toDecimal((string)$numeroParcelas));
+        }
 
-        // PMT = PV * fator
+        $fator = $this->divide($taxaDiaria, $denominador);
         return $this->multiply($valorPresente, $fator);
     }
 
-    /**
-     * Gera cronograma de pagamento
-     *
-     * @param string $valorContrato
-     * @param string $taxaDiaria
-     * @param int $quantidadeParcelas
-     * @param Carbon $dataPrimeiraParcela
-     * @param string $pmt
-     * @return array
-     */
     private function gerarCronograma(string $valorContrato, string $taxaDiaria, int $quantidadeParcelas, Carbon $dataPrimeiraParcela, string $pmt): array
     {
         $cronograma = [];
         $saldoDevedor = $valorContrato;
-        $umMaisTaxa = $this->add('1', $taxaDiaria);
 
         for ($k = 1; $k <= $quantidadeParcelas; $k++) {
             $dataVencimento = $dataPrimeiraParcela->copy()->addDays($k - 1);
 
-            // Juros do período
             $juros = $this->multiply($saldoDevedor, $taxaDiaria);
-
-            // Amortização = PMT - Juros
             $amortizacao = $this->subtract($pmt, $juros);
 
-            // Ajustar última parcela para garantir saldo final = 0
             if ($k === $quantidadeParcelas) {
                 $amortizacao = $saldoDevedor;
                 $parcelaAjustada = $this->add($juros, $amortizacao);
@@ -219,10 +203,7 @@ class LoanSimulationService
                 $parcelaAjustada = $pmt;
             }
 
-            // Novo saldo devedor
             $saldoDevedor = $this->subtract($saldoDevedor, $amortizacao);
-
-            // Garantir que saldo não seja negativo
             if ($this->compare($saldoDevedor, '0') < 0) {
                 $saldoDevedor = '0';
             }
@@ -240,12 +221,6 @@ class LoanSimulationService
         return $cronograma;
     }
 
-    /**
-     * Soma todas as parcelas do cronograma
-     *
-     * @param array $cronograma
-     * @return string
-     */
     private function somarParcelas(array $cronograma): string
     {
         $total = '0';
@@ -256,241 +231,128 @@ class LoanSimulationService
     }
 
     /**
-     * Calcula CET (Custo Efetivo Total) mensal e anual usando IRR
-     *
-     * @param string $valorSolicitado Valor recebido pelo cliente
-     * @param array $cronograma Cronograma de pagamentos
-     * @param Carbon $dataAssinatura
-     * @return array ['mensal' => string, 'anual' => string]
+     * CET:
+     * 1) IRR diária (pela data)
+     * 2) CET_mês = (1+irr)^30 - 1
+     * 3) CET_ano = (1+CET_mês)^12 - 1   ✅ (ajuste aqui)
      */
     private function calcularCET(string $valorSolicitado, array $cronograma, Carbon $dataAssinatura): array
     {
-        // Construir fluxo de caixa
-        $fluxo = [];
-        $fluxo[] = [
+        $fluxo = [[
             'data' => $dataAssinatura,
-            'valor' => $this->toDecimal($valorSolicitado), // Entrada (positivo para o cliente)
-        ];
+            'valor' => $this->toDecimal($valorSolicitado), // entrada
+        ]];
 
         foreach ($cronograma as $parcela) {
             $fluxo[] = [
                 'data' => Carbon::parse($parcela['vencimento']),
-                'valor' => $this->multiply('-1', $this->toDecimal($parcela['parcela'])), // Saída (negativo)
+                'valor' => $this->multiply('-1', $this->toDecimal($parcela['parcela'])),
             ];
         }
 
-        // Calcular IRR diária usando método numérico (Newton-Raphson ou bissecção)
         $irrDiaria = $this->calcularIRR($fluxo);
+        $irr = (float) $irrDiaria;
 
-        // Validar IRR antes de calcular CET
-        $irrFloat = (float) $irrDiaria;
-        if (!is_finite($irrFloat)) {
-            // Se IRR for inválido, calcular aproximação
-            $valorRecebido = (float) $valorSolicitado;
-            $totalPago = 0;
-            $diasMedio = 0;
-            $count = 0;
-            foreach ($cronograma as $parcela) {
-                $totalPago += (float) $parcela['parcela'];
-                $diasMedio += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
-                $count++;
-            }
-            if ($count > 0 && $diasMedio > 0) {
-                $diasMedio = $diasMedio / $count;
-                $irrFloat = ($totalPago - $valorRecebido) / ($valorRecebido * $diasMedio);
-            } else {
-                return [
-                    'mensal' => '0',
-                    'anual' => '0',
-                ];
-            }
+        if (!is_finite($irr) || abs($irr) < 1e-12) {
+            return ['mensal' => '0', 'anual' => '0'];
         }
-        // Remover limitação de abs($irrFloat) > 1 para permitir taxas altas (CET pode ser > 100%)
 
-        // Validar IRR antes de calcular potências
-        // Se IRR for muito alta (> 10% ao dia) ou muito baixa (< -50%), pode indicar problema
-        // Mas não limitar automaticamente, apenas validar se é finito
-        
-        // Converter para CET mensal: (1 + i_d)^30 - 1
-        // Usar cálculo direto com float para evitar problemas de precisão
-        $umMaisIrr = 1 + $irrFloat;
-        
-        // Validar antes de calcular potência
-        if ($umMaisIrr <= 0 || !is_finite($umMaisIrr)) {
-            return [
-                'mensal' => '0',
-                'anual' => '0',
-            ];
+        $umMais = 1 + $irr;
+        if ($umMais <= 0 || !is_finite($umMais)) {
+            return ['mensal' => '0', 'anual' => '0'];
         }
-        
-        $cetMensalFloat = pow($umMaisIrr, 30) - 1;
-        $cetAnualFloat = pow($umMaisIrr, 365) - 1;
 
-        // Validar resultados (remover limitação de 100% para permitir CETs altos como 972%)
-        if (!is_finite($cetMensalFloat)) {
-            // Se CET mensal > 10000%, recalcular usando aproximação
-            $valorRecebido = (float) $valorSolicitado;
-            $totalPago = 0;
-            $diasMedio = 0;
-            $count = 0;
-            foreach ($cronograma as $parcela) {
-                $totalPago += (float) $parcela['parcela'];
-                $diasMedio += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
-                $count++;
-            }
-            if ($count > 0 && $diasMedio > 0) {
-                $diasMedio = $diasMedio / $count;
-                $irrAprox = ($totalPago - $valorRecebido) / ($valorRecebido * $diasMedio);
-                $cetMensalFloat = pow(1 + $irrAprox, 30) - 1;
-                $cetAnualFloat = pow(1 + $irrAprox, 365) - 1;
-            } else {
-                $cetMensalFloat = 0;
-                $cetAnualFloat = 0;
-            }
-        }
-        
-        if (!is_finite($cetAnualFloat)) {
-            // Se CET anual > 100000%, recalcular
-            $valorRecebido = (float) $valorSolicitado;
-            $totalPago = 0;
-            $diasMedio = 0;
-            $count = 0;
-            foreach ($cronograma as $parcela) {
-                $totalPago += (float) $parcela['parcela'];
-                $diasMedio += $dataAssinatura->diffInDays(Carbon::parse($parcela['vencimento']));
-                $count++;
-            }
-            if ($count > 0 && $diasMedio > 0) {
-                $diasMedio = $diasMedio / $count;
-                $irrAprox = ($totalPago - $valorRecebido) / ($valorRecebido * $diasMedio);
-                $cetAnualFloat = pow(1 + $irrAprox, 365) - 1;
-            } else {
-                $cetAnualFloat = 0;
-            }
-        }
+        $cetMensal = pow($umMais, self::DIAS_MES_COMERCIAL) - 1;
+        $cetAnual  = pow(1 + $cetMensal, 12) - 1; // ✅ anualiza via mensal
+
+        if (!is_finite($cetMensal)) $cetMensal = 0;
+        if (!is_finite($cetAnual))  $cetAnual = 0;
 
         return [
-            'mensal' => $this->toDecimal($cetMensalFloat),
-            'anual' => $this->toDecimal($cetAnualFloat),
+            'mensal' => $this->toDecimal($cetMensal),
+            'anual' => $this->toDecimal($cetAnual),
         ];
     }
 
     /**
-     * Calcula IRR (Taxa Interna de Retorno) usando método de bissecção
-     *
-     * @param array $fluxo Fluxo de caixa [['data' => Carbon, 'valor' => string], ...]
-     * @return string Taxa diária em decimal
+     * IRR por bissecção com expansão de intervalo até achar mudança de sinal.
      */
     private function calcularIRR(array $fluxo): string
     {
-        // Encontrar intervalo inicial testando diferentes taxas
-        $min = '0';
-        $max = '0.01'; // 1% ao dia como máximo inicial
-        
-        // Testar VPL em diferentes pontos para encontrar intervalo correto
+        $min = '-0.50';  // -50% ao dia (limite bem baixo)
+        $max = '0.50';   //  50% ao dia (limite bem alto)
+
         $vplMin = $this->calcularVPL($fluxo, $min);
         $vplMax = $this->calcularVPL($fluxo, $max);
-        
-        // Se ambos têm mesmo sinal, ajustar intervalo
-        if ($this->compare($vplMin, '0') > 0 && $this->compare($vplMax, '0') > 0) {
-            // Ambos positivos, aumentar max
-            $max = '0.1';
-            $vplMax = $this->calcularVPL($fluxo, $max);
-        } elseif ($this->compare($vplMin, '0') < 0 && $this->compare($vplMax, '0') < 0) {
-            // Ambos negativos, diminuir min
-            $min = '-0.01';
-            $vplMin = $this->calcularVPL($fluxo, $min);
+
+        // Expandir até ter sinais opostos (ou até um limite)
+        $tentativas = 0;
+        while ($this->compare($this->multiply($vplMin, $vplMax), '0') > 0 && $tentativas < 20) {
+            // Se ambos positivos: aumenta max; se ambos negativos: diminui min
+            if ($this->compare($vplMin, '0') > 0 && $this->compare($vplMax, '0') > 0) {
+                $max = $this->multiply($max, '2'); // dobra
+                $vplMax = $this->calcularVPL($fluxo, $max);
+            } else {
+                $min = $this->multiply($min, '2'); // mais negativo
+                $vplMin = $this->calcularVPL($fluxo, $min);
+            }
+            $tentativas++;
         }
-        
-        // Método de bissecção para encontrar IRR
+
+        // Se não conseguiu “bracketing”, retorna 0
+        if ($this->compare($this->multiply($vplMin, $vplMax), '0') > 0) {
+            return '0';
+        }
+
         $tolerancia = '0.00000001';
-        $maxIteracoes = 100;
+        $maxIteracoes = 200;
         $taxa = '0';
 
         for ($i = 0; $i < $maxIteracoes; $i++) {
             $taxa = $this->divide($this->add($min, $max), '2');
             $vpl = $this->calcularVPL($fluxo, $taxa);
-            $vplAbs = $this->abs($vpl);
 
-            if ($this->compare($vplAbs, $tolerancia) < 0) {
+            if ($this->compare($this->abs($vpl), $tolerancia) < 0) {
                 return $taxa;
             }
 
-            if ($this->compare($vpl, '0') > 0) {
-                $min = $taxa;
-            } else {
+            // Decide lado mantendo mudança de sinal
+            if ($this->compare($this->multiply($vplMin, $vpl), '0') <= 0) {
                 $max = $taxa;
+                $vplMax = $vpl;
+            } else {
+                $min = $taxa;
+                $vplMin = $vpl;
             }
-            
-            // Verificar se os limites estão muito próximos
-            $diff = $this->subtract($max, $min);
-            if ($this->compare($diff, '0.0000001') < 0) {
-                break;
-            }
-        }
-
-        // Validar resultado antes de retornar
-        $taxaFloat = (float) $taxa;
-        if (!is_finite($taxaFloat)) {
-            // Se IRR for inválido, calcular aproximação simples
-            $valorRecebido = (float) $fluxo[0]['valor'];
-            $totalPago = 0;
-            $diasTotal = 0;
-            foreach ($fluxo as $item) {
-                if ((float) $item['valor'] < 0) {
-                    $totalPago += abs((float) $item['valor']);
-                    $diasTotal += $fluxo[0]['data']->diffInDays($item['data']);
-                }
-            }
-            if ($diasTotal > 0 && $valorRecebido > 0) {
-                $taxaAproximada = ($totalPago - $valorRecebido) / ($valorRecebido * $diasTotal);
-                return $this->toDecimal($taxaAproximada);
-            }
-            return '0';
         }
 
         return $taxa;
     }
 
-    /**
-     * Calcula VPL (Valor Presente Líquido) do fluxo de caixa
-     *
-     * @param array $fluxo
-     * @param string $taxa Taxa de desconto diária
-     * @return string
-     */
     private function calcularVPL(array $fluxo, string $taxa): string
     {
         $vpl = '0';
         $dataBase = $fluxo[0]['data'];
         $taxaFloat = (float) $taxa;
 
-        // Se taxa for muito alta, usar cálculo com float para evitar problemas de precisão
+        // float para taxas grandes
         if (abs($taxaFloat) > 0.1) {
             $vplFloat = 0;
             foreach ($fluxo as $item) {
                 $dias = $dataBase->diffInDays($item['data']);
-                $valorFloat = (float) $item['valor'];
-                if ($dias == 0) {
-                    $vplFloat += $valorFloat;
-                } else {
-                    $fatorDesconto = pow(1 + $taxaFloat, $dias);
-                    if (is_finite($fatorDesconto) && $fatorDesconto > 0) {
-                        $vplFloat += $valorFloat / $fatorDesconto;
-                    }
-                }
+                $valor = (float) $item['valor'];
+                $vplFloat += ($dias === 0) ? $valor : $valor / pow(1 + $taxaFloat, $dias);
             }
             return $this->toDecimal($vplFloat);
         }
 
-        // Para taxas normais, usar cálculo preciso com BCMath
         foreach ($fluxo as $item) {
             $dias = $dataBase->diffInDays($item['data']);
-            if ($dias == 0) {
+            if ($dias === 0) {
                 $vpl = $this->add($vpl, $this->toDecimal($item['valor']));
             } else {
                 $umMaisTaxa = $this->add('1', $taxa);
-                $fatorDesconto = $this->power($umMaisTaxa, $this->toDecimal($dias));
+                $fatorDesconto = $this->power($umMaisTaxa, $this->toDecimal((string)$dias));
                 $valorDescontado = $this->divide($this->toDecimal($item['valor']), $fatorDesconto);
                 $vpl = $this->add($vpl, $valorDescontado);
             }
@@ -499,93 +361,45 @@ class LoanSimulationService
         return $vpl;
     }
 
-    // ==================== Funções auxiliares de cálculo decimal ====================
+    // ==================== auxiliares decimais (mantive os seus) ====================
 
-    /**
-     * Converte valor para string decimal com precisão
-     *
-     * @param mixed $value
-     * @return string
-     */
     private function toDecimal($value): string
     {
-        // Se for null ou vazio, retornar zero
         if ($value === null || $value === '' || $value === false) {
             return '0';
         }
 
-        // Se já for número, converter diretamente
         if (is_numeric($value) && !is_string($value)) {
             $floatValue = (float) $value;
-            if (!is_finite($floatValue)) {
-                return '0';
-            }
+            if (!is_finite($floatValue)) return '0';
             return number_format($floatValue, 10, '.', '');
         }
 
         if (is_string($value)) {
-            // Remove espaços e R$
             $value = trim(str_replace(['R$', ' '], '', $value));
-            
-            // Se tem vírgula, assumir formato brasileiro (1.234,56)
             if (strpos($value, ',') !== false) {
-                // Remove pontos (separadores de milhar) e substitui vírgula por ponto
                 $value = str_replace('.', '', $value);
                 $value = str_replace(',', '.', $value);
             }
-            // Se não tem vírgula, pode ser formato americano (1234.56) ou inteiro (1234)
-            // Nesse caso, manter como está
-            
-            // Remove qualquer caractere não numérico exceto ponto e sinal negativo
             $value = preg_replace('/[^0-9.\-]/', '', $value);
-            
-            // Se ficou vazio após limpeza, retornar zero
-            if ($value === '' || $value === '-') {
-                return '0';
-            }
+            if ($value === '' || $value === '-') return '0';
         }
 
-        // Converter para float e depois para string formatada
         $floatValue = (float) $value;
-        
-        // Verificar se é um número válido
-        if (!is_finite($floatValue)) {
-            return '0';
-        }
-
-        // Formatar com 10 casas decimais, sem separador de milhar
+        if (!is_finite($floatValue)) return '0';
         return number_format($floatValue, 10, '.', '');
     }
 
-    /**
-     * Formata decimal para exibição (2 casas decimais)
-     *
-     * @param string $value
-     * @return string
-     */
     private function formatDecimal(string $value): string
     {
         return number_format((float) $value, 2, '.', '');
     }
 
-    /**
-     * Valida se string é numérica válida para BCMath
-     *
-     * @param string $value
-     * @return bool
-     */
     private function isValidBcNumber(string $value): bool
     {
         return preg_match('/^-?\d+(\.\d+)?$/', $value) === 1;
     }
 
-    /**
-     * Soma dois valores decimais
-     *
-     * @param string $a
-     * @param string $b
-     * @return string
-     */
     private function add(string $a, string $b): string
     {
         $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
@@ -593,13 +407,6 @@ class LoanSimulationService
         return bcadd($a, $b, 10);
     }
 
-    /**
-     * Subtrai dois valores decimais
-     *
-     * @param string $a
-     * @param string $b
-     * @return string
-     */
     private function subtract(string $a, string $b): string
     {
         $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
@@ -607,13 +414,6 @@ class LoanSimulationService
         return bcsub($a, $b, 10);
     }
 
-    /**
-     * Multiplica dois valores decimais
-     *
-     * @param string $a
-     * @param string $b
-     * @return string
-     */
     private function multiply(string $a, string $b): string
     {
         $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
@@ -621,13 +421,6 @@ class LoanSimulationService
         return bcmul($a, $b, 10);
     }
 
-    /**
-     * Divide dois valores decimais
-     *
-     * @param string $a
-     * @param string $b
-     * @return string
-     */
     private function divide(string $a, string $b): string
     {
         $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
@@ -638,13 +431,6 @@ class LoanSimulationService
         return bcdiv($a, $b, 10);
     }
 
-    /**
-     * Compara dois valores decimais
-     *
-     * @param string $a
-     * @param string $b
-     * @return int -1 se a < b, 0 se a == b, 1 se a > b
-     */
     private function compare(string $a, string $b): int
     {
         $a = $this->isValidBcNumber($a) ? $a : $this->toDecimal($a);
@@ -652,56 +438,23 @@ class LoanSimulationService
         return bccomp($a, $b, 10);
     }
 
-    /**
-     * Calcula potência usando aproximação logarítmica
-     * Para expoentes fracionários: x^y = exp(y * ln(x))
-     *
-     * @param string $base
-     * @param string $expoente
-     * @return string
-     */
     private function power(string $base, string $expoente): string
     {
-        // Se expoente é inteiro, usar bcpow
         if (strpos($expoente, '.') === false) {
             return bcpow($base, $expoente, 10);
         }
 
-        // Para expoentes fracionários, usar aproximação
-        // x^y = exp(y * ln(x))
-        // Usar série de Taylor para ln e exp com precisão suficiente
-        
-        // Para casos simples como (1+i)^(1/30), usar aproximação iterativa
-        // ou método numérico mais direto
-        
-        // Implementação simplificada usando aproximação binomial para (1+x)^n quando |x| < 1
-        if ($this->compare($base, '1') === 0) {
-            return '1';
-        }
+        if ($this->compare($base, '1') === 0) return '1';
 
-        // Para casos gerais, usar aproximação com logaritmo natural
-        // ln(x) ≈ série de Taylor
         $lnBase = $this->ln($base);
         $produto = $this->multiply($expoente, $lnBase);
         return $this->exp($produto);
     }
 
-    /**
-     * Calcula logaritmo natural usando série de Taylor
-     * ln(1+x) = x - x²/2 + x³/3 - ... para |x| < 1
-     *
-     * @param string $x
-     * @return string
-     */
     private function ln(string $x): string
     {
-        // Reduzir para intervalo [0.5, 2] usando propriedades do log
-        if ($this->compare($x, '1') === 0) {
-            return '0';
-        }
+        if ($this->compare($x, '1') === 0) return '0';
 
-        // Usar aproximação: ln(x) ≈ 2 * ((x-1)/(x+1)) + 1/3 * ((x-1)/(x+1))³ + ...
-        // Ou método mais simples para precisão suficiente
         $iteracoes = 50;
         $resultado = '0';
         $termo = $this->divide($this->subtract($x, '1'), $this->add($x, '1'));
@@ -715,13 +468,6 @@ class LoanSimulationService
         return $this->multiply('2', $resultado);
     }
 
-    /**
-     * Calcula exponencial usando série de Taylor
-     * exp(x) = 1 + x + x²/2! + x³/3! + ...
-     *
-     * @param string $x
-     * @return string
-     */
     private function exp(string $x): string
     {
         $resultado = '1';
@@ -731,8 +477,7 @@ class LoanSimulationService
         for ($i = 1; $i <= $iteracoes; $i++) {
             $termo = $this->divide($this->multiply($termo, $x), (string) $i);
             $resultado = $this->add($resultado, $termo);
-            
-            // Parar se termo for muito pequeno
+
             if ($this->compare($this->abs($termo), '0.0000000001') < 0) {
                 break;
             }
@@ -741,12 +486,6 @@ class LoanSimulationService
         return $resultado;
     }
 
-    /**
-     * Calcula valor absoluto
-     *
-     * @param string $value
-     * @return string
-     */
     private function abs(string $value): string
     {
         if ($this->compare($value, '0') < 0) {
