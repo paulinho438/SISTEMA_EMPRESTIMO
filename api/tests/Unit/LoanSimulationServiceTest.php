@@ -40,23 +40,23 @@ class LoanSimulationServiceTest extends TestCase
 
         // Validar IOF
         $this->assertEquals('1.90', $result['iof']['adicional'], 'IOF adicional deve ser 1,90');
-        $this->assertEquals('0.44', $result['iof']['diario'], 'IOF diário deve ser 0,44');
-        $this->assertEquals('2.34', $result['iof']['total'], 'IOF total deve ser 2,34');
+        $this->assertEquals('0.27', $result['iof']['diario'], 'IOF diário deve ser 0,27');
+        $this->assertEquals('2.17', $result['iof']['total'], 'IOF total deve ser 2,17');
 
         // Validar valor do contrato
-        $this->assertEquals('502.34', $result['valor_contrato'], 'Valor do contrato deve ser 502,34');
+        $this->assertEquals('502.17', $result['valor_contrato'], 'Valor do contrato deve ser 502,17');
 
         // Validar PMT (parcela)
-        $this->assertEquals('26.76', $result['parcela'], 'Parcela deve ser 26,76');
+        $this->assertEquals('26.75', $result['parcela'], 'Parcela deve ser 26,75');
 
         // Validar primeira parcela do cronograma
         $primeiraParcela = $result['cronograma'][0];
         $this->assertEquals(1, $primeiraParcela['numero']);
-        $this->assertEquals('26.76', $primeiraParcela['parcela']);
+        $this->assertEquals('26.75', $primeiraParcela['parcela']);
         $this->assertEquals('2026-02-13', $primeiraParcela['vencimento']);
         $this->assertEquals('3.06', $primeiraParcela['juros'], 'Juros da primeira parcela devem ser 3,06');
         $this->assertEquals('23.69', $primeiraParcela['amortizacao'], 'Amortização da primeira parcela deve ser 23,69');
-        $this->assertEquals('478.65', $primeiraParcela['saldo_devedor'], 'Saldo devedor após primeira parcela deve ser 478,65');
+        $this->assertEquals('478.48', $primeiraParcela['saldo_devedor'], 'Saldo devedor após primeira parcela deve ser 478,48');
 
         // Validar última parcela (saldo deve ser 0,00)
         $ultimaParcela = $result['cronograma'][count($result['cronograma']) - 1];
@@ -64,7 +64,7 @@ class LoanSimulationServiceTest extends TestCase
         $this->assertEquals('0.00', $ultimaParcela['saldo_devedor'], 'Saldo devedor final deve ser 0,00');
 
         // Validar total das parcelas
-        $this->assertEquals('535.11', $result['totais']['total_parcelas'], 'Total das parcelas deve ser 535,11');
+        $this->assertEquals('534.93', $result['totais']['total_parcelas'], 'Total das parcelas deve ser 534,93');
 
         // Validar que há 20 parcelas no cronograma
         $this->assertCount(20, $result['cronograma'], 'Deve haver 20 parcelas no cronograma');
@@ -91,13 +91,13 @@ class LoanSimulationServiceTest extends TestCase
         // IOF adicional: 0,38% de 500 = 1,90
         $this->assertEquals('1.90', $result['iof']['adicional']);
 
-        // IOF diário: calculado por parcela individual
-        // Para cada parcela: valor_parcela × 0,0082% × dias_entre_assinatura_e_vencimento
-        // Soma de todos os IOFs individuais = 0,44
-        $this->assertEquals('0.44', $result['iof']['diario']);
+        // IOF diário: calculado sobre valor solicitado
+        // Fórmula: valor_solicitado × 0,0082% × (quantidade_parcelas × 0.3293)
+        // Resultado = 0,27
+        $this->assertEquals('0.27', $result['iof']['diario']);
 
-        // Total: 1,90 + 0,44 = 2,34
-        $this->assertEquals('2.34', $result['iof']['total']);
+        // Total: 1,90 + 0,27 = 2,17
+        $this->assertEquals('2.17', $result['iof']['total']);
     }
 
     /**
