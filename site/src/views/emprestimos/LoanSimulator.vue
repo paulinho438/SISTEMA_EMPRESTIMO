@@ -74,7 +74,7 @@
                                     optionValue="value"
                                     placeholder="Selecione"
                                     class="w-full"
-                                    @change="onFormChange"
+                                    @change="onPeriodoChange"
                                 />
                             </div>
 
@@ -135,7 +135,7 @@
                                     dateFormat="dd/mm/yy"
                                     :showIcon="true"
                                     class="w-full"
-                                    @date-select="onFormChange"
+                                    @date-select="onDataAssinaturaChange"
                                     :manualInput="false"
                                 />
                             </div>
@@ -358,6 +358,7 @@ const {
     result,
     isValid,
     simulateDebounced,
+    setDefaultFirstDue,
     formatCurrency,
     formatPercent,
     formatDate,
@@ -387,6 +388,20 @@ const modelosAmortizacao = ref([
 ]);
 
 function onFormChange() {
+    if (isValid.value) {
+        simulateDebounced();
+    }
+}
+
+function onPeriodoChange() {
+    setDefaultFirstDue();
+    if (isValid.value) {
+        simulateDebounced();
+    }
+}
+
+function onDataAssinaturaChange() {
+    setDefaultFirstDue();
     if (isValid.value) {
         simulateDebounced();
     }

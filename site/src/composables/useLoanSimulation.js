@@ -1,7 +1,5 @@
 import { ref, reactive, computed } from 'vue';
-import axios from 'axios';
-
-const apiPath = import.meta.env.VITE_APP_BASE_URL;
+import { calculateLoan } from '@/utils/loanCalculator';
 
 export function useLoanSimulation() {
     const loading = ref(false);
@@ -145,35 +143,59 @@ export function useLoanSimulation() {
     }
 
     /**
-     * Simula empréstimo chamando API
+     * Define data da primeira parcela conforme período (como na página admin)
      */
-    async function simulate() {
+    function setDefaultFirstDue() {
+        const periodo = form.periodo_amortizacao;
+        const contrato = form.data_assinatura ? new Date(form.data_assinatura) : new Date();
+
+        let primeira;
+        if (periodo === 'Diário') {
+            primeira = new Date(contrato);
+            primeira.setDate(primeira.getDate() + 1);
+        } else if (periodo === 'Semanal') {
+            primeira = new Date(contrato);
+            primeira.setDate(primeira.getDate() + 7);
+        } else {
+            primeira = new Date(contrato);
+            primeira.setMonth(primeira.getMonth() + 1);
+        }
+
+        form.data_primeira_parcela = primeira;
+    }
+
+    /**
+     * Simula empréstimo com cálculo local (lógica idêntica à página admin)
+     */
+    function simulate() {
         loading.value = true;
         error.value = null;
 
         try {
-            // InputNumber retorna número puro, não precisa parseCurrency
-            const valorSolicitado = typeof form.valor_solicitado === 'number' 
-                ? form.valor_solicitado 
+            const valorSolicitado = typeof form.valor_solicitado === 'number'
+                ? form.valor_solicitado
                 : parseFloat(parseCurrency(form.valor_solicitado)) || 0;
-            
-            const payload = {
-                valor_solicitado: valorSolicitado,
-                taxa_juros_mensal: parseTaxa(form.taxa_juros_mensal),
-                quantidade_parcelas: form.quantidade_parcelas,
-                modelo_amortizacao: removeAccents(form.modelo_amortizacao),
-                periodo_amortizacao: removeAccents(form.periodo_amortizacao),
-                data_assinatura: dateToString(form.data_assinatura),
-                data_primeira_parcela: dateToString(form.data_primeira_parcela),
-                calcular_iof: form.calcular_iof ?? true,
-                tipo_operacao: form.tipo_operacao,
-                cliente_simples_nacional: Boolean(form.cliente_simples_nacional),
-            };
 
-            const response = await axios.post(`${apiPath}/loan/simulate`, payload);
-            result.value = response.data;
+            const taxaDecimal = parseTaxa(form.taxa_juros_mensal);
+            const dataAssinatura = form.data_assinatura instanceof Date
+                ? form.data_assinatura
+                : new Date(form.data_assinatura);
+            const dataPrimeira = form.data_primeira_parcela instanceof Date
+                ? form.data_primeira_parcela
+                : new Date(form.data_primeira_parcela);
+
+            result.value = calculateLoan({
+                valorSolicitado,
+                periodoAmortizacao: form.periodo_amortizacao,
+                quantidadeParcelas: form.quantidade_parcelas,
+                taxaJurosMensal: taxaDecimal,
+                dataAssinatura,
+                dataPrimeiraParcela: dataPrimeira,
+                calcularIof: form.calcular_iof ?? true,
+                simplesNacional: Boolean(form.cliente_simples_nacional),
+            });
         } catch (err) {
-            error.value = err.response?.data?.message || err.message || 'Erro ao simular empréstimo';
+            error.value = err.message || 'Erro ao simular empréstimo';
             result.value = null;
             console.error('Erro na simulação:', err);
         } finally {
@@ -263,6 +285,7 @@ export function useLoanSimulation() {
         isValid,
         simulate,
         simulateDebounced,
+        setDefaultFirstDue,
         formatCurrency,
         formatPercent,
         formatDate,
