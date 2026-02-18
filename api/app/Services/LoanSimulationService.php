@@ -462,18 +462,31 @@ class LoanSimulationService
         if (is_string($value)) {
             $raw = trim(str_replace(['R$', ' '], '', $value));
 
-            // se string só com dígitos e grande, tratar como centavos
+            // Verificar se tem vírgula (formato brasileiro: 31.000,00 ou 31000,00)
+            $temVirgula = strpos($raw, ',') !== false;
+            // Verificar se tem ponto como separador de milhar (formato: 31.000)
+            $temPontoMilhar = preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $raw) || preg_match('/^\d{1,3}(\.\d{3})+$/', $raw);
+            
+            // Se tem vírgula ou ponto como separador de milhar, processar como formato brasileiro
+            if ($temVirgula || $temPontoMilhar) {
+                // Remover pontos (separadores de milhar) e substituir vírgula por ponto
+                $raw = str_replace('.', '', $raw);
+                $raw = str_replace(',', '.', $raw);
+                $raw = preg_replace('/[^0-9.\-]/', '', $raw);
+                if ($raw === '' || $raw === '-') return '0';
+                $f = (float)$raw;
+                if (!is_finite($f)) return '0';
+                return number_format($f, 10, '.', '');
+            }
+
+            // se string só com dígitos e grande, tratar como centavos (apenas se não tiver separadores)
             if (preg_match('/^\d+$/', $raw) && (int)$raw >= 10000) {
                 return number_format(((int)$raw) / 100, 10, '.', '');
             }
 
-            if (strpos($raw, ',') !== false) {
-                $raw = str_replace('.', '', $raw);
-                $raw = str_replace(',', '.', $raw);
-            }
+            // Processar normalmente (pode ter ponto decimal)
             $raw = preg_replace('/[^0-9.\-]/', '', $raw);
             if ($raw === '' || $raw === '-') return '0';
-
             $f = (float)$raw;
             if (!is_finite($f)) return '0';
             return number_format($f, 10, '.', '');
