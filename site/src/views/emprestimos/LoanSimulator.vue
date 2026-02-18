@@ -362,8 +362,7 @@ const {
     formatCurrency,
     formatPercent,
     formatDate,
-    exportJSON,
-    exportCSV,
+    exportPDF,
 } = useLoanSimulation();
 
 const etapaAtual = ref(1);
@@ -408,12 +407,7 @@ function onDataAssinaturaChange() {
 }
 
 function exportSimulation() {
-    // Perguntar ao usuário qual formato deseja
-    // Por enquanto, exportar ambos
-    exportJSON();
-    setTimeout(() => {
-        exportCSV();
-    }, 500);
+    exportPDF();
 }
 
 // Simular ao montar componente se dados válidos

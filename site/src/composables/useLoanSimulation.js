@@ -1,4 +1,6 @@
 import { ref, reactive, computed } from 'vue';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { calculateLoan } from '@/utils/loanCalculator';
 
 export function useLoanSimulation() {
@@ -277,6 +279,90 @@ export function useLoanSimulation() {
         URL.revokeObjectURL(url);
     }
 
+    /**
+     * Exporta simulação para PDF
+     */
+    function exportPDF() {
+        if (!result.value || !result.value.cronograma) return;
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const r = result.value;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let y = 20;
+
+        // Título
+        doc.setFontSize(18);
+        doc.text('Simulação de Empréstimo', pageWidth / 2, y, { align: 'center' });
+        y += 12;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+
+        // Dados da operação
+        doc.setFont(undefined, 'bold');
+        doc.text('Dados da Operação', 14, y);
+        y += 7;
+        doc.setFont(undefined, 'normal');
+
+        doc.text(`Valor solicitado: ${formatCurrency(r.inputs.valor_solicitado)}`, 14, y);
+        y += 6;
+        doc.text(`Período: ${r.inputs.periodo_amortizacao} | Parcelas: ${r.inputs.quantidade_parcelas}`, 14, y);
+        y += 6;
+        doc.text(`Taxa mensal: ${r.inputs.taxa_juros_mensal}% | Data assinatura: ${formatDate(r.inputs.data_assinatura)}`, 14, y);
+        y += 6;
+        doc.text(`Data 1ª parcela: ${formatDate(r.inputs.data_primeira_parcela)} | Simples Nacional: ${r.inputs.simples_nacional ? 'Sim' : 'Não'}`, 14, y);
+        y += 12;
+
+        // Tabela de amortização
+        const tableData = r.cronograma.map(p => [
+            p.numero,
+            p.parcela,
+            formatDate(p.vencimento),
+            p.juros,
+            p.amortizacao,
+            p.saldo_devedor,
+        ]);
+
+        autoTable(doc, {
+            startY: y,
+            head: [['#', 'Parcela', 'Vencimento', 'Juros', 'Amortização', 'Saldo Devedor']],
+            body: tableData,
+            theme: 'grid',
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [122, 61, 43] },
+            margin: { left: 14, right: 14 },
+        });
+
+        y = doc.lastAutoTable.finalY + 12;
+
+        // Outras informações
+        doc.setFont(undefined, 'bold');
+        doc.text('Outras Informações', 14, y);
+        y += 7;
+        doc.setFont(undefined, 'normal');
+
+        doc.text(`Data de assinatura e transferência: ${formatDate(r.inputs.data_assinatura)}`, 14, y);
+        y += 6;
+        doc.text(`Valor do IOF: ${formatCurrency(r.iof.total)} (diário ${formatCurrency(r.iof.diario)} + adicional ${formatCurrency(r.iof.adicional)})`, 14, y);
+        y += 6;
+        doc.text(`Valor do contrato: ${formatCurrency(r.valor_contrato)}`, 14, y);
+        y += 6;
+        doc.text(`Total das parcelas: ${formatCurrency(r.totais.total_parcelas)}`, 14, y);
+        y += 6;
+        doc.text(`CET ao mês: ${formatPercent(parseFloat(r.totais.cet_mes))} | CET ao ano: ${formatPercent(parseFloat(r.totais.cet_ano))}`, 14, y);
+        y += 6;
+        doc.text(`Juros de acerto: ${formatCurrency(r.totais.juros_acerto)}`, 14, y);
+        y += 10;
+
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text('* Cálculo: Price + IOF (diário + 0,38%). Regra Simples: se optante e valor ≤ 30.000, IOF diário = 0,0027%.', 14, y, { maxWidth: pageWidth - 28 });
+        doc.setTextColor(0, 0, 0);
+
+        const filename = `simulacao-emprestimo-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+    }
+
     return {
         form,
         loading,
@@ -291,5 +377,6 @@ export function useLoanSimulation() {
         formatDate,
         exportJSON,
         exportCSV,
+        exportPDF,
     };
 }
