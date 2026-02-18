@@ -162,7 +162,7 @@
                             <!-- Toggles -->
                             <div class="field mb-3">
                                 <div class="flex align-items-center gap-2">
-                                    <InputSwitch v-model="form.cliente_simples_nacional" />
+                                    <InputSwitch v-model="form.cliente_simples_nacional" @change="onFormChange" />
                                     <label for="cliente_simples_nacional" class="mb-0">
                                         Cliente optante do Simples Nacional
                                     </label>
@@ -311,11 +311,11 @@
                                         </div>
                                         <div class="col-12 mb-2">
                                             <strong>CET ao mês:</strong>
-                                            <span class="ml-2">{{ formatPercent(parseFloat(result.totais.cet_mes) * 100) }}</span>
+                                            <span class="ml-2">{{ formatPercent(parseFloat(result.totais.cet_mes)) }}</span>
                                         </div>
                                         <div class="col-12 mb-2">
                                             <strong>CET ao ano:</strong>
-                                            <span class="ml-2">{{ formatPercent(parseFloat(result.totais.cet_ano) * 100) }}</span>
+                                            <span class="ml-2">{{ formatPercent(parseFloat(result.totais.cet_ano)) }}</span>
                                         </div>
                                         <div class="col-12 mb-2">
                                             <strong>Juros de acerto:</strong>
