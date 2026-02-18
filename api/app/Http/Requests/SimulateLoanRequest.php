@@ -40,6 +40,19 @@ class SimulateLoanRequest extends FormRequest
                 'modelo_amortizacao' => $modeloNormalizado,
             ]);
         }
+        
+        // Garantir que cliente_simples_nacional seja sempre boolean
+        if ($this->has('cliente_simples_nacional')) {
+            $valor = $this->input('cliente_simples_nacional');
+            $this->merge([
+                'cliente_simples_nacional' => filter_var($valor, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
+            ]);
+        } else {
+            // Se não veio no request, definir como false explicitamente
+            $this->merge([
+                'cliente_simples_nacional' => false,
+            ]);
+        }
     }
 
     /**
@@ -72,6 +85,7 @@ class SimulateLoanRequest extends FormRequest
             'data_primeira_parcela' => ['required', 'date', 'after_or_equal:data_assinatura'],
             'calcular_iof' => ['sometimes', 'boolean'],
             'tipo_operacao' => ['sometimes', 'string'],
+            'cliente_simples_nacional' => ['sometimes', 'boolean'],
         ];
     }
 
