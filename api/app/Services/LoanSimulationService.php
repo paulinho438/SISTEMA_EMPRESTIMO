@@ -10,6 +10,7 @@ class LoanSimulationService
     const IOF_DIARIO_TAX_PADRAO = 0.000082; // 0,0082% a.d.
     const IOF_DIARIO_TAX_SIMPLES = 0.000027; // 0,0027% a.d. (igual ao print)
     const DIAS_MES_COMERCIAL = 30;
+    const DIAS_POR_SEMANA = 7;
 
     public function simulate(array $inputs): array
     {
@@ -19,6 +20,8 @@ class LoanSimulationService
 
         $dataAssinatura = $this->parseDate($inputs['data_assinatura'] ?? null);
         $dataPrimeiraParcela = $this->parseDate($inputs['data_primeira_parcela'] ?? null);
+
+        $periodoAmortizacao = $this->normalizePeriodoAmortizacao($inputs['periodo_amortizacao'] ?? 'Diário');
 
         $calcularIOF = $inputs['calcular_iof'] ?? true;
 
@@ -36,7 +39,7 @@ class LoanSimulationService
         // ⚠️ Se você quiser forçar simples por padrão (NÃO recomendo), descomente:
         // if (!array_key_exists('simples_nacional', $inputs)) $simplesNacional = true;
 
-        $taxaJurosDiaria = $this->calcularTaxaDiaria($taxaJurosMensal);
+        $taxaPorPeriodo = $this->taxaPorPeriodo($taxaJurosMensal, $periodoAmortizacao);
 
         // IOF adicional
         $iofAdicional = $calcularIOF
@@ -54,13 +57,10 @@ class LoanSimulationService
         $aliquotaIofDiaria = $usaTaxaSimples ? self::IOF_DIARIO_TAX_SIMPLES : self::IOF_DIARIO_TAX_PADRAO;
 
         if ($calcularIOF && $quantidadeParcelas > 0) {
-            $dataUltimaParcela = $dataPrimeiraParcela->copy()->addDays($quantidadeParcelas - 1);
-            // Usar diffInDays com absolute=true para garantir valor positivo
-            // E garantir que inclua o dia da última parcela
-            $diasIof = $dataAssinatura->diffInDays($dataUltimaParcela, false);
-            // Se o resultado for negativo ou zero, calcular manualmente
+            $dataUltimaParcela = $this->dataUltimaParcelaPorPeriodo($dataPrimeiraParcela, $quantidadeParcelas, $periodoAmortizacao);
+            $diasIof = (int) $dataAssinatura->diffInDays($dataUltimaParcela, false);
             if ($diasIof <= 0) {
-                $diasIof = $quantidadeParcelas; // Usar quantidade de parcelas como fallback
+                $diasIof = $this->diasTotaisPorPeriodo($quantidadeParcelas, $periodoAmortizacao);
             }
 
             $iofDiarioFloat = (float)$this->toDecimal($valorSolicitado) * $aliquotaIofDiaria * (float)$diasIof;
@@ -70,27 +70,27 @@ class LoanSimulationService
         $iofTotal = $this->add($iofAdicional, $iofDiario);
         $valorContrato = $this->add($valorSolicitado, $iofTotal);
 
-        $pmtExata = $this->calcularPMT($valorContrato, $taxaJurosDiaria, $quantidadeParcelas);
+        $pmtExata = $this->calcularPMT($valorContrato, $taxaPorPeriodo, $quantidadeParcelas);
 
         $cronograma = $this->gerarCronograma(
             $valorContrato,
-            $taxaJurosDiaria,
+            $taxaPorPeriodo,
             $quantidadeParcelas,
             $dataPrimeiraParcela,
-            $pmtExata
+            $pmtExata,
+            $periodoAmortizacao
         );
 
         $totalParcelas = $this->somarParcelasExatas($cronograma);
 
-        // CET estável (IRR por períodos diários) — retorna em %
-        // Passar também se usa taxa Simples para ajustar o CET corretamente
-        $cet = $this->calcularCET($valorSolicitado, $cronograma, $usaTaxaSimples);
+        $cet = $this->calcularCET($valorSolicitado, $cronograma, $usaTaxaSimples, $periodoAmortizacao);
 
         return [
             'inputs' => [
                 'valor_solicitado' => $this->formatDecimal($valorSolicitado),
                 'taxa_juros_mensal' => $this->formatDecimal($taxaJurosMensal),
                 'quantidade_parcelas' => $quantidadeParcelas,
+                'periodo_amortizacao' => $periodoAmortizacao,
                 'data_assinatura' => $dataAssinatura->format('Y-m-d'),
                 'data_primeira_parcela' => $dataPrimeiraParcela->format('Y-m-d'),
                 'simples_nacional' => $simplesNacional,
@@ -115,20 +115,20 @@ class LoanSimulationService
 
     // -------------------- CET --------------------
 
-    private function calcularCET(string $valorSolicitado, array $cronograma, bool $usaTaxaSimples = false): array
+    private function calcularCET(string $valorSolicitado, array $cronograma, bool $usaTaxaSimples = false, string $periodoAmortizacao = 'diario'): array
     {
         $pv = (float)$this->toDecimal($valorSolicitado);
         if ($pv <= 0) return ['mensal' => '0', 'anual' => '0'];
 
         $parcelas = [];
         foreach ($cronograma as $p) {
-            $parcelas[] = (float)$this->toDecimal($p['parcela']); // usa exibida p/ bater
+            $parcelas[] = (float)$this->toDecimal($p['parcela']);
         }
 
-        $irr = $this->irrDiariaPorPeriodos($pv, $parcelas);
-        if (!is_finite($irr) || $irr <= -0.999999) return ['mensal' => '0', 'anual' => '0'];
+        $irrPorPeriodo = $this->irrPorPeriodos($pv, $parcelas);
+        if (!is_finite($irrPorPeriodo) || $irrPorPeriodo <= -0.999999) return ['mensal' => '0', 'anual' => '0'];
 
-        $cetMensalDec = pow(1.0 + $irr, self::DIAS_MES_COMERCIAL) - 1.0;
+        $cetMensalDec = $this->cetMensalFromIrrPeriodo($irrPorPeriodo, $periodoAmortizacao);
         $cetAnualDec = pow(1.0 + $cetMensalDec, 12) - 1.0;
 
         // Engenharia reversa: ajuste fino para bater exatamente com sistema de referência
@@ -188,7 +188,19 @@ class LoanSimulationService
         ];
     }
 
-    private function irrDiariaPorPeriodos(float $pv, array $parcelas): float
+    /** Converte IRR por período (dia/semana/mês) em CET mensal decimal */
+    private function cetMensalFromIrrPeriodo(float $irrPorPeriodo, string $periodoAmortizacao): float
+    {
+        if ($periodoAmortizacao === 'mensal') {
+            return $irrPorPeriodo;
+        }
+        if ($periodoAmortizacao === 'semanal') {
+            return pow(1.0 + $irrPorPeriodo, self::DIAS_MES_COMERCIAL / self::DIAS_POR_SEMANA) - 1.0;
+        }
+        return pow(1.0 + $irrPorPeriodo, self::DIAS_MES_COMERCIAL) - 1.0;
+    }
+
+    private function irrPorPeriodos(float $pv, array $parcelas): float
     {
         $npv = function (float $r) use ($pv, $parcelas): float {
             $base = 1.0 + $r;
@@ -316,21 +328,21 @@ class LoanSimulationService
 
     private function gerarCronograma(
         string $valorContrato,
-        string $taxaDiaria,
+        string $taxaPorPeriodo,
         int $quantidadeParcelas,
         Carbon $dataPrimeiraParcela,
-        string $pmtExata
+        string $pmtExata,
+        string $periodoAmortizacao = 'diario'
     ): array {
         $cronograma = [];
 
-        // Manter precisão durante cálculos intermediários
         $saldo = (float)$this->toDecimal($valorContrato);
         $parcelaFixaExata = (float)$this->toDecimal($pmtExata);
         $parcelaFixaArredondada = round($parcelaFixaExata, 2);
-        $i = (float)$this->toDecimal($taxaDiaria);
+        $i = (float)$this->toDecimal($taxaPorPeriodo);
 
         for ($k = 1; $k <= $quantidadeParcelas; $k++) {
-            $venc = $dataPrimeiraParcela->copy()->addDays($k - 1);
+            $venc = $this->dataVencimentoParcela($dataPrimeiraParcela, $k - 1, $periodoAmortizacao);
 
             // Calcular juros e amortização com precisão
             $jurosExato = $saldo * $i;
@@ -426,6 +438,67 @@ class LoanSimulationService
             if (preg_match('/^\d{4}\-\d{2}\-\d{2}$/', $v)) return Carbon::createFromFormat('Y-m-d', $v);
         }
         return Carbon::today();
+    }
+
+    /** @return string 'diario'|'semanal'|'mensal' */
+    private function normalizePeriodoAmortizacao($value): string
+    {
+        $v = is_string($value) ? mb_strtolower(trim($value)) : '';
+        $v = preg_replace('/[^a-z]/', '', $v);
+        if (in_array($v, ['diario', 'diaria'], true)) return 'diario';
+        if (in_array($v, ['semanal', 'semana'], true)) return 'semanal';
+        if (in_array($v, ['mensal', 'mes'], true)) return 'mensal';
+        return 'diario';
+    }
+
+    /** Taxa de juros por período (decimal): diário, semanal ou mensal conforme periodo_amortizacao */
+    private function taxaPorPeriodo(string $taxaJurosMensal, string $periodoAmortizacao): string
+    {
+        $im = (float)$this->toDecimal($taxaJurosMensal);
+        if (!is_finite($im)) return '0';
+        if ($periodoAmortizacao === 'mensal') {
+            return $this->toDecimal($im);
+        }
+        if ($periodoAmortizacao === 'semanal') {
+            $iw = pow(1.0 + $im, self::DIAS_POR_SEMANA / self::DIAS_MES_COMERCIAL) - 1.0;
+            return is_finite($iw) ? $this->toDecimal($iw) : '0';
+        }
+        return $this->calcularTaxaDiaria($taxaJurosMensal);
+    }
+
+    private function dataUltimaParcelaPorPeriodo(Carbon $dataPrimeiraParcela, int $quantidadeParcelas, string $periodoAmortizacao): Carbon
+    {
+        $n = max(0, $quantidadeParcelas - 1);
+        if ($periodoAmortizacao === 'mensal') {
+            return $dataPrimeiraParcela->copy()->addMonths($n);
+        }
+        if ($periodoAmortizacao === 'semanal') {
+            return $dataPrimeiraParcela->copy()->addWeeks($n);
+        }
+        return $dataPrimeiraParcela->copy()->addDays($n);
+    }
+
+    private function diasTotaisPorPeriodo(int $quantidadeParcelas, string $periodoAmortizacao): int
+    {
+        $n = max(0, $quantidadeParcelas - 1);
+        if ($periodoAmortizacao === 'mensal') {
+            return $n * self::DIAS_MES_COMERCIAL;
+        }
+        if ($periodoAmortizacao === 'semanal') {
+            return $n * self::DIAS_POR_SEMANA;
+        }
+        return $n;
+    }
+
+    private function dataVencimentoParcela(Carbon $dataPrimeiraParcela, int $indice, string $periodoAmortizacao): Carbon
+    {
+        if ($periodoAmortizacao === 'mensal') {
+            return $dataPrimeiraParcela->copy()->addMonths($indice);
+        }
+        if ($periodoAmortizacao === 'semanal') {
+            return $dataPrimeiraParcela->copy()->addWeeks($indice);
+        }
+        return $dataPrimeiraParcela->copy()->addDays($indice);
     }
 
     private function getTruthy(array $inputs, array $keys): bool

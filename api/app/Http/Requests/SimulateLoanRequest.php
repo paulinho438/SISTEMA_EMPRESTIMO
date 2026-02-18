@@ -80,7 +80,7 @@ class SimulateLoanRequest extends FormRequest
             'quantidade_parcelas' => ['required', 'integer', 'min:1', 'max:999'],
             'taxa_juros_mensal' => ['required', 'numeric', 'min:0.0001'],
             'modelo_amortizacao' => ['required', 'string', 'in:price'],
-            'periodo_amortizacao' => ['required', 'string', 'in:diario'],
+            'periodo_amortizacao' => ['required', 'string', 'in:diario,semanal,mensal'],
             'data_assinatura' => ['required', 'date'],
             'data_primeira_parcela' => ['required', 'date', 'after_or_equal:data_assinatura'],
             'calcular_iof' => ['sometimes', 'boolean'],

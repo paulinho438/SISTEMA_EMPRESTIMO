@@ -378,6 +378,8 @@ const tiposOperacao = ref([
 
 const periodosAmortizacao = ref([
     { label: 'Diário', value: 'Diário' },
+    { label: 'Semanal', value: 'Semanal' },
+    { label: 'Mensal', value: 'Mensal' },
 ]);
 
 const modelosAmortizacao = ref([
