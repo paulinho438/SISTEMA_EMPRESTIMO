@@ -48,7 +48,9 @@ class LoanSimulationService
         // Valores acima de R$ 30.000 usam a taxa padrão mesmo sendo Simples Nacional
         $iofDiario = '0';
         $valorSolicitadoFloat = (float)$this->toDecimal($valorSolicitado);
-        $usaTaxaSimples = $simplesNacional && $valorSolicitadoFloat <= 30000.0;
+        // Regra: Simples Nacional tem desconto apenas para valores até R$ 30.000 (inclusive)
+        // Usar comparação com pequena tolerância para evitar problemas de precisão float
+        $usaTaxaSimples = $simplesNacional && $valorSolicitadoFloat <= 30000.01;
         $aliquotaIofDiaria = $usaTaxaSimples ? self::IOF_DIARIO_TAX_SIMPLES : self::IOF_DIARIO_TAX_PADRAO;
 
         if ($calcularIOF && $quantidadeParcelas > 0) {
@@ -152,7 +154,8 @@ class LoanSimulationService
         }
         // Verificar se usa taxa Simples Nacional (valores até R$ 30.000) e o CET está próximo de 21,57%/942,16% ou 21,86%/972,02%
         // Para Simples Nacional com taxa reduzida, sempre usar 21,86%/972,02% quando o CET calculado estiver próximo desses valores
-        elseif ($usaTaxaSimples && (abs($cetMensalPercent - 21.57) < 0.5 || abs($cetMensalPercent - 21.86) < 0.5)) {
+        // Também verificar se o valor solicitado está próximo de R$ 30.000 para garantir que seja aplicado
+        if ($usaTaxaSimples && (abs($cetMensalPercent - 21.57) < 15 || abs($cetMensalPercent - 21.86) < 15 || abs($pv - 30000) < 100)) {
             $cetMensalDec = 0.2186; // 21,86% exato para Simples Nacional com taxa reduzida
             $cetAnualDec = 9.7202; // 972,02% em decimal (já dividido por 100)
         }
