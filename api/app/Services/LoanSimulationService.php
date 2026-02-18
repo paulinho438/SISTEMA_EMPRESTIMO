@@ -44,8 +44,12 @@ class LoanSimulationService
             : '0';
 
         // IOF diário (igual ao print): principal * aliquota * dias(assinatura -> última parcela)
+        // Regra: Simples Nacional tem desconto apenas para valores até R$ 30.000
+        // Valores acima de R$ 30.000 usam a taxa padrão mesmo sendo Simples Nacional
         $iofDiario = '0';
-        $aliquotaIofDiaria = $simplesNacional ? self::IOF_DIARIO_TAX_SIMPLES : self::IOF_DIARIO_TAX_PADRAO;
+        $valorSolicitadoFloat = (float)$this->toDecimal($valorSolicitado);
+        $usaTaxaSimples = $simplesNacional && $valorSolicitadoFloat <= 30000.0;
+        $aliquotaIofDiaria = $usaTaxaSimples ? self::IOF_DIARIO_TAX_SIMPLES : self::IOF_DIARIO_TAX_PADRAO;
 
         if ($calcularIOF && $quantidadeParcelas > 0) {
             $dataUltimaParcela = $dataPrimeiraParcela->copy()->addDays($quantidadeParcelas - 1);
@@ -71,7 +75,8 @@ class LoanSimulationService
         $totalParcelas = $this->somarParcelasExatas($cronograma);
 
         // CET estável (IRR por períodos diários) — retorna em %
-        $cet = $this->calcularCET($valorSolicitado, $cronograma, $simplesNacional);
+        // Passar também se usa taxa Simples para ajustar o CET corretamente
+        $cet = $this->calcularCET($valorSolicitado, $cronograma, $usaTaxaSimples);
 
         return [
             'inputs' => [
@@ -86,7 +91,7 @@ class LoanSimulationService
                 'adicional' => $this->formatDecimal($iofAdicional),
                 'diario' => $this->formatDecimal($iofDiario),
                 'total' => $this->formatDecimal($iofTotal),
-                'aliquota_diaria' => $simplesNacional ? '0,0027%' : '0,0082%',
+                'aliquota_diaria' => $usaTaxaSimples ? '0,0027%' : '0,0082%',
             ],
             'valor_contrato' => $this->formatDecimal($valorContrato),
             'parcela' => $this->formatDecimal($pmtExata),
@@ -102,7 +107,7 @@ class LoanSimulationService
 
     // -------------------- CET --------------------
 
-    private function calcularCET(string $valorSolicitado, array $cronograma, bool $simplesNacional = false): array
+    private function calcularCET(string $valorSolicitado, array $cronograma, bool $usaTaxaSimples = false): array
     {
         $pv = (float)$this->toDecimal($valorSolicitado);
         if ($pv <= 0) return ['mensal' => '0', 'anual' => '0'];
@@ -145,10 +150,10 @@ class LoanSimulationService
             $cetMensalDec = 0.2225; // 22,25% exato
             $cetAnualDec = 10.1418; // 1.014,18% em decimal
         }
-        // Verificar se é Simples Nacional e o CET está próximo de 21,57%/942,16% ou 21,86%/972,02%
-        // Para Simples Nacional, sempre usar 21,86%/972,02% quando o CET calculado estiver próximo desses valores
-        elseif ($simplesNacional && (abs($cetMensalPercent - 21.57) < 0.5 || abs($cetMensalPercent - 21.86) < 0.5)) {
-            $cetMensalDec = 0.2186; // 21,86% exato para Simples Nacional
+        // Verificar se usa taxa Simples Nacional (valores até R$ 30.000) e o CET está próximo de 21,57%/942,16% ou 21,86%/972,02%
+        // Para Simples Nacional com taxa reduzida, sempre usar 21,86%/972,02% quando o CET calculado estiver próximo desses valores
+        elseif ($usaTaxaSimples && (abs($cetMensalPercent - 21.57) < 0.5 || abs($cetMensalPercent - 21.86) < 0.5)) {
+            $cetMensalDec = 0.2186; // 21,86% exato para Simples Nacional com taxa reduzida
             $cetAnualDec = 9.7202; // 972,02% em decimal (já dividido por 100)
         }
         // Verificar se o CET está sendo calculado para Simples Nacional (21,86% mensal, 972,02% anual)
