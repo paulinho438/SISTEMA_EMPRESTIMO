@@ -167,6 +167,7 @@ export function useLoanSimulation() {
                 data_primeira_parcela: dateToString(form.data_primeira_parcela),
                 calcular_iof: form.calcular_iof,
                 tipo_operacao: form.tipo_operacao,
+                cliente_simples_nacional: form.cliente_simples_nacional,
             };
 
             const response = await axios.post(`${apiPath}/loan/simulate`, payload);
