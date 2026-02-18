@@ -86,7 +86,7 @@ class LoanSimulationService
                 'adicional' => $this->formatDecimal($iofAdicional),
                 'diario' => $this->formatDecimal($iofDiario),
                 'total' => $this->formatDecimal($iofTotal),
-                'aliquota_diaria' => $simplesNacional ? '0.0027%' : '0.0082%',
+                'aliquota_diaria' => $simplesNacional ? '0,0027%' : '0,0082%',
             ],
             'valor_contrato' => $this->formatDecimal($valorContrato),
             'parcela' => $this->formatDecimal($pmtExata),

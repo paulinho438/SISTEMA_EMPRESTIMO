@@ -294,7 +294,7 @@
                                             <span class="ml-2">{{ formatCurrency(result.iof.total) }}</span>
                                         </div>
                                         <div class="col-12 mb-2 pl-4">
-                                            <small>IOF diário (0,0082%):</small>
+                                            <small>IOF diário ({{ result.iof.aliquota_diaria }}):</small>
                                             <span class="ml-2">{{ formatCurrency(result.iof.diario) }}</span>
                                         </div>
                                         <div class="col-12 mb-2 pl-4">
