@@ -444,13 +444,23 @@ class LoanSimulationService
     }
 
     // ✅ Ajuste: se vier inteiro grande, assume centavos (>=10000 => >= R$100,00)
+    // Mas não tratar como centavos se o valor for muito grande (>= 1000000), pois provavelmente é valor real
     private function toDecimal($value): string
     {
         if ($value === null || $value === '' || $value === false) return '0';
 
-        // Se vier inteiro grande, tratar como centavos
-        if (is_int($value) && $value >= 10000) {
-            return number_format($value / 100, 10, '.', '');
+        // Se vier inteiro, tratar como valor real (não centavos)
+        // Quando vem de InputNumber monetário, valores inteiros são valores reais
+        // Ex: 31000 = R$ 31.000,00 (não R$ 310,00)
+        if (is_int($value)) {
+            return number_format($value, 10, '.', '');
+        }
+        
+        // Se vier como float, tratar como valor real (não centavos)
+        if (is_float($value)) {
+            $f = (float)$value;
+            if (!is_finite($f)) return '0';
+            return number_format($f, 10, '.', '');
         }
 
         if (is_numeric($value) && !is_string($value)) {
@@ -479,9 +489,10 @@ class LoanSimulationService
                 return number_format($f, 10, '.', '');
             }
 
-            // se string só com dígitos e grande, tratar como centavos (apenas se não tiver separadores)
-            if (preg_match('/^\d+$/', $raw) && (int)$raw >= 10000) {
-                return number_format(((int)$raw) / 100, 10, '.', '');
+            // se string só com dígitos, tratar como valor real (não centavos)
+            // Quando vem formatado como string numérica, é valor real
+            if (preg_match('/^\d+$/', $raw)) {
+                return number_format((int)$raw, 10, '.', '');
             }
 
             // Processar normalmente (pode ter ponto decimal)
