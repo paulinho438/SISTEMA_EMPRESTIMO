@@ -356,7 +356,7 @@ export function useLoanSimulation() {
 
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        doc.text('* Cálculo: Price + IOF (diário + 0,38%). Regra Simples: se optante e valor ≤ 30.000, IOF diário = 0,0027%.', 14, y, { maxWidth: pageWidth - 28 });
+        doc.text('* Cálculo: Price + IOF (diário + 0,38%). Regra Simples: se optante e valor ≤ 30.000, IOF diário = 0,00274%.', 14, y, { maxWidth: pageWidth - 28 });
         doc.setTextColor(0, 0, 0);
 
         const filename = `simulacao-emprestimo-${new Date().toISOString().split('T')[0]}.pdf`;

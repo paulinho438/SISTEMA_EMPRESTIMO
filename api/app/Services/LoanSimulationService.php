@@ -8,7 +8,7 @@ class LoanSimulationService
 {
     const IOF_ADICIONAL_TAX = 0.0038;     // 0,38%
     const IOF_DIARIO_TAX_PADRAO = 0.000082; // 0,0082% a.d.
-    const IOF_DIARIO_TAX_SIMPLES = 0.000027; // 0,0027% a.d. (igual ao print)
+    const IOF_DIARIO_TAX_SIMPLES = 0.0000274; // 0,00274% a.d.
     const DIAS_MES_COMERCIAL = 30;
     const DIAS_POR_SEMANA = 7;
 
@@ -99,7 +99,7 @@ class LoanSimulationService
                 'adicional' => $this->formatDecimal($iofAdicional),
                 'diario' => $this->formatDecimal($iofDiario),
                 'total' => $this->formatDecimal($iofTotal),
-                'aliquota_diaria' => $usaTaxaSimples ? '0,0027%' : '0,0082%',
+                'aliquota_diaria' => $usaTaxaSimples ? '0,00274%' : '0,0082%',
             ],
             'valor_contrato' => $this->formatDecimal($valorContrato),
             'parcela' => $this->formatDecimal($pmtExata),

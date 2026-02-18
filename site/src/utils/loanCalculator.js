@@ -5,7 +5,7 @@
  */
 
 const IOF_DAILY_RATE_STD = 0.000082;     // 0,0082% ao dia (padrão)
-const IOF_DAILY_RATE_SIMPLES = 0.000027; // 0,0027% ao dia (Simples até 30.000)
+const IOF_DAILY_RATE_SIMPLES = 0.0000274; // 0,00274% ao dia (Simples até 30.000)
 const IOF_ADDITIONAL_RATE = 0.0038;      // 0,38%
 
 const DAYS_PER_MONTH_DAILY = 30;       // para converter taxa mensal -> diária
@@ -245,7 +245,7 @@ export function calculateLoan(params) {
       adicional: round2(iofAdd).toFixed(2),
       diario: round2(iofDaily).toFixed(2),
       total: round2(iofTotal).toFixed(2),
-      aliquota_diaria: usaTaxaSimples ? '0,0027%' : '0,0082%',
+      aliquota_diaria: usaTaxaSimples ? '0,00274%' : '0,0082%',
     },
     valor_contrato: round2(valorContrato).toFixed(2),
     parcela: round2(parcela).toFixed(2),
