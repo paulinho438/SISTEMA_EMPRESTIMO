@@ -116,7 +116,7 @@ function abrirCadastroPF() {
 
             <!-- Avalista / Devedor solidário -->
             <div v-if="g.tipo === 'avalista' || g.tipo === 'devedor_solidario'" class="grid formgrid p-fluid">
-                <div class="field col-12 md:col-6">
+                <div class="field col-12">
                     <label>Selecionar PF existente ou cadastrar novo</label>
                     <div class="flex gap-2">
                         <AutoComplete
@@ -131,69 +131,69 @@ function abrirCadastroPF() {
                         <Button label="Cadastrar PF" icon="pi pi-plus" class="p-button-outlined p-button-sm" @click="abrirCadastroPF" />
                     </div>
                 </div>
-                <div class="field col-12 md:col-4">
+                <div class="field col-12 md:col-5">
                     <label>Nome Completo *</label>
-                    <InputText v-model="garantirDados(g).nome_completo" />
+                    <InputText v-model="garantirDados(g).nome_completo" class="w-full" />
                 </div>
-                <div class="field col-12 md:col-4">
+                <div class="field col-12 md:col-3">
                     <label>CPF *</label>
-                    <InputMask v-model="garantirDados(g).cpf" mask="999.999.999-99" />
+                    <InputMask v-model="garantirDados(g).cpf" mask="999.999.999-99" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>RG</label>
-                    <InputMask v-model="garantirDados(g).rg" mask="9.999.999" />
+                    <InputMask v-model="garantirDados(g).rg" mask="9.999.999" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>Órgão Emissor</label>
-                    <InputText v-model="garantirDados(g).orgao_emissor" />
+                    <InputText v-model="garantirDados(g).orgao_emissor" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>CEP *</label>
-                    <InputMask v-model="garantirDados(g).cep" mask="99999-999" />
+                    <InputMask v-model="garantirDados(g).cep" mask="99999-999" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>Estado</label>
-                    <InputText v-model="garantirDados(g).estado" maxlength="2" placeholder="UF" />
+                    <InputText v-model="garantirDados(g).estado" maxlength="2" placeholder="UF" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Cidade *</label>
-                    <InputText v-model="garantirDados(g).cidade" />
+                    <InputText v-model="garantirDados(g).cidade" class="w-full" />
                 </div>
-                <div class="field col-12 md:col-4">
+                <div class="field col-12 md:col-3">
                     <label>Bairro *</label>
-                    <InputText v-model="garantirDados(g).bairro" />
+                    <InputText v-model="garantirDados(g).bairro" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-6">
                     <label>Endereço *</label>
-                    <InputText v-model="garantirDados(g).endereco" />
+                    <InputText v-model="garantirDados(g).endereco" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>Número *</label>
-                    <InputText v-model="garantirDados(g).numero" />
+                    <InputText v-model="garantirDados(g).numero" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Complemento</label>
-                    <InputText v-model="garantirDados(g).complemento" />
+                    <InputText v-model="garantirDados(g).complemento" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>E-mail *</label>
-                    <InputText v-model="garantirDados(g).email" type="email" />
+                    <InputText v-model="garantirDados(g).email" type="email" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Telefone *</label>
-                    <InputMask v-model="garantirDados(g).telefone" mask="(99) 99999-9999" />
+                    <InputMask v-model="garantirDados(g).telefone" mask="(99) 99999-9999" class="w-full" />
                 </div>
-                <div class="field col-12 md:col-3">
+                <div class="field col-12 md:col-4">
                     <label>Renda mensal</label>
                     <InputNumber v-model="garantirDados(g).renda_mensal" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" class="w-full" />
                 </div>
-                <div class="field col-12 md:col-3">
+                <div class="field col-12 md:col-4">
                     <label>Estado Civil *</label>
-                    <InputText v-model="garantirDados(g).estado_civil" />
+                    <InputText v-model="garantirDados(g).estado_civil" class="w-full" />
                 </div>
-                <div class="field col-12 md:col-3">
+                <div class="field col-12 md:col-4">
                     <label>Regime de Bens</label>
-                    <InputText v-model="garantirDados(g).regime_bens" />
+                    <InputText v-model="garantirDados(g).regime_bens" class="w-full" />
                 </div>
             </div>
 
@@ -201,15 +201,15 @@ function abrirCadastroPF() {
             <div v-if="g.tipo === 'imovel'" class="grid formgrid p-fluid">
                 <div class="field col-12 md:col-4">
                     <label>Tabelionato</label>
-                    <InputText v-model="garantirDados(g).tabelionato" />
+                    <InputText v-model="garantirDados(g).tabelionato" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Número da Matrícula</label>
-                    <InputText v-model="garantirDados(g).matricula" />
+                    <InputText v-model="garantirDados(g).matricula" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Proprietário</label>
-                    <InputText v-model="garantirDados(g).proprietario" />
+                    <InputText v-model="garantirDados(g).proprietario" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Valor de avaliação</label>
@@ -217,7 +217,7 @@ function abrirCadastroPF() {
                 </div>
                 <div class="field col-12">
                     <label>Descrição do Imóvel</label>
-                    <InputText v-model="garantirDados(g).descricao" />
+                    <InputText v-model="garantirDados(g).descricao" class="w-full" />
                 </div>
             </div>
 
@@ -225,11 +225,11 @@ function abrirCadastroPF() {
             <div v-if="g.tipo === 'veiculo'" class="grid formgrid p-fluid">
                 <div class="field col-12 md:col-3">
                     <label>Fabricante *</label>
-                    <InputText v-model="garantirDados(g).fabricante" />
+                    <InputText v-model="garantirDados(g).fabricante" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-3">
                     <label>Modelo *</label>
-                    <InputText v-model="garantirDados(g).modelo" />
+                    <InputText v-model="garantirDados(g).modelo" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>Ano Fabricação *</label>
@@ -241,19 +241,19 @@ function abrirCadastroPF() {
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Chassi *</label>
-                    <InputText v-model="garantirDados(g).chassi" />
+                    <InputText v-model="garantirDados(g).chassi" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Renavam *</label>
-                    <InputText v-model="garantirDados(g).renavam" />
+                    <InputText v-model="garantirDados(g).renavam" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>Placa *</label>
-                    <InputText v-model="garantirDados(g).placa" />
+                    <InputText v-model="garantirDados(g).placa" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-2">
                     <label>Cor *</label>
-                    <InputText v-model="garantirDados(g).cor" />
+                    <InputText v-model="garantirDados(g).cor" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Valor de avaliação *</label>
@@ -261,7 +261,7 @@ function abrirCadastroPF() {
                 </div>
                 <div class="field col-12">
                     <label>Outros Dados</label>
-                    <InputText v-model="garantirDados(g).outros_dados" />
+                    <InputText v-model="garantirDados(g).outros_dados" class="w-full" />
                 </div>
             </div>
 
@@ -269,11 +269,11 @@ function abrirCadastroPF() {
             <div v-if="g.tipo === 'recebiveis'" class="grid formgrid p-fluid">
                 <div class="field col-12 md:col-3">
                     <label>Tipo</label>
-                    <InputText v-model="garantirDados(g).tipo" />
+                    <InputText v-model="garantirDados(g).tipo" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-3">
                     <label>Número de identificação</label>
-                    <InputText v-model="garantirDados(g).numero_identificacao" />
+                    <InputText v-model="garantirDados(g).numero_identificacao" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-3">
                     <label>Valor de avaliação</label>
@@ -281,11 +281,11 @@ function abrirCadastroPF() {
                 </div>
                 <div class="field col-12 md:col-3">
                     <label>Sacado</label>
-                    <InputText v-model="garantirDados(g).sacado" />
+                    <InputText v-model="garantirDados(g).sacado" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Data de Vencimento</label>
-                    <Calendar v-model="garantirDados(g).data_vencimento" dateFormat="dd/mm/yy" />
+                    <Calendar v-model="garantirDados(g).data_vencimento" dateFormat="dd/mm/yy" class="w-full" />
                 </div>
             </div>
 
@@ -293,19 +293,19 @@ function abrirCadastroPF() {
             <div v-if="g.tipo === 'outras'" class="grid formgrid p-fluid">
                 <div class="field col-12 md:col-6">
                     <label>Descrição *</label>
-                    <InputText v-model="garantirDados(g).descricao" />
+                    <InputText v-model="garantirDados(g).descricao" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-3">
                     <label>Número de série *</label>
-                    <InputText v-model="garantirDados(g).numero_serie" />
+                    <InputText v-model="garantirDados(g).numero_serie" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-3">
                     <label>Estado de conservação *</label>
-                    <InputText v-model="garantirDados(g).estado_conservacao" />
+                    <InputText v-model="garantirDados(g).estado_conservacao" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Localização física *</label>
-                    <InputText v-model="garantirDados(g).localizacao_fisica" />
+                    <InputText v-model="garantirDados(g).localizacao_fisica" class="w-full" />
                 </div>
                 <div class="field col-12 md:col-4">
                     <label>Valor de avaliação *</label>

@@ -26,8 +26,8 @@
                 </div>
 
                 <div class="grid">
-                    <!-- Coluna Esquerda - Formulário por etapa -->
-                    <div class="col-12 lg:col-6">
+                    <!-- Coluna Esquerda - Formulário por etapa (largura total quando simulação oculta) -->
+                    <div :class="etapaAtual === 1 ? 'col-12 lg:col-6' : 'col-12'">
                         <!-- Step 1 - Operação -->
                         <div v-if="etapaAtual === 1" class="card">
                             <h6 class="mb-3">1. Dados da Operação</h6>
