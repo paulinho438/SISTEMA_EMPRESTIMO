@@ -10,6 +10,7 @@ import ClientRoutes from './client.js';
 import FornecedorRoutes from './fornecedor.js';
 import BancosRoutes from './bancos.js';
 import EmprestimosRoutes from './emprestimos.js';
+import ContratosRoutes from './contratos.js';
 import ContaspagarRoutes from './contaspagar.js';
 import ContasreceberRoutes from './contasreceber.js';
 import MovimentacaofinanceiraRoutes from './movimentacaofinanceira.js';
@@ -52,6 +53,7 @@ const router = createRouter({
                 ...BancosRoutes,
                 ...ClientRoutes,
                 ...EmprestimosRoutes,
+                ...ContratosRoutes,
                 ...FornecedorRoutes,
                 ...ContaspagarRoutes,
                 ...ContasreceberRoutes,

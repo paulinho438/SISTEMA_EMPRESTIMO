@@ -111,7 +111,26 @@ const model = ref([
                 icon: 'pi pi-fw pi-arrow-right-arrow-left',
                 items: [
                     {
-                        label: 'Emprestimos',
+                        label: 'Contratos',
+                        icon: 'pi pi-fw pi-file',
+                        permission: 'view_emprestimos',
+                        items: [
+                            {
+                                label: 'Listar Contratos',
+                                icon: 'pi pi-fw pi-list',
+                                to: '/contratos',
+                                permission: 'view_emprestimos'
+                            },
+                            {
+                                label: 'Simular ou Cadastrar',
+                                icon: 'pi pi-fw pi-calculator',
+                                to: '/emprestimos/simulacao',
+                                permission: 'view_emprestimos'
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Empréstimos',
                         icon: 'pi pi-fw pi-arrow-right-arrow-left',
                         permission: 'view_emprestimos',
                         items: [
@@ -119,12 +138,6 @@ const model = ref([
                                 label: 'Lista de Empréstimos',
                                 icon: 'pi pi-fw pi-list',
                                 to: '/emprestimos',
-                                permission: 'view_emprestimos'
-                            },
-                            {
-                                label: 'Simulação de Empréstimo',
-                                icon: 'pi pi-fw pi-calculator',
-                                to: '/emprestimos/simulacao',
                                 permission: 'view_emprestimos'
                             }
                         ]

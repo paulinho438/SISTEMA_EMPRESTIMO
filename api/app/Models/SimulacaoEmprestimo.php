@@ -33,6 +33,7 @@ class SimulacaoEmprestimo extends Model
         'costcenter_id',
         'user_id',
         'company_id',
+        'situacao',
     ];
 
     protected $casts = [

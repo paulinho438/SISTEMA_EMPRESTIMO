@@ -322,6 +322,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/cobrancaautomatica', [EmprestimoController::class, 'cobrancaAutomatica']);
 
     Route::post('/loan/simulate', [LoanSimulationController::class, 'simulate']);
+    Route::get('/simulacoes-emprestimo', [SimulacaoEmprestimoController::class, 'index']);
     Route::post('/simulacoes-emprestimo', [SimulacaoEmprestimoController::class, 'store']);
 
 

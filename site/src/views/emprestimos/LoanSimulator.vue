@@ -259,6 +259,48 @@
                                 <p class="m-0 text-sm"><strong>Cliente:</strong> {{ clienteSelecionado?.razao_social || clienteSelecionado?.nome_completo || '—' }}</p>
                                 <p class="m-0 text-sm"><strong>Garantias:</strong> {{ (form.garantias || []).length }} cadastrada(s)</p>
                             </div>
+
+                            <!-- Assinatura Eletrônica -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Assinatura Eletrônica</h6>
+                                <p class="text-500 text-sm mb-3">Escolha como o contrato será assinado pelas partes.</p>
+                                <div class="flex flex-column gap-2">
+                                    <div class="flex align-items-start">
+                                        <RadioButton v-model="assinaturaTipo" inputId="sem_assinatura" name="assinatura" value="sem" :disabled="false" />
+                                        <label for="sem_assinatura" class="ml-2 cursor-pointer">
+                                            <strong>Sem Assinatura Eletrônica</strong>
+                                            <p class="m-0 text-500 text-sm">Assinatura realizada fisicamente ou por outros meios digitais externos ao sistema.</p>
+                                        </label>
+                                    </div>
+                                    <div class="flex align-items-start opacity-60">
+                                        <RadioButton v-model="assinaturaTipo" inputId="assinatura_avancada" name="assinatura" value="avancada" :disabled="true" />
+                                        <label for="assinatura_avancada" class="ml-2">
+                                            <strong>Assinatura Eletrônica Avançada (Selfie + Documento)</strong>
+                                            <p class="m-0 text-500 text-sm">Serão coletadas a foto do signatário e do documento de identidade (Custo: 1,00 créditos/documento).</p>
+                                        </label>
+                                    </div>
+                                    <div class="flex align-items-start opacity-60">
+                                        <RadioButton v-model="assinaturaTipo" inputId="assinatura_qualificada" name="assinatura" value="qualificada" :disabled="true" />
+                                        <label for="assinatura_qualificada" class="ml-2">
+                                            <strong>Assinatura Eletrônica Qualificada (Certificado Digital)</strong>
+                                            <p class="m-0 text-500 text-sm">Uso obrigatório de certificado digital ICP-Brasil (Custo: 1,00 créditos/documento).</p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Baixar documentos -->
+                            <div class="mb-4">
+                                <h6 class="mb-2">Documentos do contrato</h6>
+                                <SplitButton
+                                    label="Baixar documentos do contrato"
+                                    icon="pi pi-download"
+                                    :model="documentosMenuItems"
+                                    class="p-button-outlined"
+                                    :disabled="!result"
+                                />
+                            </div>
+
                             <div class="flex gap-2 mb-3">
                                 <Button label="Exportar simulação" icon="pi pi-download" class="p-button-outlined p-button-secondary" @click="exportSimulation" :disabled="!result" />
                                 <Button label="Salvar simulação" icon="pi pi-save" class="p-button-success" :loading="saving" :disabled="!result || !form.client_id" @click="onSaveSimulation" />
@@ -401,6 +443,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useLoanSimulation } from '@/composables/useLoanSimulation';
 import ClientService from '@/service/ClientService';
+import EmpresaService from '@/service/EmpresaService';
 import StepGarantias from './steps/StepGarantias.vue';
 import Breadcrumb from 'primevue/breadcrumb';
 import Dropdown from 'primevue/dropdown';
@@ -412,6 +455,8 @@ import AutoComplete from 'primevue/autocomplete';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
+import RadioButton from 'primevue/radiobutton';
+import SplitButton from 'primevue/splitbutton';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
 import Toast from 'primevue/toast';
@@ -429,12 +474,17 @@ const {
     formatPercent,
     formatDate,
     exportPDF,
+    exportContratoInicial,
+    exportNotasPromissorias,
     saveSimulation,
 } = useLoanSimulation();
 
 const toast = useToast();
 const router = useRouter();
 const clientService = new ClientService();
+const empresaService = new EmpresaService();
+const assinaturaTipo = ref('sem');
+const empresaData = ref({});
 const etapaAtual = ref(1);
 const clienteSelecionado = ref(null);
 const clientesPJFiltered = ref([]);
@@ -524,6 +574,32 @@ function exportSimulation() {
     exportPDF();
 }
 
+const documentosMenuItems = ref([
+    {
+        label: 'Contrato Inicial',
+        icon: 'pi pi-file-pdf',
+        command: () => {
+            exportContratoInicial(empresaData.value, clienteSelecionado.value);
+        },
+    },
+    {
+        label: 'Notas promissórias',
+        icon: 'pi pi-file-pdf',
+        command: () => {
+            exportNotasPromissorias(empresaData.value, clienteSelecionado.value, form.garantias || []);
+        },
+    },
+]);
+
+async function carregarEmpresa() {
+    try {
+        const res = await empresaService.get();
+        empresaData.value = res.data?.data ?? res.data ?? {};
+    } catch {
+        empresaData.value = {};
+    }
+}
+
 async function onSaveSimulation() {
     const res = await saveSimulation();
     if (res?.success) {
@@ -538,6 +614,7 @@ onMounted(() => {
     if (isValid.value) {
         simulateDebounced();
     }
+    carregarEmpresa();
 });
 </script>
 

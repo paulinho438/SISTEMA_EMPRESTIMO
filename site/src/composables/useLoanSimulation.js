@@ -3,6 +3,7 @@ import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateLoan } from '@/utils/loanCalculator';
+import { valorPorExtenso } from '@/utils/valorPorExtenso';
 
 const apiPath = import.meta.env.VITE_APP_BASE_URL;
 
@@ -365,6 +366,190 @@ export function useLoanSimulation() {
     }
 
     /**
+     * Exporta Contrato Inicial em PDF (modelo de contrato de mútuo)
+     */
+    function exportContratoInicial(empresa = {}, cliente = {}) {
+        if (!result.value || !result.value.cronograma) return;
+
+        const r = result.value;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let y = 15;
+
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('CONTRATO DE MÚTUO FINANCEIRO', pageWidth / 2, y, { align: 'center' });
+        y += 10;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        const ano = new Date().getFullYear();
+        const numeroContrato = `${ano}/000001`;
+        doc.text(`Nº DO CONTRATO: ${numeroContrato}`, 14, y);
+        doc.text(`VALOR DO CRÉDITO: ${formatCurrency(r.inputs.valor_solicitado)}`, 110, y);
+        y += 12;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('QUADRO 01 - PARTES CONTRATANTES', 14, y);
+        y += 7;
+        doc.setFont(undefined, 'normal');
+
+        doc.text('1. CONTRATADA MUTUANTE', 14, y);
+        y += 5;
+        doc.text(`Razão Social: ${empresa.company || empresa.razao_social || '—'}`, 14, y);
+        y += 5;
+        doc.text(`CNPJ: ${empresa.cnpj || '—'}`, 14, y);
+        y += 5;
+        doc.text(`Endereço: ${empresa.endereco || '—'}`, 14, y);
+        y += 5;
+        doc.text(`Telefone: ${empresa.telefone || empresa.whatsapp || '—'}`, 14, y);
+        y += 5;
+        doc.text(`E-mail: ${empresa.email || '—'}`, 14, y);
+        y += 10;
+
+        doc.text('3. CONTRATANTE MUTUÁRIA', 14, y);
+        y += 5;
+        doc.text(`Razão Social: ${cliente.razao_social || cliente.nome_completo || '—'}`, 14, y);
+        doc.text(`CNPJ: ${cliente.cnpj || '—'}`, 110, y);
+        y += 5;
+        const endCliente = cliente.address?.[0];
+        doc.text(`Endereço: ${endCliente ? [endCliente.address, endCliente.number, endCliente.neighborhood, endCliente.city].filter(Boolean).join(', ') : '—'}`, 14, y);
+        y += 10;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('QUADRO 02 – COMPOSIÇÃO DO CRÉDITO', 14, y);
+        y += 7;
+        doc.setFont(undefined, 'normal');
+
+        doc.text(`Valor do Crédito: ${formatCurrency(r.inputs.valor_solicitado)}`, 14, y);
+        y += 5;
+        doc.text(`Quantidade de parcelas: ${r.inputs.quantidade_parcelas}`, 14, y);
+        y += 5;
+        doc.text(`1º vencimento: ${formatDate(r.inputs.data_primeira_parcela)}`, 14, y);
+        y += 5;
+        doc.text(`Juros remuneratórios ao mês: ${r.inputs.taxa_juros_mensal}%`, 14, y);
+        y += 5;
+        doc.text(`Sistema de Amortização: ${r.inputs.modelo_amortizacao || 'Price'}`, 14, y);
+        y += 5;
+        doc.text(`Periodicidade: ${r.inputs.periodo_amortizacao}`, 14, y);
+        y += 5;
+        doc.text(`IOF: ${formatCurrency(r.iof.total)} (diário ${formatCurrency(r.iof.diario)} + adicional ${formatCurrency(r.iof.adicional)})`, 14, y);
+        y += 5;
+        doc.text(`Valor do Contrato: ${formatCurrency(r.valor_contrato)}`, 14, y);
+        y += 5;
+        doc.text(`CET ao ano: ${formatPercent(parseFloat(r.totais.cet_ano))} | CET ao mês: ${formatPercent(parseFloat(r.totais.cet_mes))}`, 14, y);
+        y += 5;
+        doc.text(`Valor total a prazo: ${formatCurrency(r.totais.total_parcelas)}`, 14, y);
+        y += 10;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('QUADRO 03 – CRONOGRAMA DE REEMBOLSO', 14, y);
+        y += 7;
+        doc.setFont(undefined, 'normal');
+
+        const tableData = r.cronograma.map(p => [
+            String(p.numero),
+            formatDate(p.vencimento),
+            p.parcela,
+            p.juros,
+            p.amortizacao,
+            p.saldo_devedor,
+        ]);
+        autoTable(doc, {
+            startY: y,
+            head: [['Parcela', 'Vencimento', 'Valor', 'Juros', 'Amortização', 'Saldo Devedor']],
+            body: tableData,
+            theme: 'grid',
+            styles: { fontSize: 7 },
+            headStyles: { fillColor: [100, 100, 100] },
+            margin: { left: 14, right: 14 },
+        });
+        y = doc.lastAutoTable.finalY + 15;
+
+        doc.setFontSize(9);
+        doc.text('Por este instrumento particular, as partes acima qualificadas celebram o presente CONTRATO DE MÚTUO FINANCEIRO.', 14, y, { maxWidth: pageWidth - 28 });
+        y += 10;
+        doc.text('E, por estarem assim justas e acertadas, firmam o presente instrumento.', 14, y, { maxWidth: pageWidth - 28 });
+        y += 15;
+
+        const dataAssinatura = formatDate(r.inputs.data_assinatura);
+        doc.text(`Data: ${dataAssinatura}`, 14, y);
+
+        const filename = `contrato-inicial-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+    }
+
+    /**
+     * Exporta Notas Promissórias em PDF (uma por parcela)
+     */
+    function exportNotasPromissorias(empresa = {}, cliente = {}, garantias = []) {
+        if (!result.value || !result.value.cronograma) return;
+
+        const r = result.value;
+        const cronograma = r.cronograma;
+        const totalNotas = cronograma.length;
+        const dataEmissao = formatDate(r.inputs.data_assinatura);
+        const cidadePagavel = empresa.cidade || 'Aparecida de Goiânia';
+        const ufPagavel = empresa.estado || 'GO';
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        cronograma.forEach((parcela, idx) => {
+            if (idx > 0) doc.addPage();
+
+            let y = 20;
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Nota Promissória ${parcela.numero} / ${totalNotas}`, 14, y);
+            y += 10;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Vencimento: ${formatDate(parcela.vencimento)}`, 14, y);
+            y += 6;
+            doc.text(`Valor: ${formatCurrency(parcela.parcela)}`, 14, y);
+            y += 8;
+
+            const valorExtenso = valorPorExtenso(parcela.parcela);
+            doc.setFontSize(9);
+            doc.text(`Prometo pagar a ${empresa.company || empresa.razao_social || 'MUTUANTE'}, CNPJ ${empresa.cnpj || '—'}, a quantia de ${valorExtenso} em moeda corrente nacional, na data de vencimento acima.`, 14, y, { maxWidth: 180 });
+            y += 12;
+
+            doc.text(`Pagável em ${cidadePagavel}-${ufPagavel}.`, 14, y);
+            y += 5;
+            doc.text(`Nota Promissória emitida em: ${dataEmissao}.`, 14, y);
+            y += 12;
+
+            doc.setFont(undefined, 'bold');
+            doc.text('Emitente:', 14, y);
+            y += 5;
+            doc.setFont(undefined, 'normal');
+            doc.text(`Razão Social: ${cliente.razao_social || cliente.nome_completo || '—'}`, 14, y);
+            y += 5;
+            doc.text(`CNPJ: ${cliente.cnpj || '—'}`, 14, y);
+            const endCliente = cliente.address?.[0];
+            doc.text(`Endereço: ${endCliente ? [endCliente.address, endCliente.number, endCliente.neighborhood].filter(Boolean).join(', ') : '—'}`, 14, y);
+            y += 15;
+
+            if (garantias && garantias.length > 0) {
+                doc.setFont(undefined, 'bold');
+                doc.text('Avalistas:', 14, y);
+                y += 5;
+                doc.setFont(undefined, 'normal');
+                garantias.forEach((g) => {
+                    const d = g.dados || {};
+                    doc.text(`${d.nome_completo || '—'} - CPF: ${d.cpf || '—'}`, 14, y);
+                    y += 5;
+                });
+            }
+        });
+
+        const filename = `notas-promissorias-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+    }
+
+    /**
      * Salva a simulação no banco para relatórios futuros
      */
     async function saveSimulation() {
@@ -414,6 +599,8 @@ export function useLoanSimulation() {
         exportJSON,
         exportCSV,
         exportPDF,
+        exportContratoInicial,
+        exportNotasPromissorias,
         saveSimulation,
     };
 }
