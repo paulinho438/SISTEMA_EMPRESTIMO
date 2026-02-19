@@ -129,7 +129,7 @@ function abrirCadastroPF() {
                             @complete="searchClientesPF"
                             @item-select="(e) => onPFSelect(g, e.value)"
                         />
-                        <Button label="Cadastrar PF" icon="pi pi-plus" class="p-button-outlined p-button-sm flex-shrink-0" @click="abrirCadastroPF" />
+                        <Button label="Cadastrar PF" icon="pi pi-plus" class="p-button-outlined p-button-sm" @click="abrirCadastroPF" />
                     </div>
                 </div>
                 <div class="field col-12 md:col-4">
