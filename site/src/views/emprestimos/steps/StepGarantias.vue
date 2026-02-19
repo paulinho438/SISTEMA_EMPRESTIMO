@@ -118,24 +118,25 @@ function abrirCadastroPF() {
             <div v-if="g.tipo === 'avalista' || g.tipo === 'devedor_solidario'" class="grid formgrid p-fluid">
                 <div class="field col-12">
                     <label>Selecionar PF existente ou cadastrar novo</label>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 align-items-stretch">
                         <AutoComplete
                             v-model="garantirDados(g).pessoa_selecionada"
                             :suggestions="clientesPFFiltered"
                             optionLabel="label_completo"
-                            placeholder="Buscar pessoa física"
-                            class="flex-1"
+                            placeholder="Buscar por nome ou CPF"
+                            class="flex-1 min-w-0"
+                            style="min-width: 18rem"
                             @complete="searchClientesPF"
                             @item-select="(e) => onPFSelect(g, e.value)"
                         />
-                        <Button label="Cadastrar PF" icon="pi pi-plus" class="p-button-outlined p-button-sm" @click="abrirCadastroPF" />
+                        <Button label="Cadastrar PF" icon="pi pi-plus" class="p-button-outlined p-button-sm flex-shrink-0" @click="abrirCadastroPF" />
                     </div>
                 </div>
-                <div class="field col-12 md:col-5">
+                <div class="field col-12 md:col-4">
                     <label>Nome Completo *</label>
                     <InputText v-model="garantirDados(g).nome_completo" class="w-full" />
                 </div>
-                <div class="field col-12 md:col-3">
+                <div class="field col-12 md:col-4">
                     <label>CPF *</label>
                     <InputMask v-model="garantirDados(g).cpf" mask="999.999.999-99" class="w-full" />
                 </div>
