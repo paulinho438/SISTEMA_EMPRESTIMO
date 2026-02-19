@@ -16,6 +16,7 @@ export function useLoanSimulation() {
 
     const form = reactive({
         client_id: null,
+        banco_id: null,
         tipo_operacao: 'Empréstimo',
         valor_solicitado: '500.00',
         periodo_amortizacao: 'Diário',
@@ -690,6 +691,7 @@ export function useLoanSimulation() {
             const payload = {
                 ...result.value,
                 client_id: form.client_id,
+                banco_id: form.banco_id,
                 inputs: {
                     ...result.value.inputs,
                     garantias: garantiasParaSalvar,

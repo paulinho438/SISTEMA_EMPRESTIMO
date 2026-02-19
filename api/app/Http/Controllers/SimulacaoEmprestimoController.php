@@ -3,9 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSimulacaoEmprestimoRequest;
+use App\Models\Contaspagar;
+use App\Models\Costcenter;
+use App\Models\Emprestimo;
 use App\Models\SimulacaoEmprestimo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class SimulacaoEmprestimoController extends Controller
 {
@@ -118,6 +122,7 @@ class SimulacaoEmprestimoController extends Controller
         return response()->json([
             'id' => $s->id,
             'client_id' => $s->client_id,
+            'banco_id' => $s->banco_id,
             'situacao' => $s->situacao,
             'result' => [
                 'inputs' => array_merge($inputs, [
@@ -220,12 +225,74 @@ class SimulacaoEmprestimoController extends Controller
     {
         $companyId = $this->resolveCompanyId($request);
         $s = SimulacaoEmprestimo::where('company_id', $companyId)->findOrFail($id);
+
+        if (!$s->banco_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selecione o banco pagador antes de iniciar o contrato.',
+            ], 422);
+        }
+        if (!$s->client_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selecione o cliente antes de iniciar o contrato.',
+            ], 422);
+        }
+
+        // Se já existe empréstimo vinculado, reaproveita
+        $emprestimoExistente = Emprestimo::where('company_id', $companyId)
+            ->where('simulacao_emprestimo_id', $s->id)
+            ->first();
+
+        if (!$emprestimoExistente) {
+            $costcenter = Costcenter::where('company_id', $companyId)->first();
+            if (!$costcenter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nenhum centro de custo encontrado para a empresa.',
+                ], 422);
+            }
+
+            $valor = (float) $s->valor_solicitado;
+            $totalPrazo = (float) $s->total_parcelas;
+            $lucro = max(0, $totalPrazo - $valor);
+
+            $emprestimoExistente = Emprestimo::create([
+                'dt_lancamento' => $s->data_assinatura ? $s->data_assinatura->format('Y-m-d') : Carbon::now()->format('Y-m-d'),
+                'valor' => $valor,
+                'lucro' => $lucro,
+                'juros' => (float) $s->taxa_juros_mensal,
+                'costcenter_id' => $costcenter->id,
+                'banco_id' => $s->banco_id,
+                'client_id' => $s->client_id,
+                'user_id' => auth()->id(),
+                'company_id' => $companyId,
+                'simulacao_emprestimo_id' => $s->id,
+                'liberar_minimo' => 1,
+            ]);
+
+            // Contas a pagar para efetuar a transferência ao cliente (aprovação)
+            Contaspagar::create([
+                'banco_id' => $s->banco_id,
+                'emprestimo_id' => $emprestimoExistente->id,
+                'costcenter_id' => $costcenter->id,
+                'status' => 'Aguardando Pagamento',
+                'tipodoc' => 'Empréstimo',
+                'lanc' => Carbon::now()->format('Y-m-d'),
+                'venc' => Carbon::now()->format('Y-m-d'),
+                'valor' => $valor,
+                'descricao' => 'Empréstimo (Contrato) Nº ' . $s->id,
+                'company_id' => $companyId,
+            ]);
+        }
+
         $s->situacao = 'efetivado';
         $s->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Contrato efetivado com sucesso.',
+            'message' => 'Contrato iniciado com sucesso.',
+            'emprestimo_id' => $emprestimoExistente->id,
         ]);
     }
 }

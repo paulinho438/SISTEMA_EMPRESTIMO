@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\Contaspagar;
 use App\Models\Contasreceber;
 use App\Models\Movimentacaofinanceira;
+use App\Models\SimulacaoEmprestimo;
 use App\Traits\VerificarPermissao;
 use App\Models\PagamentoPersonalizado;
 use App\Models\Bank;
@@ -1559,6 +1560,62 @@ class EmprestimoController extends Controller
 
             $emprestimo = Emprestimo::find($id);
 
+            if (!$emprestimo) {
+                return response()->json([
+                    "message" => "Empréstimo não encontrado.",
+                    "error" => ""
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Se o empréstimo veio de um contrato (simulação) e ainda não tem parcelas, gerar agora
+            if ($emprestimo->parcelas()->count() === 0 && !empty($emprestimo->simulacao_emprestimo_id)) {
+                $sim = SimulacaoEmprestimo::where('company_id', $request->header('company-id'))
+                    ->find($emprestimo->simulacao_emprestimo_id);
+
+                if (!$sim || empty($sim->cronograma) || !is_array($sim->cronograma)) {
+                    return response()->json([
+                        "message" => "Não foi possível gerar parcelas para este contrato.",
+                        "error" => "Cronograma não encontrado no contrato."
+                    ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                }
+
+                $n = (int) ($sim->quantidade_parcelas ?: count($sim->cronograma));
+                $lucroRealPorParcela = $n > 0 ? round(((float) $emprestimo->lucro) / $n, 2) : 0;
+
+                foreach ($sim->cronograma as $p) {
+                    $num = (int) ($p['numero'] ?? 0);
+                    $valorParcela = (float) ($p['parcela'] ?? 0);
+                    $venc = isset($p['vencimento']) ? Carbon::parse($p['vencimento'])->format('Y-m-d') : $emprestimo->dt_lancamento;
+
+                    $parcelaModel = Parcela::create([
+                        'emprestimo_id' => $emprestimo->id,
+                        'dt_lancamento' => $emprestimo->dt_lancamento,
+                        'parcela' => ($num > 0 && $n > 0) ? "{$num}/{$n}" : (string) ($p['parcela'] ?? ''),
+                        'valor' => $valorParcela,
+                        'saldo' => $valorParcela,
+                        'lucro_real' => $lucroRealPorParcela,
+                        'venc' => $venc,
+                        'venc_real' => $venc,
+                        'venc_real_audit' => $venc,
+                    ]);
+
+                    Contasreceber::create([
+                        'company_id' => $request->header('company-id'),
+                        'parcela_id' => $parcelaModel->id,
+                        'client_id' => $emprestimo->client_id,
+                        'banco_id' => $emprestimo->banco_id,
+                        'descricao' => 'Parcela N° ' . $parcelaModel->parcela . ' do Emprestimo N° ' . $emprestimo->id,
+                        'status' => 'Aguardando Pagamento',
+                        'tipodoc' => 'Empréstimo',
+                        'lanc' => $parcelaModel->dt_lancamento,
+                        'venc' => $parcelaModel->venc_real,
+                        'valor' => $parcelaModel->valor,
+                    ]);
+                }
+
+                // Recarregar relação para usos abaixo (parcelas[0])
+                $emprestimo->load('parcelas');
+            }
 
             if ($emprestimo->contaspagar->status == 'Pagamento Efetuado') {
                 return response()->json([

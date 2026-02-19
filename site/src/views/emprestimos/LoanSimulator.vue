@@ -143,6 +143,22 @@
                             </div>
 
                             <div class="field mb-3">
+                                <label for="banco_pagador" class="block mb-2">
+                                    Banco pagador (para transferir ao cliente) <span class="text-red-500">*</span>
+                                </label>
+                                <Dropdown
+                                    id="banco_pagador"
+                                    v-model="form.banco_id"
+                                    :options="bancos"
+                                    optionLabel="name_agencia_conta"
+                                    optionValue="id"
+                                    placeholder="Selecione o banco"
+                                    class="w-full"
+                                />
+                                <small class="text-500">Este banco será usado para pagar o cliente e iniciar o fluxo do empréstimo.</small>
+                            </div>
+
+                            <div class="field mb-3">
                                 <label for="data_primeira_parcela" class="block mb-2">
                                     Data da primeira parcela <span class="text-red-500">*</span>
                                 </label>
@@ -226,7 +242,7 @@
                             <StepGarantias v-model="form.garantias" />
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
-                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" :disabled="!form.banco_id" @click="avancarEtapa" />
                             </div>
                         </div>
 
@@ -318,7 +334,7 @@
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
                                 <div class="flex gap-2">
                                     <Button label="Salvar e fechar (sem iniciar)" class="p-button-outlined" :loading="saving" :disabled="!result || !form.client_id" @click="onSaveSimulation" />
-                                    <Button label="Iniciar contrato" class="p-button-danger" :disabled="!result || !form.client_id" @click="onEfetivarContrato" />
+                                    <Button label="Iniciar contrato" class="p-button-danger" :disabled="!result || !form.client_id || !form.banco_id" @click="onEfetivarContrato" />
                                 </div>
                             </div>
                         </div>
@@ -457,6 +473,7 @@ import { useLoanSimulation } from '@/composables/useLoanSimulation';
 import ClientService from '@/service/ClientService';
 import EmpresaService from '@/service/EmpresaService';
 import SimulacaoEmprestimoService from '@/service/SimulacaoEmprestimoService';
+import BancoService from '@/service/BancoService';
 import StepGarantias from './steps/StepGarantias.vue';
 import Breadcrumb from 'primevue/breadcrumb';
 import Dropdown from 'primevue/dropdown';
@@ -498,12 +515,14 @@ const route = useRoute();
 const clientService = new ClientService();
 const empresaService = new EmpresaService();
 const simulacaoService = new SimulacaoEmprestimoService();
+const bancoService = new BancoService();
 const assinaturaTipo = ref('sem');
 const empresaData = ref({});
 const etapaAtual = ref(1);
 const clienteSelecionado = ref(null);
 const clientesPJFiltered = ref([]);
 const contratoId = ref(null);
+const bancos = ref([]);
 
 const breadcrumbItems = ref([
     { label: 'Contratos', to: '/emprestimos' },
@@ -616,6 +635,15 @@ async function carregarEmpresa() {
     }
 }
 
+async function carregarBancos() {
+    try {
+        const res = await bancoService.getAll();
+        bancos.value = res.data?.data ?? [];
+    } catch {
+        bancos.value = [];
+    }
+}
+
 async function onSaveSimulation() {
     const res = await saveSimulation();
     if (res?.success) {
@@ -639,9 +667,14 @@ async function onEfetivarContrato() {
             if (res?.id) contratoId.value = res.id;
         }
 
-        await simulacaoService.efetivar(contratoId.value);
-        toast.add({ severity: 'success', summary: 'Efetivado', detail: 'Contrato efetivado com sucesso.', life: 3000 });
-        router.push('/contratos');
+        const resp = await simulacaoService.efetivar(contratoId.value);
+        const emprestimoId = resp?.data?.emprestimo_id;
+        toast.add({ severity: 'success', summary: 'Iniciado', detail: 'Contrato iniciado e empréstimo criado.', life: 3000 });
+        if (emprestimoId) {
+            router.push(`/emprestimos/${emprestimoId}/aprovacao`);
+        } else {
+            router.push('/contratos');
+        }
     } catch (e) {
         toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível efetivar o contrato.', life: 5000 });
     }
@@ -687,6 +720,7 @@ async function carregarContratoParaEdicao(id) {
         form.inadimplencia = inputs.inadimplencia || form.inadimplencia;
 
         form.client_id = payload.client_id ?? form.client_id;
+        form.banco_id = payload.banco_id ?? inputs.banco_id ?? form.banco_id;
 
         if (form.client_id) {
             const cRes = await clientService.get(form.client_id);
@@ -709,6 +743,7 @@ onMounted(() => {
         simulateDebounced();
     }
     carregarEmpresa();
+    carregarBancos();
 
     const qId = route.query?.contratoId;
     if (qId) {

@@ -21,6 +21,7 @@ class Emprestimo extends Model
         'client_id',
         'user_id',
         'company_id',
+        'simulacao_emprestimo_id',
         'hash_locacao',
         'mensagem_renovacao',
         'liberar_minimo',

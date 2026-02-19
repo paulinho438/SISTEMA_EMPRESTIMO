@@ -88,9 +88,14 @@ async function getContratos(page = 1) {
 
 async function efetivarContrato(id) {
     try {
-        await service.efetivar(id);
-        toast.add({ severity: 'success', detail: 'Contrato efetivado com sucesso.', life: 2500 });
-        await getContratos(currentPage.value);
+        const resp = await service.efetivar(id);
+        const emprestimoId = resp?.data?.emprestimo_id;
+        toast.add({ severity: 'success', detail: 'Contrato iniciado. Indo para aprovação...', life: 2500 });
+        if (emprestimoId) {
+            router.push(`/emprestimos/${emprestimoId}/aprovacao`);
+        } else {
+            await getContratos(currentPage.value);
+        }
     } catch (err) {
         toast.add({
             severity: 'error',
