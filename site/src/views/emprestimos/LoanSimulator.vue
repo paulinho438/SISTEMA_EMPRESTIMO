@@ -645,7 +645,7 @@ async function carregarBancos() {
 }
 
 async function onSaveSimulation() {
-    const res = await saveSimulation();
+    const res = await saveSimulation(contratoId.value);
     if (res?.success) {
         if (res?.id) contratoId.value = res.id;
         toast.add({ severity: 'success', summary: 'Salvo', detail: 'Simulação salva com sucesso.', life: 3000 });
@@ -659,7 +659,7 @@ async function onEfetivarContrato() {
         if (!result.value || !form.client_id) return;
 
         if (!contratoId.value) {
-            const res = await saveSimulation();
+            const res = await saveSimulation(null);
             if (!res?.success) {
                 toast.add({ severity: 'error', summary: 'Erro', detail: res?.message || 'Erro ao salvar antes de efetivar.', life: 5000 });
                 return;

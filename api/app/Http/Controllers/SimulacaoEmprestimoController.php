@@ -235,6 +235,85 @@ class SimulacaoEmprestimoController extends Controller
     }
 
     /**
+     * Atualiza um contrato (simulação) enquanto estiver em preenchimento
+     */
+    public function update(StoreSimulacaoEmprestimoRequest $request, int $id): JsonResponse
+    {
+        try {
+            $companyId = $this->resolveCompanyId($request);
+            $simulacao = SimulacaoEmprestimo::where('company_id', $companyId)->findOrFail($id);
+
+            if (($simulacao->situacao ?? 'em_preenchimento') !== 'em_preenchimento') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este contrato não pode ser alterado pois não está em preenchimento.',
+                ], 422);
+            }
+
+            $data = $request->validated();
+            $inputs = $data['inputs'];
+            $iof = $data['iof'];
+            $totais = $data['totais'];
+
+            $periodo = $inputs['periodo_amortizacao'];
+            $periodoNorm = strtolower(preg_replace('/[^a-z]/', '', $periodo));
+            if (in_array($periodoNorm, ['diario', 'diaria'])) {
+                $periodoNorm = 'diario';
+            } elseif (in_array($periodoNorm, ['semanal', 'semana'])) {
+                $periodoNorm = 'semanal';
+            } elseif (in_array($periodoNorm, ['mensal', 'mes'])) {
+                $periodoNorm = 'mensal';
+            } else {
+                $periodoNorm = 'diario';
+            }
+
+            $simulacao->fill([
+                'valor_solicitado' => $inputs['valor_solicitado'],
+                'periodo_amortizacao' => $periodoNorm,
+                'modelo_amortizacao' => strtolower($inputs['modelo_amortizacao'] ?? 'price'),
+                'quantidade_parcelas' => (int) $inputs['quantidade_parcelas'],
+                'taxa_juros_mensal' => $inputs['taxa_juros_mensal'],
+                'data_assinatura' => $inputs['data_assinatura'],
+                'data_primeira_parcela' => $inputs['data_primeira_parcela'],
+                'simples_nacional' => (bool) ($inputs['simples_nacional'] ?? false),
+                'calcular_iof' => (bool) ($inputs['calcular_iof'] ?? true),
+                'garantias' => $inputs['garantias'] ?? null,
+                'inadimplencia' => $inputs['inadimplencia'] ?? null,
+
+                'iof_adicional' => $iof['adicional'],
+                'iof_diario' => $iof['diario'],
+                'iof_total' => $iof['total'],
+                'valor_contrato' => $data['valor_contrato'],
+                'parcela' => $data['parcela'],
+                'total_parcelas' => $totais['total_parcelas'],
+                'cet_mes' => $totais['cet_mes'] ?? null,
+                'cet_ano' => $totais['cet_ano'] ?? null,
+                'cronograma' => $data['cronograma'],
+
+                'client_id' => $request->input('client_id'),
+                'banco_id' => $request->input('banco_id'),
+                'costcenter_id' => $request->input('costcenter_id'),
+                'user_id' => auth()->id(),
+                'company_id' => $companyId,
+            ]);
+
+            $simulacao->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Contrato atualizado com sucesso.',
+                'id' => $simulacao->id,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao atualizar contrato.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Marca contrato como efetivado
      */
     public function efetivar(Request $request, int $id): JsonResponse

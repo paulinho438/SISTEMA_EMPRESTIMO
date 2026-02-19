@@ -676,7 +676,7 @@ export function useLoanSimulation() {
     /**
      * Salva a simulação no banco para relatórios futuros
      */
-    async function saveSimulation() {
+    async function saveSimulation(id = null) {
         if (!result.value || !result.value.cronograma) return { success: false, message: 'Nenhuma simulação para salvar.' };
 
         saving.value = true;
@@ -698,7 +698,9 @@ export function useLoanSimulation() {
                     inadimplencia: form.inadimplencia || {},
                 },
             };
-            const response = await axios.post(`${apiPath}/simulacoes-emprestimo`, payload);
+            const response = id
+                ? await axios.put(`${apiPath}/simulacoes-emprestimo/${id}`, payload)
+                : await axios.post(`${apiPath}/simulacoes-emprestimo`, payload);
             return response.data;
         } catch (err) {
             error.value = err.response?.data?.message || err.message || 'Erro ao salvar simulação.';
