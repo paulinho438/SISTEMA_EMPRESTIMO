@@ -151,6 +151,9 @@ class CalculoFiscalService
     public function calcularIOFOperacoesMes(int $companyId, string $dataInicio, string $dataFim): float
     {
         $iofTotal = SimulacaoEmprestimo::where('company_id', $companyId)
+            // IOF só deve contar quando o pagamento do contrato foi realizado
+            // (situação atualizada para 'pagamento_aprovado' após a transferência/pagamento).
+            ->where('situacao', 'pagamento_aprovado')
             ->whereBetween('data_assinatura', [$dataInicio, $dataFim])
             ->sum('iof_total');
 

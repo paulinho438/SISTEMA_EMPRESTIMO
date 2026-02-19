@@ -104,7 +104,10 @@
 								<span>PIS</span>
 								<span class="font-bold">{{ formatValorReal(relatorio.pis) }}</span>
 							</div>
-							<div class="flex justify-content-between align-items-center p-2 border-round surface-ground">
+							<div
+								v-if="Number(relatorio.iof_total_mes || 0) > 0"
+								class="flex justify-content-between align-items-center p-2 border-round surface-ground"
+							>
 								<span>IOF Total (operações feitas este mês)</span>
 								<span class="font-bold">{{ formatValorReal(relatorio.iof_total_mes) }}</span>
 							</div>

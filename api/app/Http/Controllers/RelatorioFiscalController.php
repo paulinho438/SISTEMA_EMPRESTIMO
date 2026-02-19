@@ -298,7 +298,10 @@ class RelatorioFiscalController extends Controller
 
         $linhas[] = ['COFINS', number_format($relatorio['cofins'] ?? 0, 2, ',', '.')];
         $linhas[] = ['PIS', number_format($relatorio['pis'] ?? 0, 2, ',', '.')];
-        $linhas[] = ['IOF Total (operações feitas este mês)', number_format($relatorio['iof_total_mes'] ?? 0, 2, ',', '.')];
+        $iofTotalMes = (float) ($relatorio['iof_total_mes'] ?? 0);
+        if ($iofTotalMes > 0) {
+            $linhas[] = ['IOF Total (operações feitas este mês)', number_format($iofTotalMes, 2, ',', '.')];
+        }
         $linhas[] = ['Valor dos títulos atrasados (vencidos neste mês)', number_format($relatorio['titulos_atrasados'] ?? 0, 2, ',', '.')];
 
         $csv = implode("\n", array_map(function ($linha) {
