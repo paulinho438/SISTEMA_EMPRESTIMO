@@ -80,7 +80,8 @@
 								<span class="font-bold">{{ formatValorReal(relatorio.descontos_aplicados) }}</span>
 							</div>
 
-							<template v-if="relatorio.mes_trimestral">
+							<!-- IRPJ e CSLL: exibir apenas em Março, Junho, Setembro e Dezembro -->
+							<template v-if="exibirIRPJCSLL">
 								<div class="flex justify-content-between align-items-center p-2 border-round surface-ground">
 									<span>IRPJ *</span>
 									<span class="font-bold">{{ formatValorReal(relatorio.irpj?.total) }}</span>
@@ -123,7 +124,7 @@
 										<li>Impostos calculados considerando opção por Lucro Presumido</li>
 										<li>IRPJ e CSLL são calculados trimestralmente (em Março, Junho, Setembro e Dezembro)</li>
 										<li>Impostos têm vencimento no mês seguinte ao cálculo</li>
-										<li v-if="relatorio.mes_trimestral">Este é um mês de apuração trimestral - IRPJ e CSLL estão sendo exibidos</li>
+										<li v-if="exibirIRPJCSLL">Este é um mês de apuração trimestral - IRPJ e CSLL estão sendo exibidos</li>
 									</ol>
 								</div>
 							</div>
@@ -199,6 +200,13 @@ export default {
 			anos,
 			relatorio: null
 		};
+	},
+	computed: {
+		// Março (3), Junho (6), Setembro (9) e Dezembro (12) são meses de apuração trimestral
+		exibirIRPJCSLL() {
+			const mes = Number(this.filtros.mes);
+			return [3, 6, 9, 12].includes(mes);
+		}
 	},
 	methods: {
 		formatValorReal(valor) {
