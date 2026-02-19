@@ -28,7 +28,9 @@ const situacaoFilter = ref(null);
 const situacaoOptions = [
     { label: 'Todos', value: null },
     { label: 'Em preenchimento', value: 'em_preenchimento' },
-    { label: 'Efetivados', value: 'efetivado' }
+    { label: 'Efetivado - Aguardando Pagamento', value: 'efetivado_aguardando_pagamento' },
+    { label: 'Pagamento Aprovado', value: 'pagamento_aprovado' },
+    { label: 'Pagamento Recusado', value: 'pagamento_recusado' }
 ];
 
 const breadcrumbItems = [
@@ -53,9 +55,10 @@ function formatDate(dateStr) {
 }
 
 function getSituacaoClass(situacao) {
-    return situacao === 'Efetivado'
-        ? 'p-badge p-badge-success'
-        : 'p-badge p-badge-warning';
+    if (situacao === 'Pagamento Aprovado') return 'p-badge p-badge-success';
+    if (situacao === 'Pagamento Recusado') return 'p-badge p-badge-danger';
+    if (situacao === 'Efetivado - Aguardando Pagamento') return 'p-badge p-badge-warning';
+    return 'p-badge p-badge-info';
 }
 
 async function getContratos(page = 1) {
@@ -221,7 +224,7 @@ onMounted(() => {
                     <Column header="" style="min-width: 6rem">
                         <template #body="{ data }">
                             <Button
-                                v-if="data.situacao === 'Em preenchimento'"
+                                v-if="data.situacao === 'Em preenchimento' || data.situacao === 'Pagamento Recusado'"
                                 icon="pi pi-check"
                                 class="p-button-text p-button-sm p-button-success"
                                 v-tooltip.top="'Efetivar'"

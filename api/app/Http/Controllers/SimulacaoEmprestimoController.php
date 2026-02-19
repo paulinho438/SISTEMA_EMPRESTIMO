@@ -31,6 +31,17 @@ class SimulacaoEmprestimoController extends Controller
         return '0,0082%';
     }
 
+    private function situacaoLabel(?string $situacao): string
+    {
+        return match ($situacao) {
+            'pagamento_aprovado' => 'Pagamento Aprovado',
+            'pagamento_recusado' => 'Pagamento Recusado',
+            'efetivado_aguardando_pagamento' => 'Efetivado - Aguardando Pagamento',
+            'em_preenchimento', null, '' => 'Em preenchimento',
+            default => $situacao === 'efetivado' ? 'Efetivado - Aguardando Pagamento' : 'Em preenchimento',
+        };
+    }
+
     /**
      * Lista contratos (simulações) com filtro opcional por situação
      */
@@ -74,13 +85,18 @@ class SimulacaoEmprestimoController extends Controller
                 'valor_contrato' => (float) $s->valor_contrato,
                 'taxa' => (float) $s->taxa_juros_mensal,
                 'data_assinatura' => $s->data_assinatura?->format('Y-m-d'),
-                'situacao' => $s->situacao === 'efetivado' ? 'Efetivado' : 'Em preenchimento',
+                'situacao' => $this->situacaoLabel($s->situacao),
             ];
         });
 
         $baseQuery = SimulacaoEmprestimo::where('company_id', $companyId);
         $totalEmPreenchimento = (clone $baseQuery)->where('situacao', 'em_preenchimento')->count();
-        $totalEfetivados = (clone $baseQuery)->where('situacao', 'efetivado')->count();
+        $totalEfetivados = (clone $baseQuery)->whereIn('situacao', [
+            'efetivado_aguardando_pagamento',
+            'pagamento_aprovado',
+            'pagamento_recusado',
+            'efetivado', // legado
+        ])->count();
 
         return response()->json([
             'data' => $items,
@@ -286,7 +302,7 @@ class SimulacaoEmprestimoController extends Controller
             ]);
         }
 
-        $s->situacao = 'efetivado';
+        $s->situacao = 'efetivado_aguardando_pagamento';
         $s->save();
 
         return response()->json([

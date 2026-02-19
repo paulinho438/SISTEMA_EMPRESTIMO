@@ -2010,6 +2010,16 @@ class EmprestimoController extends Controller
                 'operation' => 'edit'
             ]);
 
+            // Se este empréstimo veio de um contrato (simulação), atualizar situação do contrato
+            if (!empty($emprestimo->simulacao_emprestimo_id) && $emprestimo->contaspagar && $emprestimo->contaspagar->status === 'Pagamento Efetuado') {
+                $sim = SimulacaoEmprestimo::where('company_id', $request->header('company-id'))
+                    ->find($emprestimo->simulacao_emprestimo_id);
+                if ($sim) {
+                    $sim->situacao = 'pagamento_aprovado';
+                    $sim->save();
+                }
+            }
+
             DB::commit();
 
             return $array;
@@ -2763,6 +2773,16 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     "message" => "Erro ao excluir emprestimo, pagamento já foi efetuado",
                     "error" => "Erro ao excluir emprestimo, pagamento já foi efetuado"
                 ], Response::HTTP_FORBIDDEN);
+            }
+
+            // Se o empréstimo veio de um contrato (simulação), marcar como Pagamento Recusado
+            if (!empty($permGroup->simulacao_emprestimo_id)) {
+                $sim = SimulacaoEmprestimo::where('company_id', $request->header('company-id'))
+                    ->find($permGroup->simulacao_emprestimo_id);
+                if ($sim) {
+                    $sim->situacao = 'pagamento_recusado';
+                    $sim->save();
+                }
             }
 
             $permGroup->contaspagar->delete();
