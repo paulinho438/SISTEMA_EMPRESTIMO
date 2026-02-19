@@ -198,7 +198,7 @@
 
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" @click="voltarParaLista" />
-                                <Button label="Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                                <Button label="Avançar" icon="pi pi-arrow-right" class="p-button-primary" :disabled="!form.banco_id" @click="avancarEtapa" />
                             </div>
                         </div>
 
@@ -242,7 +242,7 @@
                             <StepGarantias v-model="form.garantias" />
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
-                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" :disabled="!form.banco_id" @click="avancarEtapa" />
+                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
                             </div>
                         </div>
 
