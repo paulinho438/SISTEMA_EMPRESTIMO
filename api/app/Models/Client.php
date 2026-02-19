@@ -20,12 +20,18 @@ class Client extends Authenticatable implements JWTSubject
     ];
 
     protected $fillable = [
+        'tipo_pessoa',
         'nome_completo',
+        'razao_social',
+        'nome_fantasia',
         'cpf',
         'rg',
+        'orgao_emissor_rg',
         'cnpj',
         'data_nascimento',
         'sexo',
+        'estado_civil',
+        'regime_bens',
         'telefone_celular_1',
         'telefone_celular_2',
         'email',
@@ -33,11 +39,16 @@ class Client extends Authenticatable implements JWTSubject
         'status_motivo',
         'observation',
         'limit',
+        'renda_mensal',
         'company_id',
         'pix_cliente',
         'nome_usuario_criacao',
         'usuario',
         'password'
+    ];
+
+    protected $casts = [
+        'renda_mensal' => 'decimal:2',
     ];
 
     // JWT Implementation

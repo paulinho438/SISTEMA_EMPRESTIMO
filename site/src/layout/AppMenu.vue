@@ -74,6 +74,18 @@ const model = ref([
                         permission: 'view_clientes'
                     },
                     {
+                        label: 'Pessoa Jurídica',
+                        icon: 'pi pi-fw pi-building',
+                        to: '/clientes/pj',
+                        permission: 'view_clientes'
+                    },
+                    {
+                        label: 'Pessoa Física',
+                        icon: 'pi pi-fw pi-user',
+                        to: '/clientes/pf',
+                        permission: 'view_clientes'
+                    },
+                    {
                         label: 'Fornecedores',
                         icon: 'pi pi-fw pi-database',
                         to: '/fornecedores',

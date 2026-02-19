@@ -16,6 +16,7 @@ class Address extends Model
         'description',
         'address',
         'cep',
+        'estado',
         'number',
         'complement',
         'neighborhood',

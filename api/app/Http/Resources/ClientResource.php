@@ -21,10 +21,17 @@ class ClientResource extends JsonResource
     {
         return [
             "id"                    => $this->id,
+            "tipo_pessoa"           => $this->tipo_pessoa ?? 'PF',
             "nome_completo"         => $this->nome_completo,
+            "razao_social"          => $this->razao_social,
+            "nome_fantasia"         => $this->nome_fantasia,
             "cpf"                   => $this->cpf,
             "rg"                    => $this->rg,
+            "orgao_emissor_rg"      => $this->orgao_emissor_rg,
             "cnpj"                  => $this->cnpj,
+            "estado_civil"          => $this->estado_civil,
+            "regime_bens"           => $this->regime_bens,
+            "renda_mensal"          => $this->renda_mensal,
             "data_nascimento"       => Carbon::parse($this->data_nascimento)->format('d/m/Y'),
             "sexo"                  => $this->sexo,
             "telefone_celular_1"    => $this->telefone_celular_1,
@@ -39,6 +46,9 @@ class ClientResource extends JsonResource
             "created_at"            => $this->created_at->format('d/m/Y H:i:s'),
             "address"               => AddressResource::collection($this->address),
             "nome_completo_cpf"     => "{$this->nome_completo} - {$this->cpf}",
+            "label_completo"        => ($this->tipo_pessoa ?? 'PF') === 'PJ'
+                ? (($this->razao_social ?: $this->nome_fantasia ?: $this->nome_completo) . ($this->cnpj ? " - {$this->cnpj}" : ''))
+                : "{$this->nome_completo} - {$this->cpf}",
 
         ];
     }

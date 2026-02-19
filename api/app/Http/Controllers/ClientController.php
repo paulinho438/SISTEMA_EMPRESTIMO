@@ -298,14 +298,30 @@ class ClientController extends Controller
 
     public function all(Request $request)
     {
-
         $this->custom_log->create([
             'user_id' => auth()->user()->id,
             'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Clientes',
             'operation' => 'index'
         ]);
 
-        return ClientResource::collection(Client::where('company_id', $request->header('company-id'))->get());
+        $query = Client::where('company_id', $request->header('company-id'));
+
+        if ($request->has('tipo_pessoa') && in_array($request->tipo_pessoa, ['PF', 'PJ'])) {
+            $query->where('tipo_pessoa', $request->tipo_pessoa);
+        }
+
+        if ($request->filled('q') || $request->filled('name')) {
+            $termo = $request->input('q') ?: $request->input('name');
+            $query->where(function ($q) use ($termo) {
+                $q->where('nome_completo', 'like', "%{$termo}%")
+                    ->orWhere('razao_social', 'like', "%{$termo}%")
+                    ->orWhere('nome_fantasia', 'like', "%{$termo}%")
+                    ->orWhere('cpf', 'like', "%{$termo}%")
+                    ->orWhere('cnpj', 'like', "%{$termo}%");
+            });
+        }
+
+        return ClientResource::collection($query->get());
     }
 
     public function enviarMensagemMassa(Request $request)
@@ -442,61 +458,85 @@ class ClientController extends Controller
     public function insert(Request $request)
     {
         $array = ['error' => ''];
+        $tipoPessoa = $request->input('tipo_pessoa', 'PF');
 
-        $validator = Validator::make($request->all(), [
-            'nome_completo' => 'required',
-            'cpf' => [
+        $rules = [
+            'telefone_celular_1' => 'required',
+            'email' => 'required',
+        ];
+
+        if ($tipoPessoa === 'PJ') {
+            $rules['razao_social'] = 'required';
+            $rules['cnpj'] = 'required';
+            $rules['nome_completo'] = 'nullable';
+            $rules['cpf'] = 'nullable';
+            $rules['rg'] = 'nullable';
+            $rules['data_nascimento'] = 'nullable';
+            $rules['sexo'] = 'nullable';
+            $rules['pix_cliente'] = 'nullable';
+        } else {
+            $rules['nome_completo'] = 'required';
+            $rules['cpf'] = [
                 'required',
                 function ($attribute, $value, $fail) use ($request) {
-                    // Normalizar CPF removendo pontos e traços para comparação
                     $cpfNormalizado = preg_replace('/[^0-9]/', '', $value);
-                    
-                    // Usar o modelo Client para considerar soft deletes automaticamente
-                    // O modelo Client com SoftDeletes já ignora registros deletados (deleted_at IS NULL)
-                    // Verificar se existe CPF normalizado (com ou sem formatação)
                     $exists = Client::where('company_id', $request->header('company-id'))
                         ->where(function($query) use ($value, $cpfNormalizado) {
-                            // Comparar tanto com formatação quanto sem formatação
-                            // Usar DB::raw para normalizar o CPF do banco antes de comparar
                             $query->where('cpf', $value)
                                   ->orWhere('cpf', $cpfNormalizado)
                                   ->orWhereRaw('REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), " ", "") = ?', [$cpfNormalizado]);
                         })
                         ->exists();
-
                     if ($exists) {
                         $fail('O CPF já está em uso para esta empresa.');
                     }
                 },
-            ],
-            'rg' => 'required',
-            'data_nascimento' => 'required',
-            'sexo' => 'required',
-            'telefone_celular_1' => 'required',
-            'telefone_celular_2' => 'required',
-            'email' => 'required',
-            'pix_cliente' => 'required'
-        ]);
+            ];
+            $rules['rg'] = 'required';
+            $rules['data_nascimento'] = 'required';
+            $rules['sexo'] = 'required';
+            $rules['pix_cliente'] = 'required';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         $dados = $request->all();
         if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
-            $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
+            $dados['tipo_pessoa'] = $tipoPessoa;
             $dados['nome_usuario_criacao'] = auth()->user()->nome_completo;
             $dados['cnpj'] = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
 
+            if ($tipoPessoa === 'PJ') {
+                $dados['nome_completo'] = $dados['razao_social'] ?? $dados['nome_fantasia'] ?? 'Empresa';
+                $dados['cpf'] = $dados['cpf'] ?? '';
+                $dados['rg'] = $dados['rg'] ?? '';
+                $dados['data_nascimento'] = isset($dados['data_nascimento']) && $dados['data_nascimento']
+                    ? (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento'])->format('Y-m-d'))
+                    : now()->format('Y-m-d');
+                $dados['sexo'] = $dados['sexo'] ?? 'M';
+                $dados['pix_cliente'] = $dados['pix_cliente'] ?? '';
+            } else {
+                $dados['data_nascimento'] = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
+            }
+
             $newGroup = Client::create($dados);
 
-            foreach ($dados['address'] as $item) {
+            $addresses = $dados['address'] ?? [];
+            foreach ($addresses as $item) {
                 $item['client_id'] = $newGroup->id;
                 Address::create($item);
             }
 
             $senha4Digit = rand(1000, 9999);
 
-            $cpf = $newGroup->cpf;
-            $cpf = preg_replace('/\D/', '', $cpf);
+            $cpf = $newGroup->tipo_pessoa === 'PJ'
+                ? preg_replace('/\D/', '', $newGroup->cnpj ?? '')
+                : preg_replace('/\D/', '', $newGroup->cpf ?? '');
+            if (empty($cpf)) {
+                $cpf = 'pj' . $newGroup->id;
+            }
 
             if ($newGroup->usuario) {
                 $cpf = $newGroup->usuario;
@@ -563,44 +603,67 @@ class ClientController extends Controller
             $array = ['error' => ''];
 
             $user = auth()->user();
+            $EditClient = Client::find($id);
+            $tipoPessoa = $EditClient?->tipo_pessoa ?? $request->input('tipo_pessoa', 'PF');
 
-            $validator = Validator::make($request->all(), [
-                'nome_completo' => 'required',
-                'cpf' => 'required',
-                'rg' => 'required',
-                'data_nascimento' => 'required',
-                'sexo' => 'required',
+            $rules = [
                 'telefone_celular_1' => 'required',
-                'telefone_celular_2' => 'required',
                 'email' => 'required',
                 'status' => 'required',
-                'pix_cliente' => 'required'
-            ]);
+            ];
+
+            if ($tipoPessoa === 'PJ') {
+                $rules['razao_social'] = 'required';
+                $rules['cnpj'] = 'required';
+            } else {
+                $rules['nome_completo'] = 'required';
+                $rules['cpf'] = 'required';
+                $rules['rg'] = 'required';
+                $rules['data_nascimento'] = 'required';
+                $rules['sexo'] = 'required';
+                $rules['telefone_celular_2'] = 'required';
+                $rules['pix_cliente'] = 'required';
+            }
+
+            $validator = Validator::make($request->all(), $rules);
 
             $dados = $request->all();
             if (!$validator->fails()) {
 
-                $EditClient = Client::find($id);
-
-                $EditClient->nome_completo = $dados['nome_completo'];
-                $EditClient->cpf = $dados['cpf'];
-                $EditClient->rg = $dados['rg'];
-                $EditClient->cnpj = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
-                $EditClient->data_nascimento = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
-                $EditClient->sexo = $dados['sexo'];
                 $EditClient->telefone_celular_1 = $dados['telefone_celular_1'];
-                $EditClient->telefone_celular_2 = $dados['telefone_celular_2'];
+                $EditClient->email = $dados['email'];
                 $EditClient->status = $dados['status'];
-                $EditClient->status_motivo = $dados['status_motivo'];
-                $EditClient->observation = $dados['observation'];
-                $EditClient->limit = $dados['limit'];
-                $EditClient->observation = $dados['observation'];
-                $EditClient->pix_cliente = $dados['pix_cliente'];
+                $EditClient->status_motivo = $dados['status_motivo'] ?? null;
+                $EditClient->observation = $dados['observation'] ?? null;
+                $EditClient->limit = $dados['limit'] ?? 0;
+                $EditClient->cnpj = isset($dados['cnpj']) && $dados['cnpj'] !== '' ? preg_replace('/[^0-9]/', '', $dados['cnpj']) : null;
+
+                if ($tipoPessoa === 'PJ') {
+                    $EditClient->razao_social = $dados['razao_social'];
+                    $EditClient->nome_fantasia = $dados['nome_fantasia'] ?? null;
+                    $EditClient->nome_completo = $dados['razao_social'] ?? $dados['nome_fantasia'] ?? 'Empresa';
+                    $EditClient->cpf = $dados['cpf'] ?? '';
+                    $EditClient->rg = $dados['rg'] ?? '';
+                    $EditClient->data_nascimento = isset($dados['data_nascimento']) && $dados['data_nascimento']
+                        ? (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento'])->format('Y-m-d'))
+                        : $EditClient->data_nascimento;
+                    $EditClient->sexo = $dados['sexo'] ?? 'M';
+                    $EditClient->telefone_celular_2 = $dados['telefone_celular_2'] ?? '';
+                    $EditClient->pix_cliente = $dados['pix_cliente'] ?? '';
+                } else {
+                    $EditClient->nome_completo = $dados['nome_completo'];
+                    $EditClient->cpf = $dados['cpf'];
+                    $EditClient->rg = $dados['rg'];
+                    $EditClient->data_nascimento = (DateTime::createFromFormat('d/m/Y', $dados['data_nascimento']))->format('Y-m-d');
+                    $EditClient->sexo = $dados['sexo'];
+                    $EditClient->telefone_celular_2 = $dados['telefone_celular_2'];
+                    $EditClient->pix_cliente = $dados['pix_cliente'];
+                }
                 $EditClient->save();
 
                 $ids = [];
-
-                foreach ($dados['address'] as $item) {
+                $addresses = $dados['address'] ?? [];
+                foreach ($addresses as $item) {
                     if (isset($item['id'])) {
                         $ids[] = $item['id'];
                     }
@@ -608,19 +671,20 @@ class ClientController extends Controller
 
                 Address::whereNotIn('id', $ids)->where('client_id', $id)->delete();
 
-                foreach ($dados['address'] as $item) {
+                foreach ($addresses as $item) {
 
                     if (isset($item['id'])) {
                         $EditAddress = Address::find($item['id']);
-                        $EditAddress->description = $item['description'];
-                        $EditAddress->address = $item['address'];
-                        $EditAddress->cep = $item['cep'];
-                        $EditAddress->number = $item['number'];
-                        $EditAddress->complement = $item['complement'];
-                        $EditAddress->neighborhood = $item['neighborhood'];
-                        $EditAddress->city = $item['city'];
-                        $EditAddress->latitude = $item['latitude'];
-                        $EditAddress->longitude = $item['longitude'];
+                        $EditAddress->description = $item['description'] ?? null;
+                        $EditAddress->address = $item['address'] ?? null;
+                        $EditAddress->cep = $item['cep'] ?? null;
+                        $EditAddress->estado = $item['estado'] ?? null;
+                        $EditAddress->number = $item['number'] ?? null;
+                        $EditAddress->complement = $item['complement'] ?? null;
+                        $EditAddress->neighborhood = $item['neighborhood'] ?? null;
+                        $EditAddress->city = $item['city'] ?? null;
+                        $EditAddress->latitude = $item['latitude'] ?? null;
+                        $EditAddress->longitude = $item['longitude'] ?? null;
                         $EditAddress->save();
                     } else {
                         $item['client_id'] = $id;

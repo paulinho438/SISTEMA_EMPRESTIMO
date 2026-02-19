@@ -16,8 +16,14 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/cliente/${id}/enviar_acesso_app`);
 	};
 
-    getAll = async () => {
-		return await axios.get(`${apiPath}/cliente`);
+    getAll = async (params = {}) => {
+		return await axios.get(`${apiPath}/cliente`, { params });
+	};
+
+	getByTipoPessoa = async (tipoPessoa, searchTerm = '') => {
+		const params = { tipo_pessoa: tipoPessoa };
+		if (searchTerm) params.q = searchTerm;
+		return await axios.get(`${apiPath}/cliente`, { params });
 	};
 
 	getClientesDisponiveis = async () => {

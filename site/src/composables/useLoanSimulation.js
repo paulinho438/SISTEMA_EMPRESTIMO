@@ -14,6 +14,7 @@ export function useLoanSimulation() {
     const debounceTimer = ref(null);
 
     const form = reactive({
+        client_id: null,
         tipo_operacao: 'Empréstimo',
         valor_solicitado: '500.00',
         periodo_amortizacao: 'Diário',
@@ -24,14 +25,10 @@ export function useLoanSimulation() {
         data_primeira_parcela: null,
         calcular_iof: true,
         cliente_simples_nacional: false,
-        garantias: {
-            sem_garantia: true,
-            avalistas: false,
-            imovel: false,
-            veiculo: false,
-            devedor_solidario: false,
-            recebiveis: false,
-            outras_garantias: false,
+        garantias: [], // Array de { tipo, pessoa_id?, dados: {} }
+        inadimplencia: {
+            multa_percentual: 2,
+            juros_mora_diario: 0.1,
         },
     });
 
@@ -377,7 +374,20 @@ export function useLoanSimulation() {
         error.value = null;
 
         try {
-            const payload = { ...result.value };
+            const garantiasParaSalvar = (form.garantias || []).map((g) => {
+                const dados = { ...(g.dados || {}) };
+                delete dados.pessoa_selecionada;
+                return { tipo: g.tipo, pessoa_id: g.pessoa_id || null, dados };
+            });
+            const payload = {
+                ...result.value,
+                client_id: form.client_id,
+                inputs: {
+                    ...result.value.inputs,
+                    garantias: garantiasParaSalvar,
+                    inadimplencia: form.inadimplencia || {},
+                },
+            };
             const response = await axios.post(`${apiPath}/simulacoes-emprestimo`, payload);
             return response.data;
         } catch (err) {

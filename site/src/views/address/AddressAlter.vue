@@ -103,6 +103,7 @@ export default {
 					this.occurrence.address = data.logradouro;
 					this.occurrence.neighborhood = data.bairro;
 					this.occurrence.city = data.localidade;
+					this.occurrence.estado = data.uf || '';
 					this.occurrence.number = '';
 					this.occurrence.complement = '';
 				});
@@ -160,9 +161,13 @@ export default {
                         <label for="firstname2">Bairro</label>
                         <InputText id="firstname2" :modelValue="occurrence?.neighborhood" v-model="occurrence.neighborhood" type="text" />
                     </div>
-					<div class="field col-12 md:col-6">
+					<div class="field col-12 md:col-4">
                         <label for="firstname2">Cidade</label>
                         <InputText id="firstname2" :modelValue="occurrence?.city" v-model="occurrence.city" type="text" />
+                    </div>
+					<div class="field col-12 md:col-2">
+                        <label for="estado">Estado</label>
+                        <InputText id="estado" :modelValue="occurrence?.estado" v-model="occurrence.estado" type="text" placeholder="UF" maxlength="2" />
                     </div>
 					<div class="field col-12 md:col-12">
                         <label for="firstname2">Complemento</label>

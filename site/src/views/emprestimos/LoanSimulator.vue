@@ -12,24 +12,25 @@
 
                 <!-- Barra de progresso/etapas -->
                 <div class="mb-4">
-                    <div class="flex align-items-center gap-2">
-                        <span class="p-badge p-component" :class="etapaAtual === 1 ? 'p-badge-success' : 'p-badge-secondary'">1. Operação</span>
+                    <div class="flex align-items-center gap-2 flex-wrap">
+                        <span class="p-badge p-component" :class="etapaAtual === 1 ? 'p-badge-success' : (etapaAtual > 1 ? 'p-badge-info' : 'p-badge-secondary')">1. Operação</span>
                         <i class="pi pi-chevron-right text-500"></i>
-                        <span class="p-badge p-component p-badge-secondary">2. Cliente</span>
+                        <span class="p-badge p-component" :class="etapaAtual === 2 ? 'p-badge-success' : (etapaAtual > 2 ? 'p-badge-info' : 'p-badge-secondary')">2. Cliente</span>
                         <i class="pi pi-chevron-right text-500"></i>
-                        <span class="p-badge p-component p-badge-secondary">3. Garantias</span>
+                        <span class="p-badge p-component" :class="etapaAtual === 3 ? 'p-badge-success' : (etapaAtual > 3 ? 'p-badge-info' : 'p-badge-secondary')">3. Garantias</span>
                         <i class="pi pi-chevron-right text-500"></i>
-                        <span class="p-badge p-component p-badge-secondary">4. Inadimplência</span>
+                        <span class="p-badge p-component" :class="etapaAtual === 4 ? 'p-badge-success' : (etapaAtual > 4 ? 'p-badge-info' : 'p-badge-secondary')">4. Inadimplência</span>
                         <i class="pi pi-chevron-right text-500"></i>
-                        <span class="p-badge p-component p-badge-secondary">5. Concluir</span>
+                        <span class="p-badge p-component" :class="etapaAtual === 5 ? 'p-badge-success' : 'p-badge-secondary'">5. Concluir</span>
                     </div>
                 </div>
 
                 <div class="grid">
-                    <!-- Coluna Esquerda - Formulário -->
+                    <!-- Coluna Esquerda - Formulário por etapa -->
                     <div class="col-12 lg:col-6">
-                        <div class="card">
-                            <h6 class="mb-3">Dados da Operação</h6>
+                        <!-- Step 1 - Operação -->
+                        <div v-if="etapaAtual === 1" class="card">
+                            <h6 class="mb-3">1. Dados da Operação</h6>
 
                             <div class="field mb-3">
                                 <label for="tipo_operacao" class="block mb-2">
@@ -179,45 +180,88 @@
                                 </div>
                             </div>
 
-                            <!-- Seção Garantias -->
+                            <div class="flex justify-content-between mt-4">
+                                <Button label="Cancelar" icon="pi pi-times" class="p-button-outlined p-button-secondary" @click="voltarParaLista" />
+                                <Button label="Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                            </div>
+                        </div>
+
+                        <!-- Step 2 - Cliente -->
+                        <div v-if="etapaAtual === 2" class="card">
+                            <h6 class="mb-3">2. Cliente (Pessoa Jurídica)</h6>
                             <div class="field mb-3">
-                                <h6 class="mb-3">Garantias</h6>
-                                
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.sem_garantia" />
-                                    <label class="mb-0">Sem garantia</label>
-                                    <span class="text-500 text-sm">0,01% (valor mínimo)</span>
+                                <label for="cliente_pj" class="block mb-2">
+                                    Buscar empresa <span class="text-red-500">*</span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <AutoComplete
+                                        id="cliente_pj"
+                                        v-model="clienteSelecionado"
+                                        :suggestions="clientesPJFiltered"
+                                        optionLabel="label_completo"
+                                        placeholder="Digite para buscar por razão social, nome fantasia ou CNPJ"
+                                        class="flex-1"
+                                        @complete="searchClientesPJ"
+                                        @item-select="onClienteSelect"
+                                        @clear="onClienteClear"
+                                    />
+                                    <Button label="Nova empresa" icon="pi pi-plus" class="p-button-outlined" @click="abrirCadastroPJ" />
                                 </div>
+                                <small v-if="!form.client_id && etapaAtual >= 2" class="text-500">Selecione uma empresa para continuar.</small>
+                            </div>
+                            <div v-if="form.client_id && clienteSelecionado" class="p-3 surface-100 border-round mb-3">
+                                <h6 class="mt-0 mb-2">Cliente selecionado</h6>
+                                <p class="m-0"><strong>Razão Social:</strong> {{ clienteSelecionado.razao_social || clienteSelecionado.nome_completo }}</p>
+                                <p class="m-0"><strong>CNPJ:</strong> {{ clienteSelecionado.cnpj }}</p>
+                                <p class="m-0"><strong>E-mail:</strong> {{ clienteSelecionado.email }}</p>
+                            </div>
+                            <div class="flex justify-content-between mt-4">
+                                <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
+                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" :disabled="!form.client_id" @click="avancarEtapa" />
+                            </div>
+                        </div>
 
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.avalistas" />
-                                    <label class="mb-0">Avalistas</label>
-                                </div>
+                        <!-- Step 3 - Garantias -->
+                        <div v-if="etapaAtual === 3">
+                            <StepGarantias v-model="form.garantias" />
+                            <div class="flex justify-content-between mt-4">
+                                <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
+                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                            </div>
+                        </div>
 
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.imovel" />
-                                    <label class="mb-0">Imóvel</label>
+                        <!-- Step 4 - Inadimplência -->
+                        <div v-if="etapaAtual === 4" class="card">
+                            <h6 class="mb-3">4. Inadimplência</h6>
+                            <p class="text-500 text-sm mb-3">Configure multa e juros de mora para parcelas em atraso.</p>
+                            <div class="grid formgrid p-fluid">
+                                <div class="field col-12 md:col-4">
+                                    <label for="multa">Multa (% sobre parcela)</label>
+                                    <InputNumber id="multa" v-model="form.inadimplencia.multa_percentual" :min="0" :max="100" :minFractionDigits="2" suffix="%" class="w-full" />
                                 </div>
+                                <div class="field col-12 md:col-4">
+                                    <label for="juros_mora">Juros de mora (% ao dia)</label>
+                                    <InputNumber id="juros_mora" v-model="form.inadimplencia.juros_mora_diario" :min="0" :max="10" :minFractionDigits="2" suffix="%" class="w-full" />
+                                </div>
+                            </div>
+                            <div class="flex justify-content-between mt-4">
+                                <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
+                                <Button label="Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                            </div>
+                        </div>
 
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.veiculo" />
-                                    <label class="mb-0">Veículo</label>
-                                </div>
-
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.devedor_solidario" />
-                                    <label class="mb-0">Devedor solidário</label>
-                                </div>
-
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.recebiveis" />
-                                    <label class="mb-0">Recebíveis</label>
-                                </div>
-
-                                <div class="flex align-items-center gap-2 mb-2">
-                                    <InputSwitch v-model="form.garantias.outras_garantias" />
-                                    <label class="mb-0">Outras garantias</label>
-                                </div>
+                        <!-- Step 5 - Concluir -->
+                        <div v-if="etapaAtual === 5" class="card">
+                            <h6 class="mb-3">5. Concluir</h6>
+                            <div class="surface-100 p-3 border-round mb-3">
+                                <p class="font-semibold m-0 mb-2">Resumo</p>
+                                <p class="m-0 text-sm"><strong>Operação:</strong> {{ form.tipo_operacao }} - {{ form.valor_solicitado }} em {{ form.quantidade_parcelas }}x</p>
+                                <p class="m-0 text-sm"><strong>Cliente:</strong> {{ clienteSelecionado?.razao_social || clienteSelecionado?.nome_completo || '—' }}</p>
+                                <p class="m-0 text-sm"><strong>Garantias:</strong> {{ (form.garantias || []).length }} cadastrada(s)</p>
+                            </div>
+                            <p class="text-500 text-sm">Use os botões na coluna à direita para exportar ou salvar a simulação.</p>
+                            <div class="flex justify-content-between mt-4">
+                                <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
                             </div>
                         </div>
                     </div>
@@ -287,7 +331,7 @@
                                         icon="pi pi-save"
                                         class="p-button-success flex-1"
                                         :loading="saving"
-                                        :disabled="!result"
+                                        :disabled="!result || !form.client_id"
                                         @click="onSaveSimulation"
                                     />
                                 </div>
@@ -349,14 +393,18 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useLoanSimulation } from '@/composables/useLoanSimulation';
+import ClientService from '@/service/ClientService';
+import StepGarantias from './steps/StepGarantias.vue';
 import Breadcrumb from 'primevue/breadcrumb';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Calendar from 'primevue/calendar';
 import InputSwitch from 'primevue/inputswitch';
+import AutoComplete from 'primevue/autocomplete';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
@@ -381,7 +429,11 @@ const {
 } = useLoanSimulation();
 
 const toast = useToast();
+const router = useRouter();
+const clientService = new ClientService();
 const etapaAtual = ref(1);
+const clienteSelecionado = ref(null);
+const clientesPJFiltered = ref([]);
 
 const breadcrumbItems = ref([
     { label: 'Contratos', to: '/emprestimos' },
@@ -420,6 +472,48 @@ function onDataAssinaturaChange() {
     if (isValid.value) {
         simulateDebounced();
     }
+}
+
+async function searchClientesPJ(event) {
+    const query = event.query || '';
+    try {
+        const res = await clientService.getByTipoPessoa('PJ', query);
+        clientesPJFiltered.value = res.data?.data || [];
+    } catch (e) {
+        clientesPJFiltered.value = [];
+    }
+}
+
+function onClienteSelect(event) {
+    form.client_id = event.value?.id ?? null;
+}
+
+function onClienteClear() {
+    form.client_id = null;
+    clienteSelecionado.value = null;
+}
+
+function abrirCadastroPJ() {
+    router.push({ name: 'pjAdd' });
+}
+
+function avancarEtapa() {
+    if (etapaAtual.value < 5) {
+        etapaAtual.value++;
+        if (etapaAtual.value === 5 && isValid.value) {
+            simulateDebounced();
+        }
+    }
+}
+
+function voltarEtapa() {
+    if (etapaAtual.value > 1) {
+        etapaAtual.value--;
+    }
+}
+
+function voltarParaLista() {
+    router.push('/emprestimos');
 }
 
 function exportSimulation() {
