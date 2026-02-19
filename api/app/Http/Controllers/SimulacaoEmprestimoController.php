@@ -242,6 +242,14 @@ class SimulacaoEmprestimoController extends Controller
         $companyId = $this->resolveCompanyId($request);
         $s = SimulacaoEmprestimo::where('company_id', $companyId)->findOrFail($id);
 
+        // Só permitir iniciar/efetivar se estiver em preenchimento
+        if (($s->situacao ?? 'em_preenchimento') !== 'em_preenchimento') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este contrato não pode ser efetivado pois não está em preenchimento.',
+            ], 422);
+        }
+
         if (!$s->banco_id) {
             return response()->json([
                 'success' => false,

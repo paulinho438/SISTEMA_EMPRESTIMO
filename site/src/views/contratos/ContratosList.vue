@@ -224,13 +224,14 @@ onMounted(() => {
                     <Column header="" style="min-width: 6rem">
                         <template #body="{ data }">
                             <Button
-                                v-if="data.situacao === 'Em preenchimento' || data.situacao === 'Pagamento Recusado'"
+                                v-if="data.situacao === 'Em preenchimento'"
                                 icon="pi pi-check"
                                 class="p-button-text p-button-sm p-button-success"
                                 v-tooltip.top="'Efetivar'"
                                 @click="efetivarContrato(data.id)"
                             />
                             <Button
+                                v-if="data.situacao === 'Em preenchimento'"
                                 icon="pi pi-pencil"
                                 class="p-button-text p-button-sm"
                                 v-tooltip.top="'Editar'"
