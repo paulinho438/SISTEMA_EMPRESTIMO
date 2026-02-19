@@ -233,7 +233,7 @@
                             </div>
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
-                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" :disabled="!form.client_id" @click="avancarEtapa" />
+                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" :disabled="!form.client_id" @click="salvarEAvancar" />
                             </div>
                         </div>
 
@@ -242,7 +242,7 @@
                             <StepGarantias v-model="form.garantias" />
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
-                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                                <Button label="Salvar e Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="salvarEAvancar" />
                             </div>
                         </div>
 
@@ -262,7 +262,7 @@
                             </div>
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
-                                <Button label="Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="avancarEtapa" />
+                                <Button label="Avançar" icon="pi pi-arrow-right" class="p-button-primary" @click="salvarEAvancar" />
                             </div>
                         </div>
 
@@ -593,6 +593,21 @@ function avancarEtapa() {
             simulateDebounced();
         }
     }
+}
+
+async function salvarRascunhoSeEditando() {
+    // Só faz PUT quando estiver editando um contrato existente
+    if (!contratoId.value) return true;
+    const res = await saveSimulation(contratoId.value);
+    if (res?.success) return true;
+    toast.add({ severity: 'error', summary: 'Erro', detail: res?.message || 'Erro ao salvar rascunho.', life: 5000 });
+    return false;
+}
+
+async function salvarEAvancar() {
+    const ok = await salvarRascunhoSeEditando();
+    if (!ok) return;
+    avancarEtapa();
 }
 
 function voltarEtapa() {
