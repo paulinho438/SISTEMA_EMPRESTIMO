@@ -259,15 +259,19 @@
                                 <p class="m-0 text-sm"><strong>Cliente:</strong> {{ clienteSelecionado?.razao_social || clienteSelecionado?.nome_completo || '—' }}</p>
                                 <p class="m-0 text-sm"><strong>Garantias:</strong> {{ (form.garantias || []).length }} cadastrada(s)</p>
                             </div>
-                            <p class="text-500 text-sm">Use os botões na coluna à direita para exportar ou salvar a simulação.</p>
+                            <div class="flex gap-2 mb-3">
+                                <Button label="Exportar simulação" icon="pi pi-download" class="p-button-outlined p-button-secondary" @click="exportSimulation" :disabled="!result" />
+                                <Button label="Salvar simulação" icon="pi pi-save" class="p-button-success" :loading="saving" :disabled="!result || !form.client_id" @click="onSaveSimulation" />
+                            </div>
+                            <p class="text-500 text-sm mb-3">Volte à etapa Operação para visualizar a tabela de simulação completa.</p>
                             <div class="flex justify-content-between mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- Coluna Direita - Resultados -->
-                    <div class="col-12 lg:col-6">
+                    <!-- Coluna Direita - Simulação (apenas na etapa Operação) -->
+                    <div v-if="etapaAtual === 1" class="col-12 lg:col-6">
                         <div class="card">
                             <h6 class="mb-3">Simulação</h6>
 
