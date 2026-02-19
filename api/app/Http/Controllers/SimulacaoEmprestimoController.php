@@ -9,12 +9,30 @@ use Illuminate\Http\Request;
 
 class SimulacaoEmprestimoController extends Controller
 {
+    private function resolveCompanyId(Request $request): int
+    {
+        $companyId = $request->header('company-id');
+        if (!$companyId && auth()->check() && auth()->user()->company_id) {
+            $companyId = auth()->user()->company_id;
+        }
+        return (int) ($companyId ?: 1);
+    }
+
+    private function aliquotaDiaria(bool $simplesNacional, float $valorSolicitado): string
+    {
+        // Regra usada no frontend: simples + valor <= 30.000 => 0,00274% ao dia; senão 0,0082%
+        if ($simplesNacional && $valorSolicitado <= 30000) {
+            return '0,00274%';
+        }
+        return '0,0082%';
+    }
+
     /**
      * Lista contratos (simulações) com filtro opcional por situação
      */
     public function index(Request $request): JsonResponse
     {
-        $companyId = $request->header('company-id') ?: (auth()->user()->company_id ?? 1);
+        $companyId = $this->resolveCompanyId($request);
 
         $query = SimulacaoEmprestimo::with('client')
             ->where('company_id', $companyId)
@@ -74,6 +92,58 @@ class SimulacaoEmprestimoController extends Controller
     }
 
     /**
+     * Retorna um contrato (simulação) para edição (preenche wizard)
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $companyId = $this->resolveCompanyId($request);
+        $s = SimulacaoEmprestimo::with('client')
+            ->where('company_id', $companyId)
+            ->findOrFail($id);
+
+        $inputs = [
+            'valor_solicitado' => (float) $s->valor_solicitado,
+            'periodo_amortizacao' => $s->periodo_amortizacao,
+            'modelo_amortizacao' => $s->modelo_amortizacao,
+            'quantidade_parcelas' => (int) $s->quantidade_parcelas,
+            'taxa_juros_mensal' => (float) $s->taxa_juros_mensal,
+            'data_assinatura' => $s->data_assinatura?->format('Y-m-d'),
+            'data_primeira_parcela' => $s->data_primeira_parcela?->format('Y-m-d'),
+            'simples_nacional' => (bool) $s->simples_nacional,
+            'calcular_iof' => (bool) $s->calcular_iof,
+            'garantias' => $s->garantias ?? [],
+            'inadimplencia' => $s->inadimplencia ?? null,
+        ];
+
+        return response()->json([
+            'id' => $s->id,
+            'client_id' => $s->client_id,
+            'situacao' => $s->situacao,
+            'result' => [
+                'inputs' => array_merge($inputs, [
+                    // para UI "Outras Informações"
+                    'data_assinatura' => $inputs['data_assinatura'],
+                ]),
+                'iof' => [
+                    'total' => (float) $s->iof_total,
+                    'adicional' => (float) $s->iof_adicional,
+                    'diario' => (float) $s->iof_diario,
+                    'aliquota_diaria' => $this->aliquotaDiaria((bool) $s->simples_nacional, (float) $s->valor_solicitado),
+                ],
+                'totais' => [
+                    'total_parcelas' => (float) $s->total_parcelas,
+                    'cet_mes' => $s->cet_mes,
+                    'cet_ano' => $s->cet_ano,
+                    'juros_acerto' => 0,
+                ],
+                'valor_contrato' => (float) $s->valor_contrato,
+                'parcela' => (float) $s->parcela,
+                'cronograma' => $s->cronograma ?? [],
+            ],
+        ]);
+    }
+
+    /**
      * Salva a simulação no banco para relatórios futuros
      */
     public function store(StoreSimulacaoEmprestimoRequest $request): JsonResponse
@@ -96,11 +166,7 @@ class SimulacaoEmprestimoController extends Controller
                 $periodoNorm = 'diario';
             }
 
-            $companyId = $request->header('company-id');
-            if (!$companyId && auth()->check() && auth()->user()->company_id) {
-                $companyId = auth()->user()->company_id;
-            }
-            $companyId = $companyId ?: 1;
+            $companyId = $this->resolveCompanyId($request);
 
             $simulacao = SimulacaoEmprestimo::create([
                 'valor_solicitado' => $inputs['valor_solicitado'],
@@ -113,6 +179,7 @@ class SimulacaoEmprestimoController extends Controller
                 'simples_nacional' => (bool) ($inputs['simples_nacional'] ?? false),
                 'calcular_iof' => (bool) ($inputs['calcular_iof'] ?? true),
                 'garantias' => $inputs['garantias'] ?? null,
+                'inadimplencia' => $inputs['inadimplencia'] ?? null,
 
                 'iof_adicional' => $iof['adicional'],
                 'iof_diario' => $iof['diario'],
@@ -144,5 +211,21 @@ class SimulacaoEmprestimoController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Marca contrato como efetivado
+     */
+    public function efetivar(Request $request, int $id): JsonResponse
+    {
+        $companyId = $this->resolveCompanyId($request);
+        $s = SimulacaoEmprestimo::where('company_id', $companyId)->findOrFail($id);
+        $s->situacao = 'efetivado';
+        $s->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Contrato efetivado com sucesso.',
+        ]);
     }
 }

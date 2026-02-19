@@ -5,7 +5,7 @@
             <div class="card">
                 <div class="flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h5 class="m-0">Simulação de Empréstimo</h5>
+                        <h5 class="m-0">{{ contratoId ? 'Editar Contrato' : 'Simulação de Empréstimo' }}</h5>
                         <Breadcrumb :model="breadcrumbItems" />
                     </div>
                 </div>
@@ -306,8 +306,20 @@
                                 <Button label="Salvar simulação" icon="pi pi-save" class="p-button-success" :loading="saving" :disabled="!result || !form.client_id" @click="onSaveSimulation" />
                             </div>
                             <p class="text-500 text-sm mb-3">Volte à etapa Operação para visualizar a tabela de simulação completa.</p>
-                            <div class="flex justify-content-between mt-4">
+                            <div class="p-3 border-round mb-3" style="background-color: #fff3cd; border: 1px solid #ffeeba;">
+                                <div class="flex align-items-center gap-2">
+                                    <i class="pi pi-exclamation-triangle" style="color: #856404;"></i>
+                                    <small style="color: #856404;">
+                                        Ao iniciar o contrato, a operação e as cobranças serão iniciadas. As informações financeiras não poderão mais ser alteradas (será necessário criar outro contrato).
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="flex justify-content-between align-items-center mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
+                                <div class="flex gap-2">
+                                    <Button label="Salvar e fechar (sem iniciar)" class="p-button-outlined" :loading="saving" :disabled="!result || !form.client_id" @click="onSaveSimulation" />
+                                    <Button label="Iniciar contrato" class="p-button-danger" :disabled="!result || !form.client_id" @click="onEfetivarContrato" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -439,11 +451,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useLoanSimulation } from '@/composables/useLoanSimulation';
 import ClientService from '@/service/ClientService';
 import EmpresaService from '@/service/EmpresaService';
+import SimulacaoEmprestimoService from '@/service/SimulacaoEmprestimoService';
 import StepGarantias from './steps/StepGarantias.vue';
 import Breadcrumb from 'primevue/breadcrumb';
 import Dropdown from 'primevue/dropdown';
@@ -481,13 +494,16 @@ const {
 
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const clientService = new ClientService();
 const empresaService = new EmpresaService();
+const simulacaoService = new SimulacaoEmprestimoService();
 const assinaturaTipo = ref('sem');
 const empresaData = ref({});
 const etapaAtual = ref(1);
 const clienteSelecionado = ref(null);
 const clientesPJFiltered = ref([]);
+const contratoId = ref(null);
 
 const breadcrumbItems = ref([
     { label: 'Contratos', to: '/emprestimos' },
@@ -603,9 +619,87 @@ async function carregarEmpresa() {
 async function onSaveSimulation() {
     const res = await saveSimulation();
     if (res?.success) {
+        if (res?.id) contratoId.value = res.id;
         toast.add({ severity: 'success', summary: 'Salvo', detail: 'Simulação salva com sucesso.', life: 3000 });
     } else if (res?.message) {
         toast.add({ severity: 'error', summary: 'Erro', detail: res.message, life: 5000 });
+    }
+}
+
+async function onEfetivarContrato() {
+    try {
+        if (!result.value || !form.client_id) return;
+
+        if (!contratoId.value) {
+            const res = await saveSimulation();
+            if (!res?.success) {
+                toast.add({ severity: 'error', summary: 'Erro', detail: res?.message || 'Erro ao salvar antes de efetivar.', life: 5000 });
+                return;
+            }
+            if (res?.id) contratoId.value = res.id;
+        }
+
+        await simulacaoService.efetivar(contratoId.value);
+        toast.add({ severity: 'success', summary: 'Efetivado', detail: 'Contrato efetivado com sucesso.', life: 3000 });
+        router.push('/contratos');
+    } catch (e) {
+        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível efetivar o contrato.', life: 5000 });
+    }
+}
+
+function mapPeriodoToLabel(p) {
+    const norm = String(p || '').toLowerCase();
+    if (norm === 'diario') return 'Diário';
+    if (norm === 'semanal') return 'Semanal';
+    if (norm === 'mensal') return 'Mensal';
+    return 'Diário';
+}
+
+function mapModeloToLabel(m) {
+    const norm = String(m || '').toLowerCase();
+    if (norm === 'price') return 'Price';
+    return 'Price';
+}
+
+async function carregarContratoParaEdicao(id) {
+    try {
+        const res = await simulacaoService.get(id);
+        const payload = res.data || {};
+        contratoId.value = payload.id || id;
+
+        if (payload.result) {
+            result.value = payload.result;
+        }
+
+        const inputs = payload.result?.inputs || {};
+        form.valor_solicitado = String(inputs.valor_solicitado ?? form.valor_solicitado);
+        form.periodo_amortizacao = mapPeriodoToLabel(inputs.periodo_amortizacao ?? form.periodo_amortizacao);
+        form.modelo_amortizacao = mapModeloToLabel(inputs.modelo_amortizacao ?? form.modelo_amortizacao);
+        form.quantidade_parcelas = Number(inputs.quantidade_parcelas ?? form.quantidade_parcelas);
+        form.taxa_juros_mensal = String(inputs.taxa_juros_mensal ?? form.taxa_juros_mensal);
+        form.calcular_iof = Boolean(inputs.calcular_iof ?? form.calcular_iof);
+        form.cliente_simples_nacional = Boolean(inputs.simples_nacional ?? form.cliente_simples_nacional);
+
+        form.data_assinatura = inputs.data_assinatura ? new Date(inputs.data_assinatura) : form.data_assinatura;
+        form.data_primeira_parcela = inputs.data_primeira_parcela ? new Date(inputs.data_primeira_parcela) : form.data_primeira_parcela;
+
+        form.garantias = inputs.garantias || [];
+        form.inadimplencia = inputs.inadimplencia || form.inadimplencia;
+
+        form.client_id = payload.client_id ?? form.client_id;
+
+        if (form.client_id) {
+            const cRes = await clientService.get(form.client_id);
+            clienteSelecionado.value = cRes.data?.data ?? cRes.data ?? null;
+        }
+
+        breadcrumbItems.value = [
+            { label: 'Contratos', to: '/contratos' },
+            { label: 'Editar Contrato' },
+        ];
+        etapaAtual.value = 5;
+    } catch (e) {
+        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível carregar o contrato para edição.', life: 4000 });
     }
 }
 
@@ -615,6 +709,11 @@ onMounted(() => {
         simulateDebounced();
     }
     carregarEmpresa();
+
+    const qId = route.query?.contratoId;
+    if (qId) {
+        carregarContratoParaEdicao(qId);
+    }
 });
 </script>
 

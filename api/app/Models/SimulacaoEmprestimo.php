@@ -19,6 +19,7 @@ class SimulacaoEmprestimo extends Model
         'simples_nacional',
         'calcular_iof',
         'garantias',
+        'inadimplencia',
         'iof_adicional',
         'iof_diario',
         'iof_total',
@@ -42,6 +43,7 @@ class SimulacaoEmprestimo extends Model
         'simples_nacional' => 'boolean',
         'calcular_iof' => 'boolean',
         'garantias' => 'array',
+        'inadimplencia' => 'array',
         'cronograma' => 'array',
     ];
 

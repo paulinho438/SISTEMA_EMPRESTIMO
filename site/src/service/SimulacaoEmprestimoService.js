@@ -7,7 +7,15 @@ export default class SimulacaoEmprestimoService {
         return await axios.get(`${apiPath}/simulacoes-emprestimo`, { params });
     };
 
+    get = async (id) => {
+        return await axios.get(`${apiPath}/simulacoes-emprestimo/${id}`);
+    };
+
     store = async (payload) => {
         return await axios.post(`${apiPath}/simulacoes-emprestimo`, payload);
+    };
+
+    efetivar = async (id) => {
+        return await axios.patch(`${apiPath}/simulacoes-emprestimo/${id}/efetivar`);
     };
 }

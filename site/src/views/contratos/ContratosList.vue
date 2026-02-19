@@ -86,6 +86,20 @@ async function getContratos(page = 1) {
     }
 }
 
+async function efetivarContrato(id) {
+    try {
+        await service.efetivar(id);
+        toast.add({ severity: 'success', detail: 'Contrato efetivado com sucesso.', life: 2500 });
+        await getContratos(currentPage.value);
+    } catch (err) {
+        toast.add({
+            severity: 'error',
+            detail: err?.response?.data?.message || 'Erro ao efetivar contrato',
+            life: 3500
+        });
+    }
+}
+
 function goToSimulacao() {
     router.push({ name: 'emprestimosSimulacao' });
 }
@@ -201,6 +215,13 @@ onMounted(() => {
                     </Column>
                     <Column header="" style="min-width: 6rem">
                         <template #body="{ data }">
+                            <Button
+                                v-if="data.situacao === 'Em preenchimento'"
+                                icon="pi pi-check"
+                                class="p-button-text p-button-sm p-button-success"
+                                v-tooltip.top="'Efetivar'"
+                                @click="efetivarContrato(data.id)"
+                            />
                             <Button
                                 icon="pi pi-pencil"
                                 class="p-button-text p-button-sm"

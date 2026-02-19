@@ -488,61 +488,184 @@ export function useLoanSimulation() {
         const r = result.value;
         const cronograma = r.cronograma;
         const totalNotas = cronograma.length;
-        const dataEmissao = formatDate(r.inputs.data_assinatura);
+
+        const mutuanteNome = empresa.company || empresa.razao_social || 'rj emprestimos empresa simples de creditos ltda';
+        const mutuanteCnpj = empresa.cnpj || '—';
         const cidadePagavel = empresa.cidade || 'Aparecida de Goiânia';
         const ufPagavel = empresa.estado || 'GO';
 
+        const avalistas = (garantias || [])
+            .filter((g) => ['avalista', 'devedor_solidario'].includes(g?.tipo))
+            .map((g) => g?.dados || {})
+            .filter((d) => d && (d.nome_completo || d.cpf));
+
+        const representante = (garantias || []).find((g) => g?.tipo === 'devedor_solidario')?.dados
+            || avalistas[0]
+            || null;
+
+        const emitenteNome = cliente?.razao_social || cliente?.nome_completo || '—';
+        const emitenteDoc = cliente?.cnpj ? `CNPJ: ${cliente.cnpj}` : (cliente?.cpf ? `CPF: ${cliente.cpf}` : 'CPF/CNPJ: —');
+        const endCliente = cliente?.address?.[0];
+        const emitenteEndereco = endCliente
+            ? [endCliente.address, endCliente.number, endCliente.neighborhood].filter(Boolean).join(', ')
+            : '—';
+
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pageHeight = doc.internal.pageSize.getHeight();
+
+        const meses = [
+            'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+            'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+        ];
+
+        function formatDateLongPt(dateLike) {
+            const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+            const day = d.getDate();
+            const month = meses[d.getMonth()];
+            const year = d.getFullYear();
+            return `${day} de ${month} de ${year}`;
+        }
+
+        function formatDateShortPt(dateLike) {
+            const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yy = d.getFullYear();
+            return `${dd}/${mm}/${yy}`;
+        }
+
+        function numeroPorExtensoAte99(n) {
+            const u = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+            const d10 = ['dez', 'onze', 'doze', 'treze', 'catorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+            const dz = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+            if (n < 10) return u[n];
+            if (n < 20) return d10[n - 10];
+            const dez = Math.floor(n / 10);
+            const uni = n % 10;
+            return dz[dez] + (uni ? ` e ${u[uni]}` : '');
+        }
+
+        function anoPorExtenso(ano) {
+            // suficiente para 2000–2099
+            if (ano === 2000) return 'dois mil';
+            const resto = ano - 2000;
+            if (resto < 100) {
+                if (resto === 0) return 'dois mil';
+                if (resto < 10) return `dois mil e ${numeroPorExtensoAte99(resto)}`;
+                return `dois mil e ${numeroPorExtensoAte99(resto)}`;
+            }
+            return String(ano);
+        }
+
+        function dataParaFraseExtensa(dateLike) {
+            const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+            const dia = numeroPorExtensoAte99(d.getDate());
+            const mes = meses[d.getMonth()];
+            const ano = anoPorExtenso(d.getFullYear());
+            return `${dia} de ${mes} de ${ano}`;
+        }
+
+        const notasPorPagina = 2;
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        const marginX = 14;
+        const startY = 18;
+        const boxW = pageWidth - marginX * 2; // ~182mm
+        const boxH = 125;
+        const gapY = 10;
+
+        const rightW = 55;
+        const leftW = boxW - rightW;
+        const headerH = 10;
+
+        function drawNotaBox(x, y, parcela) {
+            // borda externa
+            doc.setLineWidth(0.3);
+            doc.rect(x, y, boxW, boxH);
+            // divisão vertical
+            doc.line(x + leftW, y, x + leftW, y + boxH);
+            // divisão horizontal (cabeçalho)
+            doc.line(x, y + headerH, x + boxW, y + headerH);
+
+            // Cabeçalho
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Nota Promissória ${parcela.numero} / ${totalNotas}`, x + 3, y + 7);
+            doc.text('Avalistas:', x + leftW + rightW / 2, y + 7, { align: 'center' });
+
+            // Conteúdo (coluna esquerda)
+            let yy = y + headerH + 8;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            doc.text(`Vencimento: ${formatDateLongPt(parcela.vencimento)}`, x + 3, yy);
+            yy += 7;
+
+            doc.setFont(undefined, 'bold');
+            doc.text(`Valor R$ ${Number(parcela.parcela).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, x + 3, yy);
+            yy += 8;
+
+            doc.setFont(undefined, 'normal');
+            const valorExtenso = valorPorExtenso(parcela.parcela);
+            const fraseData = dataParaFraseExtensa(parcela.vencimento);
+            const p1 = `Em ${fraseData}, pagarei por esta única via de NOTA PROMISSÓRIA à ${mutuanteNome}, CNPJ: ${mutuanteCnpj} ou à sua ordem, a quantia de ${valorExtenso} em moeda corrente nacional.`; // modelo
+            const linhasP1 = doc.splitTextToSize(p1, leftW - 6);
+            doc.text(linhasP1, x + 3, yy);
+            yy += linhasP1.length * 4.2 + 2;
+
+            doc.text(`Pagável em ${cidadePagavel}–${ufPagavel}.`, x + 3, yy);
+            yy += 5;
+            const dataEmissao = formatDateShortPt(r.inputs.data_assinatura);
+            doc.text(`Nota Promissória emitida em: ${dataEmissao}.`, x + 3, yy);
+            yy += 8;
+
+            doc.setFont(undefined, 'bold');
+            doc.text('Emitente:', x + 3, yy);
+            yy += 5;
+            doc.setFont(undefined, 'normal');
+            doc.text(`Razão Social: ${emitenteNome}`, x + 3, yy);
+            yy += 4.5;
+            doc.text(`${emitenteDoc}`, x + 3, yy);
+            yy += 4.5;
+            doc.text(`Endereço: ${emitenteEndereco}`, x + 3, yy, { maxWidth: leftW - 6 });
+
+            // assinatura (coluna esquerda - parte inferior)
+            const ySig = y + boxH - 18;
+            doc.setLineWidth(0.2);
+            doc.line(x + 20, ySig, x + leftW - 20, ySig);
+
+            doc.setFont(undefined, 'bold');
+            doc.text(emitenteNome, x + leftW / 2, ySig + 6, { align: 'center' });
+
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'normal');
+            if (cliente?.cnpj && representante?.nome_completo) {
+                doc.text('Neste ato representada por:', x + leftW / 2, ySig + 10, { align: 'center' });
+                doc.text(`Nome: ${representante.nome_completo}`, x + leftW / 2, ySig + 14, { align: 'center' });
+                doc.text(`CPF: ${representante.cpf || '—'}`, x + leftW / 2, ySig + 18, { align: 'center' });
+            }
+
+            // Conteúdo (coluna direita)
+            let yr = y + headerH + 18;
+            const centerX = x + leftW + rightW / 2;
+            const maxAvalistas = 3;
+            const lista = avalistas.slice(0, maxAvalistas);
+            lista.forEach((a) => {
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'bold');
+                doc.text(String(a.nome_completo || '—'), centerX, yr, { align: 'center' });
+                yr += 5;
+                doc.setFont(undefined, 'normal');
+                doc.text(`CPF: ${a.cpf || '—'}`, centerX, yr, { align: 'center' });
+                yr += 10;
+            });
+        }
 
         cronograma.forEach((parcela, idx) => {
-            if (idx > 0) doc.addPage();
+            const pagina = Math.floor(idx / notasPorPagina);
+            const pos = idx % notasPorPagina;
+            if (idx > 0 && pos === 0) doc.addPage();
 
-            let y = 20;
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Nota Promissória ${parcela.numero} / ${totalNotas}`, 14, y);
-            y += 10;
-
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'normal');
-            doc.text(`Vencimento: ${formatDate(parcela.vencimento)}`, 14, y);
-            y += 6;
-            doc.text(`Valor: ${formatCurrency(parcela.parcela)}`, 14, y);
-            y += 8;
-
-            const valorExtenso = valorPorExtenso(parcela.parcela);
-            doc.setFontSize(9);
-            doc.text(`Prometo pagar a ${empresa.company || empresa.razao_social || 'MUTUANTE'}, CNPJ ${empresa.cnpj || '—'}, a quantia de ${valorExtenso} em moeda corrente nacional, na data de vencimento acima.`, 14, y, { maxWidth: 180 });
-            y += 12;
-
-            doc.text(`Pagável em ${cidadePagavel}-${ufPagavel}.`, 14, y);
-            y += 5;
-            doc.text(`Nota Promissória emitida em: ${dataEmissao}.`, 14, y);
-            y += 12;
-
-            doc.setFont(undefined, 'bold');
-            doc.text('Emitente:', 14, y);
-            y += 5;
-            doc.setFont(undefined, 'normal');
-            doc.text(`Razão Social: ${cliente.razao_social || cliente.nome_completo || '—'}`, 14, y);
-            y += 5;
-            doc.text(`CNPJ: ${cliente.cnpj || '—'}`, 14, y);
-            const endCliente = cliente.address?.[0];
-            doc.text(`Endereço: ${endCliente ? [endCliente.address, endCliente.number, endCliente.neighborhood].filter(Boolean).join(', ') : '—'}`, 14, y);
-            y += 15;
-
-            if (garantias && garantias.length > 0) {
-                doc.setFont(undefined, 'bold');
-                doc.text('Avalistas:', 14, y);
-                y += 5;
-                doc.setFont(undefined, 'normal');
-                garantias.forEach((g) => {
-                    const d = g.dados || {};
-                    doc.text(`${d.nome_completo || '—'} - CPF: ${d.cpf || '—'}`, 14, y);
-                    y += 5;
-                });
-            }
+            const y = startY + pos * (boxH + gapY);
+            drawNotaBox(marginX, y, parcela);
         });
 
         const filename = `notas-promissorias-${new Date().toISOString().split('T')[0]}.pdf`;

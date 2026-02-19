@@ -323,7 +323,9 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
 
     Route::post('/loan/simulate', [LoanSimulationController::class, 'simulate']);
     Route::get('/simulacoes-emprestimo', [SimulacaoEmprestimoController::class, 'index']);
+    Route::get('/simulacoes-emprestimo/{id}', [SimulacaoEmprestimoController::class, 'show']);
     Route::post('/simulacoes-emprestimo', [SimulacaoEmprestimoController::class, 'store']);
+    Route::patch('/simulacoes-emprestimo/{id}/efetivar', [SimulacaoEmprestimoController::class, 'efetivar']);
 
 
     Route::get('/emprestimo', [EmprestimoController::class, 'all']);
