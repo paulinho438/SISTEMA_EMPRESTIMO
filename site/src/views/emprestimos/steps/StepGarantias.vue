@@ -124,7 +124,7 @@ function abrirCadastroPF() {
                             :suggestions="clientesPFFiltered"
                             optionLabel="label_completo"
                             placeholder="Buscar por nome ou CPF"
-                            class="flex-1 min-w-0"
+                            class="flex-1"
                             style="min-width: 18rem"
                             @complete="searchClientesPF"
                             @item-select="(e) => onPFSelect(g, e.value)"
