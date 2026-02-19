@@ -1,8 +1,13 @@
 const relatoriosRoutes = [
 	{
 		path: '/relatorios',
-		redirect: '/relatorios/comissao',
+		redirect: '/relatorios/sumario-contratos-ativos',
 		children: [
+			{
+				path: '/relatorios/sumario-contratos-ativos',
+				name: 'sumarioContratosAtivos',
+				component: () => import('@/views/relatorios/SumarioContratosAtivos.vue')
+			},
 			{
 				path: '/relatorios/comissao',
 				name: 'relatorioComissao',

@@ -1,4 +1,5 @@
 <template>
+    <Toast />
     <div class="grid">
         <div class="col-12">
             <div class="card">
@@ -273,13 +274,23 @@
                                     </Column>
                                 </DataTable>
 
-                                <!-- Botão Exportar -->
-                                <Button
-                                    label="Exportar simulação"
-                                    icon="pi pi-download"
-                                    class="p-button-danger mb-4 w-full"
-                                    @click="exportSimulation"
-                                />
+                                <!-- Botões Exportar e Salvar -->
+                                <div class="flex gap-2 mb-4">
+                                    <Button
+                                        label="Exportar simulação"
+                                        icon="pi pi-download"
+                                        class="p-button-danger flex-1"
+                                        @click="exportSimulation"
+                                    />
+                                    <Button
+                                        label="Salvar simulação"
+                                        icon="pi pi-save"
+                                        class="p-button-success flex-1"
+                                        :loading="saving"
+                                        :disabled="!result"
+                                        @click="onSaveSimulation"
+                                    />
+                                </div>
 
                                 <!-- Outras Informações -->
                                 <div class="card">
@@ -337,7 +348,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import { useLoanSimulation } from '@/composables/useLoanSimulation';
 import Breadcrumb from 'primevue/breadcrumb';
 import Dropdown from 'primevue/dropdown';
@@ -350,10 +362,12 @@ import Column from 'primevue/column';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
+import Toast from 'primevue/toast';
 
 const {
     form,
     loading,
+    saving,
     error,
     result,
     isValid,
@@ -363,8 +377,10 @@ const {
     formatPercent,
     formatDate,
     exportPDF,
+    saveSimulation,
 } = useLoanSimulation();
 
+const toast = useToast();
 const etapaAtual = ref(1);
 
 const breadcrumbItems = ref([
@@ -408,6 +424,15 @@ function onDataAssinaturaChange() {
 
 function exportSimulation() {
     exportPDF();
+}
+
+async function onSaveSimulation() {
+    const res = await saveSimulation();
+    if (res?.success) {
+        toast.add({ severity: 'success', summary: 'Salvo', detail: 'Simulação salva com sucesso.', life: 3000 });
+    } else if (res?.message) {
+        toast.add({ severity: 'error', summary: 'Erro', detail: res.message, life: 5000 });
+    }
 }
 
 // Simular ao montar componente se dados válidos

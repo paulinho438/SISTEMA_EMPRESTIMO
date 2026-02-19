@@ -39,7 +39,8 @@ use App\Http\Controllers\{
     RelatorioLucroRealController,
     WapiFilaController,
     DaytradeController,
-    LoanSimulationController
+    LoanSimulationController,
+    SimulacaoEmprestimoController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -283,6 +284,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/relatorio-fiscal/periodo', [RelatorioFiscalController::class, 'relatorioPeriodo']);
     Route::get('/relatorio-fiscal/excel', [RelatorioFiscalController::class, 'exportarExcel']);
     Route::get('/relatorio-fiscal/pdf', [RelatorioFiscalController::class, 'exportarPDF']);
+    Route::get('/relatorio-fiscal/sumario-csv', [RelatorioFiscalController::class, 'exportarCSV']);
     Route::post('/relatorio-fiscal/configurar', [RelatorioFiscalController::class, 'configurarPercentualPresuncao']);
 
     Route::get('/relatorio-lucro-real/mensal', [RelatorioLucroRealController::class, 'relatorioMensal']);
@@ -320,6 +322,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/cobrancaautomatica', [EmprestimoController::class, 'cobrancaAutomatica']);
 
     Route::post('/loan/simulate', [LoanSimulationController::class, 'simulate']);
+    Route::post('/simulacoes-emprestimo', [SimulacaoEmprestimoController::class, 'store']);
 
 
     Route::get('/emprestimo', [EmprestimoController::class, 'all']);

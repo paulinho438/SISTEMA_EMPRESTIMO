@@ -237,9 +237,11 @@ export function calculateLoan(params) {
       taxa_juros_mensal: taxaMensal.toFixed(2),
       quantidade_parcelas: n,
       periodo_amortizacao: periodo,
+      modelo_amortizacao: 'Price',
       data_assinatura: formatDateISO(contratoDate),
       data_primeira_parcela: formatDateISO(primeiraDate),
       simples_nacional: simplesNacional,
+      calcular_iof: !!calcularIof,
     },
     iof: {
       adicional: round2(iofAdd).toFixed(2),

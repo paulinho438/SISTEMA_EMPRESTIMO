@@ -1,10 +1,14 @@
 import { ref, reactive, computed } from 'vue';
+import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateLoan } from '@/utils/loanCalculator';
 
+const apiPath = import.meta.env.VITE_APP_BASE_URL;
+
 export function useLoanSimulation() {
     const loading = ref(false);
+    const saving = ref(false);
     const error = ref(null);
     const result = ref(null);
     const debounceTimer = ref(null);
@@ -363,9 +367,31 @@ export function useLoanSimulation() {
         doc.save(filename);
     }
 
+    /**
+     * Salva a simulação no banco para relatórios futuros
+     */
+    async function saveSimulation() {
+        if (!result.value || !result.value.cronograma) return { success: false, message: 'Nenhuma simulação para salvar.' };
+
+        saving.value = true;
+        error.value = null;
+
+        try {
+            const payload = { ...result.value };
+            const response = await axios.post(`${apiPath}/simulacoes-emprestimo`, payload);
+            return response.data;
+        } catch (err) {
+            error.value = err.response?.data?.message || err.message || 'Erro ao salvar simulação.';
+            return { success: false, message: error.value };
+        } finally {
+            saving.value = false;
+        }
+    }
+
     return {
         form,
         loading,
+        saving,
         error,
         result,
         isValid,
@@ -378,5 +404,6 @@ export function useLoanSimulation() {
         exportJSON,
         exportCSV,
         exportPDF,
+        saveSimulation,
     };
 }

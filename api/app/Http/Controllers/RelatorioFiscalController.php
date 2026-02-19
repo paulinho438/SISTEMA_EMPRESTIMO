@@ -39,9 +39,9 @@ class RelatorioFiscalController extends Controller
         $ano = $request->query('ano', date('Y'));
         $tipo = $request->query('tipo', 'presumido'); // 'presumido' ou 'proporcional'
 
-        // Se mes não contém ano, usa o ano informado ou atual
-        if (strlen($mes) === 2 || (strlen($mes) === 7 && !str_contains($mes, '-'))) {
-            $mes = $ano . '-' . str_pad($mes, 2, '0', STR_PAD_LEFT);
+        // Normalizar mês: se for número (1-12), montar YYYY-MM
+        if (strlen((string) $mes) <= 2 || !str_contains((string) $mes, '-')) {
+            $mes = $ano . '-' . str_pad((string) $mes, 2, '0', STR_PAD_LEFT);
         }
 
         $dataInicio = Carbon::parse($mes . '-01')->startOfDay()->format('Y-m-d');
@@ -186,14 +186,11 @@ class RelatorioFiscalController extends Controller
         $dataFim = $request->query('data_fim');
         
         if (!$dataInicio || !$dataFim) {
-            // Se não informado, usa mês atual
             $mes = $request->query('mes', date('Y-m'));
             $ano = $request->query('ano', date('Y'));
-            
-            if (strlen($mes) === 2 || (strlen($mes) === 7 && !str_contains($mes, '-'))) {
-                $mes = $ano . '-' . str_pad($mes, 2, '0', STR_PAD_LEFT);
+            if (strlen((string) $mes) <= 2 || !str_contains((string) $mes, '-')) {
+                $mes = $ano . '-' . str_pad((string) $mes, 2, '0', STR_PAD_LEFT);
             }
-            
             $dataInicio = Carbon::parse($mes . '-01')->startOfDay()->format('Y-m-d');
             $dataFim = Carbon::parse($mes . '-01')->endOfMonth()->format('Y-m-d');
         } else {
@@ -232,14 +229,11 @@ class RelatorioFiscalController extends Controller
         $dataFim = $request->query('data_fim');
         
         if (!$dataInicio || !$dataFim) {
-            // Se não informado, usa mês atual
             $mes = $request->query('mes', date('Y-m'));
             $ano = $request->query('ano', date('Y'));
-            
-            if (strlen($mes) === 2 || (strlen($mes) === 7 && !str_contains($mes, '-'))) {
-                $mes = $ano . '-' . str_pad($mes, 2, '0', STR_PAD_LEFT);
+            if (strlen((string) $mes) <= 2 || !str_contains((string) $mes, '-')) {
+                $mes = $ano . '-' . str_pad((string) $mes, 2, '0', STR_PAD_LEFT);
             }
-            
             $dataInicio = Carbon::parse($mes . '-01')->startOfDay()->format('Y-m-d');
             $dataFim = Carbon::parse($mes . '-01')->endOfMonth()->format('Y-m-d');
         } else {
@@ -265,6 +259,58 @@ class RelatorioFiscalController extends Controller
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download($nomeArquivo);
+    }
+
+    /**
+     * Exportar Sumário dos Contratos Ativos em CSV
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exportarCSV(Request $request)
+    {
+        $companyId = $request->header('company-id');
+        $mes = $request->query('mes', date('Y-m'));
+        $ano = $request->query('ano', date('Y'));
+
+        if (strlen((string) $mes) <= 2 || !str_contains((string) $mes, '-')) {
+            $mes = $ano . '-' . str_pad((string) $mes, 2, '0', STR_PAD_LEFT);
+        }
+
+        $dataInicio = Carbon::parse($mes . '-01')->startOfDay()->format('Y-m-d');
+        $dataFim = Carbon::parse($mes . '-01')->endOfMonth()->format('Y-m-d');
+
+        $relatorio = $this->calculoFiscalService->gerarRelatorioFiscal($companyId, $dataInicio, $dataFim, 'presumido');
+
+        $linhas = [
+            ['Métrica', 'Valor (R$)'],
+            ['Total de Recebimentos no Mês', number_format($relatorio['total_recebimentos'] ?? 0, 2, ',', '.')],
+            ['Total de Amortização', number_format($relatorio['total_amortizacao'] ?? 0, 2, ',', '.')],
+            ['Total de Juros (Remuneratórios e Mora)', number_format($relatorio['total_juros'] ?? 0, 2, ',', '.')],
+            ['Descontos aplicados', number_format($relatorio['descontos_aplicados'] ?? 0, 2, ',', '.')],
+        ];
+
+        if ($relatorio['mes_trimestral'] ?? false) {
+            $linhas[] = ['IRPJ', number_format($relatorio['irpj']['total'] ?? 0, 2, ',', '.')];
+            $linhas[] = ['Adicional do IRPJ', number_format($relatorio['irpj']['adicional'] ?? 0, 2, ',', '.')];
+            $linhas[] = ['CSLL', number_format($relatorio['csll'] ?? 0, 2, ',', '.')];
+        }
+
+        $linhas[] = ['COFINS', number_format($relatorio['cofins'] ?? 0, 2, ',', '.')];
+        $linhas[] = ['PIS', number_format($relatorio['pis'] ?? 0, 2, ',', '.')];
+        $linhas[] = ['IOF Total (operações feitas este mês)', number_format($relatorio['iof_total_mes'] ?? 0, 2, ',', '.')];
+        $linhas[] = ['Valor dos títulos atrasados (vencidos neste mês)', number_format($relatorio['titulos_atrasados'] ?? 0, 2, ',', '.')];
+
+        $csv = implode("\n", array_map(function ($linha) {
+            return '"' . implode('";"', $linha) . '"';
+        }, $linhas));
+
+        $csv = "\xEF\xBB\xBF" . $csv; // BOM UTF-8
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="sumario-contratos-ativos-' . $mes . '.csv"',
+        ]);
     }
 }
 

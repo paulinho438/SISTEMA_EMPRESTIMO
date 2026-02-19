@@ -161,6 +161,12 @@ const model = ref([
                         permission: 'view_fechamentocaixa'
                     },
                     {
+                        label: 'Sumário dos Contratos Ativos',
+                        icon: 'pi pi-fw pi-chart-bar',
+                        to: '/relatorios/sumario-contratos-ativos',
+                        permission: 'view_dashboard'
+                    },
+                    {
                         label: 'Relatório Fiscal',
                         icon: 'pi pi-fw pi-file-pdf',
                         to: '/relatorios/fiscal',

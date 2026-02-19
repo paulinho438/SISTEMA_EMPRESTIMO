@@ -15,6 +15,8 @@ class ConfiguracaoFiscal extends Model
         'aliquota_irpj',
         'aliquota_irpj_adicional',
         'aliquota_csll',
+        'aliquota_pis',
+        'aliquota_cofins',
         'faixa_isencao_irpj',
     ];
 
@@ -23,6 +25,8 @@ class ConfiguracaoFiscal extends Model
         'aliquota_irpj' => 'decimal:2',
         'aliquota_irpj_adicional' => 'decimal:2',
         'aliquota_csll' => 'decimal:2',
+        'aliquota_pis' => 'decimal:2',
+        'aliquota_cofins' => 'decimal:2',
         'faixa_isencao_irpj' => 'decimal:2',
     ];
 
