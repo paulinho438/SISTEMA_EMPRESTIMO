@@ -40,7 +40,8 @@ use App\Http\Controllers\{
     WapiFilaController,
     DaytradeController,
     LoanSimulationController,
-    SimulacaoEmprestimoController
+    SimulacaoEmprestimoController,
+    AssinaturaContratoController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -148,6 +149,17 @@ Route::post('/parcela/{id}/gerarpixpagamentosaldopendente', [EmprestimoControlle
 
 Route::middleware(['auth:clientes', 'single.token'])->group(function () {
     Route::get('/clientes/app/emprestimos_andamento', [ClientController::class, 'buscarEmprestimosAndamento']);
+
+    // Assinatura eletrônica (cliente/app)
+    Route::get('/assinatura/contratos', [AssinaturaContratoController::class, 'contratosCliente']);
+    Route::get('/assinatura/contratos/{id}/pdf-original', [AssinaturaContratoController::class, 'pdfOriginalCliente']);
+    Route::get('/assinatura/contratos/{id}/pdf-final', [AssinaturaContratoController::class, 'pdfFinalCliente']);
+    Route::post('/assinatura/contratos/{id}/aceite', [AssinaturaContratoController::class, 'aceite']);
+    Route::post('/assinatura/contratos/{id}/desafio-video', [AssinaturaContratoController::class, 'desafioVideo']);
+    Route::post('/assinatura/contratos/{id}/evidencias', [AssinaturaContratoController::class, 'evidencias']);
+    Route::post('/assinatura/contratos/{id}/otp/enviar', [AssinaturaContratoController::class, 'enviarOtp']);
+    Route::post('/assinatura/contratos/{id}/otp/validar', [AssinaturaContratoController::class, 'validarOtp']);
+    Route::post('/assinatura/contratos/{id}/finalizar', [AssinaturaContratoController::class, 'finalizar']);
 });
 
 Route::middleware(['auth:api', 'single.token'])->group(function () {
@@ -327,6 +339,14 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::post('/simulacoes-emprestimo', [SimulacaoEmprestimoController::class, 'store']);
     Route::put('/simulacoes-emprestimo/{id}', [SimulacaoEmprestimoController::class, 'update']);
     Route::patch('/simulacoes-emprestimo/{id}/efetivar', [SimulacaoEmprestimoController::class, 'efetivar']);
+
+    // Assinatura eletrônica (admin/painel)
+    Route::post('/contratos/{id}/assinatura/iniciar', [AssinaturaContratoController::class, 'iniciar']);
+    Route::get('/contratos/{id}/assinatura/detalhes', [AssinaturaContratoController::class, 'detalhes']);
+    Route::patch('/contratos/{id}/assinatura/revisao', [AssinaturaContratoController::class, 'revisar']);
+    Route::get('/contratos/{id}/assinatura/pdf-original', [AssinaturaContratoController::class, 'downloadPdfOriginal']);
+    Route::get('/contratos/{id}/assinatura/pdf-final', [AssinaturaContratoController::class, 'downloadPdfFinal']);
+    Route::get('/contratos/{contratoId}/assinatura/evidencias/{evidenciaId}', [AssinaturaContratoController::class, 'downloadEvidencia']);
 
 
     Route::get('/emprestimo', [EmprestimoController::class, 'all']);

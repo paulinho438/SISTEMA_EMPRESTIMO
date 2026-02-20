@@ -64,6 +64,8 @@ import PhoneBook from '../containers/moreOpctions/MobileTopUp/PhoneBook';
 import LogOut from '../components/profileTab/LogOut';
 import AlterarEmpresa from '../components/profileTab/AlterarEmpresa';
 import CadastroCliente from '../containers/auth/CadastroCliente';
+import AssinaturaContratos from '../containers/assinatura/AssinaturaContratos';
+import AssinaturaContratoFlow from '../containers/assinatura/AssinaturaContratoFlow';
 
 
 export const StackRoute = {
@@ -110,7 +112,9 @@ export const StackRoute = {
   PhoneBook,
   LogOut,
   AlterarEmpresa,
-  CadastroCliente
+  CadastroCliente,
+  AssinaturaContratos,
+  AssinaturaContratoFlow
 };
 
 export const AuthRoute = {

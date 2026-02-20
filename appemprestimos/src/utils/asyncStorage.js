@@ -93,4 +93,9 @@ const removeTipoCliente = async () => {
   return;
 };
 
-export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser, permissions, getPermissions, tipoCliente, getTipoCliente, removeTipoCliente, companies, getCompanies};
+const clearAuthSession = async () => {
+  await AsyncStorage.multiRemove([ACCESS_TOKEN, AUTH_COMPANY, USER, PERMISSION, TIPOCLIENTE, COMPANIES]);
+  return;
+};
+
+export {OnBoardingToken, authToken, StorageValue, getAuthToken, removeAuthToken, authCompany, getAuthCompany, user, getUser, permissions, getPermissions, tipoCliente, getTipoCliente, removeTipoCliente, companies, getCompanies, clearAuthSession};

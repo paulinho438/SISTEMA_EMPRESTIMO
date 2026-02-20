@@ -5,7 +5,25 @@ import axios from 'axios';
 
 import { baseUrl, MapsApi } from './Config';
 
-import {getAuthToken, removeAuthToken, getAuthCompany} from '../utils/asyncStorage';
+import {getAuthToken, getAuthCompany, getTipoCliente, clearAuthSession} from '../utils/asyncStorage';
+import {resetToAuth} from '../navigation/navigationService';
+import {AuthNav} from '../navigation/navigationKeys';
+
+let isForcingLogout = false;
+
+const forceLogout = async () => {
+    if (isForcingLogout) return;
+    isForcingLogout = true;
+    let tipo = null;
+    try {
+        tipo = await getTipoCliente();
+        await clearAuthSession();
+    } finally {
+        const authScreen = String(tipo || '').toLowerCase() === 'cliente' ? AuthNav.SignCliente : AuthNav.SignIn;
+        resetToAuth(authScreen);
+        isForcingLogout = false;
+    }
+};
 
 const request = async (method, endpoint, params, token = null) => {
     method = method.toLowerCase();
@@ -45,14 +63,27 @@ const request = async (method, endpoint, params, token = null) => {
 
     // Fazer a requisição
     let req = await fetch(fullUrl, { method, headers, body });
-    let json = await req.json();
+    let json = null;
+    try {
+        json = await req.json();
+    } catch (e) {
+        json = null;
+    }
     
     // Verificar se houve erro HTTP (status 4xx ou 5xx)
     if (!req.ok) {
+        const msg = (json && (json.error || json.message)) ? String(json.error || json.message) : '';
+        const isAuthError = req.status === 401 || req.status === 419 || /unauthenticated|token/i.test(msg);
+
+        // Se token inválido/expirado: desloga e manda para login
+        if (token && isAuthError) {
+            await forceLogout();
+        }
+
         // Retornar objeto com erro para tratamento no componente
         return {
-            error: json.error || json.message || 'Erro na requisição',
-            message: json.message || json.error || 'Erro na requisição',
+            error: (json && (json.error || json.message)) || 'Erro na requisição',
+            message: (json && (json.message || json.error)) || 'Erro na requisição',
             status: req.status,
             data: json
         };
@@ -60,6 +91,45 @@ const request = async (method, endpoint, params, token = null) => {
     
     return json;
 }
+
+const requestMultipart = async (endpoint, formData, token = null) => {
+    const url = `${baseUrl}${endpoint}`;
+    const headers = {};
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+        const authCompany = await getAuthCompany();
+        if (authCompany?.id) headers['company-id'] = authCompany.id;
+    }
+
+    const req = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+    });
+
+    let json = null;
+    try {
+        json = await req.json();
+    } catch (e) {
+        json = null;
+    }
+
+    if (!req.ok) {
+        const msg = (json && (json.error || json.message)) ? String(json.error || json.message) : '';
+        const isAuthError = req.status === 401 || req.status === 419 || /unauthenticated|token/i.test(msg);
+        if (token && isAuthError) {
+            await forceLogout();
+        }
+        return {
+            error: (json && (json.error || json.message)) || 'Erro na requisição',
+            message: (json && (json.message || json.error)) || 'Erro na requisição',
+            status: req.status,
+            data: json
+        };
+    }
+
+    return json;
+};
 
 export default {
     primeiroAcesso: async () => {
@@ -80,6 +150,59 @@ export default {
     validateToken: async () => {
         let token = await getAuthToken();
         let json = await request('post', '/auth/validate', {}, token);
+        return json;
+    },
+    // =====================
+    // Assinatura eletrônica (cliente)
+    // =====================
+    assinaturaContratos: async () => {
+        let token = await getAuthToken();
+        let json = await request('get', '/assinatura/contratos', {}, token);
+        return json;
+    },
+    assinaturaAceite: async (id, device = null) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/assinatura/contratos/${id}/aceite`, {aceite: true, device}, token);
+        return json;
+    },
+    assinaturaDesafioVideo: async (id, device = null) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/assinatura/contratos/${id}/desafio-video`, {device}, token);
+        return json;
+    },
+    assinaturaUploadEvidencia: async (id, payload) => {
+        const token = await getAuthToken();
+        const formData = new FormData();
+        formData.append('tipo', payload.tipo);
+        if (payload.captured_at) formData.append('captured_at', payload.captured_at);
+        if (payload.desafio_id) formData.append('desafio_id', String(payload.desafio_id));
+        if (payload.device && typeof payload.device === 'object') {
+            Object.entries(payload.device).forEach(([k, v]) => {
+                if (v !== null && v !== undefined) {
+                    formData.append(`device[${k}]`, String(v));
+                }
+            });
+        }
+        formData.append('arquivo', {
+            uri: payload.uri,
+            type: payload.type,
+            name: payload.name,
+        });
+        return await requestMultipart(`/assinatura/contratos/${id}/evidencias`, formData, token);
+    },
+    assinaturaEnviarOtp: async (id, device = null) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/assinatura/contratos/${id}/otp/enviar`, {device}, token);
+        return json;
+    },
+    assinaturaValidarOtp: async (id, codigo, device = null) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/assinatura/contratos/${id}/otp/validar`, {codigo, device}, token);
+        return json;
+    },
+    assinaturaFinalizar: async (id, device = null) => {
+        let token = await getAuthToken();
+        let json = await request('post', `/assinatura/contratos/${id}/finalizar`, {device}, token);
         return json;
     },
     updatetokenpush: async (mobile) => {
@@ -141,7 +264,7 @@ export default {
     logout: async () => {
         let token = await getAuthToken();
         let json = await request('post', '/auth/logout', {}, token);
-        await removeAuthToken();
+        await clearAuthSession();
         return json;
     },
     baixaManualCobrador: async (id, dt, valor) => {
@@ -427,6 +550,10 @@ export default {
       
           return response.data;
         } catch (error) {
+          const status = error?.response?.status;
+          if (token && (status === 401 || status === 419)) {
+              await forceLogout();
+          }
           console.error('Erro na requisição:', error);
           throw error; // Se desejar tratar o erro posteriormente no chamador da função
         }

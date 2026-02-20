@@ -369,7 +369,7 @@ export function useLoanSimulation() {
     /**
      * Exporta Contrato Inicial em PDF (modelo de contrato de mútuo)
      */
-    function exportContratoInicial(empresa = {}, cliente = {}) {
+    function exportContratoInicial(empresa = {}, cliente = {}, options = {}) {
         if (!result.value || !result.value.cronograma) return;
 
         const r = result.value;
@@ -476,7 +476,12 @@ export function useLoanSimulation() {
         const dataAssinatura = formatDate(r.inputs.data_assinatura);
         doc.text(`Data: ${dataAssinatura}`, 14, y);
 
-        const filename = `contrato-inicial-${new Date().toISOString().split('T')[0]}.pdf`;
+        const filename = options?.filename || `contrato-inicial-${new Date().toISOString().split('T')[0]}.pdf`;
+
+        if (options?.returnBlob) {
+            return doc.output('blob');
+        }
+
         doc.save(filename);
     }
 

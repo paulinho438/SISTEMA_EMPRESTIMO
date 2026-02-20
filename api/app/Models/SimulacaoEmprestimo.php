@@ -35,6 +35,14 @@ class SimulacaoEmprestimo extends Model
         'user_id',
         'company_id',
         'situacao',
+        'assinatura_status',
+        'assinatura_versao',
+        'aceite_at',
+        'finalizado_at',
+        'pdf_original_path',
+        'pdf_original_sha256',
+        'pdf_final_path',
+        'pdf_final_sha256',
     ];
 
     protected $casts = [
@@ -45,6 +53,8 @@ class SimulacaoEmprestimo extends Model
         'garantias' => 'array',
         'inadimplencia' => 'array',
         'cronograma' => 'array',
+        'aceite_at' => 'datetime',
+        'finalizado_at' => 'datetime',
     ];
 
     public function company()
@@ -70,5 +80,25 @@ class SimulacaoEmprestimo extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function assinaturaEventos()
+    {
+        return $this->hasMany(ContratoAssinaturaEvento::class, 'contrato_id');
+    }
+
+    public function assinaturaEvidencias()
+    {
+        return $this->hasMany(ContratoAssinaturaEvidencia::class, 'contrato_id');
+    }
+
+    public function assinaturaOtps()
+    {
+        return $this->hasMany(ContratoAssinaturaOtp::class, 'contrato_id');
+    }
+
+    public function assinaturaDesafios()
+    {
+        return $this->hasMany(ContratoAssinaturaDesafio::class, 'contrato_id');
     }
 }

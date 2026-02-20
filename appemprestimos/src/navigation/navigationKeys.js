@@ -42,7 +42,9 @@ export const StackNav = {
   PhoneBook: 'PhoneBook',
   LogOut: 'LogOut',
   AlterarEmpresa: 'AlterarEmpresa',
-  CadastroCliente : 'CadastroCliente'
+  CadastroCliente : 'CadastroCliente',
+  AssinaturaContratos: 'AssinaturaContratos',
+  AssinaturaContratoFlow: 'AssinaturaContratoFlow',
 };
 
 export const AuthNav = {

@@ -288,6 +288,30 @@ const HomeClienteScreen = ({navigation}) => {
         />
       }>
       <Header user={user} />
+
+      <Text style={styles.sectionTitle}>Assinatura</Text>
+      <Card style={styles.planCard}>
+        <Card.Title
+          title="Contratos pendentes"
+          subtitle="Assine seus contratos diretamente no app"
+          left={props => (
+            <Avatar.Icon
+              {...props}
+              size={30}
+              icon="file-sign"
+              style={{backgroundColor: 'black'}}
+            />
+          )}
+        />
+        <Card.Actions>
+          <Button
+            onPress={() => navigation.navigate(StackNav.AssinaturaContratos)}
+            mode="contained">
+            Ver contratos
+          </Button>
+        </Card.Actions>
+      </Card>
+
       <Text style={styles.sectionTitle}>Seu plano</Text>
 
       <Card style={styles.planCard}>

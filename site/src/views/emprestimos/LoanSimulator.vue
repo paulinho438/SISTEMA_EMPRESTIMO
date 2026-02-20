@@ -333,6 +333,14 @@
                             <div class="flex justify-content-between align-items-center mt-4">
                                 <Button label="Voltar" icon="pi pi-arrow-left" class="p-button-outlined p-button-secondary" @click="voltarEtapa" />
                                 <div class="flex gap-2">
+                                    <Button
+                                        label="Iniciar assinatura (app)"
+                                        icon="pi pi-id-card"
+                                        class="p-button-help"
+                                        :loading="iniciandoAssinatura"
+                                        :disabled="!result || !form.client_id"
+                                        @click="onIniciarAssinatura"
+                                    />
                                     <Button label="Salvar e fechar (sem iniciar)" class="p-button-outlined" :loading="saving" :disabled="!result || !form.client_id" @click="onSaveSimulation" />
                                     <Button label="Iniciar contrato" class="p-button-danger" :disabled="!result || !form.client_id || !form.banco_id" @click="onEfetivarContrato" />
                                 </div>
@@ -517,6 +525,7 @@ const empresaService = new EmpresaService();
 const simulacaoService = new SimulacaoEmprestimoService();
 const bancoService = new BancoService();
 const assinaturaTipo = ref('sem');
+const iniciandoAssinatura = ref(false);
 const empresaData = ref({});
 const etapaAtual = ref(1);
 const clienteSelecionado = ref(null);
@@ -575,6 +584,7 @@ async function searchClientesPJ(event) {
 
 function onClienteSelect(event) {
     form.client_id = event.value?.id ?? null;
+    clienteSelecionado.value = event.value ?? null;
 }
 
 function onClienteClear() {
@@ -692,6 +702,60 @@ async function onEfetivarContrato() {
         }
     } catch (e) {
         toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível efetivar o contrato.', life: 5000 });
+    }
+}
+
+async function onIniciarAssinatura() {
+    try {
+        if (!result.value || !form.client_id) return;
+        iniciandoAssinatura.value = true;
+
+        if (!contratoId.value) {
+            const res = await saveSimulation(null);
+            if (!res?.success) {
+                toast.add({ severity: 'error', summary: 'Erro', detail: res?.message || 'Erro ao salvar antes de iniciar assinatura.', life: 5000 });
+                return;
+            }
+            if (res?.id) contratoId.value = res.id;
+        }
+
+        const pdfBlob = exportContratoInicial(empresaData.value, clienteSelecionado.value, {
+            returnBlob: true,
+            filename: `contrato-${contratoId.value}.pdf`,
+        });
+        if (!pdfBlob) {
+            toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível gerar o PDF do contrato.', life: 5000 });
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('pdf_original', pdfBlob, `contrato-${contratoId.value}.pdf`);
+
+        const resp = await simulacaoService.iniciarAssinatura(contratoId.value, fd);
+        const whatsNumero = resp?.data?.whatsapp_numero;
+        const whatsMensagem = resp?.data?.whatsapp_mensagem;
+
+        if (whatsMensagem) {
+            try {
+                await navigator.clipboard.writeText(whatsMensagem);
+                toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Mensagem do WhatsApp copiada.', life: 3500 });
+            } catch {
+                toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Mensagem pronta para WhatsApp gerada.', life: 3500 });
+            }
+        } else {
+            toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Assinatura iniciada com sucesso.', life: 3500 });
+        }
+
+        if (whatsNumero && whatsMensagem) {
+            const url = `https://wa.me/${whatsNumero}?text=${encodeURIComponent(whatsMensagem)}`;
+            window.open(url, '_blank');
+        }
+
+        router.push(`/contratos/${contratoId.value}/assinatura`);
+    } catch (e) {
+        toast.add({ severity: 'error', summary: 'Erro', detail: e?.response?.data?.message || 'Não foi possível iniciar a assinatura.', life: 5000 });
+    } finally {
+        iniciandoAssinatura.value = false;
     }
 }
 

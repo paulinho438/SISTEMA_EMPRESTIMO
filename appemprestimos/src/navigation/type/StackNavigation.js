@@ -221,6 +221,16 @@ const StackNavigation = () => {
                 options={{headerShown: false}}
             />
             <Stack.Screen
+                name={StackNav.AssinaturaContratos}
+                component={StackRoute.AssinaturaContratos}
+                options={{headerShown: false}}
+            />
+            <Stack.Screen
+                name={StackNav.AssinaturaContratoFlow}
+                component={StackRoute.AssinaturaContratoFlow}
+                options={{headerShown: false}}
+            />
+            <Stack.Screen
                 name={StackNav.AlterarEmpresa}
                 component={StackRoute.AlterarEmpresa}
                 options={{headerShown: false}}
