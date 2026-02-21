@@ -333,10 +333,27 @@ class AssinaturaContratoController extends Controller
             $q->where('company_id', $companyId);
         }
 
+        $otpVerifiedAtSub = ContratoAssinaturaOtp::select('verified_at')
+            ->whereColumn('contrato_id', 'simulacoes_emprestimo.id')
+            ->orderByDesc('id')
+            ->limit(1);
+
         $contratos = $q->whereNotNull('assinatura_status')
             ->whereNotIn('assinatura_status', [self::STATUS_SIGNED, self::STATUS_REJECTED])
             ->orderBy('updated_at', 'desc')
-            ->get(['id', 'assinatura_status', 'assinatura_versao', 'data_assinatura', 'valor_contrato', 'created_at', 'updated_at']);
+            ->select([
+                'id',
+                'assinatura_status',
+                'assinatura_versao',
+                'data_assinatura',
+                'valor_contrato',
+                'aceite_at',
+                'finalizado_at',
+                'created_at',
+                'updated_at',
+            ])
+            ->addSelect(['otp_verified_at' => $otpVerifiedAtSub])
+            ->get();
 
         return response()->json(['data' => $contratos]);
     }

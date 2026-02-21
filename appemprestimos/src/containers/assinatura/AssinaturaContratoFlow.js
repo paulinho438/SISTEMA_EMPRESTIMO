@@ -31,7 +31,9 @@ export default function AssinaturaContratoFlow({route}) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [aceito, setAceito] = useState(false);
+  const [aceiteAt, setAceiteAt] = useState(null);
   const [otp, setOtp] = useState('');
+  const [otpVerifiedAt, setOtpVerifiedAt] = useState(null);
   const [desafio, setDesafio] = useState(null);
   const [pdfProgress, setPdfProgress] = useState(null);
   const [pdfError, setPdfError] = useState(null);
@@ -171,7 +173,11 @@ export default function AssinaturaContratoFlow({route}) {
     const res = await api.assinaturaContratos();
     const list = res?.data || [];
     const item = (list || []).find(x => Number(x.id) === Number(contratoId));
-    if (item) setStatus(item.assinatura_status);
+    if (item) {
+      setStatus(item.assinatura_status);
+      setAceiteAt(item.aceite_at || null);
+      setOtpVerifiedAt(item.otp_verified_at || null);
+    }
   };
 
   useEffect(() => {
@@ -187,6 +193,7 @@ export default function AssinaturaContratoFlow({route}) {
       } else {
         Alert.alert('Ok', 'Aceite registrado.');
         setStatus(res?.assinatura_status || 'evidence_pending');
+        setAceiteAt(res?.aceite_at || new Date().toISOString());
       }
     } finally {
       setLoading(false);
@@ -284,6 +291,7 @@ export default function AssinaturaContratoFlow({route}) {
         Alert.alert('Erro', res.message || 'Código inválido.');
       } else {
         Alert.alert('Ok', 'Código validado.');
+        setOtpVerifiedAt(res?.verified_at || new Date().toISOString());
       }
     } finally {
       setLoading(false);
@@ -302,6 +310,21 @@ export default function AssinaturaContratoFlow({route}) {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const aceiteJaRegistrado = Boolean(aceiteAt) || (status && status !== 'pending_acceptance');
+  const otpJaValidado =
+    Boolean(otpVerifiedAt) ||
+    status === 'signed_pending_review' ||
+    status === 'signed';
+
+  const formatDateTime = v => {
+    if (!v) return null;
+    try {
+      return new Date(v).toLocaleString('pt-BR');
+    } catch {
+      return String(v);
     }
   };
 
@@ -372,20 +395,28 @@ export default function AssinaturaContratoFlow({route}) {
       <Card style={styles.card}>
         <Card.Title title="1) Aceite" />
         <Card.Content>
-          <View style={styles.row}>
-            <Checkbox
-              status={aceito ? 'checked' : 'unchecked'}
-              onPress={() => setAceito(v => !v)}
-            />
-            <Text style={styles.flex}>Li e concordo com os termos</Text>
-          </View>
-          <Button
-            mode="contained"
-            loading={loading}
-            disabled={!aceito || loading}
-            onPress={aceitar}>
-            Confirmar aceite
-          </Button>
+          {aceiteJaRegistrado ? (
+            <Text style={styles.muted}>
+              Aceite já registrado{aceiteAt ? ` em ${formatDateTime(aceiteAt)}` : ''}.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.row}>
+                <Checkbox
+                  status={aceito ? 'checked' : 'unchecked'}
+                  onPress={() => setAceito(v => !v)}
+                />
+                <Text style={styles.flex}>Li e concordo com os termos</Text>
+              </View>
+              <Button
+                mode="contained"
+                loading={loading}
+                disabled={!aceito || loading}
+                onPress={aceitar}>
+                Confirmar aceite
+              </Button>
+            </>
+          )}
         </Card.Content>
       </Card>
 
@@ -444,26 +475,34 @@ export default function AssinaturaContratoFlow({route}) {
       <Card style={styles.card}>
         <Card.Title title="3) 2FA (WhatsApp)" />
         <Card.Content>
-          <Button mode="outlined" loading={loading} disabled={loading} onPress={enviarOtp}>
-            Enviar código
-          </Button>
-          <View style={styles.spacer} />
-          <OTPInputView
-            style={styles.otp}
-            pinCount={6}
-            code={otp}
-            onCodeChanged={setOtp}
-            autoFocusOnLoad={false}
-            codeInputFieldStyle={styles.otpCell}
-            codeInputHighlightStyle={styles.otpCellActive}
-          />
-          <Button
-            mode="contained"
-            loading={loading}
-            disabled={loading || otp.length !== 6}
-            onPress={validarOtp}>
-            Validar código
-          </Button>
+          {otpJaValidado ? (
+            <Text style={styles.muted}>
+              2FA já validado{otpVerifiedAt ? ` em ${formatDateTime(otpVerifiedAt)}` : ''}.
+            </Text>
+          ) : (
+            <>
+              <Button mode="outlined" loading={loading} disabled={loading} onPress={enviarOtp}>
+                Enviar código
+              </Button>
+              <View style={styles.spacer} />
+              <OTPInputView
+                style={styles.otp}
+                pinCount={6}
+                code={otp}
+                onCodeChanged={setOtp}
+                autoFocusOnLoad={false}
+                codeInputFieldStyle={styles.otpCell}
+                codeInputHighlightStyle={styles.otpCellActive}
+              />
+              <Button
+                mode="contained"
+                loading={loading}
+                disabled={loading || otp.length !== 6}
+                onPress={validarOtp}>
+                Validar código
+              </Button>
+            </>
+          )}
         </Card.Content>
       </Card>
 
