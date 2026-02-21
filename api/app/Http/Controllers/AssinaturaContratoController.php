@@ -717,6 +717,7 @@ class AssinaturaContratoController extends Controller
         $this->registrarEvento($contrato, 'cliente', (int) $cliente->id, 'SIGN_FINALIZED', $request, [
             'pdf_final_path' => $contrato->pdf_final_path,
             'pdf_final_sha256' => $contrato->pdf_final_sha256,
+            'registro_hash_final' => $resultadoPdf['registro_hash_final'] ?? null,
             'otp_verified_at' => $otp->verified_at ? $otp->verified_at->toISOString() : null,
         ], $device);
 
