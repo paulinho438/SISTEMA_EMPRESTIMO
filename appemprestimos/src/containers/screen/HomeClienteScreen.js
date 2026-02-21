@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     color: 'green',
     fontWeight: '500',
     marginRight: 10,
-    alignSelf: 'left',
+    alignSelf: 'flex-start',
   },
   cardItem: {
     backgroundColor: '#f4f4f4',
