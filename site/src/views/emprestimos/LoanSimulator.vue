@@ -735,20 +735,24 @@ async function onIniciarAssinatura() {
         const whatsNumero = resp?.data?.whatsapp_numero;
         const whatsMensagem = resp?.data?.whatsapp_mensagem;
 
-        if (whatsMensagem) {
+        const enviado = Boolean(resp?.data?.whatsapp_enviado);
+        if (enviado) {
+            toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Mensagem enviada ao cliente via WhatsApp.', life: 3500 });
+        } else if (whatsMensagem) {
+            // fallback: copiar e abrir WhatsApp manualmente
             try {
                 await navigator.clipboard.writeText(whatsMensagem);
-                toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Mensagem do WhatsApp copiada.', life: 3500 });
+                toast.add({ severity: 'warn', summary: 'Assinatura iniciada', detail: 'Não foi possível enviar automaticamente. Mensagem copiada para envio manual.', life: 4500 });
             } catch {
-                toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Mensagem pronta para WhatsApp gerada.', life: 3500 });
+                toast.add({ severity: 'warn', summary: 'Assinatura iniciada', detail: 'Não foi possível enviar automaticamente. Mensagem pronta para envio manual.', life: 4500 });
+            }
+
+            if (whatsNumero) {
+                const url = `https://wa.me/${whatsNumero}?text=${encodeURIComponent(whatsMensagem)}`;
+                window.open(url, '_blank');
             }
         } else {
             toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Assinatura iniciada com sucesso.', life: 3500 });
-        }
-
-        if (whatsNumero && whatsMensagem) {
-            const url = `https://wa.me/${whatsNumero}?text=${encodeURIComponent(whatsMensagem)}`;
-            window.open(url, '_blank');
         }
 
         router.push(`/contratos/${contratoId.value}/assinatura`);

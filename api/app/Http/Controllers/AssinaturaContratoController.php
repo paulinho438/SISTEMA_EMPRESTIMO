@@ -146,14 +146,16 @@ class AssinaturaContratoController extends Controller
         // Versão: só incrementa quando iniciar novamente (ex.: reenvio)
         $contrato->assinatura_versao = max(1, ((int) $contrato->assinatura_versao) + 1);
 
-        // Provisionar login do cliente (usuario = cpf) e senha gerada (hash)
+        // Provisionar login do cliente (usuario = CPF). Se já houver senha, não gerar outra.
         $senhaInicial = null;
+        $tinhaSenha = !empty($cliente->password);
         if (empty($cliente->usuario)) {
             $cliente->usuario = $cpf;
         }
-        // sempre gera uma nova senha ao iniciar (porque você vai enviar via WhatsApp)
-        $senhaInicial = $this->gerarSenhaInicial();
-        $cliente->password = Hash::make($senhaInicial);
+        if (!$tinhaSenha) {
+            $senhaInicial = $this->gerarSenhaInicial();
+            $cliente->password = Hash::make($senhaInicial);
+        }
         $cliente->save();
 
         // Salvar PDF original + hash
@@ -177,10 +179,25 @@ class AssinaturaContratoController extends Controller
             'pdf_original_sha256' => $hashOriginal,
         ]);
 
-        // Mensagem pronta para WhatsApp (manual no painel)
+        // Mensagem WhatsApp (enviada automaticamente, com fallback para cópia manual)
         $telefone = preg_replace('/\D/', '', (string) ($cliente->telefone_celular_1 ?? ''));
         $whatsNumero = $telefone ? ('55' . $telefone) : null;
-        $mensagem = "Acesso ao aplicativo do contrato:\n\nUsuário (CPF): {$cliente->usuario}\nSenha: {$senhaInicial}\n\nAbra o app e faça login para assinar o contrato pendente.";
+        if ($tinhaSenha) {
+            $mensagem = "Você tem um contrato pendente para assinatura no aplicativo.\n\nUsuário (CPF): {$cliente->usuario}\n\nAbra o app, faça login com sua senha já cadastrada e assine o contrato pendente.";
+        } else {
+            $mensagem = "Acesso ao aplicativo do contrato:\n\nUsuário (CPF): {$cliente->usuario}\nSenha: {$senhaInicial}\n\nAbra o app e faça login para assinar o contrato pendente.";
+        }
+
+        $enviado = false;
+        if ($whatsNumero) {
+            $enviado = $this->enviarWhatsApp($cliente, $mensagem);
+        }
+
+        $this->registrarEvento($contrato, 'admin', (int) (auth('api')->id() ?? 0), 'SIGN_WHATSAPP_SENT', $request, [
+            'enviado' => (bool) $enviado,
+            'whatsapp_numero' => $whatsNumero,
+            'tinha_senha' => (bool) $tinhaSenha,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -191,6 +208,8 @@ class AssinaturaContratoController extends Controller
             'cliente_senha_inicial' => $senhaInicial,
             'whatsapp_numero' => $whatsNumero,
             'whatsapp_mensagem' => $mensagem,
+            'whatsapp_enviado' => (bool) $enviado,
+            'cliente_tinha_senha' => (bool) $tinhaSenha,
         ]);
     }
 
