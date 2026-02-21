@@ -1,9 +1,18 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {View, StyleSheet, ScrollView, Alert, Platform} from 'react-native';
-import {Card, Text, Button, Checkbox, TextInput} from 'react-native-paper';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Platform,
+  PermissionsAndroid,
+  Linking,
+} from 'react-native';
+import {Card, Text, Button, Checkbox} from 'react-native-paper';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import {launchCamera} from 'react-native-image-picker';
 import Pdf from 'react-native-pdf';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 
 import api from '../../services/api';
 import {baseUrl} from '../../services/Config';
@@ -24,35 +33,138 @@ export default function AssinaturaContratoFlow({route}) {
   const [aceito, setAceito] = useState(false);
   const [otp, setOtp] = useState('');
   const [desafio, setDesafio] = useState(null);
+  const [pdfProgress, setPdfProgress] = useState(null);
+  const [pdfError, setPdfError] = useState(null);
+  const [pdfLocalUri, setPdfLocalUri] = useState(null);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
 
   const [docFrenteOk, setDocFrenteOk] = useState(false);
   const [docVersoOk, setDocVersoOk] = useState(false);
   const [selfieOk, setSelfieOk] = useState(false);
   const [videoOk, setVideoOk] = useState(false);
 
-  const pdfSource = useMemo(() => {
-    return (async () => {
-      const token = await getAuthToken();
-      const company = await getAuthCompany();
-      return {
-        uri: `${baseUrl}/assinatura/contratos/${contratoId}/pdf-original`,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'company-id': company?.id,
-        },
-        cache: true,
-      };
-    })();
+  const pdfRemoteUrl = useMemo(() => {
+    if (!contratoId) return null;
+    return `${baseUrl}/assinatura/contratos/${contratoId}/pdf-original`;
   }, [contratoId]);
 
-  const [pdfResolvedSource, setPdfResolvedSource] = useState(null);
+  const buildPdfHeaders = async () => {
+    const token = await getAuthToken();
+    const company = await getAuthCompany();
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (company?.id) headers['company-id'] = String(company.id);
+    return headers;
+  };
+
+  const baixarPdf = async () => {
+    if (!pdfRemoteUrl) return;
+    setPdfDownloading(true);
+    setPdfError(null);
+    setPdfProgress(0);
+    setPdfLocalUri(null);
+    try {
+      const headers = await buildPdfHeaders();
+      if (!headers.Authorization) {
+        setPdfError({message: 'Sem token de autenticação.'});
+        return;
+      }
+
+      const task = ReactNativeBlobUtil.config({
+        fileCache: true,
+        appendExt: 'pdf',
+      }).fetch('GET', pdfRemoteUrl, headers);
+
+      task.progress({interval: 200}, (received, total) => {
+        if (!total || total <= 0) return;
+        const percent = Math.round((received / total) * 100);
+        setPdfProgress(Math.max(0, Math.min(100, percent)));
+      });
+
+      const res = await task;
+      const info = res?.info?.() || {};
+      const httpStatus = info.status;
+      const contentType = info.headers?.['Content-Type'] || info.headers?.['content-type'];
+
+      if (httpStatus >= 200 && httpStatus < 300) {
+        const path = res.path();
+        setPdfLocalUri(`file://${path}`);
+        setPdfProgress(100);
+        return;
+      }
+
+      let bodyText = '';
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = '';
+      }
+      setPdfError({
+        message: `HTTP ${httpStatus} (content-type: ${contentType || '—'}) ${bodyText ? `\n${String(bodyText).slice(0, 300)}` : ''}`,
+      });
+    } catch (e) {
+      setPdfError({message: String(e?.message || e)});
+    } finally {
+      setPdfDownloading(false);
+    }
+  };
+
+  const ensureCameraPermissions = async mediaType => {
+    if (Platform.OS !== 'android') return true;
+    const toRequest = [PermissionsAndroid.PERMISSIONS.CAMERA];
+    if (mediaType === 'video') {
+      toRequest.push(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+    }
+    const res = await PermissionsAndroid.requestMultiple(toRequest);
+    const camOk = res[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED;
+    const micOk =
+      mediaType !== 'video' ||
+      res[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO] === PermissionsAndroid.RESULTS.GRANTED;
+    if (!camOk || !micOk) {
+      Alert.alert(
+        'Permissão necessária',
+        mediaType === 'video'
+          ? 'Precisamos de permissão de câmera e microfone para gravar o vídeo.'
+          : 'Precisamos de permissão de câmera para tirar a foto do documento.',
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const testPdfEndpoint = async () => {
+    if (!pdfRemoteUrl) return;
+    try {
+      const headers = await buildPdfHeaders();
+      const head = await fetch(pdfRemoteUrl, {
+        method: 'HEAD',
+        headers,
+      });
+      if (head.ok) {
+        Alert.alert('PDF OK', `Resposta: ${head.status} (${head.headers.get('content-type') || '—'})`);
+        return;
+      }
+      // Alguns servidores não suportam HEAD. Tenta Range (1 byte).
+      const range = await fetch(pdfRemoteUrl, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          Range: 'bytes=0-0',
+        },
+      });
+      Alert.alert(
+        'Teste PDF',
+        `HEAD: ${head.status}\nGET Range: ${range.status} (${range.headers.get('content-type') || '—'})`,
+      );
+    } catch (e) {
+      Alert.alert('Erro ao testar PDF', String(e?.message || e));
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      const src = await pdfSource;
-      setPdfResolvedSource(src);
-    })();
-  }, [pdfSource]);
+    if (!contratoId) return;
+    baixarPdf();
+  }, [contratoId, pdfRemoteUrl]);
 
   const refreshStatus = async () => {
     // A API do app não tem endpoint de detalhes; usamos o list para pegar o status.
@@ -85,10 +197,30 @@ export default function AssinaturaContratoFlow({route}) {
     setLoading(true);
     try {
       const mediaType = tipo === 'video' ? 'video' : 'photo';
-      const res = await launchCamera({mediaType, cameraType: 'front', quality: 0.8});
+      const allowed = await ensureCameraPermissions(mediaType);
+      if (!allowed) return;
+
+      const cameraType =
+        tipo === 'selfie' || tipo === 'video' ? 'front' : 'back';
+      const res = await launchCamera({
+        mediaType,
+        cameraType,
+        quality: 0.8,
+        saveToPhotos: false,
+      });
+
+      if (res?.didCancel) {
+        return;
+      }
+
+      if (res?.errorCode) {
+        Alert.alert('Câmera', res?.errorMessage || `Erro: ${res.errorCode}`);
+        return;
+      }
+
       const asset = res?.assets?.[0];
       if (!asset?.uri) {
-        setLoading(false);
+        Alert.alert('Câmera', 'Não foi possível obter o arquivo capturado.');
         return;
       }
 
@@ -182,16 +314,54 @@ export default function AssinaturaContratoFlow({route}) {
         <Card.Title title="Documento" />
         <Card.Content>
           <View style={styles.pdfBox}>
-            {pdfResolvedSource ? (
+            {pdfLocalUri ? (
               <Pdf
-                source={pdfResolvedSource}
+                source={{uri: pdfLocalUri}}
                 style={styles.pdf}
-                onError={e => console.log('PDF error', e)}
+                onError={e => {
+                  setPdfError(e);
+                  console.log('PDF error', e);
+                  Alert.alert(
+                    'Erro ao carregar PDF',
+                    'Não foi possível abrir o PDF baixado. Tente baixar novamente.',
+                  );
+                }}
               />
             ) : (
-              <Text style={styles.muted}>Carregando PDF...</Text>
+              <Text style={styles.muted}>
+                {pdfDownloading ? 'Baixando PDF...' : 'PDF não carregado.'}
+              </Text>
             )}
           </View>
+
+          <View style={styles.spacer} />
+          <Text style={styles.muted}>
+            Progresso: {pdfProgress != null ? `${pdfProgress}%` : '—'}
+          </Text>
+          {pdfError ? <Text style={styles.muted}>Erro: {String(pdfError?.message || pdfError)}</Text> : null}
+
+          <View style={styles.spacer} />
+          <Button
+            mode="outlined"
+            disabled={!pdfRemoteUrl}
+            onPress={() => {
+              if (!pdfRemoteUrl) return;
+              Linking.openURL(pdfRemoteUrl).catch(() =>
+                Alert.alert('Erro', 'Não foi possível abrir o link do PDF.'),
+              );
+            }}>
+            Abrir PDF no navegador
+          </Button>
+          <View style={styles.spacer} />
+          <Button mode="outlined" disabled={!pdfRemoteUrl} onPress={testPdfEndpoint}>
+            Testar download do PDF
+          </Button>
+          <View style={styles.spacer} />
+          <Button mode="outlined" loading={pdfDownloading} disabled={!pdfRemoteUrl || pdfDownloading} onPress={baixarPdf}>
+            Baixar novamente
+          </Button>
+          <View style={styles.spacer} />
+          <Text style={styles.muted}>Base URL: {baseUrl}</Text>
         </Card.Content>
       </Card>
 

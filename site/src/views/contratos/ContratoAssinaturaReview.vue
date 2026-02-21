@@ -8,6 +8,7 @@ import Column from 'primevue/column';
 import Textarea from 'primevue/textarea';
 import SimulacaoEmprestimoService from '@/service/SimulacaoEmprestimoService';
 import Toast from 'primevue/toast';
+import axios from 'axios';
 
 const route = useRoute();
 const toast = useToast();
@@ -58,8 +59,45 @@ async function carregar() {
     }
 }
 
-function download(url) {
-    window.open(url, '_blank');
+function filenameFromContentDisposition(contentDisposition) {
+    if (!contentDisposition) return null;
+    // Ex: attachment; filename="contrato-7-original.pdf"
+    const match = /filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i.exec(String(contentDisposition));
+    const raw = match?.[1] || match?.[2];
+    if (!raw) return null;
+    try {
+        return decodeURIComponent(raw);
+    } catch {
+        return raw;
+    }
+}
+
+async function downloadAuth(url, fallbackName = 'arquivo', openInNewTab = true) {
+    try {
+        const res = await axios.get(url, { responseType: 'blob' });
+        const contentType = res?.headers?.['content-type'] || 'application/octet-stream';
+        const cd = res?.headers?.['content-disposition'];
+        const filename = filenameFromContentDisposition(cd) || fallbackName;
+
+        const blob = new Blob([res.data], { type: contentType });
+        const objectUrl = URL.createObjectURL(blob);
+
+        if (openInNewTab) {
+            window.open(objectUrl, '_blank');
+        } else {
+            const a = document.createElement('a');
+            a.href = objectUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+    } catch (e) {
+        const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Falha ao baixar arquivo.';
+        toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 4500 });
+    }
 }
 
 async function revisar(acao) {
@@ -114,14 +152,14 @@ onMounted(() => {
                                 icon="pi pi-file-pdf"
                                 class="p-button-outlined"
                                 :disabled="!detalhes.pdf_original_path"
-                                @click="download(`${apiPath}/contratos/${detalhes.id}/assinatura/pdf-original`)"
+                                @click="downloadAuth(`${apiPath}/contratos/${detalhes.id}/assinatura/pdf-original`, `contrato-${detalhes.id}-original.pdf`, true)"
                             />
                             <Button
                                 label="Baixar PDF final"
                                 icon="pi pi-file-pdf"
                                 class="p-button-outlined p-button-success"
                                 :disabled="!detalhes.pdf_final_path"
-                                @click="download(`${apiPath}/contratos/${detalhes.id}/assinatura/pdf-final`)"
+                                @click="downloadAuth(`${apiPath}/contratos/${detalhes.id}/assinatura/pdf-final`, `contrato-${detalhes.id}-assinado.pdf`, true)"
                             />
                         </div>
 
@@ -151,7 +189,7 @@ onMounted(() => {
                                         icon="pi pi-download"
                                         class="p-button-text p-button-sm"
                                         v-tooltip.top="'Baixar'"
-                                        @click="download(`${apiPath}/contratos/${detalhes.id}/assinatura/evidencias/${data.id}`)"
+                                        @click="downloadAuth(`${apiPath}/contratos/${detalhes.id}/assinatura/evidencias/${data.id}`, `contrato-${detalhes.id}-evidencia-${data.tipo || 'arquivo'}-${data.id}`, false)"
                                     />
                                 </template>
                             </Column>
