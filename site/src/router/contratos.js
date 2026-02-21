@@ -8,6 +8,11 @@ const contratosRoutes = [
 				component: () => import('@/views/contratos/ContratosList.vue')
 			},
 			{
+				path: '/contratos/assinaturas',
+				name: 'contratosAssinaturasList',
+				component: () => import('@/views/contratos/ContratosAssinaturasList.vue')
+			},
+			{
 				path: '/contratos/:id/assinatura',
 				name: 'contratoAssinaturaReview',
 				component: () => import('@/views/contratos/ContratoAssinaturaReview.vue')

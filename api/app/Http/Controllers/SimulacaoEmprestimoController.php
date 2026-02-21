@@ -53,6 +53,14 @@ class SimulacaoEmprestimoController extends Controller
             ->where('company_id', $companyId)
             ->orderBy('created_at', 'desc');
 
+        if ($request->boolean('assinatura_only')) {
+            $query->whereNotNull('assinatura_status');
+        }
+
+        if ($request->filled('assinatura_status')) {
+            $query->where('assinatura_status', $request->get('assinatura_status'));
+        }
+
         if ($request->filled('situacao')) {
             $situacao = $request->get('situacao');
             $query->where('situacao', $situacao);
@@ -86,6 +94,9 @@ class SimulacaoEmprestimoController extends Controller
                 'taxa' => (float) $s->taxa_juros_mensal,
                 'data_assinatura' => $s->data_assinatura?->format('Y-m-d'),
                 'situacao' => $this->situacaoLabel($s->situacao),
+                'assinatura_status' => $s->assinatura_status,
+                'aceite_at' => $s->aceite_at?->toISOString(),
+                'finalizado_at' => $s->finalizado_at?->toISOString(),
             ];
         });
 

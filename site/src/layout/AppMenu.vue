@@ -122,6 +122,12 @@ const model = ref([
                                 permission: 'view_emprestimos'
                             },
                             {
+                                label: 'Assinaturas (clientes)',
+                                icon: 'pi pi-fw pi-id-card',
+                                to: '/contratos/assinaturas',
+                                permission: 'view_emprestimos'
+                            },
+                            {
                                 label: 'Simular ou Cadastrar',
                                 icon: 'pi pi-fw pi-calculator',
                                 to: '/emprestimos/simulacao',
