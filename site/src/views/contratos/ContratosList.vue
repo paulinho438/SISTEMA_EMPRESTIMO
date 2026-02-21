@@ -61,6 +61,30 @@ function getSituacaoClass(situacao) {
     return 'p-badge p-badge-info';
 }
 
+function assinaturaStatusLabel(s) {
+    if (!s) return 'Não iniciado';
+    const map = {
+        pending_acceptance: 'Pendente de aceite',
+        evidence_pending: 'Aguardando evidências',
+        evidence_submitted: 'Evidências enviadas',
+        otp_pending: 'Aguardando 2FA',
+        signed_pending_review: 'Assinado (aguardando revisão)',
+        signed: 'Assinado (aprovado)',
+        rejected: 'Reprovado',
+        resubmit_required: 'Reenvio solicitado',
+    };
+    return map[s] || s;
+}
+
+function getAssinaturaClass(s) {
+    if (s === 'signed') return 'p-badge p-badge-success';
+    if (s === 'signed_pending_review') return 'p-badge p-badge-warning';
+    if (s === 'rejected') return 'p-badge p-badge-danger';
+    if (s === 'resubmit_required') return 'p-badge p-badge-warning';
+    if (s) return 'p-badge p-badge-info';
+    return 'p-badge';
+}
+
 async function getContratos(page = 1) {
     loading.value = true;
     currentPage.value = page;
@@ -219,6 +243,13 @@ onMounted(() => {
                     <Column field="situacao" header="Situação" style="min-width: 10rem">
                         <template #body="{ data }">
                             <span :class="getSituacaoClass(data.situacao)">{{ data.situacao }}</span>
+                        </template>
+                    </Column>
+                    <Column field="assinatura_status" header="Assinatura" style="min-width: 14rem">
+                        <template #body="{ data }">
+                            <span :class="getAssinaturaClass(data.assinatura_status)">
+                                {{ assinaturaStatusLabel(data.assinatura_status) }}
+                            </span>
                         </template>
                     </Column>
                     <Column header="" style="min-width: 6rem">
