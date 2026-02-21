@@ -154,12 +154,22 @@ Route::middleware(['auth:clientes', 'single.token'])->group(function () {
     Route::get('/assinatura/contratos', [AssinaturaContratoController::class, 'contratosCliente']);
     Route::get('/assinatura/contratos/{id}/pdf-original', [AssinaturaContratoController::class, 'pdfOriginalCliente']);
     Route::get('/assinatura/contratos/{id}/pdf-final', [AssinaturaContratoController::class, 'pdfFinalCliente']);
+    Route::get('/assinatura/contratos/{id}/pdf-original-link', [AssinaturaContratoController::class, 'pdfOriginalLinkCliente']);
+    Route::get('/assinatura/contratos/{id}/pdf-final-link', [AssinaturaContratoController::class, 'pdfFinalLinkCliente']);
     Route::post('/assinatura/contratos/{id}/aceite', [AssinaturaContratoController::class, 'aceite']);
     Route::post('/assinatura/contratos/{id}/desafio-video', [AssinaturaContratoController::class, 'desafioVideo']);
     Route::post('/assinatura/contratos/{id}/evidencias', [AssinaturaContratoController::class, 'evidencias']);
     Route::post('/assinatura/contratos/{id}/otp/enviar', [AssinaturaContratoController::class, 'enviarOtp']);
     Route::post('/assinatura/contratos/{id}/otp/validar', [AssinaturaContratoController::class, 'validarOtp']);
     Route::post('/assinatura/contratos/{id}/finalizar', [AssinaturaContratoController::class, 'finalizar']);
+});
+
+// Assinatura eletrônica (público com URL assinado temporário)
+Route::middleware('signed')->group(function () {
+    Route::get('/public/assinatura/contratos/{id}/pdf-original', [AssinaturaContratoController::class, 'pdfOriginalPublic'])
+        ->name('assinatura.public.pdf-original');
+    Route::get('/public/assinatura/contratos/{id}/pdf-final', [AssinaturaContratoController::class, 'pdfFinalPublic'])
+        ->name('assinatura.public.pdf-final');
 });
 
 Route::middleware(['auth:api', 'single.token'])->group(function () {

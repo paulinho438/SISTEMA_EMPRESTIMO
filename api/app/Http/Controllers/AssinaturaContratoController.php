@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -321,6 +322,48 @@ class AssinaturaContratoController extends Controller
         return response()->json(['data' => $contratos]);
     }
 
+    public function pdfOriginalLinkCliente(Request $request, int $id)
+    {
+        /** @var Client $cliente */
+        $cliente = auth('clientes')->user();
+        $contrato = SimulacaoEmprestimo::findOrFail($id);
+        $this->assertContratoDoCliente($contrato, $cliente);
+
+        if (!$contrato->pdf_original_path) {
+            abort(Response::HTTP_NOT_FOUND, 'PDF original não encontrado.');
+        }
+
+        $expiresAt = Carbon::now()->addMinutes(10);
+        $url = URL::temporarySignedRoute('assinatura.public.pdf-original', $expiresAt, ['id' => $contrato->id]);
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+            'expires_at' => $expiresAt->toISOString(),
+        ]);
+    }
+
+    public function pdfFinalLinkCliente(Request $request, int $id)
+    {
+        /** @var Client $cliente */
+        $cliente = auth('clientes')->user();
+        $contrato = SimulacaoEmprestimo::findOrFail($id);
+        $this->assertContratoDoCliente($contrato, $cliente);
+
+        if (!$contrato->pdf_final_path) {
+            abort(Response::HTTP_NOT_FOUND, 'PDF final não encontrado.');
+        }
+
+        $expiresAt = Carbon::now()->addMinutes(10);
+        $url = URL::temporarySignedRoute('assinatura.public.pdf-final', $expiresAt, ['id' => $contrato->id]);
+
+        return response()->json([
+            'success' => true,
+            'url' => $url,
+            'expires_at' => $expiresAt->toISOString(),
+        ]);
+    }
+
     public function pdfOriginalCliente(Request $request, int $id)
     {
         /** @var Client $cliente */
@@ -343,6 +386,32 @@ class AssinaturaContratoController extends Controller
         $contrato = SimulacaoEmprestimo::findOrFail($id);
         $this->assertContratoDoCliente($contrato, $cliente);
 
+        if (!$contrato->pdf_final_path) {
+            abort(Response::HTTP_NOT_FOUND, 'PDF final não encontrado.');
+        }
+        $abs = storage_path('app/' . $contrato->pdf_final_path);
+        if (!is_file($abs)) abort(Response::HTTP_NOT_FOUND, 'PDF final não encontrado.');
+        return response()->download($abs, "contrato-{$contrato->id}-assinado.pdf");
+    }
+
+    // =====================
+    // PÚBLICO (LINK ASSINADO)
+    // =====================
+
+    public function pdfOriginalPublic(Request $request, int $id)
+    {
+        $contrato = SimulacaoEmprestimo::findOrFail($id);
+        if (!$contrato->pdf_original_path) {
+            abort(Response::HTTP_NOT_FOUND, 'PDF original não encontrado.');
+        }
+        $abs = storage_path('app/' . $contrato->pdf_original_path);
+        if (!is_file($abs)) abort(Response::HTTP_NOT_FOUND, 'PDF original não encontrado.');
+        return response()->download($abs, "contrato-{$contrato->id}-original.pdf");
+    }
+
+    public function pdfFinalPublic(Request $request, int $id)
+    {
+        $contrato = SimulacaoEmprestimo::findOrFail($id);
         if (!$contrato->pdf_final_path) {
             abort(Response::HTTP_NOT_FOUND, 'PDF final não encontrado.');
         }

@@ -160,6 +160,16 @@ export default {
         let json = await request('get', '/assinatura/contratos', {}, token);
         return json;
     },
+    assinaturaPdfOriginalLink: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('get', `/assinatura/contratos/${id}/pdf-original-link`, {}, token);
+        return json;
+    },
+    assinaturaPdfFinalLink: async (id) => {
+        let token = await getAuthToken();
+        let json = await request('get', `/assinatura/contratos/${id}/pdf-final-link`, {}, token);
+        return json;
+    },
     assinaturaAceite: async (id, device = null) => {
         let token = await getAuthToken();
         let json = await request('post', `/assinatura/contratos/${id}/aceite`, {aceite: true, device}, token);

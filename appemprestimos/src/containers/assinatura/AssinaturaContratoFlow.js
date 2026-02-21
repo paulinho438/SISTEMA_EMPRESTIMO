@@ -344,11 +344,15 @@ export default function AssinaturaContratoFlow({route}) {
           <Button
             mode="outlined"
             disabled={!pdfRemoteUrl}
-            onPress={() => {
+            onPress={async () => {
               if (!pdfRemoteUrl) return;
-              Linking.openURL(pdfRemoteUrl).catch(() =>
-                Alert.alert('Erro', 'Não foi possível abrir o link do PDF.'),
-              );
+              const link = await api.assinaturaPdfOriginalLink(contratoId);
+              const url = link?.url || link?.data?.url;
+              if (!url) {
+                Alert.alert('Erro', link?.message || link?.error || 'Não foi possível gerar link público do PDF.');
+                return;
+              }
+              Linking.openURL(url).catch(() => Alert.alert('Erro', 'Não foi possível abrir o link do PDF.'));
             }}>
             Abrir PDF no navegador
           </Button>
