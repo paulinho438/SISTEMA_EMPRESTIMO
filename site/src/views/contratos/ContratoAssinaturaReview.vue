@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Textarea from 'primevue/textarea';
+import Dialog from 'primevue/dialog';
 import SimulacaoEmprestimoService from '@/service/SimulacaoEmprestimoService';
 import Toast from 'primevue/toast';
 import axios from 'axios';
@@ -19,6 +20,14 @@ const loading = ref(false);
 const detalhes = ref(null);
 const justificativa = ref('');
 const revisando = ref(false);
+
+const thumbUrls = ref({});
+
+const previewVisible = ref(false);
+const previewLoading = ref(false);
+const previewItem = ref(null);
+const previewUrl = ref(null);
+const previewMime = ref(null);
 
 function formatDateTime(v) {
     if (!v) return '—';
@@ -51,6 +60,7 @@ async function carregar() {
         const id = route.params.id;
         const res = await service.getAssinaturaDetalhes(id);
         detalhes.value = res.data || null;
+        await preloadThumbs();
     } catch (e) {
         toast.add({ severity: 'error', summary: 'Erro', detail: e?.response?.data?.message || 'Não foi possível carregar.', life: 4000 });
         detalhes.value = null;
@@ -99,6 +109,106 @@ async function downloadAuth(url, fallbackName = 'arquivo', openInNewTab = true) 
         toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 4500 });
     }
 }
+
+function evidenciaUrl(evidenciaId) {
+    return `${apiPath}/contratos/${detalhes.value?.id}/assinatura/evidencias/${evidenciaId}`;
+}
+
+function isImageEvidence(ev) {
+    const mime = String(ev?.mime || '');
+    if (mime.startsWith('image/')) return true;
+    if (mime.startsWith('video/')) return false;
+    return ['doc_frente', 'doc_verso', 'selfie'].includes(String(ev?.tipo || '').toLowerCase());
+}
+
+function isVideoEvidence(ev) {
+    const mime = String(ev?.mime || '');
+    if (mime.startsWith('video/')) return true;
+    return String(ev?.tipo || '').toLowerCase() === 'video';
+}
+
+async function getEvidenceBlobUrl(ev) {
+    const url = evidenciaUrl(ev.id);
+    const res = await axios.get(url, { responseType: 'blob' });
+    const contentType = res?.headers?.['content-type'] || ev?.mime || 'application/octet-stream';
+    const blob = new Blob([res.data], { type: contentType });
+    return { objectUrl: URL.createObjectURL(blob), contentType };
+}
+
+async function preloadThumbs() {
+    const evs = detalhes.value?.evidencias || [];
+    for (const ev of evs) {
+        if (!ev?.id) continue;
+        if (!isImageEvidence(ev)) continue;
+        if (thumbUrls.value[ev.id]) continue;
+        try {
+            const { objectUrl } = await getEvidenceBlobUrl(ev);
+            thumbUrls.value = { ...thumbUrls.value, [ev.id]: objectUrl };
+        } catch {
+            // deixa sem miniatura
+        }
+    }
+}
+
+async function abrirPreview(ev) {
+    if (!ev?.id) return;
+    previewVisible.value = true;
+    previewLoading.value = true;
+    previewItem.value = ev;
+    previewMime.value = ev?.mime || null;
+
+    try {
+        if (previewUrl.value) {
+            URL.revokeObjectURL(previewUrl.value);
+            previewUrl.value = null;
+        }
+        const { objectUrl, contentType } = await getEvidenceBlobUrl(ev);
+        previewUrl.value = objectUrl;
+        previewMime.value = contentType || previewMime.value;
+    } catch (e) {
+        toast.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Falha ao abrir evidência.',
+            life: 4500,
+        });
+    } finally {
+        previewLoading.value = false;
+    }
+}
+
+function fecharPreview() {
+    previewVisible.value = false;
+}
+
+function baixarEvidencia(ev) {
+    if (!ev?.id) return;
+    downloadAuth(
+        evidenciaUrl(ev.id),
+        `contrato-${detalhes.value?.id}-evidencia-${ev.tipo || 'arquivo'}-${ev.id}`,
+        false
+    );
+}
+
+watch(previewVisible, (v) => {
+    if (!v && previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value);
+        previewUrl.value = null;
+        previewItem.value = null;
+        previewMime.value = null;
+    }
+});
+
+onBeforeUnmount(() => {
+    try {
+        Object.values(thumbUrls.value || {}).forEach((u) => {
+            if (u) URL.revokeObjectURL(u);
+        });
+    } catch {}
+    if (previewUrl.value) {
+        try { URL.revokeObjectURL(previewUrl.value); } catch {}
+    }
+});
 
 async function revisar(acao) {
     if (!detalhes.value?.id) return;
@@ -174,6 +284,28 @@ onMounted(() => {
 
                     <div class="col-12 lg:col-6">
                         <h6 class="mb-2">Evidências</h6>
+
+                        <div v-if="(detalhes.evidencias || []).length" class="evidence-grid mb-3">
+                            <div v-for="ev in (detalhes.evidencias || [])" :key="ev.id" class="evidence-item">
+                                <button class="evidence-thumb" type="button" @click="abrirPreview(ev)">
+                                    <img v-if="thumbUrls[ev.id]" :src="thumbUrls[ev.id]" class="evidence-img" alt="Evidência" />
+                                    <div v-else class="evidence-placeholder">
+                                        <i :class="isVideoEvidence(ev) ? 'pi pi-video' : 'pi pi-image'" style="font-size: 1.25rem"></i>
+                                        <span class="evidence-placeholder-text">{{ ev.tipo }}</span>
+                                    </div>
+                                </button>
+                                <div class="evidence-meta">
+                                    <span class="evidence-label">{{ ev.tipo }}</span>
+                                    <Button
+                                        icon="pi pi-download"
+                                        class="p-button-text p-button-sm"
+                                        v-tooltip.top="'Baixar'"
+                                        @click="baixarEvidencia(ev)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <DataTable :value="detalhes.evidencias || []" responsive-layout="scroll" class="p-datatable-sm mb-4">
                             <template #empty>Nenhuma evidência.</template>
                             <Column field="id" header="ID" style="width: 5rem" />
@@ -210,11 +342,127 @@ onMounted(() => {
             </div>
         </div>
     </div>
+
+    <Dialog
+        v-model:visible="previewVisible"
+        modal
+        :header="previewItem ? `Evidência: ${previewItem.tipo} (#${previewItem.id})` : 'Evidência'"
+        :style="{ width: '70vw', maxWidth: '960px' }"
+        @hide="fecharPreview"
+    >
+        <div v-if="previewLoading" class="p-3 text-500">Carregando...</div>
+        <div v-else-if="previewUrl" class="preview-body">
+            <img
+                v-if="String(previewMime || '').startsWith('image/') || isImageEvidence(previewItem)"
+                :src="previewUrl"
+                class="preview-media"
+                alt="Pré-visualização"
+            />
+            <video
+                v-else-if="String(previewMime || '').startsWith('video/') || isVideoEvidence(previewItem)"
+                :src="previewUrl"
+                class="preview-media"
+                controls
+            />
+            <div v-else class="p-3 text-500">Formato não suportado para pré-visualização.</div>
+        </div>
+        <div v-else class="p-3 text-500">Sem conteúdo.</div>
+
+        <div class="flex justify-content-end gap-2 mt-3">
+            <Button
+                v-if="previewItem"
+                label="Baixar"
+                icon="pi pi-download"
+                class="p-button-outlined"
+                @click="baixarEvidencia(previewItem)"
+            />
+            <Button label="Fechar" icon="pi pi-times" class="p-button-text" @click="fecharPreview" />
+        </div>
+    </Dialog>
 </template>
 
 <style scoped>
 .break-all {
     word-break: break-all;
+}
+
+.evidence-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.evidence-item {
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface-card);
+}
+
+.evidence-thumb {
+    width: 100%;
+    height: 120px;
+    padding: 0;
+    border: none;
+    background: #111;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.evidence-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.evidence-placeholder {
+    color: #fff;
+    opacity: 0.9;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.evidence-placeholder-text {
+    font-size: 0.8rem;
+}
+
+.evidence-meta {
+    padding: 0.5rem 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.evidence-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.preview-media {
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    background: #000;
+    border-radius: 8px;
 }
 </style>
 
