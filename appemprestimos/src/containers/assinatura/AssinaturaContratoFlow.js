@@ -7,12 +7,15 @@ import {
   Platform,
   PermissionsAndroid,
   Linking,
+  Modal,
+  Pressable,
 } from 'react-native';
 import {Card, Text, Button, Checkbox} from 'react-native-paper';
 import OTPInputView from '@twotalltotems/react-native-otp-input';
 import {launchCamera} from 'react-native-image-picker';
 import Pdf from 'react-native-pdf';
 import ReactNativeBlobUtil from 'react-native-blob-util';
+import {Camera, useCameraDevice, useCameraPermission} from 'react-native-vision-camera';
 
 import api from '../../services/api';
 import {baseUrl} from '../../services/Config';
@@ -44,6 +47,13 @@ export default function AssinaturaContratoFlow({route}) {
   const [docVersoOk, setDocVersoOk] = useState(false);
   const [selfieOk, setSelfieOk] = useState(false);
   const [videoOk, setVideoOk] = useState(false);
+
+  const [selfieGuideVisible, setSelfieGuideVisible] = useState(false);
+  const [selfieCapturing, setSelfieCapturing] = useState(false);
+  const deviceFront = useCameraDevice('front');
+  const {hasPermission: hasCameraPermission, requestPermission: requestCameraPermission} =
+    useCameraPermission();
+  const [selfieCameraRef, setSelfieCameraRef] = useState(null);
 
   const pdfRemoteUrl = useMemo(() => {
     if (!contratoId) return null;
@@ -253,6 +263,31 @@ export default function AssinaturaContratoFlow({route}) {
     }
   };
 
+  const uploadEvidenciaFromUri = async (tipo, setOk, uri, name, mime, extra = {}) => {
+    setLoading(true);
+    try {
+      const up = await api.assinaturaUploadEvidencia(contratoId, {
+        tipo,
+        uri,
+        name,
+        type: mime,
+        captured_at: new Date().toISOString(),
+        device: deviceInfo(),
+        ...extra,
+      });
+
+      if (up?.error) {
+        Alert.alert('Erro', up.message || 'Falha ao enviar evidência.');
+      } else {
+        setOk(true);
+        Alert.alert('Ok', 'Evidência enviada.');
+        setStatus(up?.assinatura_status || status);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const gerarDesafio = async () => {
     setLoading(true);
     try {
@@ -310,6 +345,43 @@ export default function AssinaturaContratoFlow({route}) {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const iniciarSelfie = async () => {
+    try {
+      if (!hasCameraPermission) {
+        const ok = await requestCameraPermission();
+        if (!ok) {
+          Alert.alert('Permissão necessária', 'Autorize a câmera para tirar a selfie.');
+          return;
+        }
+      }
+
+      setSelfieCapturing(true);
+      const cam = selfieCameraRef;
+      if (!cam) {
+        Alert.alert('Câmera', 'Câmera não inicializada.');
+        return;
+      }
+
+      const photo = await cam.takePhoto({
+        flash: 'off',
+      });
+
+      const path = photo?.path;
+      if (!path) {
+        Alert.alert('Câmera', 'Não foi possível capturar a selfie.');
+        return;
+      }
+
+      setSelfieGuideVisible(false);
+      const uri = path.startsWith('file://') ? path : `file://${path}`;
+      await uploadEvidenciaFromUri('selfie', setSelfieOk, uri, 'selfie.jpg', 'image/jpeg');
+    } catch (e) {
+      Alert.alert('Erro', String(e?.message || e));
+    } finally {
+      setSelfieCapturing(false);
     }
   };
 
@@ -443,7 +515,7 @@ export default function AssinaturaContratoFlow({route}) {
             mode={selfieOk ? 'contained' : 'outlined'}
             loading={loading}
             disabled={loading}
-            onPress={() => uploadEvidencia('selfie', setSelfieOk)}>
+            onPress={() => setSelfieGuideVisible(true)}>
             Selfie
           </Button>
 
@@ -520,6 +592,54 @@ export default function AssinaturaContratoFlow({route}) {
       </Card>
 
       <View style={{height: 24}} />
+
+      <Modal
+        visible={selfieGuideVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelfieGuideVisible(false)}>
+        <View style={styles.selfieFull}>
+          {deviceFront ? (
+            <Camera
+              ref={ref => setSelfieCameraRef(ref)}
+              style={StyleSheet.absoluteFill}
+              device={deviceFront}
+              isActive={selfieGuideVisible}
+              photo={true}
+            />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.cameraFallback]}>
+              <Text style={{color: '#fff'}}>Câmera frontal indisponível.</Text>
+            </View>
+          )}
+
+          <View style={styles.selfieOverlay}>
+            <View style={styles.selfieTopBar}>
+              <Text style={styles.selfieTitle}>Prepare-se para tirar sua selfie</Text>
+              <Pressable onPress={() => setSelfieGuideVisible(false)} hitSlop={12}>
+                <Text style={styles.selfieClose}>×</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.selfieOvalWrap}>
+              <View style={styles.selfieOval} />
+            </View>
+
+            <Text style={styles.selfieHint}>
+              Encaixe o rosto na oval e toque em Iniciar Captura.
+            </Text>
+
+            <Button
+              mode="contained"
+              loading={selfieCapturing || loading}
+              disabled={selfieCapturing || loading || !deviceFront}
+              onPress={iniciarSelfie}
+              style={styles.selfieButton}>
+              Iniciar Captura
+            </Button>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -548,6 +668,64 @@ const styles = StyleSheet.create({
   },
   otpCellActive: {
     borderColor: colors.primary || '#fcbf49',
+  },
+
+  selfieFull: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  cameraFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
+  },
+  selfieOverlay: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  selfieTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 8,
+  },
+  selfieTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    flex: 1,
+    paddingRight: 12,
+  },
+  selfieClose: {
+    color: '#fff',
+    fontSize: 28,
+    lineHeight: 28,
+    fontWeight: '700',
+    opacity: 0.9,
+  },
+  selfieOvalWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selfieOval: {
+    width: 230,
+    height: 310,
+    borderRadius: 180,
+    borderWidth: 4,
+    borderColor: colors.primary || '#fcbf49',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  selfieHint: {
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 12,
+    opacity: 0.9,
+  },
+  selfieButton: {
+    marginBottom: 12,
   },
 });
 
