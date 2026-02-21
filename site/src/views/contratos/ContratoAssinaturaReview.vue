@@ -29,6 +29,11 @@ const previewItem = ref(null);
 const previewUrl = ref(null);
 const previewMime = ref(null);
 
+function podeRevisar() {
+    const s = detalhes.value?.assinatura_status;
+    return s !== 'signed' && s !== 'rejected';
+}
+
 function formatDateTime(v) {
     if (!v) return '—';
     try {
@@ -273,12 +278,14 @@ onMounted(() => {
                             />
                         </div>
 
-                        <h6 class="mb-2">Revisão (analista)</h6>
-                        <Textarea v-model="justificativa" rows="3" class="w-full mb-2" placeholder="Justificativa (opcional)" />
-                        <div class="flex gap-2">
-                            <Button label="Aprovar" icon="pi pi-check" class="p-button-success" :loading="revisando" @click="revisar('aprovar')" />
-                            <Button label="Reprovar" icon="pi pi-times" class="p-button-danger" :loading="revisando" @click="revisar('reprovar')" />
-                            <Button label="Solicitar reenvio" icon="pi pi-replay" class="p-button-warning" :loading="revisando" @click="revisar('solicitar_reenvio')" />
+                        <div v-if="podeRevisar()">
+                            <h6 class="mb-2">Revisão (analista)</h6>
+                            <Textarea v-model="justificativa" rows="3" class="w-full mb-2" placeholder="Justificativa (opcional)" />
+                            <div class="flex gap-2">
+                                <Button label="Aprovar" icon="pi pi-check" class="p-button-success" :loading="revisando" @click="revisar('aprovar')" />
+                                <Button label="Reprovar" icon="pi pi-times" class="p-button-danger" :loading="revisando" @click="revisar('reprovar')" />
+                                <Button label="Solicitar reenvio" icon="pi pi-replay" class="p-button-warning" :loading="revisando" @click="revisar('solicitar_reenvio')" />
+                            </div>
                         </div>
                     </div>
 
