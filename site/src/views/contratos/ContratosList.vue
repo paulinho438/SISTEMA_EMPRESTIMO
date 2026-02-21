@@ -140,6 +140,10 @@ function editContrato(id) {
     router.push({ name: 'emprestimosSimulacao', query: { contratoId: id } });
 }
 
+function verAssinatura(id) {
+    router.push({ name: 'contratoAssinaturaReview', params: { id } });
+}
+
 onMounted(() => {
     getContratos();
 });
@@ -254,6 +258,13 @@ onMounted(() => {
                     </Column>
                     <Column header="" style="min-width: 6rem">
                         <template #body="{ data }">
+                            <Button
+                                v-if="data.assinatura_status"
+                                icon="pi pi-id-card"
+                                class="p-button-text p-button-sm p-button-help"
+                                v-tooltip.top="'Ver assinatura'"
+                                @click="verAssinatura(data.id)"
+                            />
                             <Button
                                 v-if="data.situacao === 'Em preenchimento'"
                                 icon="pi pi-check"
