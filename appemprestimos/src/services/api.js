@@ -1,11 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import axios from 'axios';
-
-
 import { baseUrl, MapsApi } from './Config';
 
-import {getAuthToken, removeAuthToken, getAuthCompany} from '../utils/asyncStorage';
+import {getAuthToken, removeAuthToken, getAuthCompany, clearAuthSession} from '../utils/asyncStorage';
+import {resetToLogin} from '../navigation/rootNavigation';
+
+let isHandlingAuthExpired = false;
+
+const handleAuthExpired = async () => {
+    if (isHandlingAuthExpired) return;
+    isHandlingAuthExpired = true;
+    try {
+        await clearAuthSession();
+        resetToLogin();
+    } finally {
+        setTimeout(() => {
+            isHandlingAuthExpired = false;
+        }, 1000);
+    }
+};
 
 const request = async (method, endpoint, params, token = null) => {
     method = method.toLowerCase();
@@ -49,6 +62,9 @@ const request = async (method, endpoint, params, token = null) => {
     
     // Verificar se houve erro HTTP (status 4xx ou 5xx)
     if (!req.ok) {
+        if ((req.status === 401 || req.status === 403) && token) {
+            await handleAuthExpired();
+        }
         // Retornar objeto com erro para tratamento no componente
         return {
             error: json.error || json.message || 'Erro na requisição',
@@ -412,24 +428,9 @@ export default {
         return json;
     },
     hasOccurrence2Hours: async (ocorrencia_tipo) => {
-        const token = await getAuthToken();
-
-        try {
-      
-        const response = await axios.get(`${baseUrl}/ocorrencia/has2hours`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            },
-            params: {
-                ocorrencia_tipo: ocorrencia_tipo
-            }
-            });
-      
-          return response.data;
-        } catch (error) {
-          console.error('Erro na requisição:', error);
-          throw error; // Se desejar tratar o erro posteriormente no chamador da função
-        }
+        let token = await getAuthToken();
+        let json = await request('get', '/ocorrencia/has2hours', {ocorrencia_tipo}, token);
+        return json;
     },
     addCadastroLocalFavorito: async (location_tipo, location_desc, location_referencia, location_geolocation) => {
         let token = await getAuthToken();
@@ -490,6 +491,9 @@ export default {
             },
             body: formData
         });
+        if (req.status === 401 || req.status === 403) {
+            await handleAuthExpired();
+        }
         let json = await req.json();
         return json;
     },
@@ -574,6 +578,9 @@ export default {
             },
             body: formData
         });
+        if (req.status === 401 || req.status === 403) {
+            await handleAuthExpired();
+        }
         let json = await req.json();
         return json;
     },

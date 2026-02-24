@@ -5,7 +5,8 @@ buildscript {
         compileSdkVersion = 34
         targetSdkVersion = 35
         ndkVersion = "25.2.9519653"
-        kotlinVersion = "1.8.0"
+        // VisionCamera + libs recentes exigem Kotlin mais novo que 1.8.0
+        kotlinVersion = "1.9.24"
         appCompatVersion = "1.4.2"
         googlePlayServicesVersion = "21.0.1"
         googlePlayServicesLocationVersion = "21.0.1"
@@ -17,7 +18,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
     }
 }
 
@@ -26,6 +27,15 @@ allprojects {   // <-- NOTE:  allprojects container -- If you don't see this, cr
        maven { url("${project(':react-native-background-geolocation').projectDir}/libs") }
        maven { url 'https://developer.huawei.com/repo/' }
        maven { url("${project(':react-native-background-fetch').projectDir}/libs") }
+    }
+
+    // Evita kotlinx-coroutines 1.9.x (Kotlin metadata 2.0) em projetos com RN 0.73
+    configurations.all {
+        resolutionStrategy {
+            force "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
+            force "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1"
+            force "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+        }
     }
 }
 
