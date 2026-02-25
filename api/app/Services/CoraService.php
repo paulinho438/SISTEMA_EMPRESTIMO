@@ -80,7 +80,10 @@ class CoraService
         }
 
         // Configurar cliente HTTP com autenticação mTLS
-        $httpClient = Http::asForm()->withOptions([
+        // OBS: Algumas contas exigem o Client ID também via header (além do form param).
+        $httpClient = Http::asForm()->withHeaders([
+            'X-Client-Id' => $this->clientId,
+        ])->withOptions([
             'cert' => $this->certificatePath,
             'ssl_key' => $this->privateKeyPath,
             'verify' => env('CORA_VERIFY_SSL', true),
@@ -322,6 +325,7 @@ class CoraService
             // Preparar headers
             $headers = [
                 'Authorization' => 'Bearer ' . $accessToken,
+                'X-Client-Id' => $this->clientId,
                 'Idempotency-Key' => $idempotencyKey,
                 'accept' => 'application/json',
                 'content-type' => 'application/json'
