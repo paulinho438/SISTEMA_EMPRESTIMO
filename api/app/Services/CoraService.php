@@ -177,9 +177,17 @@ class CoraService
      */
     protected function getInvoicesBearerTokenOverride(): ?string
     {
-        $token = env('CORA_INVOICES_BEARER_TOKEN');
+        return $this->normalizeBearerToken(env('CORA_INVOICES_BEARER_TOKEN'));
+    }
+
+    protected function normalizeBearerToken(?string $token): ?string
+    {
         if (!$token) return null;
-        $token = trim((string)$token);
+        $token = trim((string) $token);
+        if ($token === '') return null;
+        if (stripos($token, 'bearer ') === 0) {
+            $token = trim(substr($token, 7));
+        }
         return $token !== '' ? $token : null;
     }
 
@@ -322,7 +330,7 @@ class CoraService
             }
 
             // Token override (ex.: token gerado externamente para usar direto no /v2/invoices)
-            $overrideToken = $bearerTokenOverride ?: $this->getInvoicesBearerTokenOverride();
+            $overrideToken = $this->normalizeBearerToken($bearerTokenOverride) ?: $this->getInvoicesBearerTokenOverride();
 
             // Para /v2/invoices no stage, usando Bearer token fornecido (cURL do usuário).
             // Se não tiver override, segue a lógica atual de ambiente.

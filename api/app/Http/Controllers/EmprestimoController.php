@@ -451,13 +451,16 @@ class EmprestimoController extends Controller
             $coraService = new CoraService($banco);
             $code = 'TESTE_' . time() . '_' . rand(1000, 9999);
             $dueDate = $dados['due_date'] ?? date('Y-m-d', strtotime('+30 days'));
+            $usingBearerOverride = !empty($dados['bearer_token']);
+            $requestUrl = $usingBearerOverride
+                ? 'https://matls-clients.api.stage.cora.com.br/v2/invoices'
+                : ($coraService->getBaseUrl() . '/v2/invoices');
 
             $response = $coraService->criarCobranca(
                 $dados['valor'],
                 $cliente,
                 $code,
                 $dueDate,
-                null,
                 null,
                 null,
                 !empty($dados['bearer_token']) ? (string) $dados['bearer_token'] : null
@@ -468,7 +471,8 @@ class EmprestimoController extends Controller
                     'success' => true,
                     'message' => 'Cobrança Cora criada com sucesso',
                     'data' => $response->json(),
-                    'code' => $code
+                    'code' => $code,
+                    'request_url' => $requestUrl
                 ], Response::HTTP_CREATED);
             } else {
                 $errorDetails = null;
@@ -487,7 +491,7 @@ class EmprestimoController extends Controller
                     'status' => $response->status(),
                     'response_body' => $errorBody,
                     'response_headers' => $response->headers(),
-                    'request_url' => $coraService->getBaseUrl() . '/v2/invoices/',
+                    'request_url' => $requestUrl . '/',
                     'headers_sent' => [
                         'Idempotency-Key' => 'present',
                         'X-Client-Id' => $banco->client_id ?? 'missing',
