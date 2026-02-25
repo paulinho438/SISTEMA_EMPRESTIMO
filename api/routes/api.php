@@ -120,6 +120,7 @@ Route::middleware(['throttle:test'])->group(function () {
 
     // Rotas de teste Cora (stage)
     Route::post('/cora/teste/gerar-token', [CoraTestController::class, 'gerarToken']);
+    Route::post('/cora/teste/gerar-token-auto', [CoraTestController::class, 'gerarTokenAuto']);
     Route::post('/cora/teste/transferencia', [CoraTestController::class, 'testarTransferencia']);
 });
 

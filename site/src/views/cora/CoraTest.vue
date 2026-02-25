@@ -21,14 +21,25 @@
 						/>
 					</div>
 					<div class="field col-12 md:col-6 flex align-items-end">
-						<Button
-							label="Gerar token (Stage)"
-							icon="pi pi-key"
-							class="w-full"
-							@click="gerarTokenStage"
-							:loading="tokenLoading"
-							:disabled="!tokenBancoId"
-						/>
+						<div class="flex gap-2 w-full">
+							<Button
+								label="Gerar token (Stage)"
+								icon="pi pi-key"
+								class="w-full"
+								@click="gerarTokenStage"
+								:loading="tokenLoading"
+								:disabled="!tokenBancoId"
+							/>
+							<Button
+								label="Auto"
+								icon="pi pi-bolt"
+								severity="secondary"
+								class="p-button-outlined"
+								@click="gerarTokenAuto"
+								:loading="tokenLoadingAuto"
+								:disabled="!tokenBancoId"
+							/>
+						</div>
 					</div>
 					<div class="field col-12">
 						<label for="shared_bearer_token">Bearer token (JWT)</label>
@@ -240,6 +251,7 @@ export default {
 			clientes: ref([]),
 			tokenBancoId: ref(null),
 			tokenLoading: ref(false),
+			tokenLoadingAuto: ref(false),
 			tokenInfo: ref(null),
 			bearerToken: ref(null),
 			loading: ref(false),
@@ -331,6 +343,30 @@ export default {
 				this.tokenInfo = data?.message || 'Erro ao gerar token.';
 			} finally {
 				this.tokenLoading = false;
+			}
+		},
+		async gerarTokenAuto() {
+			this.tokenLoadingAuto = true;
+			this.tokenInfo = null;
+			try {
+				const res = await axios.post(`${apiPath}/cora/teste/gerar-token-auto`, {
+					banco_id: this.tokenBancoId
+				});
+
+				if (res.data?.access_token) {
+					this.bearerToken = res.data.access_token;
+					this.tokenInfo = `Token gerado com sucesso (${res.data.environment}).`;
+					this.toast.add({ severity: ToastSeverity.SUCCESS, detail: `Token gerado (${res.data.environment})`, life: 2500 });
+				} else {
+					this.toast.add({ severity: ToastSeverity.WARN, detail: 'Não retornou access_token', life: 3000 });
+					this.tokenInfo = 'Falha: não retornou access_token.';
+				}
+			} catch (e) {
+				const data = e.response?.data;
+				this.toast.add({ severity: ToastSeverity.ERROR, detail: data?.message || 'Erro ao gerar token', life: 3500 });
+				this.tokenInfo = data?.message || 'Erro ao gerar token.';
+			} finally {
+				this.tokenLoadingAuto = false;
 			}
 		},
 		async carregarClientes() {
