@@ -171,6 +171,19 @@ class CoraService
     }
 
     /**
+     * Token override para o endpoint /v2/invoices.
+     * Útil quando o ambiente não permite obter token via /token (invalid_client),
+     * mas você já possui um Bearer token válido (ex.: gerado externamente).
+     */
+    protected function getInvoicesBearerTokenOverride(): ?string
+    {
+        $token = env('CORA_INVOICES_BEARER_TOKEN');
+        if (!$token) return null;
+        $token = trim((string)$token);
+        return $token !== '' ? $token : null;
+    }
+
+    /**
      * Cria uma cobrança (invoice) na API Cora
      *
      * @param float $valor Valor da cobrança em centavos
@@ -187,7 +200,8 @@ class CoraService
         string $code,
         ?string $dueDate = null,
         ?array $services = null,
-        $parcela = null
+        $parcela = null,
+        ?string $bearerTokenOverride = null
     ) {
         try {
             // Converter valor para centavos (a API Cora espera em centavos)
@@ -307,29 +321,40 @@ class CoraService
                 throw new \Exception('Certificados Cora não são legíveis. Verifique as permissões dos arquivos.');
             }
 
-            // Para Integração Direta, TODAS as requisições devem usar matls-clients no endpoint
-            // Stage: https://matls-clients.api.stage.cora.com.br/v2/invoices
-            // Produção: https://matls-clients.api.cora.com.br/v2/invoices
-            $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
-            
-            if ($isStage) {
+            // Token override (ex.: token gerado externamente para usar direto no /v2/invoices)
+            $overrideToken = $bearerTokenOverride ?: $this->getInvoicesBearerTokenOverride();
+
+            // Para /v2/invoices no stage, usando Bearer token fornecido (cURL do usuário).
+            // Se não tiver override, segue a lógica atual de ambiente.
+            if ($overrideToken) {
                 $url = 'https://matls-clients.api.stage.cora.com.br/v2/invoices';
             } else {
-                $url = 'https://matls-clients.api.cora.com.br/v2/invoices';
+                // Para Integração Direta, TODAS as requisições devem usar matls-clients no endpoint
+                // Stage: https://matls-clients.api.stage.cora.com.br/v2/invoices
+                // Produção: https://matls-clients.api.cora.com.br/v2/invoices
+                $isStage = strpos($this->baseUrl, 'stage') !== false || strpos($this->baseUrl, 'matls-clients.api.stage') !== false;
+                if ($isStage) {
+                    $url = 'https://matls-clients.api.stage.cora.com.br/v2/invoices';
+                } else {
+                    $url = 'https://matls-clients.api.cora.com.br/v2/invoices';
+                }
             }
 
-            // Obter token de acesso (usando Client Credentials)
+            // Obter token de acesso (usando Client Credentials) ou usar override
             // Nota: getAccessToken() também valida os certificados, mas já validamos acima para dar erro mais claro
-            $accessToken = $this->getAccessToken();
+            $accessToken = $overrideToken ?: $this->getAccessToken();
 
             // Preparar headers
             $headers = [
                 'Authorization' => 'Bearer ' . $accessToken,
-                'X-Client-Id' => $this->clientId,
                 'Idempotency-Key' => $idempotencyKey,
                 'accept' => 'application/json',
                 'content-type' => 'application/json'
             ];
+            // Se NÃO estiver usando override, mantém o header X-Client-Id (algumas contas exigem).
+            if (!$overrideToken && $this->clientId) {
+                $headers['X-Client-Id'] = $this->clientId;
+            }
 
             // Configurar cliente HTTP com autenticação mTLS (obrigatório para integração direta)
             $httpClient = Http::withHeaders($headers)->withOptions([
@@ -369,7 +394,13 @@ class CoraService
                     'private_key_path' => $this->privateKeyPath,
                     'client_id' => $this->clientId,
                     'base_url' => $this->baseUrl,
-                    'request_headers' => $headers
+                    'request_headers' => [
+                        'Authorization' => 'Bearer [redacted]',
+                        'Idempotency-Key' => $idempotencyKey ? 'present' : 'missing',
+                        'accept' => 'application/json',
+                        'content-type' => 'application/json',
+                        'X-Client-Id' => $headers['X-Client-Id'] ?? null
+                    ]
                 ]);
             } else {
                 // Se a cobrança foi criada com sucesso, enviar WhatsApp

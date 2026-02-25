@@ -62,6 +62,18 @@
 					</div>
 
 					<div class="field col-12">
+						<label for="bearer_token">Bearer token (opcional)</label>
+						<Textarea
+							v-model="form.bearer_token"
+							autoResize
+							rows="3"
+							class="w-full"
+							placeholder="Cole aqui o token Bearer (JWT). Se informado, o backend usa direto no /v2/invoices (stage) e não chama /token."
+						/>
+						<small class="text-gray-500">Use apenas para teste. O token expira.</small>
+					</div>
+
+					<div class="field col-12">
 						<Button
 							label="Testar Cobrança Cora"
 							icon="pi pi-credit-card"
@@ -112,7 +124,8 @@ export default {
 				banco_id: null,
 				cliente_id: null,
 				valor: null,
-				due_date: null
+				due_date: null,
+				bearer_token: null
 			})
 		};
 	},

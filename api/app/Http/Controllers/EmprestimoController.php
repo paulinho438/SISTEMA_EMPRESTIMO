@@ -434,7 +434,9 @@ class EmprestimoController extends Controller
             }
 
             // Verificar se o banco tem as configurações necessárias
-            if (!$banco->client_id || !$banco->certificate_path || !$banco->private_key_path) {
+            // Se houver CORA_INVOICES_BEARER_TOKEN no .env, não exigimos client_id aqui (somente para /v2/invoices).
+            $hasInvoicesBearerOverride = (bool) env('CORA_INVOICES_BEARER_TOKEN') || !empty($dados['bearer_token']);
+            if ((!$hasInvoicesBearerOverride && !$banco->client_id) || !$banco->certificate_path || !$banco->private_key_path) {
                 return response()->json([
                     'error' => 'Banco Cora não está configurado corretamente',
                     'missing' => [
@@ -454,7 +456,11 @@ class EmprestimoController extends Controller
                 $dados['valor'],
                 $cliente,
                 $code,
-                $dueDate
+                $dueDate,
+                null,
+                null,
+                null,
+                !empty($dados['bearer_token']) ? (string) $dados['bearer_token'] : null
             );
 
             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
