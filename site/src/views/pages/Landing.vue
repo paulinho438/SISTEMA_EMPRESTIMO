@@ -267,7 +267,7 @@ export default {
 </script>
 
 <template>
-    <FullScreenLoading :isLoading="loading" />
+    <FullScreenLoading :isLoading="loading || loadingPix" />
     <div class="container">
         <header>
             <h1>Histórico de Parcelas</h1>
@@ -289,8 +289,7 @@ export default {
                 <h2>Valor Pendente do Dia {{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix, efetue o pagamento para evitar juros adicionais.</p>
                 <button class="btn-secondary" :disabled="loadingPix" @click="copiarChavePix('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id, this.products?.data?.emprestimo?.pagamentosaldopendente?.chave_pix)">
-                    <span v-if="(isXGate || isApix) && isEsteBotaoLoading('saldoPendente', this.products?.data?.emprestimo?.pagamentosaldopendente?.id)">Gerando...</span>
-                    <template v-else>Copiar Chave Pix - Valor Pendente <br />{{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</template>
+                    Copiar Chave Pix - Valor Pendente <br />{{ valorPendenteHojeCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </button>
             </section>
 
@@ -299,8 +298,7 @@ export default {
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" :disabled="loadingPix" @click="copiarChavePix('quitacao', this.products?.data?.emprestimo?.quitacao?.id, this.products?.data?.emprestimo?.quitacao?.chave_pix)">
-                    <span v-if="(isXGate || isApix) && isEsteBotaoLoading('quitacao', this.products?.data?.emprestimo?.quitacao?.id)">Gerando...</span>
-                    <template v-else>Copiar Chave Pix - Quitar Empréstimo <br />{{ this.products?.data?.emprestimo?.quitacao?.saldo }}</template>
+                    Copiar Chave Pix - Quitar Empréstimo <br />{{ this.products?.data?.emprestimo?.quitacao?.saldo }}
                 </button>
             </section>
 
@@ -373,7 +371,6 @@ export default {
                         <Button
                             v-if="slotProps.data.status != 'Pago'"
                             :disabled="loadingPix"
-                            :loading="(isXGate || isApix) && isEsteBotaoLoading('parcela', slotProps.data.id)"
                             label="Copiar Chave Pix"
                             @click="copiarChavePix('parcela', slotProps.data.id, slotProps.data.chave_pix || this.products?.data?.emprestimo?.banco?.chavepix)"
                             class="p-button-raised p-button-danger mr-2 mb-2"
