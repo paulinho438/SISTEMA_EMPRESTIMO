@@ -3,10 +3,12 @@ import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import BancoService from '@/service/BancoService';
+import ClientService from '@/service/ClientService';
 import UtilService from '@/service/UtilService';
 
 
 import { ToastSeverity, PrimeIcons } from 'primevue/api';
+import axios from 'axios';
 
 import LoadingComponent from '../../components/Loading.vue';
 import { useToast } from 'primevue/usetoast';
@@ -18,6 +20,7 @@ export default {
 			route: useRoute(),
 			router: useRouter(),
 			bancoService: new BancoService(),
+			clientService: new ClientService(),
 			icons: PrimeIcons,
 			toast: useToast()
 		};
@@ -28,6 +31,15 @@ export default {
 			oldCicom: ref(null),
 			errors: ref([]),
 			loading: ref(false),
+			clientes: ref([]),
+			coraTestLoading: ref(false),
+			coraTestErrors: ref({}),
+			coraTestResult: ref(null),
+			coraTestForm: ref({
+				cliente_id: null,
+				valor: null,
+				due_date: null
+			}),
 			bankTypes: [
 				{ label: 'Normal', value: 'normal' },
 				{ label: 'Bcodex', value: 'bcodex' },
@@ -77,6 +89,77 @@ export default {
 		uploadCertificado(){
 			this.banco.certificado = this.$refs.certificado.files[0];
 
+		},
+		async carregarClientesParaTesteCora() {
+			this.loading = true;
+			try {
+				const response = await this.clientService.getAll();
+				this.clientes = response.data?.data || [];
+			} catch (e) {
+				this.toast.add({
+					severity: ToastSeverity.ERROR,
+					detail: 'Erro ao carregar clientes: ' + (e?.message || 'falha'),
+					life: 3000
+				});
+			} finally {
+				this.loading = false;
+			}
+		},
+		formatDateYMD(d) {
+			if (!d) return null;
+			try {
+				return d.toISOString ? d.toISOString().split('T')[0] : d;
+			} catch (_) {
+				return d;
+			}
+		},
+		async testarCobrancaCora() {
+			this.coraTestLoading = true;
+			this.coraTestErrors = {};
+			this.coraTestResult = null;
+
+			try {
+				if (!this.banco?.id) {
+					this.toast.add({
+						severity: ToastSeverity.WARN,
+						detail: 'Salve o banco primeiro para poder testar.',
+						life: 3000
+					});
+					return;
+				}
+
+				const payload = {
+					banco_id: this.banco.id,
+					cliente_id: this.coraTestForm?.cliente_id,
+					valor: this.coraTestForm?.valor,
+					due_date: this.formatDateYMD(this.coraTestForm?.due_date)
+				};
+
+				// Validação mínima no frontend (o backend valida novamente)
+				if (!payload.cliente_id) this.coraTestErrors.cliente_id = ['Selecione um cliente'];
+				if (!payload.valor || payload.valor <= 0) this.coraTestErrors.valor = ['Informe um valor maior que 0'];
+				if (Object.keys(this.coraTestErrors).length) return;
+
+				const response = await axios.post(`/cobranca/teste-cora`, payload);
+				this.coraTestResult = response.data;
+
+				this.toast.add({
+					severity: response.data?.success ? ToastSeverity.SUCCESS : ToastSeverity.WARN,
+					detail: response.data?.message || (response.data?.success ? 'Teste executado' : 'Teste retornou aviso'),
+					life: 3000
+				});
+			} catch (e) {
+				const data = e?.response?.data;
+				this.coraTestResult = data || { error: e?.message || 'Erro ao testar' };
+				if (data?.details) this.coraTestErrors = data.details;
+				this.toast.add({
+					severity: ToastSeverity.ERROR,
+					detail: data?.error || data?.message || 'Erro ao testar Cora',
+					life: 4000
+				});
+			} finally {
+				this.coraTestLoading = false;
+			}
 		},
 		save() {
 			this.changeLoading();
@@ -274,6 +357,85 @@ export default {
 					<InputText :modelValue="banco?.private_key_path" v-model="banco.private_key_path" id="private_key_path" type="text" class="w-full p-inputtext-sm" placeholder="Ex: C:\projetos\...\private-key.key" :class="{ 'p-invalid': errors?.private_key_path }" />
 					<small v-if="errors?.private_key_path" class="text-red-500 pl-2">{{ errors?.private_key_path[0] }}</small>
 					<small class="text-gray-500 pl-2">Caminho absoluto do arquivo private-key.key</small>
+				</div>
+			</div>
+
+			<!-- Teste Cora (endpoint /cobranca/teste-cora) -->
+			<div v-if="banco?.bank_type === 'cora'" class="formgrid grid mt-4">
+				<div class="field col-12">
+					<Divider />
+					<h5 class="m-0">Teste de integração Cora</h5>
+					<small class="text-gray-500">Executa o endpoint <b>POST /cobranca/teste-cora</b> para criar uma cobrança de teste na Cora.</small>
+				</div>
+
+				<div class="field col-12 md:col-6">
+					<label>Cliente *</label>
+					<Dropdown
+						v-model="coraTestForm.cliente_id"
+						:options="clientes"
+						optionLabel="nome_completo"
+						optionValue="id"
+						placeholder="Selecione um cliente"
+						class="w-full"
+						:disabled="!banco?.id"
+						:class="{ 'p-invalid': coraTestErrors?.cliente_id }"
+					/>
+					<small v-if="coraTestErrors?.cliente_id" class="text-red-500">{{ coraTestErrors.cliente_id[0] }}</small>
+					<small v-if="!clientes?.length" class="text-gray-500">Clique em “Carregar clientes”.</small>
+				</div>
+
+				<div class="field col-12 md:col-6">
+					<label>Valor (R$) *</label>
+					<InputNumber
+						v-model="coraTestForm.valor"
+						mode="decimal"
+						:min="0.01"
+						:maxFractionDigits="2"
+						placeholder="0,00"
+						class="w-full"
+						:disabled="!banco?.id"
+						:class="{ 'p-invalid': coraTestErrors?.valor }"
+					/>
+					<small v-if="coraTestErrors?.valor" class="text-red-500">{{ coraTestErrors.valor[0] }}</small>
+				</div>
+
+				<div class="field col-12 md:col-6">
+					<label>Data de vencimento (opcional)</label>
+					<Calendar
+						v-model="coraTestForm.due_date"
+						dateFormat="yy-mm-dd"
+						:minDate="new Date()"
+						placeholder="Selecione a data"
+						class="w-full"
+						:disabled="!banco?.id"
+					/>
+				</div>
+
+				<div class="field col-12 md:col-6 flex align-items-end gap-2">
+					<Button
+						label="Carregar clientes"
+						icon="pi pi-refresh"
+						class="p-button-outlined w-full"
+						@click="carregarClientesParaTesteCora"
+						:disabled="!banco?.id"
+					/>
+				</div>
+
+				<div class="field col-12">
+					<Button
+						label="Testar cobrança Cora"
+						icon="pi pi-credit-card"
+						class="w-full"
+						@click="testarCobrancaCora"
+						:loading="coraTestLoading"
+						:disabled="!banco?.id"
+					/>
+					<small v-if="!banco?.id" class="text-gray-500">Para testar, primeiro salve o banco (precisa ter ID).</small>
+				</div>
+
+				<div v-if="coraTestResult" class="field col-12">
+					<h6 class="mt-2 mb-2">Resposta:</h6>
+					<pre class="p-3 border-round surface-ground" style="max-height: 420px; overflow: auto;">{{ JSON.stringify(coraTestResult, null, 2) }}</pre>
 				</div>
 			</div>
 
