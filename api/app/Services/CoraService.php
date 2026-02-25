@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use App\Models\Banco;
 
 class CoraService
@@ -249,8 +250,8 @@ class CoraService
                 $dueDate = date('Y-m-d', strtotime('+30 days'));
             }
 
-            // Gerar Idempotency-Key único
-            $idempotencyKey = bin2hex(random_bytes(16));
+            // Gerar Idempotency-Key único (API Cora exige UUID válido)
+            $idempotencyKey = (string) Str::uuid();
 
             // Montar payload
             $data = [
