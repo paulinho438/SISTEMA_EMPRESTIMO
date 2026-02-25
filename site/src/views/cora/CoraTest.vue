@@ -9,6 +9,27 @@
 				
 				<!-- Token compartilhado (Cobrança + Transferência) -->
 				<div class="formgrid grid mt-3">
+					<div class="field col-12 md:col-6">
+						<label for="cora_banco_token">Banco Cora (para gerar token)</label>
+						<Dropdown
+							v-model="tokenBancoId"
+							:options="bancosCora"
+							optionLabel="name"
+							optionValue="id"
+							placeholder="Selecione um banco Cora"
+							class="w-full"
+						/>
+					</div>
+					<div class="field col-12 md:col-6 flex align-items-end">
+						<Button
+							label="Gerar token (Stage)"
+							icon="pi pi-key"
+							class="w-full"
+							@click="gerarTokenStage"
+							:loading="tokenLoading"
+							:disabled="!tokenBancoId"
+						/>
+					</div>
 					<div class="field col-12">
 						<label for="shared_bearer_token">Bearer token (JWT)</label>
 						<Textarea
@@ -21,6 +42,7 @@
 						/>
 						<small class="text-gray-500">Usado em cobrança e transferência. Necessário para Transferência.</small>
 						<small v-if="transferErrors?.bearer_token" class="text-red-500 block mt-1">{{ transferErrors.bearer_token[0] }}</small>
+						<small v-if="tokenInfo" class="text-gray-500 block mt-1">{{ tokenInfo }}</small>
 					</div>
 				</div>
 
@@ -216,6 +238,9 @@ export default {
 		return {
 			bancosCora: ref([]),
 			clientes: ref([]),
+			tokenBancoId: ref(null),
+			tokenLoading: ref(false),
+			tokenInfo: ref(null),
 			bearerToken: ref(null),
 			loading: ref(false),
 			errors: ref({}),
@@ -270,12 +295,42 @@ export default {
 			try {
 				const response = await this.bancoService.getAll();
 				this.bancosCora = (response.data.data || []).filter((b) => (b.bank_type || 'normal') === 'cora');
+				// setar um padrão para gerar token
+				if (!this.tokenBancoId && this.bancosCora.length) {
+					this.tokenBancoId = this.bancosCora[0].id;
+				}
 			} catch (error) {
 				this.toast.add({
 					severity: ToastSeverity.ERROR,
 					detail: 'Erro ao carregar bancos: ' + (error.message || 'falha'),
 					life: 3000
 				});
+			}
+		},
+		async gerarTokenStage() {
+			this.tokenLoading = true;
+			this.tokenInfo = null;
+			try {
+				const res = await axios.post(`${apiPath}/cora/teste/gerar-token`, {
+					banco_id: this.tokenBancoId,
+					environment: 'stage'
+				});
+
+				const accessToken = res.data?.response?.data?.access_token;
+				if (accessToken) {
+					this.bearerToken = accessToken;
+					this.tokenInfo = 'Token gerado com sucesso (stage).';
+					this.toast.add({ severity: ToastSeverity.SUCCESS, detail: 'Token gerado', life: 2500 });
+				} else {
+					this.toast.add({ severity: ToastSeverity.WARN, detail: 'Não retornou access_token', life: 3000 });
+					this.tokenInfo = 'Falha: não retornou access_token.';
+				}
+			} catch (e) {
+				const data = e.response?.data;
+				this.toast.add({ severity: ToastSeverity.ERROR, detail: data?.message || 'Erro ao gerar token', life: 3500 });
+				this.tokenInfo = data?.message || 'Erro ao gerar token.';
+			} finally {
+				this.tokenLoading = false;
 			}
 		},
 		async carregarClientes() {

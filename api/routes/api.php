@@ -119,6 +119,7 @@ Route::middleware(['throttle:test'])->group(function () {
     Route::post('/velana/teste/buscar-transacao', [VelanaTestController::class, 'buscarTransacao']);
 
     // Rotas de teste Cora (stage)
+    Route::post('/cora/teste/gerar-token', [CoraTestController::class, 'gerarToken']);
     Route::post('/cora/teste/transferencia', [CoraTestController::class, 'testarTransferencia']);
 });
 
