@@ -216,6 +216,12 @@ const model = ref([
                         permission: 'view_dashboard'
                     },
                     {
+                        label: 'Teste Cora',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/cora/teste',
+                        permission: 'view_dashboard'
+                    },
+                    {
                         label: 'Fila WAPI',
                         icon: 'pi pi-fw pi-list',
                         to: '/wapi/fila',
