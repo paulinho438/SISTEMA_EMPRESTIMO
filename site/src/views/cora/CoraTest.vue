@@ -65,7 +65,7 @@
 					<div class="field col-12">
 						<label for="bearer_token">Bearer token (opcional)</label>
 						<Textarea
-							v-model="form.bearer_token"
+							v-model="bearerToken"
 							autoResize
 							rows="3"
 							class="w-full"
@@ -103,7 +103,7 @@
 							<div class="field col-12">
 								<label for="transfer_bearer_token">Bearer token *</label>
 								<Textarea
-									v-model="transferForm.bearer_token"
+									v-model="bearerToken"
 									autoResize
 									rows="3"
 									class="w-full"
@@ -223,15 +223,13 @@ export default {
 		return {
 			bancosCora: ref([]),
 			clientes: ref([]),
+			bearerToken: ref(null),
 			loading: ref(false),
 			errors: ref({}),
 			resultado: ref(null),
 			transferLoading: ref(false),
 			transferErrors: ref({}),
 			transferResult: ref(null),
-			transferForm: ref({
-				bearer_token: null
-			}),
 			transferScheduled: ref(null),
 			transferPayload: ref({
 				destination: {
@@ -305,7 +303,7 @@ export default {
 			this.resultado = null;
 
 			try {
-				const payload = { ...this.form };
+				const payload = { ...this.form, bearer_token: this.bearerToken };
 				if (payload.due_date) {
 					payload.due_date = payload.due_date.toISOString ? payload.due_date.toISOString().split('T')[0] : payload.due_date;
 				}
@@ -347,7 +345,7 @@ export default {
 			this.transferResult = null;
 
 			try {
-				if (!this.transferForm?.bearer_token) {
+				if (!this.bearerToken) {
 					this.transferErrors = { bearer_token: ['Informe o bearer token'] };
 					return;
 				}
@@ -356,7 +354,7 @@ export default {
 				payload.scheduled = this.formatDateYMD(this.transferScheduled);
 
 				const res = await axios.post(`${apiPath}/cora/teste/transferencia`, {
-					bearer_token: this.transferForm.bearer_token,
+					bearer_token: this.bearerToken,
 					payload
 				});
 
