@@ -6,6 +6,24 @@
 				<p class="text-color-secondary">
 					Teste o endpoint de criação de cobrança Cora via <b>POST /cobranca/teste-cora</b>.
 				</p>
+				
+				<!-- Token compartilhado (Cobrança + Transferência) -->
+				<div class="formgrid grid mt-3">
+					<div class="field col-12">
+						<label for="shared_bearer_token">Bearer token (JWT)</label>
+						<Textarea
+							v-model="bearerToken"
+							autoResize
+							rows="3"
+							class="w-full"
+							placeholder="Cole aqui o token Bearer (JWT)."
+							:class="{ 'p-invalid': transferErrors?.bearer_token }"
+						/>
+						<small class="text-gray-500">Usado em cobrança e transferência. Necessário para Transferência.</small>
+						<small v-if="transferErrors?.bearer_token" class="text-red-500 block mt-1">{{ transferErrors.bearer_token[0] }}</small>
+					</div>
+				</div>
+
 				<TabView>
 					<TabPanel header="Cobrança (Invoice)">
 						<div class="formgrid grid mt-4">
@@ -63,18 +81,6 @@
 					</div>
 
 					<div class="field col-12">
-						<label for="bearer_token">Bearer token (opcional)</label>
-						<Textarea
-							v-model="bearerToken"
-							autoResize
-							rows="3"
-							class="w-full"
-							placeholder="Cole aqui o token Bearer (JWT). Se informado, o backend usa direto no /v2/invoices (stage) e não chama /token."
-						/>
-						<small class="text-gray-500">Use apenas para teste. O token expira.</small>
-					</div>
-
-					<div class="field col-12">
 						<Button
 							label="Testar Cobrança Cora"
 							icon="pi pi-credit-card"
@@ -98,19 +104,6 @@
 								<p class="text-color-secondary m-0">
 									Chama <b>POST /cora/teste/transferencia</b> (API → Cora Stage `transfers/initiate`).
 								</p>
-							</div>
-
-							<div class="field col-12">
-								<label for="transfer_bearer_token">Bearer token *</label>
-								<Textarea
-									v-model="bearerToken"
-									autoResize
-									rows="3"
-									class="w-full"
-									placeholder="Cole o token Bearer (JWT) aqui."
-									:class="{ 'p-invalid': transferErrors?.bearer_token }"
-								/>
-								<small v-if="transferErrors?.bearer_token" class="text-red-500">{{ transferErrors.bearer_token[0] }}</small>
 							</div>
 
 							<div class="field col-12 md:col-6">
