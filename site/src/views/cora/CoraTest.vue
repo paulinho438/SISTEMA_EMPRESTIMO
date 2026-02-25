@@ -6,8 +6,9 @@
 				<p class="text-color-secondary">
 					Teste o endpoint de criação de cobrança Cora via <b>POST /cobranca/teste-cora</b>.
 				</p>
-
-				<div class="formgrid grid mt-4">
+				<TabView>
+					<TabPanel header="Cobrança (Invoice)">
+						<div class="formgrid grid mt-4">
 					<div class="field col-12 md:col-6">
 						<label for="cobranca_banco">Banco Cora *</label>
 						<Dropdown
@@ -88,7 +89,112 @@
 						<h6>Resultado:</h6>
 						<pre class="p-3 border-round surface-ground" style="max-height: 420px; overflow: auto;">{{ JSON.stringify(resultado, null, 2) }}</pre>
 					</div>
-				</div>
+						</div>
+					</TabPanel>
+
+					<TabPanel header="Transferência">
+						<div class="formgrid grid mt-4">
+							<div class="field col-12">
+								<p class="text-color-secondary m-0">
+									Chama <b>POST /cora/teste/transferencia</b> (API → Cora Stage `transfers/initiate`).
+								</p>
+							</div>
+
+							<div class="field col-12">
+								<label for="transfer_bearer_token">Bearer token *</label>
+								<Textarea
+									v-model="transferForm.bearer_token"
+									autoResize
+									rows="3"
+									class="w-full"
+									placeholder="Cole o token Bearer (JWT) aqui."
+									:class="{ 'p-invalid': transferErrors?.bearer_token }"
+								/>
+								<small v-if="transferErrors?.bearer_token" class="text-red-500">{{ transferErrors.bearer_token[0] }}</small>
+							</div>
+
+							<div class="field col-12 md:col-6">
+								<label>Bank code *</label>
+								<InputText v-model="transferPayload.destination.bank_code" class="w-full" />
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Account type *</label>
+								<Dropdown
+									v-model="transferPayload.destination.account_type"
+									:options="accountTypeOptions"
+									optionLabel="label"
+									optionValue="value"
+									class="w-full"
+								/>
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Branch number *</label>
+								<InputText v-model="transferPayload.destination.branch_number" class="w-full" />
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Account number *</label>
+								<InputText v-model="transferPayload.destination.account_number" class="w-full" />
+							</div>
+
+							<div class="field col-12 md:col-6">
+								<label>Holder name *</label>
+								<InputText v-model="transferPayload.destination.holder.name" class="w-full" />
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Document type *</label>
+								<Dropdown
+									v-model="transferPayload.destination.holder.document.type"
+									:options="documentTypeOptions"
+									optionLabel="label"
+									optionValue="value"
+									class="w-full"
+								/>
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Document identity *</label>
+								<InputText v-model="transferPayload.destination.holder.document.identity" class="w-full" />
+							</div>
+
+							<div class="field col-12 md:col-6">
+								<label>Amount (centavos) *</label>
+								<InputNumber v-model="transferPayload.amount" mode="decimal" :min="1" :maxFractionDigits="0" class="w-full" />
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Category *</label>
+								<InputText v-model="transferPayload.category" class="w-full" />
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Code *</label>
+								<InputText v-model="transferPayload.code" class="w-full" />
+							</div>
+							<div class="field col-12">
+								<label>Description</label>
+								<InputText v-model="transferPayload.description" class="w-full" />
+							</div>
+							<div class="field col-12 md:col-6">
+								<label>Scheduled (YYYY-MM-DD)</label>
+								<Calendar v-model="transferScheduled" dateFormat="yy-mm-dd" class="w-full" />
+							</div>
+
+							<div class="field col-12">
+								<Button
+									label="Testar Transferência"
+									icon="pi pi-send"
+									severity="danger"
+									class="w-full"
+									@click="testarTransferencia"
+									:loading="transferLoading"
+								/>
+							</div>
+
+							<div v-if="transferResult" class="field col-12">
+								<Divider />
+								<h6>Resultado:</h6>
+								<pre class="p-3 border-round surface-ground" style="max-height: 420px; overflow: auto;">{{ JSON.stringify(transferResult, null, 2) }}</pre>
+							</div>
+						</div>
+					</TabPanel>
+				</TabView>
 			</div>
 		</div>
 	</div>
@@ -120,6 +226,41 @@ export default {
 			loading: ref(false),
 			errors: ref({}),
 			resultado: ref(null),
+			transferLoading: ref(false),
+			transferErrors: ref({}),
+			transferResult: ref(null),
+			transferForm: ref({
+				bearer_token: null
+			}),
+			transferScheduled: ref(null),
+			transferPayload: ref({
+				destination: {
+					account_type: 'CHECKING',
+					bank_code: '341',
+					account_number: '092135',
+					branch_number: '7679',
+					holder: {
+						name: 'Cora Pagamentos',
+						document: {
+							identity: '72420176000104',
+							type: 'CNPJ'
+						}
+					}
+				},
+				amount: 10001,
+				description: 'Mandando',
+				code: 'your-specific-code-EXP123',
+				category: 'PAYROLL',
+				scheduled: null
+			}),
+			accountTypeOptions: [
+				{ label: 'CHECKING', value: 'CHECKING' },
+				{ label: 'SAVINGS', value: 'SAVINGS' }
+			],
+			documentTypeOptions: [
+				{ label: 'CPF', value: 'CPF' },
+				{ label: 'CNPJ', value: 'CNPJ' }
+			],
 			form: ref({
 				banco_id: null,
 				cliente_id: null,
@@ -189,6 +330,52 @@ export default {
 				});
 			} finally {
 				this.loading = false;
+			}
+		}
+		,
+		formatDateYMD(d) {
+			if (!d) return null;
+			try {
+				return d.toISOString ? d.toISOString().split('T')[0] : d;
+			} catch (_) {
+				return d;
+			}
+		},
+		async testarTransferencia() {
+			this.transferLoading = true;
+			this.transferErrors = {};
+			this.transferResult = null;
+
+			try {
+				if (!this.transferForm?.bearer_token) {
+					this.transferErrors = { bearer_token: ['Informe o bearer token'] };
+					return;
+				}
+
+				const payload = { ...this.transferPayload };
+				payload.scheduled = this.formatDateYMD(this.transferScheduled);
+
+				const res = await axios.post(`${apiPath}/cora/teste/transferencia`, {
+					bearer_token: this.transferForm.bearer_token,
+					payload
+				});
+
+				this.transferResult = res.data;
+				this.toast.add({
+					severity: res.data?.success ? ToastSeverity.SUCCESS : ToastSeverity.WARN,
+					detail: res.data?.message || 'Teste executado',
+					life: 3000
+				});
+			} catch (e) {
+				if (e.response?.data?.errors) this.transferErrors = e.response.data.errors;
+				this.transferResult = e.response?.data || { error: e?.message || 'Erro' };
+				this.toast.add({
+					severity: ToastSeverity.ERROR,
+					detail: e.response?.data?.message || 'Erro ao testar transferência',
+					life: 3500
+				});
+			} finally {
+				this.transferLoading = false;
 			}
 		}
 	}

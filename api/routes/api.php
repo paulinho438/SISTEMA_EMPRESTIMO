@@ -35,6 +35,7 @@ use App\Http\Controllers\{
     XGateWebhookController,
     ApixWebhookController,
     ApixTestController,
+    CoraTestController,
     RelatorioFiscalController,
     RelatorioLucroRealController,
     WapiFilaController,
@@ -116,6 +117,9 @@ Route::middleware(['throttle:test'])->group(function () {
     Route::post('/velana/teste/transferencia', [VelanaTestController::class, 'testarTransferencia']);
     Route::post('/velana/teste/buscar-checkout', [VelanaTestController::class, 'buscarCheckout']);
     Route::post('/velana/teste/buscar-transacao', [VelanaTestController::class, 'buscarTransacao']);
+
+    // Rotas de teste Cora (stage)
+    Route::post('/cora/teste/transferencia', [CoraTestController::class, 'testarTransferencia']);
 });
 
 // Rotas de teste XGate - com rate limiter mais permissivo
