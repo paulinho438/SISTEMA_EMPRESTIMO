@@ -407,9 +407,11 @@ export default {
                 const response = await this.bancoService.getAll();
                 const todos = response.data?.data ?? response.data ?? [];
                 const permitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
-                this.bancosParaMigrar = (Array.isArray(todos) ? todos : []).filter(
-                    (b) => permitidos.includes(b.bank_type || (b.wallet ? 'bcodex' : 'normal')) && b.id !== this.banco?.id
-                );
+                this.bancosParaMigrar = (Array.isArray(todos) ? todos : []).filter((b) => {
+                    const type = b.bank_type || (b.wallet ? 'bcodex' : 'normal');
+                    const ehPermitido = permitidos.includes(type) || b.wallet === true || b.wallet === 1;
+                    return ehPermitido && b.id !== this.banco?.id;
+                });
             } catch (e) {
                 this.toast.add({
                     severity: ToastSeverity.ERROR,
