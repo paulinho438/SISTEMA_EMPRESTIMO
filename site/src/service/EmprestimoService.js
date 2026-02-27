@@ -49,6 +49,10 @@ export default class EmprestimoService {
 		return await axios.post(`${apiPath}/emprestimo/${id}/refazer-datas-vencimento-real`);
 	};
 
+	migrarBanco = async (emprestimoId, bancoId) => {
+		return await axios.post(`${apiPath}/emprestimo/${emprestimoId}/migrar-banco`, { banco_id: bancoId });
+	};
+
     save = async (permissions) => {
         if (undefined === permissions.id) return await axios.post(`${apiPath}/emprestimo`, permissions);
 		else return await axios.put(`${apiPath}/emprestimo/${permissions.id}`, permissions);

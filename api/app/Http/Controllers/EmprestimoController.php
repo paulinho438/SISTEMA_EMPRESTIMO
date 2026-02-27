@@ -2801,6 +2801,131 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
     }
 
+    /**
+     * Migra um empréstimo para outro banco (ex: Bcodex -> APIX ou vice-versa).
+     * Atualiza referências e invalida cobranças PIX antigas para que novas sejam geradas no banco destino.
+     */
+    public function migrarBanco(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $validator = Validator::make($request->all(), [
+                'banco_id' => 'required|exists:bancos,id',
+            ]);
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => $validator->errors()->first(),
+                    'error' => $validator->errors()->first(),
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $emprestimo = Emprestimo::with(['banco', 'parcelas.contasreceber', 'quitacao', 'pagamentominimo', 'pagamentosaldopendente'])
+                ->find($id);
+
+            if (!$emprestimo) {
+                return response()->json([
+                    'message' => 'Empréstimo não encontrado.',
+                    'error' => 'Empréstimo não encontrado.',
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $novoBancoId = (int) $request->banco_id;
+            $bancoAtualId = (int) $emprestimo->banco_id;
+
+            if ($novoBancoId === $bancoAtualId) {
+                return response()->json([
+                    'message' => 'O banco destino deve ser diferente do banco atual.',
+                    'error' => 'Banco destino igual ao atual.',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $bancoDestino = Banco::find($novoBancoId);
+            if (!$bancoDestino) {
+                return response()->json([
+                    'message' => 'Banco destino não encontrado.',
+                    'error' => 'Banco destino não encontrado.',
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $bankTypesPermitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
+            $bankType = $bancoDestino->bank_type ?? ($bancoDestino->wallet ? 'bcodex' : 'normal');
+            if (!in_array($bankType, $bankTypesPermitidos)) {
+                return response()->json([
+                    'message' => 'O banco destino deve ser do tipo Bcodex, APIX, XGate, Velana ou Cora.',
+                    'error' => 'Banco destino incompatível com cobrança PIX.',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $temParcelaPendente = $emprestimo->parcelas->contains(fn ($p) => $p->dt_baixa === null);
+            if (!$temParcelaPendente) {
+                return response()->json([
+                    'message' => 'Não é possível migrar empréstimo quitado.',
+                    'error' => 'Empréstimo quitado.',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            Emprestimo::where('id', $id)->update(['banco_id' => $novoBancoId]);
+            Contaspagar::where('emprestimo_id', $id)->update(['banco_id' => $novoBancoId]);
+
+            $parcelaIds = $emprestimo->parcelas->pluck('id')->toArray();
+            if (!empty($parcelaIds)) {
+                Contasreceber::whereIn('parcela_id', $parcelaIds)->update(['banco_id' => $novoBancoId]);
+            }
+
+            Parcela::where('emprestimo_id', $id)->update([
+                'identificador' => null,
+                'chave_pix' => null,
+                'ult_dt_geracao_pix' => null,
+            ]);
+
+            Quitacao::where('emprestimo_id', $id)->update([
+                'identificador' => null,
+                'chave_pix' => null,
+                'ult_dt_geracao_pix' => null,
+            ]);
+
+            PagamentoMinimo::where('emprestimo_id', $id)->update([
+                'identificador' => null,
+                'chave_pix' => null,
+                'ult_dt_geracao_pix' => null,
+            ]);
+
+            PagamentoSaldoPendente::where('emprestimo_id', $id)->update([
+                'identificador' => null,
+                'chave_pix' => null,
+                'ult_dt_geracao_pix' => null,
+            ]);
+
+            DB::commit();
+
+            $emprestimo->refresh();
+            $emprestimo->load('banco');
+
+            if ($bankType === 'apix') {
+                ProcessarPixApixJob::dispatch($emprestimo, []);
+            } elseif ($bankType === 'xgate') {
+                ProcessarPixXgateJob::dispatch($emprestimo, []);
+            } elseif ($bankType === 'bcodex' || $bancoDestino->wallet == 1) {
+                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, []);
+            }
+
+            return response()->json([
+                'message' => 'Empréstimo migrado para o banco ' . ($bancoDestino->name ?? 'destino') . ' com sucesso.',
+                'emprestimo' => $emprestimo,
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao migrar empréstimo de banco: ' . $e->getMessage(), [
+                'emprestimo_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'message' => 'Erro ao migrar empréstimo para o novo banco.',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_FORBIDDEN);
+        }
+    }
+
     public function cancelarBaixaManual(Request $request, $id)
     {
 

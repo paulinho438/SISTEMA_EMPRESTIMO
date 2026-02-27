@@ -370,6 +370,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/recalcularparcelas', [EmprestimoController::class, 'recalcularParcelas']);
     Route::post('/emprestimo/{id}/refazer-datas-vencimento-real', [EmprestimoController::class, 'refazerDatasVencimentoReal']);
     Route::post('/emprestimo/{id}/atualizar-lucro-real', [EmprestimoController::class, 'atualizarLucroRealEmprestimo']);
+    Route::post('/emprestimo/{id}/migrar-banco', [EmprestimoController::class, 'migrarBanco']);
     Route::post('/emprestimo/relatorio-comissao', [EmprestimoController::class, 'relatorioComissao']);
 
     Route::get('/feriado', [FeriadoController::class, 'all']);

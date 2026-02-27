@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import EmprestimoService from '@/service/EmprestimoService';
+import BancoService from '@/service/BancoService';
 import UtilService from '@/service/UtilService';
 import EmprestimoParcelas from '../parcelas/Parcelas.vue';
 import skeletonEmprestimos from '../skeleton/SkeletonEmprestimos.vue';
@@ -21,6 +22,7 @@ export default {
             route: useRoute(),
             router: useRouter(),
             emprestimoService: new EmprestimoService(),
+            bancoService: new BancoService(),
             icons: PrimeIcons,
             toast: useToast()
         };
@@ -58,6 +60,11 @@ export default {
                 { name: 'Feminino', value: 'F' }
             ]),
             display: ref(false),
+            displayMigrarBanco: ref(false),
+            bancoDestinoMigrar: ref(null),
+            bancosParaMigrar: ref([]),
+            loadingBancosMigrar: ref(false),
+            loadingMigrar: ref(false),
             saldoTotal: ref(0),
             valorDesconto: ref(0),
             error: ref('')
@@ -390,6 +397,58 @@ export default {
         },
         clearCicom() {
             this.getemprestimo();
+        },
+        async openMigrarBancoModal() {
+            this.displayMigrarBanco = true;
+            this.bancoDestinoMigrar = null;
+            this.bancosParaMigrar = [];
+            this.loadingBancosMigrar = true;
+            try {
+                const response = await this.bancoService.getAll();
+                const todos = response.data?.data ?? response.data ?? [];
+                const permitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
+                this.bancosParaMigrar = (Array.isArray(todos) ? todos : []).filter(
+                    (b) => permitidos.includes(b.bank_type || (b.wallet ? 'bcodex' : 'normal')) && b.id !== this.banco?.id
+                );
+            } catch (e) {
+                this.toast.add({
+                    severity: ToastSeverity.ERROR,
+                    detail: UtilService.message(e?.response?.data || e),
+                    life: 3000
+                });
+            } finally {
+                this.loadingBancosMigrar = false;
+            }
+        },
+        async migrarBancoConfirm() {
+            if (!this.bancoDestinoMigrar) {
+                this.toast.add({
+                    severity: ToastSeverity.WARN,
+                    detail: 'Selecione o banco de destino.',
+                    life: 3000
+                });
+                return;
+            }
+            this.loadingMigrar = true;
+            try {
+                await this.emprestimoService.migrarBanco(this.route.params.id, this.bancoDestinoMigrar);
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Empréstimo migrado com sucesso. As cobranças PIX serão geradas no novo banco.',
+                    life: 4000
+                });
+                this.displayMigrarBanco = false;
+                this.bancoDestinoMigrar = null;
+                this.getemprestimo();
+            } catch (e) {
+                this.toast.add({
+                    severity: ToastSeverity.ERROR,
+                    detail: UtilService.message(e?.response?.data || e),
+                    life: 4000
+                });
+            } finally {
+                this.loadingMigrar = false;
+            }
         }
     },
     computed: {
@@ -461,6 +520,7 @@ export default {
 
                 <div v-if="saldoTotal > 0" class="grid flex flex-wrap mb-3 px-4 pt-2">
                     <div class="col-12 px-0 py-0 text-right">
+                        <Button label="Migrar para outro banco" class="p-button-sm p-button-outlined p-button-secondary mr-2" icon="pi pi-refresh" @click="openMigrarBancoModal" />
                         <Button label="Realizar Baixa com Desconto" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="display = true" />
                     </div>
                 </div>
@@ -517,6 +577,31 @@ export default {
                     @changeLoading="changeLoading"
                     v-if="true"
                 />
+
+                <Dialog header="Migrar para outro banco" v-model:visible="displayMigrarBanco" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true" :closable="!loadingMigrar">
+                    <p class="line-height-3 mb-4">
+                        As cobranças PIX serão geradas no novo banco. Continuar?
+                    </p>
+                    <div class="p-fluid formgrid grid">
+                        <div class="field col-12 md:col-12">
+                            <label for="bancoDestino">Banco destino</label>
+                            <Dropdown
+                                id="bancoDestino"
+                                v-model="bancoDestinoMigrar"
+                                :options="bancosParaMigrar"
+                                optionLabel="name"
+                                optionValue="id"
+                                placeholder="Selecione o banco"
+                                class="w-full"
+                                :loading="loadingBancosMigrar"
+                            />
+                        </div>
+                    </div>
+                    <template #footer>
+                        <Button label="Cancelar" icon="pi pi-times" class="p-button-text" @click="displayMigrarBanco = false" :disabled="loadingMigrar" />
+                        <Button label="Migrar" icon="pi pi-check" class="p-button-outlined" @click="migrarBancoConfirm" :loading="loadingMigrar" />
+                    </template>
+                </Dialog>
 
                 <Dialog header="Baixa com desconto" v-model:visible="display" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
                     <p class="line-height-3 mb-4">
