@@ -62,6 +62,9 @@ export default {
 				this.bancoService.get(this.route.params.id)
 				.then((response) => {
 					this.banco = response.data?.data;
+					if (this.banco?.wallet && this.banco?.bank_type === 'normal') {
+						this.banco.bank_type = 'bcodex';
+					}
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -167,8 +170,11 @@ export default {
 
 			this.banco.wallet = (this.banco.wallet) ? 1 : 0;
 			
-			// Se for bcodex, manter wallet = 1, se for cora ou normal, wallet = 0
-			if (this.banco.bank_type === 'bcodex') {
+			// Se wallet estiver ativo, garantir bank_type = bcodex (evita inconsistência)
+			if (this.banco.wallet) {
+				this.banco.bank_type = 'bcodex';
+				this.banco.wallet = 1;
+			} else if (this.banco.bank_type === 'bcodex') {
 				this.banco.wallet = 1;
 			} else {
 				this.banco.wallet = 0;

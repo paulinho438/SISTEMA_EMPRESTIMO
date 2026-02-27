@@ -72,17 +72,16 @@ class BancoController extends Controller
 
             $dados['company_id'] = $request->header('company-id');
             
-            // Definir wallet baseado no bank_type se não foi informado
-            if (!isset($dados['wallet'])) {
+            // Sincronizar wallet e bank_type: wallet=1 implica bank_type=bcodex
+            if (isset($dados['wallet']) && $dados['wallet'] == 1) {
+                $dados['wallet'] = 1;
+                $dados['bank_type'] = 'bcodex';
+            } elseif (!isset($dados['wallet'])) {
                 $dados['wallet'] = ($dados['bank_type'] ?? 'normal') === 'bcodex' ? 1 : 0;
             }
-            
-            // Definir bank_type padrão se não foi informado
             if (!isset($dados['bank_type'])) {
                 $dados['bank_type'] = isset($dados['wallet']) && $dados['wallet'] == 1 ? 'bcodex' : 'normal';
             }
-            
-            // Garantir que bank_type seja uma string válida
             $dados['bank_type'] = (string)($dados['bank_type'] ?? 'normal');
 
             // Campos Velana
@@ -174,19 +173,17 @@ class BancoController extends Controller
                 $EditBanco->conta = $dados['conta'];
                 $EditBanco->saldo = $dados['saldo'];
                 
-                // Definir wallet baseado no bank_type se não foi informado
-                if (isset($dados['bank_type'])) {
+                // Definir wallet e bank_type (sincronizar: wallet=1 implica bank_type=bcodex)
+                if (($dados['wallet'] ?? 0) == 1) {
+                    $EditBanco->wallet = 1;
+                    $EditBanco->bank_type = 'bcodex';
+                } elseif (isset($dados['bank_type'])) {
                     $EditBanco->bank_type = (string)$dados['bank_type'];
                     $EditBanco->wallet = ($dados['bank_type'] === 'bcodex') ? 1 : 0;
                 } else {
                     $EditBanco->wallet = $dados['wallet'] ?? 0;
-                    // Se wallet foi informado mas bank_type não, definir baseado no wallet
-                    if (!isset($EditBanco->bank_type)) {
-                        $EditBanco->bank_type = ($EditBanco->wallet == 1) ? 'bcodex' : 'normal';
-                    }
+                    $EditBanco->bank_type = ($EditBanco->wallet == 1) ? 'bcodex' : ($dados['bank_type'] ?? 'normal');
                 }
-                
-                // Garantir que bank_type seja uma string válida
                 $EditBanco->bank_type = (string)($EditBanco->bank_type ?? 'normal');
                 
                 $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'] ?? null;

@@ -30,7 +30,7 @@ class BancosResource extends JsonResource
             "caixa_empresa" => $this->company->caixa,
             "caixa_pix" => $this->company->caixa_pix,
             "wallet" => ($this->wallet) ? true : false,
-            "bank_type" => $this->bank_type ?? ($this->wallet ? 'bcodex' : 'normal'),
+            "bank_type" => ($this->wallet ? 'bcodex' : null) ?? $this->bank_type ?? 'normal',
             "clienteid" => $this->clienteid,
             "clientesecret" => $this->clientesecret,
             "juros" => $this->juros,
