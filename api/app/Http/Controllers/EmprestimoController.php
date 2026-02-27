@@ -2848,7 +2848,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
 
             $bankTypesPermitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
-            $bankType = $bancoDestino->bank_type ?? ($bancoDestino->wallet ? 'bcodex' : 'normal');
+            $bankType = ($bancoDestino->wallet ? 'bcodex' : null) ?? $bancoDestino->bank_type ?? 'normal';
             if (!in_array($bankType, $bankTypesPermitidos)) {
                 return response()->json([
                     'message' => 'O banco destino deve ser do tipo Bcodex, APIX, XGate, Velana ou Cora.',
