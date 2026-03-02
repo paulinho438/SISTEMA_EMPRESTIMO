@@ -1,23 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Remove permissões de saúde adicionadas por dependências (app não é de saúde) -->
-    <uses-permission android:name="android.permission.BODY_SENSORS" tools:node="remove" />
-    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" tools:node="remove" />
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" tools:node="remove" />
-    <!-- Remove permissões de SMS e call log (app usa WhatsApp, não SMS) -->
-    <uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" tools:node="remove" />
-    <uses-permission android:name="android.permission.READ_CALL_LOG" tools:node="remove" />
-    <uses-permission android:name="android.permission.READ_SMS" tools:node="remove" />
-    <uses-permission android:name="android.permission.RECEIVE_MMS" tools:node="remove" />
-    <uses-permission android:name="android.permission.RECEIVE_SMS" tools:node="remove" />
-    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" tools:node="remove" />
-    <uses-permission android:name="android.permission.SEND_SMS" tools:node="remove" />
-    <uses-permission android:name="android.permission.WRITE_CALL_LOG" tools:node="remove" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" android:minSdkVersion="34" tools:node="remove" />
-    <uses-permission android:name="android.permission.USE_SCHEDULE_EXACT_ALARM" tools:node="remove" />
-
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-permission android:name="android.permission.ACCEPT_HANDOVER" />
