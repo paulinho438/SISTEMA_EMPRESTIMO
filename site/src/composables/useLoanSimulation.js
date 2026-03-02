@@ -2,7 +2,7 @@ import { ref, reactive, computed } from 'vue';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { calculateLoan } from '@/utils/loanCalculator';
+import { calculateLoan, periodRateToMonthly } from '@/utils/loanCalculator';
 import { valorPorExtenso } from '@/utils/valorPorExtenso';
 
 const apiPath = import.meta.env.VITE_APP_BASE_URL;
@@ -21,8 +21,11 @@ export function useLoanSimulation() {
         valor_solicitado: '500.00',
         periodo_amortizacao: 'Diário',
         modelo_amortizacao: 'Price',
+        definicao_taxa: 'taxa_juros', // 'valor_parcela' | 'taxa_juros'
         quantidade_parcelas: 20,
         taxa_juros_mensal: '20.00',
+        valor_parcela: null,
+        opcao_cobranca: null,
         data_assinatura: null,
         data_primeira_parcela: null,
         calcular_iof: true,
@@ -83,11 +86,29 @@ export function useLoanSimulation() {
 
     /**
      * Formata data para exibição (DD/MM/YYYY)
+     * Evita timezone: ISO YYYY-MM-DD é interpretado como UTC e desloca 1 dia no Brasil
      */
     function formatDate(dateString) {
         if (!dateString) return '-';
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            const [y, m, d] = dateString.split('-');
+            return `${d}/${m}/${y}`;
+        }
         const date = new Date(dateString);
         return date.toLocaleDateString('pt-BR');
+    }
+
+    /**
+     * Formata data de feriado para DD/MM/YYYY (formato esperado pelo loanCalculator)
+     */
+    function formatFeriado(f) {
+        if (!f) return '';
+        if (typeof f === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(f)) return f;
+        const d = f instanceof Date ? f : new Date(f);
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const ano = d.getFullYear();
+        return `${dia}/${mes}/${ano}`;
     }
 
     /**
@@ -172,7 +193,7 @@ export function useLoanSimulation() {
     /**
      * Simula empréstimo com cálculo local (lógica idêntica à página admin)
      */
-    function simulate() {
+    async function simulate() {
         loading.value = true;
         error.value = null;
 
@@ -181,21 +202,47 @@ export function useLoanSimulation() {
                 ? form.valor_solicitado
                 : parseFloat(parseCurrency(form.valor_solicitado)) || 0;
 
-            const taxaDecimal = parseTaxa(form.taxa_juros_mensal);
+            const taxaPeriodoDecimal = parseTaxa(form.taxa_juros_mensal);
+            const periodo = form.periodo_amortizacao || 'Diário';
+            const taxaDecimal = periodo === 'Mensal'
+                ? taxaPeriodoDecimal
+                : periodRateToMonthly(taxaPeriodoDecimal, periodo);
             const dataAssinatura = form.data_assinatura instanceof Date
                 ? form.data_assinatura
                 : new Date(form.data_assinatura);
-            const dataPrimeira = form.data_primeira_parcela instanceof Date
+            let dataPrimeira = form.data_primeira_parcela instanceof Date
                 ? form.data_primeira_parcela
                 : new Date(form.data_primeira_parcela);
+            dataPrimeira = new Date(dataPrimeira.getFullYear(), dataPrimeira.getMonth(), dataPrimeira.getDate());
+
+            const definicaoTaxa = form.definicao_taxa || 'taxa_juros';
+            const valorParcela = definicaoTaxa === 'valor_parcela'
+                ? (typeof form.valor_parcela === 'number' ? form.valor_parcela : parseFloat(parseCurrency(form.valor_parcela)) || 0)
+                : null;
+
+            let feriados = [];
+            try {
+                const res = await axios.get(`${apiPath}/feriados`);
+                feriados = res.data?.data || [];
+            } catch {
+                feriados = [];
+            }
+            const feriadosFormatados = feriados.map((f) => ({
+                data_feriado: typeof f.data_feriado === 'string' ? f.data_feriado : formatFeriado(f.data_feriado),
+            }));
 
             result.value = calculateLoan({
                 valorSolicitado,
                 periodoAmortizacao: form.periodo_amortizacao,
                 quantidadeParcelas: form.quantidade_parcelas,
                 taxaJurosMensal: taxaDecimal,
+                definicaoTaxa,
+                valorParcela: valorParcela > 0 ? valorParcela : null,
                 dataAssinatura,
                 dataPrimeiraParcela: dataPrimeira,
+                intervalo: null,
+                opcaoCobranca: form.opcao_cobranca != null ? String(form.opcao_cobranca) : null,
+                feriados: feriadosFormatados,
                 calcularIof: form.calcular_iof ?? true,
                 simplesNacional: Boolean(form.cliente_simples_nacional),
             });
@@ -221,7 +268,7 @@ export function useLoanSimulation() {
     }
 
     /**
-     * Valida se primeira parcela >= data assinatura
+     * Valida se primeira parcela >= data assinatura e campos obrigatórios conforme definicao_taxa
      */
     const isValid = computed(() => {
         if (!form.data_assinatura || !form.data_primeira_parcela) {
@@ -233,7 +280,15 @@ export function useLoanSimulation() {
         const dataPrimeira = form.data_primeira_parcela instanceof Date 
             ? form.data_primeira_parcela 
             : new Date(form.data_primeira_parcela);
-        return dataPrimeira >= dataAssinatura;
+        if (dataPrimeira < dataAssinatura) return false;
+
+        const def = form.definicao_taxa || 'taxa_juros';
+        if (def === 'valor_parcela') {
+            const vp = typeof form.valor_parcela === 'number' ? form.valor_parcela : parseFloat(parseCurrency(form.valor_parcela));
+            return Number(form.quantidade_parcelas) > 0 && vp > 0;
+        }
+        const taxa = parseFloat(form.taxa_juros_mensal);
+        return Number(form.quantidade_parcelas) > 0 && !isNaN(taxa) && taxa >= 0.01;
     });
 
     /**

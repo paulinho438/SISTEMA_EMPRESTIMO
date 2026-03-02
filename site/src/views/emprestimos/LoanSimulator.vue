@@ -97,6 +97,32 @@
                             </div>
 
                             <div class="field mb-3">
+                                <label class="block mb-2">Definição da taxa juros</label>
+                                <div class="flex flex-column gap-2">
+                                    <div class="flex align-items-center">
+                                        <RadioButton
+                                            v-model="form.definicao_taxa"
+                                            inputId="def_valor_parcela"
+                                            name="definicao_taxa"
+                                            value="valor_parcela"
+                                            @change="onFormChange"
+                                        />
+                                        <label for="def_valor_parcela" class="ml-2 cursor-pointer">Valor da parcela</label>
+                                    </div>
+                                    <div class="flex align-items-center">
+                                        <RadioButton
+                                            v-model="form.definicao_taxa"
+                                            inputId="def_taxa_juros"
+                                            name="definicao_taxa"
+                                            value="taxa_juros"
+                                            @change="onFormChange"
+                                        />
+                                        <label for="def_taxa_juros" class="ml-2 cursor-pointer">{{ labelTaxaJuros }}</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field mb-3">
                                 <label for="quantidade_parcelas" class="block mb-2">
                                     Quantidade de parcelas <span class="text-red-500">*</span>
                                 </label>
@@ -110,9 +136,26 @@
                                 />
                             </div>
 
-                            <div class="field mb-3">
+                            <div v-if="form.definicao_taxa === 'valor_parcela'" class="field mb-3">
+                                <label for="valor_parcela" class="block mb-2">
+                                    Valor da parcela <span class="text-red-500">*</span>
+                                </label>
+                                <InputNumber
+                                    id="valor_parcela"
+                                    v-model="form.valor_parcela"
+                                    mode="decimal"
+                                    :min="0.01"
+                                    :minFractionDigits="2"
+                                    :maxFractionDigits="2"
+                                    prefix="R$ "
+                                    class="w-full"
+                                    @input="onFormChange"
+                                />
+                            </div>
+
+                            <div v-if="form.definicao_taxa === 'taxa_juros'" class="field mb-3">
                                 <label for="taxa_juros_mensal" class="block mb-2">
-                                    Taxa de juros mensal <span class="text-red-500">*</span>
+                                    {{ labelTaxaJuros }} <span class="text-red-500">*</span>
                                 </label>
                                 <InputNumber
                                     id="taxa_juros_mensal"
@@ -125,6 +168,53 @@
                                     @input="onFormChange"
                                 />
                                 <small class="text-500">Valor mínimo: 0,01%</small>
+                            </div>
+
+                            <div class="field mb-3">
+                                <label class="block mb-2">Opção de cobrança</label>
+                                <div class="flex flex-column gap-2">
+                                    <div class="flex align-items-center">
+                                        <RadioButton
+                                            v-model="form.opcao_cobranca"
+                                            inputId="opc_nenhuma"
+                                            name="opcao_cobranca"
+                                            :value="null"
+                                            @change="onFormChange"
+                                        />
+                                        <label for="opc_nenhuma" class="ml-2 cursor-pointer">Nenhuma (não pula dias)</label>
+                                    </div>
+                                    <div class="flex align-items-center">
+                                        <RadioButton
+                                            v-model="form.opcao_cobranca"
+                                            inputId="opc_seg_sexta"
+                                            name="opcao_cobranca"
+                                            value="1"
+                                            @change="onFormChange"
+                                        />
+                                        <label for="opc_seg_sexta" class="ml-2 cursor-pointer">Segunda a Sexta</label>
+                                    </div>
+                                    <div class="flex align-items-center">
+                                        <RadioButton
+                                            v-model="form.opcao_cobranca"
+                                            inputId="opc_seg_sabado"
+                                            name="opcao_cobranca"
+                                            value="2"
+                                            @change="onFormChange"
+                                        />
+                                        <label for="opc_seg_sabado" class="ml-2 cursor-pointer">Segunda a Sábado</label>
+                                    </div>
+                                    <div class="flex align-items-center">
+                                        <RadioButton
+                                            v-model="form.opcao_cobranca"
+                                            inputId="opc_seg_domingo"
+                                            name="opcao_cobranca"
+                                            value="3"
+                                            @change="onFormChange"
+                                        />
+                                        <label for="opc_seg_domingo" class="ml-2 cursor-pointer">Segunda a Domingo</label>
+                                    </div>
+                                </div>
+                                <small class="text-500 block mt-1">Ao selecionar Segunda a Sexta/Sábado/Domingo, pula fins de semana e feriados nas datas de vencimento das parcelas.</small>
                             </div>
 
                             <div class="field mb-3">
@@ -474,7 +564,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { useLoanSimulation } from '@/composables/useLoanSimulation';
@@ -551,6 +641,13 @@ const periodosAmortizacao = ref([
 const modelosAmortizacao = ref([
     { label: 'Price', value: 'Price' },
 ]);
+
+const labelTaxaJuros = computed(() => {
+    const p = form.periodo_amortizacao || 'Diário';
+    if (p === 'Diário') return 'Taxa de juros diária';
+    if (p === 'Semanal') return 'Taxa de juros semanal';
+    return 'Taxa de juros mensal';
+});
 
 function onFormChange() {
     if (isValid.value) {
@@ -791,8 +888,11 @@ async function carregarContratoParaEdicao(id) {
         form.valor_solicitado = String(inputs.valor_solicitado ?? form.valor_solicitado);
         form.periodo_amortizacao = mapPeriodoToLabel(inputs.periodo_amortizacao ?? form.periodo_amortizacao);
         form.modelo_amortizacao = mapModeloToLabel(inputs.modelo_amortizacao ?? form.modelo_amortizacao);
+        form.definicao_taxa = inputs.definicao_taxa || form.definicao_taxa || 'taxa_juros';
         form.quantidade_parcelas = Number(inputs.quantidade_parcelas ?? form.quantidade_parcelas);
         form.taxa_juros_mensal = String(inputs.taxa_juros_mensal ?? form.taxa_juros_mensal);
+        form.valor_parcela = inputs.valor_parcela != null ? Number(inputs.valor_parcela) : form.valor_parcela;
+        form.opcao_cobranca = inputs.opcao_cobranca ?? form.opcao_cobranca;
         form.calcular_iof = Boolean(inputs.calcular_iof ?? form.calcular_iof);
         form.cliente_simples_nacional = Boolean(inputs.simples_nacional ?? form.cliente_simples_nacional);
 

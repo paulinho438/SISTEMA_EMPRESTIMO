@@ -66,17 +66,67 @@ function amortWeightsPrice(i, n) {
   return w;
 }
 
-function buildDueDates(periodo, primeiraDate, n) {
+function dataParaLocal(date) {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function formatarDataDDMMYYYY(date) {
+  const d = new Date(date);
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const ano = d.getFullYear();
+  return `${dia}/${mes}/${ano}`;
+}
+
+function isFeriado(date, feriados) {
+  const dataStr = formatarDataDDMMYYYY(date);
+  return feriados.some((f) => f.data_feriado === dataStr);
+}
+
+function buildDueDates(periodo, primeiraDate, n, intervalo = null, opcaoCobranca = null, feriados = []) {
   const dates = [];
   const p = String(periodo).toUpperCase();
+  const step = intervalo != null ? Number(intervalo) : (p === 'DIARIO' || p === 'DIÁRIO' ? 1 : p === 'SEMANAL' ? 7 : 30);
+  const opc = String(opcaoCobranca || '');
+  let dataInicial = dataParaLocal(primeiraDate);
+
   for (let k = 1; k <= n; k++) {
-    if (p === 'DIARIO' || p === 'DIÁRIO') {
-      dates.push(addDays(primeiraDate, k - 1));
-    } else if (p === 'SEMANAL') {
-      dates.push(addDays(primeiraDate, (k - 1) * 7));
-    } else {
-      dates.push(addMonths(primeiraDate, k - 1));
+    if (k > 1) {
+      if (p === 'MENSAL' && (intervalo == null || intervalo === 30)) {
+        dataInicial = addMonths(dataInicial, 1);
+      } else {
+        dataInicial.setDate(dataInicial.getDate() + step);
+      }
     }
+
+    if (opc === '1') {
+      while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
+        dataInicial.setDate(dataInicial.getDate() + 1);
+      }
+    } else if (opc === '2') {
+      while (dataInicial.getDay() === 0) {
+        dataInicial.setDate(dataInicial.getDate() + 1);
+      }
+    }
+
+    if (isFeriado(dataInicial, feriados)) {
+      dataInicial.setDate(dataInicial.getDate() + 1);
+      if (opc === '1') {
+        while (dataInicial.getDay() === 0 || dataInicial.getDay() === 6) {
+          dataInicial.setDate(dataInicial.getDate() + 1);
+        }
+      } else if (opc === '2') {
+        while (dataInicial.getDay() === 0) {
+          dataInicial.setDate(dataInicial.getDate() + 1);
+        }
+      }
+      if (isFeriado(dataInicial, feriados)) {
+        dataInicial.setDate(dataInicial.getDate() + 1);
+      }
+    }
+
+    dates.push(new Date(dataInicial));
   }
   return dates;
 }
@@ -154,14 +204,30 @@ function formatDateISO(date) {
 }
 
 /**
+ * Converte taxa do período para taxa mensal (para exibição)
+ */
+export function periodRateToMonthly(periodRate, periodo) {
+  const p = String(periodo).toUpperCase();
+  if (p === 'MENSAL') return periodRate;
+  if (p === 'DIARIO' || p === 'DIÁRIO') return Math.pow(1 + periodRate, DAYS_PER_MONTH_DAILY) - 1;
+  if (p === 'SEMANAL') return Math.pow(1 + periodRate, DAYS_PER_MONTH_WEEKLY / 7) - 1;
+  return periodRate;
+}
+
+/**
  * Calcula simulação completa (Price + IOF + CET)
  * @param {Object} params
  * @param {number} params.valorSolicitado
  * @param {string} params.periodoAmortizacao - 'Diário'|'Semanal'|'Mensal'
  * @param {number} params.quantidadeParcelas
- * @param {number} params.taxaJurosMensal - em decimal (ex: 0.20 para 20%)
+ * @param {number} params.taxaJurosMensal - em decimal (ex: 0.20 para 20%) - usado quando definicaoTaxa='taxa_juros'
+ * @param {number} params.valorParcela - valor fixo da parcela - usado quando definicaoTaxa='valor_parcela'
+ * @param {string} params.definicaoTaxa - 'valor_parcela' | 'taxa_juros'
  * @param {Date|string} params.dataAssinatura
  * @param {Date|string} params.dataPrimeiraParcela
+ * @param {number} params.intervalo - dias entre parcelas (opcional)
+ * @param {string} params.opcaoCobranca - '1' Segunda-Sexta | '2' Segunda-Sábado | '3' Segunda-Domingo
+ * @param {Array} params.feriados - lista de { data_feriado: 'DD/MM/YYYY' }
  * @param {boolean} params.calcularIof
  * @param {boolean} params.simplesNacional
  * @returns {Object} Resultado no formato esperado pelo template Vue
@@ -172,37 +238,60 @@ export function calculateLoan(params) {
     periodoAmortizacao,
     quantidadeParcelas,
     taxaJurosMensal,
+    valorParcela,
+    definicaoTaxa = 'taxa_juros',
     dataAssinatura,
     dataPrimeiraParcela,
+    intervalo,
+    opcaoCobranca,
+    feriados = [],
     calcularIof = true,
     simplesNacional = false,
   } = params;
 
   const principal = Number(valorSolicitado) || 0;
   const n = Math.max(1, Math.floor(Number(quantidadeParcelas) || 1));
-  const taxaMensal = Number(taxaJurosMensal) || 0;
 
   const contratoDate = dataAssinatura instanceof Date ? dataAssinatura : new Date(dataAssinatura);
   const primeiraDate = dataPrimeiraParcela instanceof Date ? dataPrimeiraParcela : new Date(dataPrimeiraParcela);
 
   const periodo = periodoAmortizacao || 'Diário';
-  const i = ratePerPeriodFromMonthly(taxaMensal, periodo);
-  const dueDates = buildDueDates(periodo, primeiraDate, n);
+  const dueDates = buildDueDates(periodo, primeiraDate, n, intervalo, opcaoCobranca, feriados);
 
-  // IOF
+  let i, parcela, taxaMensal;
   let iofDaily = 0, iofAdd = 0, iofTotal = 0, prazoMedio = 0;
   const usaTaxaSimples = simplesNacional && principal <= 30000;
   const dailyRate = usaTaxaSimples ? IOF_DAILY_RATE_SIMPLES : IOF_DAILY_RATE_STD;
 
-  if (calcularIof) {
-    prazoMedio = computePrazoMedioDias(periodo, contratoDate, dueDates, i, n);
-    iofDaily = principal * dailyRate * prazoMedio;
-    iofAdd = principal * IOF_ADDITIONAL_RATE;
-    iofTotal = iofDaily + iofAdd;
+  if (definicaoTaxa === 'valor_parcela' && valorParcela != null && Number(valorParcela) > 0) {
+    parcela = Number(valorParcela);
+    let valorContratoEst = principal;
+    for (let iter = 0; iter < 5; iter++) {
+      i = irrFromCashflows(valorContratoEst, parcela, n);
+      prazoMedio = computePrazoMedioDias(periodo, contratoDate, dueDates, i, n);
+      iofDaily = calcularIof ? principal * dailyRate * prazoMedio : 0;
+      iofAdd = calcularIof ? principal * IOF_ADDITIONAL_RATE : 0;
+      iofTotal = iofDaily + iofAdd;
+      const vcNew = principal + iofTotal;
+      if (Math.abs(vcNew - valorContratoEst) < 0.01) break;
+      valorContratoEst = vcNew;
+    }
+    i = irrFromCashflows(principal + iofTotal, parcela, n);
+    taxaMensal = periodRateToMonthly(i, periodo);
+  } else {
+    taxaMensal = Number(taxaJurosMensal) || 0;
+    i = ratePerPeriodFromMonthly(taxaMensal, periodo);
+    parcela = null;
+    if (calcularIof) {
+      prazoMedio = computePrazoMedioDias(periodo, contratoDate, dueDates, i, n);
+      iofDaily = principal * dailyRate * prazoMedio;
+      iofAdd = principal * IOF_ADDITIONAL_RATE;
+      iofTotal = iofDaily + iofAdd;
+    }
   }
 
   const valorContrato = principal + iofTotal;
-  const parcela = pricePayment(valorContrato, i, n);
+  const parcelaValor = parcela != null ? parcela : pricePayment(valorContrato, i, n);
 
   // Cronograma
   let bal = valorContrato;
@@ -210,13 +299,13 @@ export function calculateLoan(params) {
 
   for (let k = 1; k <= n; k++) {
     const juros = bal * i;
-    const amort = parcela - juros;
+    const amort = parcelaValor - juros;
     bal -= amort;
     if (k === n && Math.abs(bal) < 1e-7) bal = 0;
 
     cronograma.push({
       numero: k,
-      parcela: round2(parcela).toFixed(2),
+      parcela: round2(parcelaValor).toFixed(2),
       vencimento: formatDateISO(dueDates[k - 1]),
       juros: round2(juros).toFixed(2),
       amortizacao: round2(amort).toFixed(2),
@@ -225,18 +314,22 @@ export function calculateLoan(params) {
   }
 
   // CET
-  const rPeriod = irrFromCashflows(principal, parcela, n);
+  const rPeriod = irrFromCashflows(principal, parcelaValor, n);
   const cetAno = annualFromPeriodIRR(periodo, rPeriod);
   const cetMes = Math.pow(1 + cetAno, 1 / 12) - 1;
 
-  const totalParcelas = parcela * n;
+  const totalParcelas = parcelaValor * n;
 
   return {
     inputs: {
       valor_solicitado: principal.toFixed(2),
       taxa_juros_mensal: taxaMensal.toFixed(2),
+      definicao_taxa: definicaoTaxa,
+      valor_parcela: definicaoTaxa === 'valor_parcela' ? parcelaValor.toFixed(2) : undefined,
       quantidade_parcelas: n,
       periodo_amortizacao: periodo,
+      intervalo: intervalo != null ? intervalo : undefined,
+      opcao_cobranca: opcaoCobranca || undefined,
       modelo_amortizacao: 'Price',
       data_assinatura: formatDateISO(contratoDate),
       data_primeira_parcela: formatDateISO(primeiraDate),
@@ -250,7 +343,7 @@ export function calculateLoan(params) {
       aliquota_diaria: usaTaxaSimples ? '0,00274%' : '0,0082%',
     },
     valor_contrato: round2(valorContrato).toFixed(2),
-    parcela: round2(parcela).toFixed(2),
+    parcela: round2(parcelaValor).toFixed(2),
     cronograma,
     totais: {
       total_parcelas: round2(totalParcelas).toFixed(2),
