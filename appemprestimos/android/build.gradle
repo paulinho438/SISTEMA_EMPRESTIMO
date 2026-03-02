@@ -4,7 +4,7 @@ buildscript {
         minSdkVersion = 24
         compileSdkVersion = 34
         targetSdkVersion = 35
-        ndkVersion = "25.2.9519653"
+        ndkVersion = "25.1.8937393"
         // VisionCamera + libs recentes exigem Kotlin mais novo que 1.8.0
         kotlinVersion = "1.9.24"
         appCompatVersion = "1.4.2"
@@ -16,7 +16,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle")
+        classpath("com.android.tools.build:gradle:8.5.1")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
     }

@@ -90,8 +90,8 @@ android {
         applicationId "com.appemprestimos"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "2.3"
+        versionCode 6
+        versionName "2.4"
     }
     signingConfigs {
         debug {
@@ -127,7 +127,7 @@ android {
             shrinkResources false
         }
     }
-    ndkVersion = "25.2.9519653"
+    ndkVersion = "25.1.8937393"
 }
 
 dependencies {
@@ -147,5 +147,20 @@ dependencies {
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+
+// Remove USE_EXACT_ALARM do manifest final (app não é despertador/agenda)
+android.applicationVariants.all { variant ->
+    variant.outputs.all { output ->
+        output.processManifest.doLast {
+            def manifestFile = file("${output.processManifest.manifestOutputDirectory.get()}/AndroidManifest.xml")
+            if (manifestFile.exists()) {
+                def content = manifestFile.text
+                content = content.replaceAll(/<uses-permission[^>]*android:name="android\.permission\.USE_EXACT_ALARM"[^>]*\/>/, '')
+                content = content.replaceAll(/<uses-permission[^>]*android:name="android\.permission\.USE_SCHEDULE_EXACT_ALARM"[^>]*\/>/, '')
+                manifestFile.write(content)
+            }
+        }
+    }
+}
 
 
