@@ -731,12 +731,22 @@ function exportSimulation() {
     exportPDF();
 }
 
+function getOptionsExportContrato() {
+    const bancoSelecionado = bancos.value?.find((b) => b.id === form.banco_id) || null;
+    return {
+        garantias: form.garantias || [],
+        banco: bancoSelecionado,
+        bancoMutuario: bancoSelecionado,
+        numeroContrato: contratoId.value ? `${new Date().getFullYear()}/${String(contratoId.value).padStart(6, '0')}` : undefined,
+    };
+}
+
 const documentosMenuItems = ref([
     {
         label: 'Contrato Inicial',
         icon: 'pi pi-file-pdf',
         command: () => {
-            exportContratoInicial(empresaData.value, clienteSelecionado.value);
+            exportContratoInicial(empresaData.value, clienteSelecionado.value, getOptionsExportContrato());
         },
     },
     {
@@ -817,6 +827,7 @@ async function onIniciarAssinatura() {
         }
 
         const pdfBlob = exportContratoInicial(empresaData.value, clienteSelecionado.value, {
+            ...getOptionsExportContrato(),
             returnBlob: true,
             filename: `contrato-${contratoId.value}.pdf`,
         });
@@ -831,10 +842,12 @@ async function onIniciarAssinatura() {
         const resp = await simulacaoService.iniciarAssinatura(contratoId.value, fd);
         const whatsNumero = resp?.data?.whatsapp_numero;
         const whatsMensagem = resp?.data?.whatsapp_mensagem;
+        const d4signLink = resp?.data?.d4sign_link_assinatura || resp?.data?.d4sign_embed_url;
 
         const enviado = Boolean(resp?.data?.whatsapp_enviado);
         if (enviado) {
-            toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail: 'Mensagem enviada ao cliente via WhatsApp.', life: 3500 });
+            const detail = d4signLink ? 'Link D4Sign enviado ao cliente via WhatsApp.' : 'Mensagem enviada ao cliente via WhatsApp.';
+            toast.add({ severity: 'success', summary: 'Assinatura iniciada', detail, life: 3500 });
         } else if (whatsMensagem) {
             // fallback: copiar e abrir WhatsApp manualmente
             try {

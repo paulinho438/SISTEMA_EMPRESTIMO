@@ -43,6 +43,8 @@ class SimulacaoEmprestimo extends Model
         'pdf_original_sha256',
         'pdf_final_path',
         'pdf_final_sha256',
+        'd4sign_uuid_document',
+        'd4sign_embed_url',
     ];
 
     protected $casts = [

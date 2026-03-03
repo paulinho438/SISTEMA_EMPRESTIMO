@@ -215,6 +215,17 @@ onBeforeUnmount(() => {
     }
 });
 
+async function copiarLinkD4Sign() {
+    const url = detalhes.value?.d4sign_embed_url;
+    if (!url) return;
+    try {
+        await navigator.clipboard.writeText(url);
+        toast.add({ severity: 'success', summary: 'Copiado', detail: 'Link copiado para a área de transferência.', life: 2000 });
+    } catch {
+        toast.add({ severity: 'error', summary: 'Erro', detail: 'Não foi possível copiar.', life: 2000 });
+    }
+}
+
 async function revisar(acao) {
     if (!detalhes.value?.id) return;
     revisando.value = true;
@@ -259,6 +270,33 @@ onMounted(() => {
                             <p class="m-0 text-sm"><strong>Finalizado em:</strong> {{ formatDateTime(detalhes.finalizado_at) }}</p>
                             <p class="m-0 text-sm"><strong>Hash original:</strong> <span class="break-all">{{ detalhes.pdf_original_sha256 || '—' }}</span></p>
                             <p class="m-0 text-sm"><strong>Hash final:</strong> <span class="break-all">{{ detalhes.pdf_final_sha256 || '—' }}</span></p>
+                        </div>
+
+                        <div v-if="detalhes.d4sign_embed_url" class="surface-100 border-round p-3 mb-3">
+                            <h6 class="mt-0 mb-2">Link D4Sign (assinatura do cliente)</h6>
+                            <p class="text-sm text-500 mb-2">Envie este link ao cliente para assinar o contrato eletronicamente.</p>
+                            <div class="flex align-items-center gap-2">
+                                <input
+                                    type="text"
+                                    :value="detalhes.d4sign_embed_url"
+                                    readonly
+                                    class="flex-1 p-2 border-round text-sm"
+                                    style="min-width: 0"
+                                />
+                                <Button
+                                    icon="pi pi-copy"
+                                    label="Copiar"
+                                    class="p-button-outlined p-button-sm"
+                                    v-tooltip.top="'Copiar link'"
+                                    @click="copiarLinkD4Sign"
+                                />
+                                <Button
+                                    icon="pi pi-external-link"
+                                    label="Abrir"
+                                    class="p-button-outlined p-button-sm"
+                                    @click="window.open(detalhes.d4sign_embed_url, '_blank')"
+                                />
+                            </div>
                         </div>
 
                         <div class="flex flex-wrap gap-2 mb-3">

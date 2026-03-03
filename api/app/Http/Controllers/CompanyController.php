@@ -572,6 +572,21 @@ class CompanyController extends Controller
             $EditCompany->caixa = $dados['caixa'] ?? null;
             $EditCompany->numero_contato = $dados['numero_contato'] ?? null;
             $EditCompany->company = $dados['company'] ?? null;
+            $EditCompany->razao_social = $dados['razao_social'] ?? null;
+            $EditCompany->cnpj = $dados['cnpj'] ?? null;
+            $EditCompany->endereco = $dados['endereco'] ?? null;
+            $EditCompany->cidade = $dados['cidade'] ?? null;
+            $EditCompany->estado = $dados['estado'] ?? null;
+            $EditCompany->cep = $dados['cep'] ?? null;
+            $EditCompany->representante_nome = $dados['representante_nome'] ?? null;
+            $EditCompany->representante_cpf = $dados['representante_cpf'] ?? null;
+            $EditCompany->representante_rg = $dados['representante_rg'] ?? null;
+            $EditCompany->representante_orgao_emissor = $dados['representante_orgao_emissor'] ?? null;
+            $EditCompany->representante_cargo = $dados['representante_cargo'] ?? null;
+            $EditCompany->banco_nome = $dados['banco_nome'] ?? null;
+            $EditCompany->banco_agencia = $dados['banco_agencia'] ?? null;
+            $EditCompany->banco_conta = $dados['banco_conta'] ?? null;
+            $EditCompany->banco_pix = $dados['banco_pix'] ?? null;
             $EditCompany->save();
 
 

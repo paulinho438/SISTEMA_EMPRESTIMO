@@ -36,4 +36,12 @@ return [
         'website' => env('APIX_WEBSITE_URL', 'https://api.agecontrole.com.br'),
     ],
 
+    'd4sign' => [
+        'token_api' => env('D4SIGN_TOKEN_API'),
+        'crypt_key' => env('D4SIGN_CRYPT_KEY'),
+        'base_url' => env('D4SIGN_BASE_URL', 'https://sandbox.d4sign.com.br/api/v1'),
+        'uuid_safe' => env('D4SIGN_UUID_SAFE'),
+        'webhook_url' => env('D4SIGN_WEBHOOK_URL'), // Opcional: override da URL do webhook (ex: https://seu-dominio.com/api/webhook/d4sign)
+    ],
+
 ];

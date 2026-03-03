@@ -225,6 +225,14 @@ export default {
                         <InputText id="firstname2" :modelValue="empresas?.company" v-model="empresas.company" type="text" />
                     </div>
                     <div class="field col-12 md:col-3">
+                        <label for="razao_social">Razão Social (para contrato)</label>
+                        <InputText id="razao_social" :modelValue="empresas?.razao_social" v-model="empresas.razao_social" type="text" placeholder="Razão social completa" />
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="cnpj">CNPJ</label>
+                        <InputText id="cnpj" :modelValue="empresas?.cnpj" v-model="empresas.cnpj" type="text" placeholder="00.000.000/0001-00" />
+                    </div>
+                    <div class="field col-12 md:col-3">
                         <label for="firstname2">E-mail</label>
                         <InputText id="firstname2" :modelValue="empresas?.email" v-model="empresas.email" type="text" />
                     </div>
@@ -247,6 +255,67 @@ export default {
                     <div class="field col-12 md:col-3">
                         <label for="whatsapp_cobranca">URL Integração WhatsApp (Cobrança)</label>
                         <InputText id="whatsapp_cobranca" :modelValue="empresas?.whatsapp_cobranca" v-model="empresas.whatsapp_cobranca" type="text" placeholder="Usado exclusivamente para cobranças" />
+                    </div>
+                    <div class="col-12 mt-3">
+                        <h6>Dados para Contrato de Mútuo</h6>
+                    </div>
+                    <div class="field col-12 md:col-4">
+                        <label for="endereco">Endereço</label>
+                        <InputText id="endereco" :modelValue="empresas?.endereco" v-model="empresas.endereco" type="text" placeholder="Rua, número, complemento" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="cidade">Cidade</label>
+                        <InputText id="cidade" :modelValue="empresas?.cidade" v-model="empresas.cidade" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-1">
+                        <label for="estado">UF</label>
+                        <InputText id="estado" :modelValue="empresas?.estado" v-model="empresas.estado" type="text" maxlength="2" placeholder="GO" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="cep">CEP</label>
+                        <InputText id="cep" :modelValue="empresas?.cep" v-model="empresas.cep" type="text" placeholder="00000-000" />
+                    </div>
+                    <div class="col-12 mt-2">
+                        <h6 class="text-sm">Representante Mutuante</h6>
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="representante_nome">Nome Completo</label>
+                        <InputText id="representante_nome" :modelValue="empresas?.representante_nome" v-model="empresas.representante_nome" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="representante_cpf">CPF</label>
+                        <InputText id="representante_cpf" :modelValue="empresas?.representante_cpf" v-model="empresas.representante_cpf" type="text" placeholder="000.000.000-00" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="representante_rg">RG</label>
+                        <InputText id="representante_rg" :modelValue="empresas?.representante_rg" v-model="empresas.representante_rg" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="representante_orgao_emissor">Órgão Emissor</label>
+                        <InputText id="representante_orgao_emissor" :modelValue="empresas?.representante_orgao_emissor" v-model="empresas.representante_orgao_emissor" type="text" placeholder="SSP" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="representante_cargo">Cargo</label>
+                        <InputText id="representante_cargo" :modelValue="empresas?.representante_cargo" v-model="empresas.representante_cargo" type="text" placeholder="Diretor" />
+                    </div>
+                    <div class="col-12 mt-2">
+                        <h6 class="text-sm">Dados Bancários (para recebimento)</h6>
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="banco_nome">Banco</label>
+                        <InputText id="banco_nome" :modelValue="empresas?.banco_nome" v-model="empresas.banco_nome" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="banco_agencia">Agência</label>
+                        <InputText id="banco_agencia" :modelValue="empresas?.banco_agencia" v-model="empresas.banco_agencia" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="banco_conta">Conta</label>
+                        <InputText id="banco_conta" :modelValue="empresas?.banco_conta" v-model="empresas.banco_conta" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="banco_pix">Chave Pix</label>
+                        <InputText id="banco_pix" :modelValue="empresas?.banco_pix" v-model="empresas.banco_pix" type="text" />
                     </div>
                 </div>
             </div>

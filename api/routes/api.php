@@ -41,7 +41,8 @@ use App\Http\Controllers\{
     DaytradeController,
     LoanSimulationController,
     SimulacaoEmprestimoController,
-    AssinaturaContratoController
+    AssinaturaContratoController,
+    D4SignWebhookController
 };
 use App\Models\BotaoCobranca;
 use Illuminate\Http\Request;
@@ -89,6 +90,7 @@ Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookR
 Route::post('/webhook/retorno_pagamento', [EmprestimoController::class, 'webhookPagamento']);
 Route::post('/webhook/xgate', [XGateWebhookController::class, 'receber']);
 Route::post('/webhook/apix', [ApixWebhookController::class, 'receber']);
+Route::post('/webhook/d4sign', [D4SignWebhookController::class, 'receber']);
 Route::post('/webhook/corrigir_registros_webhook', [EmprestimoController::class, 'corrigirRegistrosWebhook']);
 Route::post('/manutencao/corrigir_pix', [EmprestimoController::class, 'corrigirPix']);
 Route::post('/manutencao/corrigir_pix_parcela', [EmprestimoController::class, 'corrigirValoresPix']);

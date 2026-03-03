@@ -4,6 +4,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateLoan, periodRateToMonthly } from '@/utils/loanCalculator';
 import { valorPorExtenso } from '@/utils/valorPorExtenso';
+import { CLAUSULAS_CONTRATO } from '@/utils/clausulasContrato';
 
 const apiPath = import.meta.env.VITE_APP_BASE_URL;
 
@@ -422,114 +423,310 @@ export function useLoanSimulation() {
     }
 
     /**
-     * Exporta Contrato Inicial em PDF (modelo de contrato de mútuo)
+     * Exporta Contrato Inicial em PDF (modelo de contrato de mútuo - 9 páginas)
+     * options: { garantias, banco, bancoMutuario, numeroContrato, returnBlob, filename }
      */
     function exportContratoInicial(empresa = {}, cliente = {}, options = {}) {
         if (!result.value || !result.value.cronograma) return;
 
         const r = result.value;
+        const garantias = options?.garantias || form.garantias || [];
+        const banco = options?.banco || null;
+        const bancoMutuario = options?.bancoMutuario || banco;
+        const ano = new Date().getFullYear();
+        const numeroContrato = options?.numeroContrato || `${ano}/000001`;
+
+        const devedorSolidario = garantias.find((g) => g?.tipo === 'devedor_solidario')?.dados || null;
+
+        const endEmpresaParts = [empresa.endereco, empresa.cidade, empresa.estado, empresa.cep ? `CEP ${empresa.cep}` : ''].filter(Boolean);
+        const endEmpresaStr = endEmpresaParts.length ? endEmpresaParts.join(' - ') : 'Não informado';
+
+        const endCliente = cliente.address?.[0];
+        const endClienteStr = endCliente
+            ? [endCliente.address, endCliente.number || '0', endCliente.complement || 'Sem complemento', endCliente.neighborhood, endCliente.city, endCliente.estado || '—', endCliente.cep ? `CEP ${endCliente.cep}` : ''].filter(Boolean).join(' - ')
+            : 'Não informado';
+
+        const endDevedor = devedorSolidario
+            ? [devedorSolidario.endereco, devedorSolidario.numero || '0', devedorSolidario.complemento || 'Sem complemento', devedorSolidario.bairro, devedorSolidario.cidade, devedorSolidario.estado || '—', devedorSolidario.cep ? `CEP ${devedorSolidario.cep}` : ''].filter(Boolean).join(' - ')
+            : endClienteStr;
+
+        const periodo = String(r.inputs.periodo_amortizacao || 'Diário').toUpperCase();
+        const taxaMensalDecimal = parseFloat(r.inputs.taxa_juros_mensal) || 0;
+        const taxaPeriodo = periodo === 'MENSAL' ? taxaMensalDecimal : periodo === 'DIARIO' || periodo === 'DIÁRIO'
+            ? Math.pow(1 + taxaMensalDecimal, 1 / 30) - 1
+            : Math.pow(1 + taxaMensalDecimal, 7 / 30.415) - 1;
+        const taxaPeriodoPercent = (taxaPeriodo * 100).toFixed(2).replace('.', ',');
+
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
-        let y = 15;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 14;
+        const marginX = margin;
 
-        doc.setFontSize(14);
+        let y = 20;
+
+        // ========== PÁGINA 1: Cabeçalho + QUADRO 01 ==========
+        autoTable(doc, {
+            startY: y,
+            head: [['Nº DO CONTRATO', 'VALOR DO CRÉDITO']],
+            body: [[numeroContrato, formatCurrency(r.inputs.valor_solicitado)]],
+            theme: 'plain',
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [240, 240, 240] },
+            columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 60 } },
+            margin: { left: marginX, right: margin },
+        });
+        y = doc.lastAutoTable.finalY + 12;
+
         doc.setFont(undefined, 'bold');
-        doc.text('CONTRATO DE MÚTUO FINANCEIRO', pageWidth / 2, y, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text('QUADRO 01 - PARTES CONTRATANTES', marginX, y);
+        y += 7;
+        doc.setFont(undefined, 'normal');
+
+        doc.text('1. CONTRATADA MUTUANTE', marginX, y);
+        y += 5;
+        doc.text(`Razão Social: ${empresa.razao_social || empresa.company || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`CNPJ: ${empresa.cnpj || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`Endereço: ${endEmpresaStr}`, marginX, y, { maxWidth: pageWidth - 2 * margin });
+        y += 5;
+        doc.text(`Telefone: ${empresa.numero_contato || empresa.telefone || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`E-mail: ${empresa.email || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`Dados bancários: (i) Banco: ${empresa.banco_nome || 'Não informado'}; (ii) Agência: ${empresa.banco_agencia || 'Não informado'}; (iii) Conta: ${empresa.banco_conta || 'Não informado'}; (ix) Pix: ${empresa.banco_pix || 'Não informado'}`, marginX, y, { maxWidth: pageWidth - 2 * margin });
         y += 10;
 
-        doc.setFontSize(10);
+        doc.text('2. REPRESENTANTE MUTUANTE', marginX, y);
+        y += 5;
+        doc.text(`Nome Completo: ${empresa.representante_nome || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`CPF: ${empresa.representante_cpf || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`RG e órgão Emissor: ${empresa.representante_rg || '—'} ${empresa.representante_orgao_emissor || ''}`, marginX, y);
+        y += 5;
+        doc.text(`Cargo: ${empresa.representante_cargo || '—'}`, marginX, y);
+        y += 10;
+
+        doc.text('3. CONTRATANTE MUTUÁRIA', marginX, y);
+        y += 5;
+        doc.text(`Razão Social: ${cliente.razao_social || cliente.nome_completo || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`Nome de Fantasia: ${cliente.nome_fantasia || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`CNPJ: ${cliente.cnpj || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`Optante pelo Simples Nacional: ${r.inputs.simples_nacional ? 'Sim' : 'Não'}`, marginX, y);
+        y += 5;
+        doc.text(`Endereço: ${endClienteStr}`, marginX, y, { maxWidth: pageWidth - 2 * margin });
+        y += 5;
+        doc.text(`E-mail: ${cliente.email || '—'}`, marginX, y);
+        y += 5;
+        doc.text(`Telefone: ${cliente.telefone_celular_1 || cliente.telefone || '—'}`, marginX, y);
+        y += 15;
+
+        // ========== PÁGINA 2: Dados bancários mutuário + 4. REPRESENTANTE MUTUÁRIA + QUADRO 02 ==========
+        doc.addPage();
+        y = 20;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('Dados bancários para a transferência em conta de titularidade do MUTUÁRIO:', marginX, y);
+        y += 7;
         doc.setFont(undefined, 'normal');
-        const ano = new Date().getFullYear();
-        const numeroContrato = `${ano}/000001`;
-        doc.text(`Nº DO CONTRATO: ${numeroContrato}`, 14, y);
-        doc.text(`VALOR DO CRÉDITO: ${formatCurrency(r.inputs.valor_solicitado)}`, 110, y);
+        const bancoMut = bancoMutuario || {};
+        const pixMut = cliente.pix_cliente || bancoMut.chavepix || 'Não informado';
+        doc.text(`(i) Banco: ${bancoMut.name || 'Não informado'}; (ii) Agência: ${bancoMut.agencia || 'Não informado'}; (iii) Conta: ${bancoMut.conta || 'Não informado'}; (iv) Pix: ${pixMut}`, marginX, y, { maxWidth: pageWidth - 2 * margin });
         y += 12;
 
         doc.setFont(undefined, 'bold');
-        doc.text('QUADRO 01 - PARTES CONTRATANTES', 14, y);
+        doc.text('4. REPRESENTANTE MUTUÁRIA E DEVEDOR SOLIDÁRIO', marginX, y);
         y += 7;
         doc.setFont(undefined, 'normal');
-
-        doc.text('1. CONTRATADA MUTUANTE', 14, y);
+        const repMut = devedorSolidario || cliente;
+        doc.text(`Nome Completo: ${(repMut.nome_completo || repMut.razao_social || '—').toUpperCase()}`, marginX, y);
         y += 5;
-        doc.text(`Razão Social: ${empresa.company || empresa.razao_social || '—'}`, 14, y);
+        doc.text(`CPF: ${(repMut.cpf || '').replace(/\D/g, '') || '—'}`, marginX, y);
         y += 5;
-        doc.text(`CNPJ: ${empresa.cnpj || '—'}`, 14, y);
+        doc.text(`RG e órgão Emissor: ${repMut.rg || '—'} ${repMut.orgao_emissor || ''}`, marginX, y);
         y += 5;
-        doc.text(`Endereço: ${empresa.endereco || '—'}`, 14, y);
+        doc.text(`Estado Civil: ${repMut.estado_civil || '—'}`, marginX, y);
         y += 5;
-        doc.text(`Telefone: ${empresa.telefone || empresa.whatsapp || '—'}`, 14, y);
+        doc.text(`Regime de Comunhão de Bens: ${repMut.regime_bens || '—'}`, marginX, y);
         y += 5;
-        doc.text(`E-mail: ${empresa.email || '—'}`, 14, y);
-        y += 10;
-
-        doc.text('3. CONTRATANTE MUTUÁRIA', 14, y);
+        doc.text(`Endereço: ${endDevedor}`, marginX, y, { maxWidth: pageWidth - 2 * margin });
         y += 5;
-        doc.text(`Razão Social: ${cliente.razao_social || cliente.nome_completo || '—'}`, 14, y);
-        doc.text(`CNPJ: ${cliente.cnpj || '—'}`, 110, y);
+        doc.text(`E-mail: ${repMut.email || '—'}`, marginX, y);
         y += 5;
-        const endCliente = cliente.address?.[0];
-        doc.text(`Endereço: ${endCliente ? [endCliente.address, endCliente.number, endCliente.neighborhood, endCliente.city].filter(Boolean).join(', ') : '—'}`, 14, y);
-        y += 10;
+        doc.text(`Telefone: ${repMut.telefone || repMut.telefone_celular_1 || '—'}`, marginX, y);
+        y += 12;
 
         doc.setFont(undefined, 'bold');
-        doc.text('QUADRO 02 – COMPOSIÇÃO DO CRÉDITO', 14, y);
+        doc.text('QUADRO 02 – COMPOSIÇÃO DO CRÉDITO', marginX, y);
         y += 7;
         doc.setFont(undefined, 'normal');
 
-        doc.text(`Valor do Crédito: ${formatCurrency(r.inputs.valor_solicitado)}`, 14, y);
-        y += 5;
-        doc.text(`Quantidade de parcelas: ${r.inputs.quantidade_parcelas}`, 14, y);
-        y += 5;
-        doc.text(`1º vencimento: ${formatDate(r.inputs.data_primeira_parcela)}`, 14, y);
-        y += 5;
-        doc.text(`Juros remuneratórios ao mês: ${r.inputs.taxa_juros_mensal}%`, 14, y);
-        y += 5;
-        doc.text(`Sistema de Amortização: ${r.inputs.modelo_amortizacao || 'Price'}`, 14, y);
-        y += 5;
-        doc.text(`Periodicidade: ${r.inputs.periodo_amortizacao}`, 14, y);
-        y += 5;
-        doc.text(`IOF: ${formatCurrency(r.iof.total)} (diário ${formatCurrency(r.iof.diario)} + adicional ${formatCurrency(r.iof.adicional)})`, 14, y);
-        y += 5;
-        doc.text(`Valor do Contrato: ${formatCurrency(r.valor_contrato)}`, 14, y);
-        y += 5;
-        doc.text(`CET ao ano: ${formatPercent(parseFloat(r.totais.cet_ano))} | CET ao mês: ${formatPercent(parseFloat(r.totais.cet_mes))}`, 14, y);
-        y += 5;
-        doc.text(`Valor total a prazo: ${formatCurrency(r.totais.total_parcelas)}`, 14, y);
-        y += 10;
+        const quadro02Data = [
+            ['Valor do Crédito', formatCurrency(r.inputs.valor_solicitado)],
+            ['Quantidade de parcelas', String(r.inputs.quantidade_parcelas)],
+            ['1° vencimento', formatDate(r.inputs.data_primeira_parcela)],
+            ['Sistema de Amortização', r.inputs.modelo_amortizacao || 'Price'],
+            ['Periodicidade da Capitalização de Juros', r.inputs.periodo_amortizacao || 'Diário'],
+            ['Taxa de juros no período de capitalização (%)', taxaPeriodoPercent + '%'],
+            ['Convenção de contagem de dias', '365 dias'],
+            ['Valor de juros de acerto', formatCurrency(r.totais.juros_acerto)],
+            ['IOF Adicional (alíquota 0,38%)', formatCurrency(r.iof.adicional)],
+            ['IOF Diário (alíquota ' + (r.iof.aliquota_diaria || '0,0082%') + ')', formatCurrency(r.iof.diario)],
+        ];
+        autoTable(doc, {
+            startY: y,
+            body: quadro02Data,
+            theme: 'plain',
+            styles: { fontSize: 9 },
+            columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 70 } },
+            margin: { left: marginX, right: margin },
+        });
+        y = doc.lastAutoTable.finalY + 12;
+
+        // ========== PÁGINA 3: Resumo + QUADRO 03 (início) ==========
+        doc.addPage();
+        y = 20;
+
+        const resumoData = [
+            ['Total IOF', formatCurrency(r.iof.total)],
+            ['Valor do Contrato', formatCurrency(r.valor_contrato)],
+            ['CET ao ano (%)', formatPercent(parseFloat(r.totais.cet_ano))],
+            ['CET ao mês (%)', formatPercent(parseFloat(r.totais.cet_mes))],
+            ['Valor total a prazo', formatCurrency(r.totais.total_parcelas)],
+        ];
+        autoTable(doc, {
+            startY: y,
+            body: resumoData,
+            theme: 'plain',
+            styles: { fontSize: 9 },
+            columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 60 } },
+            margin: { left: marginX, right: margin },
+        });
+        y = doc.lastAutoTable.finalY + 10;
 
         doc.setFont(undefined, 'bold');
-        doc.text('QUADRO 03 – CRONOGRAMA DE REEMBOLSO', 14, y);
+        doc.text('QUADRO 03 – CRONOGRAMA DE REEMBOLSO', marginX, y);
+        doc.text(`QUANTIDADE DE PARCELAS: ${r.inputs.quantidade_parcelas}`, pageWidth - margin - 50, y);
         y += 7;
         doc.setFont(undefined, 'normal');
 
-        const tableData = r.cronograma.map(p => [
-            String(p.numero),
+        const tableData = r.cronograma.map((p) => [
+            String(p.numero).padStart(2, '0'),
             formatDate(p.vencimento),
-            p.parcela,
-            p.juros,
-            p.amortizacao,
-            p.saldo_devedor,
+            formatCurrency(p.parcela),
+            formatCurrency(p.juros),
+            formatCurrency(p.amortizacao),
+            formatCurrency(p.saldo_devedor),
         ]);
         autoTable(doc, {
             startY: y,
-            head: [['Parcela', 'Vencimento', 'Valor', 'Juros', 'Amortização', 'Saldo Devedor']],
+            head: [['Parcela', 'Vencimento', 'Valor', 'Juros', 'Amortização', 'Saldo Devedor (após pagamento)']],
             body: tableData,
             theme: 'grid',
             styles: { fontSize: 7 },
-            headStyles: { fillColor: [100, 100, 100] },
-            margin: { left: 14, right: 14 },
+            headStyles: { fillColor: [80, 80, 80] },
+            margin: { left: marginX, right: margin },
+            pageBreak: 'auto',
         });
-        y = doc.lastAutoTable.finalY + 15;
+        y = doc.lastAutoTable.finalY + 10;
 
-        doc.setFontSize(9);
-        doc.text('Por este instrumento particular, as partes acima qualificadas celebram o presente CONTRATO DE MÚTUO FINANCEIRO.', 14, y, { maxWidth: pageWidth - 28 });
-        y += 10;
-        doc.text('E, por estarem assim justas e acertadas, firmam o presente instrumento.', 14, y, { maxWidth: pageWidth - 28 });
+        // ========== PÁGINAS 4-7: Cláusulas ==========
+        const clausulasTexto = [
+            CLAUSULAS_CONTRATO.clausula1,
+            CLAUSULAS_CONTRATO.clausula2,
+            CLAUSULAS_CONTRATO.clausula3,
+            CLAUSULAS_CONTRATO.clausula4,
+            CLAUSULAS_CONTRATO.clausula5,
+            CLAUSULAS_CONTRATO.clausula6,
+            CLAUSULAS_CONTRATO.clausula7,
+            CLAUSULAS_CONTRATO.clausula8,
+            CLAUSULAS_CONTRATO.clausula9,
+            CLAUSULAS_CONTRATO.clausula10,
+        ].join('\n\n');
+
+        const clausulasLinhas = doc.splitTextToSize(clausulasTexto, pageWidth - 2 * margin);
+        let yClaus = y;
+        for (const linha of clausulasLinhas) {
+            if (yClaus > pageHeight - 25) {
+                doc.addPage();
+                yClaus = margin;
+            }
+            doc.setFontSize(9);
+            doc.text(linha, marginX, yClaus);
+            yClaus += 5;
+        }
+
+        // ========== PÁGINA 9: Assinaturas ==========
+        doc.addPage();
+        const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        const dataAssinatura = r.inputs.data_assinatura;
+        const d = typeof dataAssinatura === 'string' ? new Date(dataAssinatura + 'T12:00:00') : new Date(dataAssinatura);
+        const cidadeAssin = empresa.cidade || 'Aparecida de Goiânia';
+        const ufAssin = empresa.estado || 'GO';
+        const dataExtenso = `${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+
+        y = 25;
+        doc.setFontSize(10);
+        doc.text(`${cidadeAssin}/${ufAssin}, ${dataExtenso}`, pageWidth / 2, y, { align: 'center' });
+        y += 12;
+
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2);
+        doc.line(marginX, y, pageWidth - margin, y);
         y += 15;
 
-        const dataAssinatura = formatDate(r.inputs.data_assinatura);
-        doc.text(`Data: ${dataAssinatura}`, 14, y);
+        doc.setFont(undefined, 'bold');
+        doc.text('REPRESENTANTE MUTUANTE', pageWidth / 2, y, { align: 'center' });
+        y += 8;
+        doc.setFont(undefined, 'normal');
+        doc.text((empresa.representante_nome || empresa.company || '—').trim(), pageWidth / 2, y, { align: 'center' });
+        y += 5;
+        doc.text((empresa.representante_cpf || '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') || '—', pageWidth / 2, y, { align: 'center' });
+        y += 12;
+
+        doc.line(marginX, y, pageWidth - margin, y);
+        y += 15;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('REPRESENTANTE MUTUÁRIA', pageWidth / 2, y, { align: 'center' });
+        y += 8;
+        doc.setFont(undefined, 'normal');
+        const repMutNome = (devedorSolidario?.nome_completo || cliente.razao_social || cliente.nome_completo || '—').toUpperCase();
+        doc.text(repMutNome, pageWidth / 2, y, { align: 'center' });
+        y += 5;
+        doc.text((devedorSolidario?.cpf || cliente.cpf || '').replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') || '—', pageWidth / 2, y, { align: 'center' });
+        y += 15;
+
+        doc.setFont(undefined, 'bold');
+        doc.text('TESTEMUNHAS:', pageWidth / 2, y, { align: 'center' });
+        y += 10;
+
+        doc.line(marginX, y, pageWidth / 2 - 10, y);
+        doc.line(pageWidth / 2 + 10, y, pageWidth - margin, y);
+        y += 15;
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(9);
+        doc.text('Nome:', marginX + 5, y);
+        doc.text('Nome:', pageWidth / 2 + 15, y);
+        y += 6;
+        doc.text('CPF:', marginX + 5, y);
+        doc.text('CPF:', pageWidth / 2 + 15, y);
+        y += 6;
+        doc.text('RG:', marginX + 5, y);
+        doc.text('RG:', pageWidth / 2 + 15, y);
+
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(9);
+            doc.text(String(i), pageWidth - margin, pageHeight - 10, { align: 'right' });
+        }
 
         const filename = options?.filename || `contrato-inicial-${new Date().toISOString().split('T')[0]}.pdf`;
 

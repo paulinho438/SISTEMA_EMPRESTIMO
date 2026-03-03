@@ -9,6 +9,7 @@ use App\Models\ContratoAssinaturaEvento;
 use App\Models\ContratoAssinaturaOtp;
 use App\Models\SimulacaoEmprestimo;
 use App\Services\ContratoAssinaturaPdfService;
+use App\Services\D4SignService;
 use App\Services\WAPIService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -172,6 +173,8 @@ class AssinaturaContratoController extends Controller
         $contrato->pdf_final_sha256 = null;
         $contrato->aceite_at = null;
         $contrato->finalizado_at = null;
+        $contrato->d4sign_uuid_document = null;
+        $contrato->d4sign_embed_url = null;
         $contrato->save();
 
         $this->registrarEvento($contrato, 'admin', (int) (auth('api')->id() ?? 0), 'SIGN_INITIATED', $request, [
@@ -179,10 +182,52 @@ class AssinaturaContratoController extends Controller
             'pdf_original_sha256' => $hashOriginal,
         ]);
 
+        $d4signEmbedUrl = null;
+        $d4signUuidDoc = null;
+
+        $d4sign = new D4SignService();
+        if ($d4sign->isConfigured()) {
+            $uuidSafe = $d4sign->getUuidSafe();
+            if (empty($uuidSafe)) {
+                $cofres = $d4sign->listarCofres();
+                $uuidSafe = $cofres[0]['uuid-safe'] ?? $cofres[0]['uuid_safe'] ?? null;
+            }
+            if ($uuidSafe) {
+                $d4signUuidDoc = $d4sign->uploadDocumento($uuidSafe, $file, "contrato-{$contrato->id}.pdf");
+                if ($d4signUuidDoc) {
+                    $clienteEmail = (string) ($cliente->email ?? '');
+                    if ($clienteEmail === '') {
+                        $clienteEmail = 'cliente' . $cliente->id . '@placeholder.local';
+                    }
+                    $nomeCliente = (string) ($cliente->nome_completo ?? $cliente->razao_social ?? 'Cliente');
+                    $cpfCliente = (string) ($cliente->cpf ?? '');
+                    $dataNasc = '';
+                    if ($cliente->data_nascimento) {
+                        $dataNasc = $cliente->data_nascimento->format('d/m/Y');
+                    }
+                    $d4sign->cadastrarSignatario($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, true);
+                    $d4sign->enviarParaAssinatura($d4signUuidDoc, 'Por favor, assine o contrato.', true, false);
+                    $webhookUrl = config('services.d4sign.webhook_url') ?: URL::to('/api/webhook/d4sign');
+                    $d4sign->cadastrarWebhook($d4signUuidDoc, $webhookUrl);
+                    $d4signEmbedUrl = $d4sign->getEmbedUrl($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, $dataNasc);
+                    $contrato->d4sign_uuid_document = $d4signUuidDoc;
+                    $contrato->d4sign_embed_url = $d4signEmbedUrl;
+                    $contrato->save();
+                    $this->registrarEvento($contrato, 'admin', (int) (auth('api')->id() ?? 0), 'D4SIGN_INITIATED', $request, [
+                        'd4sign_uuid_document' => $d4signUuidDoc,
+                        'd4sign_embed_url' => $d4signEmbedUrl,
+                    ]);
+                }
+            }
+        }
+
         // Mensagem WhatsApp (enviada automaticamente, com fallback para cópia manual)
         $telefone = preg_replace('/\D/', '', (string) ($cliente->telefone_celular_1 ?? ''));
         $whatsNumero = $telefone ? ('55' . $telefone) : null;
-        if ($tinhaSenha) {
+
+        if ($d4signEmbedUrl) {
+            $mensagem = "Você tem um contrato pendente para assinatura.\n\nAssine pelo link abaixo (D4Sign):\n{$d4signEmbedUrl}";
+        } elseif ($tinhaSenha) {
             $mensagem = "Você tem um contrato pendente para assinatura no aplicativo.\n\nUsuário (CPF): {$cliente->usuario}\n\nAbra o app, faça login com sua senha já cadastrada e assine o contrato pendente.";
         } else {
             $mensagem = "Acesso ao aplicativo do contrato:\n\nUsuário (CPF): {$cliente->usuario}\nSenha: {$senhaInicial}\n\nAbra o app e faça login para assinar o contrato pendente.";
@@ -197,6 +242,7 @@ class AssinaturaContratoController extends Controller
             'enviado' => (bool) $enviado,
             'whatsapp_numero' => $whatsNumero,
             'tinha_senha' => (bool) $tinhaSenha,
+            'd4sign_embed_url' => $d4signEmbedUrl,
         ]);
 
         return response()->json([
@@ -210,6 +256,8 @@ class AssinaturaContratoController extends Controller
             'whatsapp_mensagem' => $mensagem,
             'whatsapp_enviado' => (bool) $enviado,
             'cliente_tinha_senha' => (bool) $tinhaSenha,
+            'd4sign_embed_url' => $d4signEmbedUrl,
+            'd4sign_link_assinatura' => $d4signEmbedUrl,
         ]);
     }
 
@@ -234,6 +282,8 @@ class AssinaturaContratoController extends Controller
             'pdf_original_sha256' => $contrato->pdf_original_sha256,
             'pdf_final_path' => $contrato->pdf_final_path,
             'pdf_final_sha256' => $contrato->pdf_final_sha256,
+            'd4sign_uuid_document' => $contrato->d4sign_uuid_document,
+            'd4sign_embed_url' => $contrato->d4sign_embed_url,
             'cliente' => $contrato->client,
             'eventos' => $contrato->assinaturaEventos,
             'evidencias' => $contrato->assinaturaEvidencias,

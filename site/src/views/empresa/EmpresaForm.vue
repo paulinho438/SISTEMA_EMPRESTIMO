@@ -288,6 +288,61 @@ export default {
                         <label for="state">Número para Contato</label>
                         <InputMask id="inputmask" :modelValue="empresa?.numero_contato" v-model="empresa.numero_contato" mask="(99) 9999-9999" ></InputMask>
                     </div>
+                    <div class="col-12 mt-3">
+                        <h6>Dados para Contrato de Mútuo</h6>
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="razao_social">Razão Social</label>
+                        <InputText id="razao_social" :modelValue="empresa?.razao_social" v-model="empresa.razao_social" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="cnpj">CNPJ</label>
+                        <InputText id="cnpj" :modelValue="empresa?.cnpj" v-model="empresa.cnpj" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="endereco">Endereço</label>
+                        <InputText id="endereco" :modelValue="empresa?.endereco" v-model="empresa.endereco" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="cidade">Cidade</label>
+                        <InputText id="cidade" :modelValue="empresa?.cidade" v-model="empresa.cidade" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-1">
+                        <label for="estado">UF</label>
+                        <InputText id="estado" :modelValue="empresa?.estado" v-model="empresa.estado" type="text" maxlength="2" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="cep">CEP</label>
+                        <InputText id="cep" :modelValue="empresa?.cep" v-model="empresa.cep" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-3">
+                        <label for="representante_nome">Representante (Nome)</label>
+                        <InputText id="representante_nome" :modelValue="empresa?.representante_nome" v-model="empresa.representante_nome" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="representante_cpf">Representante (CPF)</label>
+                        <InputText id="representante_cpf" :modelValue="empresa?.representante_cpf" v-model="empresa.representante_cpf" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="representante_cargo">Representante (Cargo)</label>
+                        <InputText id="representante_cargo" :modelValue="empresa?.representante_cargo" v-model="empresa.representante_cargo" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="banco_nome">Banco</label>
+                        <InputText id="banco_nome" :modelValue="empresa?.banco_nome" v-model="empresa.banco_nome" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="banco_agencia">Agência</label>
+                        <InputText id="banco_agencia" :modelValue="empresa?.banco_agencia" v-model="empresa.banco_agencia" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="banco_conta">Conta</label>
+                        <InputText id="banco_conta" :modelValue="empresa?.banco_conta" v-model="empresa.banco_conta" type="text" />
+                    </div>
+                    <div class="field col-12 md:col-2">
+                        <label for="banco_pix">Chave Pix</label>
+                        <InputText id="banco_pix" :modelValue="empresa?.banco_pix" v-model="empresa.banco_pix" type="text" />
+                    </div>
                 </div>
 				<div v-if="empresa?.whatsapp != null" class="card">
 					
