@@ -1,3 +1,7 @@
+import ContratosList from '@/views/contratos/ContratosList.vue';
+import ContratosAssinaturasList from '@/views/contratos/ContratosAssinaturasList.vue';
+import ContratoAssinaturaReview from '@/views/contratos/ContratoAssinaturaReview.vue';
+
 const contratosRoutes = [
 	{
 		path: '/contratos',
@@ -5,17 +9,17 @@ const contratosRoutes = [
 			{
 				path: '/contratos',
 				name: 'contratosList',
-				component: () => import('@/views/contratos/ContratosList.vue')
+				component: ContratosList
 			},
 			{
 				path: '/contratos/assinaturas',
 				name: 'contratosAssinaturasList',
-				component: () => import('@/views/contratos/ContratosAssinaturasList.vue')
+				component: ContratosAssinaturasList
 			},
 			{
 				path: '/contratos/:id/assinatura',
 				name: 'contratoAssinaturaReview',
-				component: () => import('@/views/contratos/ContratoAssinaturaReview.vue')
+				component: ContratoAssinaturaReview
 			}
 		]
 	}
