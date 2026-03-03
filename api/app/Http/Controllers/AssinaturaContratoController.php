@@ -203,7 +203,7 @@ class AssinaturaContratoController extends Controller
                     $cpfCliente = (string) ($cliente->cpf ?? '');
                     $dataNasc = '';
                     if ($cliente->data_nascimento) {
-                        $dataNasc = $cliente->data_nascimento->format('d/m/Y');
+                        $dataNasc = \Carbon\Carbon::parse($cliente->data_nascimento)->format('d/m/Y');
                     }
                     $d4sign->cadastrarSignatario($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, true);
                     $d4sign->enviarParaAssinatura($d4signUuidDoc, 'Por favor, assine o contrato.', true, false);
