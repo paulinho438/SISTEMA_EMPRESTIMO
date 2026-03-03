@@ -195,6 +195,9 @@ class AssinaturaContratoController extends Controller
             if ($uuidSafe) {
                 $d4signUuidDoc = $d4sign->uploadDocumento($uuidSafe, $file, "contrato-{$contrato->id}.pdf");
                 if ($d4signUuidDoc) {
+                    if (!$d4sign->aguardarDocumentoPronto($d4signUuidDoc)) {
+                        \Illuminate\Support\Facades\Log::warning('D4Sign: documento não ficou pronto a tempo', ['uuid' => $d4signUuidDoc]);
+                    }
                     $clienteEmail = (string) ($cliente->email ?? '');
                     if ($clienteEmail === '') {
                         $clienteEmail = 'cliente' . $cliente->id . '@placeholder.local';
@@ -205,11 +208,23 @@ class AssinaturaContratoController extends Controller
                     if ($cliente->data_nascimento) {
                         $dataNasc = \Carbon\Carbon::parse($cliente->data_nascimento)->format('d/m/Y');
                     }
-                    $d4sign->cadastrarSignatario($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, true);
-                    $d4sign->enviarParaAssinatura($d4signUuidDoc, 'Por favor, assine o contrato.', true, false);
+                    $signatarioOk = $d4sign->cadastrarSignatario($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, true);
+                    $enviadoOk = $signatarioOk && $d4sign->enviarParaAssinatura($d4signUuidDoc, 'Por favor, assine o contrato.', true, false);
+                    if (!$signatarioOk) {
+                        \Illuminate\Support\Facades\Log::warning('D4Sign: falha ao cadastrar signatário', ['uuid' => $d4signUuidDoc]);
+                    }
+                    if (!$enviadoOk) {
+                        \Illuminate\Support\Facades\Log::warning('D4Sign: falha ao enviar para assinatura', ['uuid' => $d4signUuidDoc]);
+                    }
                     $webhookUrl = config('services.d4sign.webhook_url') ?: URL::to('/api/webhook/d4sign');
                     $d4sign->cadastrarWebhook($d4signUuidDoc, $webhookUrl);
-                    $d4signEmbedUrl = $d4sign->getEmbedUrl($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, $dataNasc);
+                    if ($enviadoOk) {
+                        sleep(1);
+                        $d4signEmbedUrl = $d4sign->obterLinkAssinatura($d4signUuidDoc);
+                    }
+                    if (!$d4signEmbedUrl) {
+                        $d4signEmbedUrl = $d4sign->getEmbedUrl($d4signUuidDoc, $clienteEmail, $nomeCliente, $cpfCliente, $dataNasc);
+                    }
                     $contrato->d4sign_uuid_document = $d4signUuidDoc;
                     $contrato->d4sign_embed_url = $d4signEmbedUrl;
                     $contrato->save();
