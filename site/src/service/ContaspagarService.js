@@ -28,7 +28,9 @@ export default class ContaspagarService {
         if (isFormData) {
             const id = permissions.get?.('id');
             if (id) {
-                return await axios.put(`${apiPath}/contaspagar/${id}`, permissions);
+                // POST com _method=PUT: PHP não popula $_POST em PUT, então FormData não chega ao Laravel
+                permissions.append('_method', 'PUT');
+                return await axios.post(`${apiPath}/contaspagar/${id}`, permissions);
             }
             return await axios.post(`${apiPath}/contaspagar`, permissions);
         }
