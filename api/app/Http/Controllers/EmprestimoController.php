@@ -753,6 +753,7 @@ class EmprestimoController extends Controller
         if ($request->has('status')) {
             $status = trim($request->get('status'));
             if ($status !== '') {
+                // Match exato para evitar que "Atrasado" retorne "Muito Atrasado"
                 $query->whereRaw("(
                     CASE
                         WHEN emprestimos.protesto = 1 THEN 'Protesto'
@@ -767,7 +768,7 @@ class EmprestimoController extends Controller
                              (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
                         ELSE 'Em Dias'
                     END
-                ) LIKE ?", ["%{$status}%"]);
+                ) = ?", [$status]);
             }
         }
 

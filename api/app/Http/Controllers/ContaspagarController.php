@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Banco;
 
 use DateTime;
+use Carbon\Carbon;
 use App\Http\Resources\ContaspagarResource;
 use App\Http\Resources\ContaspagarAprovacaoResource;
 
@@ -55,17 +56,65 @@ class ContaspagarController extends Controller
         $perPage = $request->input('per_page', 15); // Padrão: 15 itens por página
         $page = $request->input('page', 1);
 
-        // Eager loading de todos os relacionamentos para evitar N+1 queries
-        // Usando paginate() em vez de get() para paginação no backend
-        $contaspagar = Contaspagar::where('company_id', $request->header('company-id'))
+        $query = Contaspagar::where('company_id', $request->header('company-id'))
             ->with([
-                'banco.company',  // BancosResource precisa de company
+                'banco.company',
                 'emprestimo',
                 'fornecedor',
                 'costcenter'
-            ])
-            ->orderBy('id', 'desc') // Ordenar por ID descendente (mais recentes primeiro)
-            ->paginate($perPage, ['*'], 'page', $page);
+            ]);
+
+        // Filtros
+        if ($request->has('id') && $request->id !== null && $request->id !== '') {
+            $query->where('id', 'LIKE', $request->id . '%');
+        }
+        if ($request->has('nome_fornecedor') && $request->nome_fornecedor !== null && $request->nome_fornecedor !== '') {
+            $nome = $request->nome_fornecedor;
+            $query->where(function ($q) use ($nome) {
+                $q->whereHas('fornecedor', function ($q2) use ($nome) {
+                    $q2->where('nome_completo', 'LIKE', '%' . $nome . '%');
+                })->orWhereHas('emprestimo', function ($q2) use ($nome) {
+                    $q2->whereHas('client', function ($q3) use ($nome) {
+                        $q3->where('nome_completo', 'LIKE', '%' . $nome . '%');
+                    });
+                });
+            });
+        }
+        if ($request->has('tipodoc') && $request->tipodoc !== null && $request->tipodoc !== '') {
+            $query->where('tipodoc', 'LIKE', '%' . $request->tipodoc . '%');
+        }
+        if ($request->has('descricao') && $request->descricao !== null && $request->descricao !== '') {
+            $query->where('descricao', 'LIKE', '%' . $request->descricao . '%');
+        }
+        if ($request->has('nome_costcenter') && $request->nome_costcenter !== null && $request->nome_costcenter !== '') {
+            $query->whereHas('costcenter', function ($q) use ($request) {
+                $q->where('name', 'LIKE', '%' . $request->nome_costcenter . '%');
+            });
+        }
+        if ($request->has('venc') && $request->venc !== null && $request->venc !== '') {
+            $venc = Carbon::parse($request->venc)->format('Y-m-d');
+            $query->whereDate('venc', $venc);
+        }
+        if ($request->has('dt_baixa') && $request->dt_baixa !== null && $request->dt_baixa !== '') {
+            $dt_baixa = Carbon::parse($request->dt_baixa)->format('Y-m-d');
+            $query->whereDate('dt_baixa', $dt_baixa);
+        }
+        if ($request->has('valor') && $request->valor !== null && $request->valor !== '') {
+            $valor = $request->valor;
+            if (is_numeric($valor)) {
+                $query->where('valor', $valor);
+            }
+        }
+        if ($request->has('nome_banco') && $request->nome_banco !== null && $request->nome_banco !== '') {
+            $query->whereHas('banco', function ($q) use ($request) {
+                $q->where('name', 'LIKE', '%' . $request->nome_banco . '%');
+            });
+        }
+        if ($request->has('status') && $request->status !== null && $request->status !== '') {
+            $query->where('status', 'LIKE', '%' . $request->status . '%');
+        }
+
+        $contaspagar = $query->orderBy('id', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
         return ContaspagarResource::collection($contaspagar);
     }

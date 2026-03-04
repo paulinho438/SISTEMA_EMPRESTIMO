@@ -68,6 +68,12 @@ export default {
                 minimumFractionDigits: 2
             });
         },
+		getFilterValue(filter) {
+			if (!filter) return null;
+			const constraint = filter?.constraints?.[0];
+			const value = constraint?.value ?? filter?.value;
+			return value !== null && value !== undefined && value !== '' ? value : null;
+		},
 		getContaspagar(page = 1) {
 			this.loading = true;
 			this.currentPage = page;
@@ -76,6 +82,15 @@ export default {
 				page: this.currentPage,
 				per_page: this.perPage
 			};
+
+			// Enviar filtros para o backend
+			const filterKeys = ['id', 'nome_fornecedor', 'tipodoc', 'descricao', 'nome_costcenter', 'venc', 'dt_baixa', 'valor', 'nome_banco', 'status'];
+			filterKeys.forEach((key) => {
+				const value = this.getFilterValue(this.filters[key]);
+				if (value !== null) {
+					params[key] = value instanceof Date ? value.toISOString().split('T')[0] : value;
+				}
+			});
 
 			this.contaspagarService.getAll(params)
 			.then((response) => {
@@ -173,6 +188,7 @@ export default {
 		},
 		clearFilter() {
 			this.initFilters();
+			this.getContaspagar(1);
 		}
 	},
 	beforeMount() {
@@ -215,6 +231,7 @@ export default {
                         responsiveLayout="scroll"
                         :first="(currentPage - 1) * perPage"
                         @page="changePage"
+                        @filter="() => getContaspagar(1)"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                         :rowsPerPageOptions="[10, 15, 25, 50]"
                         currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} Título(s)"
