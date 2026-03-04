@@ -11,7 +11,8 @@ export default {
         address: Object,
         oldCicom: Object,
         loading: Boolean,
-        emp: Object
+        emp: Object,
+        hideGerarEmprestimo: { type: Boolean, default: false }
     },
     emits: ['updateCicom', 'addCityBeforeSave', 'changeLoading'],
     setup() {
@@ -348,7 +349,7 @@ export default {
     </ConfirmPopup>
     <div class="grid flex flex-wrap mb-3 px-4 pt-2">
         <div class="col-12 px-0 py-0 text-right">
-            <Button v-if="!this.address?.parcelas && !this.enviado" label="Gerar Emprestimo" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="visibleRight = true" />
+            <Button v-if="!hideGerarEmprestimo && !this.address?.parcelas && !this.enviado" label="Gerar Emprestimo" class="p-button-sm p-button-info" :icon="icons.PLUS" @click="visibleRight = true" />
         </div>
     </div>
     <Sidebar v-model:visible="visibleRight" :baseZIndex="1000" position="right">

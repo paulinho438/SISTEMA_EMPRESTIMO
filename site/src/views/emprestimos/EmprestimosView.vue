@@ -560,6 +560,7 @@ export default {
                     :address="this.client"
                     :oldCicom="this.oldClient"
                     :loading="loading"
+                    :hideGerarEmprestimo="true"
                     @updateCicom="clearCicom"
                     @addCityBeforeSave="addCityBeforeSave"
                     @changeLoading="changeLoading"
