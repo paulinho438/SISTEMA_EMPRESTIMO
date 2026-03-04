@@ -345,7 +345,28 @@ export default {
                                         {{ data.anexos_urls.length > 1 ? `Comprovante ${idx + 1}` : 'Comprovante' }}
                                     </a>
                                 </span>
-                                <span v-else class="text-color-secondary">-</span>
+                                <span v-else class="flex align-items-center gap-1">
+                                    <Button
+                                        v-if="permissionsService.hasPermissions('view_contaspagar_create')"
+                                        label="Adicionar comprovante"
+                                        class="p-button-text p-button-sm p-0"
+                                        icon="pi pi-plus"
+                                        @click="editCategory(data.id)"
+                                    />
+                                    <span v-else class="text-color-secondary">-</span>
+                                </span>
+                            </template>
+                        </Column>
+
+                        <Column v-if="permissionsService.hasPermissions('view_contaspagar_create')" field="edit" header="Editar" :sortable="false" class="w-1">
+                            <template #body="slotProps">
+                                <Button
+                                    class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0"
+                                    type="button"
+                                    :icon="icons.PENCIL"
+                                    v-tooltip.top="'Editar título (inclui adicionar comprovante após pagamento)'"
+                                    @click.prevent="editCategory(slotProps.data.id)"
+                                />
                             </template>
                         </Column>
 

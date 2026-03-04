@@ -281,7 +281,7 @@ export default {
                                 class="p-inputtext p-component w-full"
                                 @change="onComprovanteSelect($event)"
                             />
-                            <small class="text-color-secondary">PDF ou imagens (máx. 10MB cada). Selecione múltiplos arquivos.</small>
+                            <small class="text-color-secondary">PDF ou imagens (máx. 10MB cada). Selecione múltiplos arquivos. Você pode adicionar comprovantes a qualquer momento, inclusive após realizar o pagamento.</small>
                             <div v-if="comprovanteFile.length > 0" class="flex flex-wrap gap-2 mt-2">
                                 <div
                                     v-for="(file, index) in comprovanteFile"
