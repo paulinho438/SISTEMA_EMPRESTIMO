@@ -32,7 +32,8 @@ export default {
             display: ref(false),
             form: ref({}),
             toggleValue: ref(false),
-            mensagemAudioValue: ref(false)
+            mensagemAudioValue: ref(false),
+            filtroComCnpj: ref(false)
         };
     },
     methods: {
@@ -139,6 +140,12 @@ export default {
                 day: '2-digit'
             });
         },
+        formatCnpj(cnpj) {
+            if (!cnpj || String(cnpj).trim() === '') return '—';
+            const digits = String(cnpj).replace(/\D/g, '');
+            if (digits.length !== 14) return cnpj;
+            return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+        },
         getClientes() {
             this.loading = true;
 
@@ -161,7 +168,7 @@ export default {
                 });
 
             this.clientService
-                .getClientesDisponiveis()
+                .getClientesDisponiveis(this.filtroComCnpj)
                 .then((response) => {
                     this.Clientes = response.data;
 
@@ -261,6 +268,11 @@ export default {
                 },
 
                 cpf: {
+                    operator: FilterOperator.AND,
+                    constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
+                },
+
+                cnpj: {
                     operator: FilterOperator.AND,
                     constraints: [{value: null, matchMode: FilterMatchMode.STARTS_WITH}]
                 },
@@ -371,13 +383,21 @@ export default {
                         :loading="loading"
                         :filters="filters"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['nome_completo']"
+                        :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
                     >
                         <template #header>
-                            <div class="flex justify-content-between flex-column sm:flex-row">
-                                <Button type="button" icon="pi pi-filter-slash" label="Clear"
-                                        class="p-button-outlined mb-2"
-                                        @click="clearFilter()"/>
+                            <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">
+                                <div class="flex gap-2 align-items-center flex-wrap">
+                                    <Button type="button" icon="pi pi-filter-slash" label="Clear"
+                                            class="p-button-outlined mb-2"
+                                            @click="clearFilter()"/>
+                                    <Button
+                                        :label="filtroComCnpj ? 'Todos os clientes' : 'Apenas com CNPJ'"
+                                        :class="filtroComCnpj ? 'p-button-outlined p-button-success mb-2' : 'p-button-outlined mb-2'"
+                                        icon="pi pi-building"
+                                        @click="filtroComCnpj = !filtroComCnpj; getClientes()"
+                                    />
+                                </div>
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
                                     <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
@@ -421,6 +441,16 @@ export default {
                             <template #filter="{ filterModel }">
                                 <InputText type="text" v-model="filterModel.value" class="p-column-filter"
                                            placeholder="Buscar pelo RG"/>
+                            </template>
+                        </Column>
+
+                        <Column field="cnpj" header="CNPJ" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ dadosSensiveis(formatCnpj(data.cnpj)) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter"
+                                           placeholder="Buscar pelo CNPJ"/>
                             </template>
                         </Column>
 

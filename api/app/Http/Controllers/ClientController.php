@@ -419,7 +419,7 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        $clients = Client::where('company_id', $request->header('company-id'))
+        $query = Client::where('company_id', $request->header('company-id'))
             ->whereDoesntHave('emprestimos', function ($query) {
                 $query->whereHas('parcelas', function ($query) {
                     $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
@@ -429,8 +429,13 @@ class ClientController extends Controller
                 $query->whereDoesntHave('parcelas', function ($query) {
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
-            }])
-            ->get();
+            }]);
+
+        if ($request->boolean('tem_cnpj')) {
+            $query->whereNotNull('cnpj')->whereRaw("TRIM(COALESCE(cnpj, '')) != ''");
+        }
+
+        $clients = $query->get();
 
         $clients = $clients->sortByDesc(function ($client) {
             return optional($client->emprestimos)->data_quitacao;

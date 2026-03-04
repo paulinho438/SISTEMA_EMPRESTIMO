@@ -20,8 +20,9 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/cliente`);
 	};
 
-	getClientesDisponiveis = async () => {
-		return await axios.get(`${apiPath}/clientesdisponiveis`);
+	getClientesDisponiveis = async (temCnpj = false) => {
+		const params = temCnpj ? { tem_cnpj: 1 } : {};
+		return await axios.get(`${apiPath}/clientesdisponiveis`, { params });
 	};
 
     delete = async (id) => {
