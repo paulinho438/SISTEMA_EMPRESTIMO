@@ -132,7 +132,10 @@ export default {
             }
         },
         getStatusSeverity(status) {
-            // Severity para os botões de filtro (mesma cor da tabela)
+            // Severity para os botões de filtro (ignorado quando há classe customizada)
+            if (['Muito Atrasado', 'Protesto', 'Protestado'].includes(status)) {
+                return 'secondary';
+            }
             switch (status) {
                 case 'Pago':
                 case 'Em Dias':
@@ -141,14 +144,19 @@ export default {
                     return 'danger';
                 case 'Atrasado':
                     return 'info';
-                case 'Muito Atrasado':
-                case 'Protesto':
-                    return 'warn';
-                case 'Protestado':
-                    return 'secondary'; // Cor customizada via btn-status-protestado
                 default:
                     return 'secondary';
             }
+        },
+        getStatusFilterButtonClass(status) {
+            // Classes que replicam as cores da tabela (p-button-warning = laranja)
+            if (status === 'Muito Atrasado' || status === 'Protesto') {
+                return 'p-button-warning';
+            }
+            if (status === 'Protestado') {
+                return 'btn-status-protestado';
+            }
+            return '';
         },
         showMenu(data) {
             // Lógica para decidir se mostrar ou não o menu com base nos dados
@@ -437,7 +445,7 @@ export default {
                             :label="`${status} ${statusCounts[status] || 0}`"
                             :severity="getStatusSeverity(status)"
                             :outlined="selectedStatus !== status"
-                            :class="['p-button-sm', status === 'Protestado' ? 'btn-status-protestado' : '']"
+                            :class="['p-button-sm', getStatusFilterButtonClass(status)]"
                             @click="filterByStatus(status)"
                         />
                     </div>
