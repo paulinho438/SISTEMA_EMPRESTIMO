@@ -11,6 +11,10 @@ class Contaspagar extends Model
 
     public $timestamps = false;
 
+    protected $casts = [
+        'anexo' => 'array',
+    ];
+
     protected $fillable = [
         'banco_id',
         'emprestimo_id',

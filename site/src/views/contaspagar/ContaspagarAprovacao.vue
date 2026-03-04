@@ -443,21 +443,20 @@ export default {
                         <InputText id="firstname2" :modelValue="contaspagar?.cod_barras" v-model="contaspagar.cod_barras" type="text" />
                     </div>
 
-                    <div v-if="contaspagar?.anexo" class="field col-12 md:col-12">
-                        <label>Comprovante</label>
-                        <div class="flex align-items-center gap-2 p-3 surface-100 border-round">
+                    <div v-if="contaspagar?.anexos_urls && contaspagar.anexos_urls.length > 0" class="field col-12 md:col-12">
+                        <label>Comprovantes</label>
+                        <div class="flex flex-wrap gap-2 p-3 surface-100 border-round">
                             <i class="pi pi-paperclip text-green-600" style="font-size: 1.5rem"></i>
-                            <div>
-                                <a
-                                    v-if="contaspagar?.anexo_url"
-                                    :href="contaspagar.anexo_url"
-                                    target="_blank"
-                                    class="font-semibold text-primary"
-                                >
-                                    Visualizar comprovante
-                                </a>
-                                <span v-else class="text-color-secondary">Comprovante anexado</span>
-                            </div>
+                            <a
+                                v-for="(url, idx) in contaspagar.anexos_urls"
+                                :key="idx"
+                                :href="url"
+                                target="_blank"
+                                class="font-semibold text-primary flex align-items-center gap-1"
+                            >
+                                <i class="pi pi-external-link"></i>
+                                {{ contaspagar.anexos_urls.length > 1 ? `Comprovante ${idx + 1}` : 'Comprovante' }}
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -187,6 +187,9 @@ export default {
 			const files = event?.target?.files || event?.files || [];
 			this.comprovanteFile = Array.from(files || []);
 		},
+		removeComprovante(index) {
+			this.comprovanteFile.splice(index, 1);
+		},
 		buildFormData() {
 			const formData = new FormData();
 			formData.append('tipodoc', this.contaspagar.tipodoc || '');
@@ -198,9 +201,13 @@ export default {
 			if (this.contaspagar.id) formData.append('id', this.contaspagar.id);
 			if (this.contaspagar.venc) formData.append('venc', this.contaspagar.venc);
 			if (this.contaspagar.cod_barras) formData.append('cod_barras', this.contaspagar.cod_barras);
-			// Comprovante deve ser o último append para garantir que o arquivo seja enviado corretamente
-			if (Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0 && this.comprovanteFile[0] instanceof File) {
-				formData.append('comprovante', this.comprovanteFile[0], this.comprovanteFile[0].name);
+			// Múltiplos comprovantes - usar comprovante[] para Laravel receber como array
+			if (Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0) {
+				this.comprovanteFile.forEach((file) => {
+					if (file instanceof File) {
+						formData.append('comprovante[]', file, file.name);
+					}
+				});
 			}
 			return formData;
 		},
@@ -264,16 +271,33 @@ export default {
                     </div>
 
 					<div class="field col-12 md:col-12">
-                        <label for="comprovante">Comprovante (Anexo)</label>
+                        <label for="comprovante">Comprovantes (Anexos)</label>
                         <div class="flex flex-column gap-2">
                             <input
                                 id="comprovante"
                                 type="file"
                                 accept="image/*,.pdf"
+                                multiple
                                 class="p-inputtext p-component w-full"
                                 @change="onComprovanteSelect($event)"
                             />
-                            <small class="text-color-secondary">PDF ou imagens (máx. 10MB)</small>
+                            <small class="text-color-secondary">PDF ou imagens (máx. 10MB cada). Selecione múltiplos arquivos.</small>
+                            <div v-if="comprovanteFile.length > 0" class="flex flex-wrap gap-2 mt-2">
+                                <div
+                                    v-for="(file, index) in comprovanteFile"
+                                    :key="index"
+                                    class="flex align-items-center gap-2 p-2 surface-100 border-round"
+                                >
+                                    <i class="pi pi-file text-primary"></i>
+                                    <span class="text-sm">{{ file.name }}</span>
+                                    <Button
+                                        type="button"
+                                        icon="pi pi-times"
+                                        class="p-button-text p-button-rounded p-button-sm p-button-danger"
+                                        @click="removeComprovante(index)"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 					

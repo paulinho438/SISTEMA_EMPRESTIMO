@@ -314,12 +314,19 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="anexo" header="Anexo" style="min-width: 6rem">
+                        <Column field="anexos" header="Anexos" style="min-width: 10rem">
                             <template #body="{ data }">
-                                <span v-if="data.anexo" class="flex align-items-center gap-1">
+                                <span v-if="data.anexos_urls && data.anexos_urls.length > 0" class="flex flex-wrap gap-1 align-items-center">
                                     <i class="pi pi-paperclip text-green-600"></i>
-                                    <a v-if="data.anexo_url" :href="data.anexo_url" target="_blank" class="text-primary">Comprovante</a>
-                                    <span v-else>Sim</span>
+                                    <a
+                                        v-for="(url, idx) in data.anexos_urls"
+                                        :key="idx"
+                                        :href="url"
+                                        target="_blank"
+                                        class="text-primary text-sm mr-1"
+                                    >
+                                        {{ data.anexos_urls.length > 1 ? `Comprovante ${idx + 1}` : 'Comprovante' }}
+                                    </a>
                                 </span>
                                 <span v-else class="text-color-secondary">-</span>
                             </template>

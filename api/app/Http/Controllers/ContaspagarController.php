@@ -154,11 +154,19 @@ class ContaspagarController extends Controller
             $dados['fornecedor_id'] = $dados['fornecedor']['id'] ?? $dados['fornecedor_id'] ?? null;
             $dados['status'] = 'Aguardando Pagamento';
 
-            // Upload do comprovante (anexo)
+            // Upload dos comprovantes (múltiplos anexos)
             if ($request->hasFile('comprovante')) {
-                $file = $request->file('comprovante');
-                $path = $file->store('comprovantes', 'public');
-                $dados['anexo'] = $path;
+                $files = $request->file('comprovante');
+                $files = is_array($files) ? $files : [$files];
+                $paths = [];
+                foreach ($files as $file) {
+                    if ($file && $file->isValid()) {
+                        $paths[] = $file->store('comprovantes', 'public');
+                    }
+                }
+                if (!empty($paths)) {
+                    $dados['anexo'] = $paths;
+                }
             }
 
             $newGroup = Contaspagar::create($dados);
@@ -212,12 +220,21 @@ class ContaspagarController extends Controller
             }
 
             if ($request->hasFile('comprovante')) {
-                if ($contaspagar->anexo) {
-                    Storage::disk('public')->delete($contaspagar->anexo);
+                $anexosAtuais = is_array($contaspagar->anexo) ? $contaspagar->anexo : ($contaspagar->anexo ? [$contaspagar->anexo] : []);
+                foreach ($anexosAtuais as $path) {
+                    Storage::disk('public')->delete($path);
                 }
-                $file = $request->file('comprovante');
-                $path = $file->store('comprovantes', 'public');
-                $contaspagar->anexo = $path;
+                $files = $request->file('comprovante');
+                $files = is_array($files) ? $files : [$files];
+                $paths = [];
+                foreach ($files as $file) {
+                    if ($file && $file->isValid()) {
+                        $paths[] = $file->store('comprovantes', 'public');
+                    }
+                }
+                if (!empty($paths)) {
+                    $contaspagar->anexo = $paths;
+                }
             }
 
             $contaspagar->save();

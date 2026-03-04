@@ -10,6 +10,21 @@ use DateTime;
 
 class ContaspagarResource extends JsonResource
 {
+    protected function getAnexosArray(): array
+    {
+        $anexo = $this->anexo;
+        if (empty($anexo)) {
+            return [];
+        }
+        return is_array($anexo) ? $anexo : [$anexo];
+    }
+
+    protected function getAnexosUrlsArray(): array
+    {
+        $anexos = $this->getAnexosArray();
+        return array_map(fn($path) => url('storage/' . $path), $anexos);
+    }
+
     /**
      * Transform the resource into an array.
      *
@@ -27,8 +42,8 @@ class ContaspagarResource extends JsonResource
             "venc"                  => (new DateTime($this->venc))->format('d/m/Y'),
             "dt_baixa"              => $this->dt_baixa?(new DateTime($this->dt_baixa))->format('d/m/Y'):null,
             "valor"                 => $this->valor,
-            "anexo"                 => $this->anexo,
-            "anexo_url"              => $this->anexo ? url('storage/' . $this->anexo) : null,
+            "anexos"                => $this->getAnexosArray(),
+            "anexos_urls"            => $this->getAnexosUrlsArray(),
             "banco"                 => new BancosResource($this->banco),
             "emprestimo"            => $this->emprestimo,
             "fornecedor"            => new FornecedorResource($this->fornecedor),
