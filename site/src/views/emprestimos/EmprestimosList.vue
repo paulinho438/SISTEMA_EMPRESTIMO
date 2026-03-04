@@ -21,15 +21,6 @@ export default {
     },
     data() {
         return {
-            statusOptions: [
-                { label: 'Em Dias', value: 'Em Dias' },
-                { label: 'Atrasado', value: 'Atrasado' },
-                { label: 'Muito Atrasado', value: 'Muito Atrasado' },
-                { label: 'Vencido', value: 'Vencido' },
-                { label: 'Pago', value: 'Pago' },
-                { label: 'Protesto', value: 'Protesto' },
-                { label: 'Protestado', value: 'Protestado' }
-            ],
             Emprestimos: ref([]),
             loading: ref(false),
             totalPages: ref(0),
@@ -76,7 +67,7 @@ export default {
             this.filters = {
                 global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 
-                status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+                status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
                 id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
@@ -408,14 +399,11 @@ export default {
                                 <Button :label="slotProps.data.status" :class="getStatusClass(slotProps.data.status)" />
                             </template>
                             <template #filter="{ filterModel }">
-                                <Dropdown
+                                <InputText
+                                    type="text"
                                     v-model="filterModel.constraints[0].value"
-                                    :options="statusOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    placeholder="Selecione o status"
                                     class="p-column-filter w-full"
-                                    :showClear="true"
+                                    placeholder="Ex: Vencido, Atrasado, Em Dias..."
                                 />
                             </template>
                         </Column>
