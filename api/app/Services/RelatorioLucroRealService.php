@@ -29,7 +29,7 @@ class RelatorioLucroRealService
                 $query->where('descricao', 'not like', '%desconto%')
                       ->where('descricao', 'not like', '%Refinanciamento%');
             })
-            ->with(['parcela.emprestimo.client', 'banco'])
+            ->with(['parcela.contasreceber', 'parcela.emprestimo.client', 'banco'])
             ->orderBy('dt_movimentacao', 'asc')
             ->get();
 
@@ -41,6 +41,12 @@ class RelatorioLucroRealService
 
         foreach ($movimentacoes as $movimentacao) {
             if (!$movimentacao->parcela || !$movimentacao->parcela->emprestimo) {
+                continue;
+            }
+
+            // Excluir parcelas dadas de baixa com desconto, refinanciamento ou renovação
+            $formaRecebto = optional($movimentacao->parcela->contasreceber)->forma_recebto ?? '';
+            if (in_array($formaRecebto, ['BAIXA COM DESCONTO', 'REFINANCIAMENTO', 'RENOVACAO'])) {
                 continue;
             }
 

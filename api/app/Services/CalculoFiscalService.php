@@ -134,7 +134,7 @@ class CalculoFiscalService
                 $query->where('descricao', 'not like', '%desconto%')
                       ->where('descricao', 'not like', '%Refinanciamento%');
             })
-            ->with(['parcela.emprestimo.parcelas', 'parcela.emprestimo.client'])
+            ->with(['parcela.contasreceber', 'parcela.emprestimo.parcelas', 'parcela.emprestimo.client'])
             ->orderBy('dt_movimentacao', 'asc')
             ->get();
 
@@ -144,6 +144,12 @@ class CalculoFiscalService
 
         foreach ($movimentacoes as $movimentacao) {
             if (!$movimentacao->parcela || !$movimentacao->parcela->emprestimo) {
+                continue;
+            }
+
+            // Excluir parcelas dadas de baixa com desconto, refinanciamento ou renovação
+            $formaRecebto = optional($movimentacao->parcela->contasreceber)->forma_recebto ?? '';
+            if (in_array($formaRecebto, ['BAIXA COM DESCONTO', 'REFINANCIAMENTO', 'RENOVACAO'])) {
                 continue;
             }
 
