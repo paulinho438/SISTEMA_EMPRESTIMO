@@ -67,7 +67,7 @@ export default {
             this.filters = {
                 global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 
-                status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+                status: { value: null, matchMode: FilterMatchMode.CONTAINS },
 
                 id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
@@ -203,14 +203,16 @@ export default {
 
             // Adicionando os filtros dinamicamente
             Object.keys(this.filters).forEach((key) => {
-                const constraint = this.filters[key]?.constraints?.[0]; // Verifica se existe constraints[0]
-                if (constraint && constraint.value !== null && constraint.value !== undefined && constraint.value !== '') {
-                    let value = constraint.value;
+                const filter = this.filters[key];
+                const constraint = filter?.constraints?.[0];
+                const value = constraint?.value ?? filter?.value;
+                if (value !== null && value !== undefined && value !== '') {
+                    let paramValue = value;
                     // Formata data para o formato esperado pela API
-                    if (key === 'dt_lancamento' && value instanceof Date) {
-                        value = value.toISOString().split('T')[0];
+                    if (key === 'dt_lancamento' && paramValue instanceof Date) {
+                        paramValue = paramValue.toISOString().split('T')[0];
                     }
-                    params[key] = value;
+                    params[key] = paramValue;
                 }
             });
 
@@ -401,7 +403,7 @@ export default {
                             <template #filter="{ filterModel }">
                                 <InputText
                                     type="text"
-                                    v-model="filterModel.constraints[0].value"
+                                    v-model="filterModel.value"
                                     class="p-column-filter w-full"
                                     placeholder="Ex: Vencido, Atrasado, Em Dias..."
                                 />
