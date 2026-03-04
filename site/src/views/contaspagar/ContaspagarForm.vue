@@ -195,7 +195,7 @@ export default {
 		},
 		buildFormData() {
 			const formData = new FormData();
-			const tipodoc = this.contaspagar.tipodoc || this.selectedTipoDocumento?.value ?? this.selectedTipoDocumento ?? '';
+			const tipodoc = this.contaspagar?.tipodoc || (this.selectedTipoDocumento?.value ?? this.selectedTipoDocumento ?? '');
 			formData.append('tipodoc', tipodoc);
 			formData.append('descricao', this.contaspagar.descricao || '');
 			formData.append('valor', this.contaspagar.valor ?? 0);
