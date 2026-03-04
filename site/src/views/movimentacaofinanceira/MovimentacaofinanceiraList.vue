@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator } from 'primevue/api';
 import MovimentacaofinanceiraService from '@/service/MovimentacaofinanceiraService';
+import BancoService from '@/service/BancoService';
 import PermissionsService from '@/service/PermissionsService';
 import { useToast } from 'primevue/usetoast';
 
@@ -11,6 +12,7 @@ export default {
     setup() {
         return {
             movimentacaofinanceiraService: new MovimentacaofinanceiraService(),
+            bancoService: new BancoService(),
             permissionsService: new PermissionsService(),
             router: useRouter(),
             icons: PrimeIcons,
@@ -23,6 +25,8 @@ export default {
             Movimentacaofinanceira: ref([]),
             loading: ref(false),
             form: ref({}),
+            bancos: ref([]),
+            bancoSelecionado: ref(null),
             valorRecebido: ref(0),
             valorPago: ref(0),
             filters: ref({
@@ -75,14 +79,22 @@ export default {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_Movimentacaofinanceira_sensitive') ? dado : '*********';
         },
+        async loadBancos() {
+            try {
+                const response = await this.bancoService.getAll();
+                this.bancos = response.data.data || [];
+            } catch (e) {
+                console.error(e);
+            }
+        },
         getMovimentacaofinanceira() {
             this.loading = true;
 
             const hoje = new Date().toISOString().split('T')[0]; // Formata a data no formato AAAA-MM-DD
-
+            const banco_id = this.bancoSelecionado?.id || null;
 
             this.movimentacaofinanceiraService
-                .getAll(hoje, hoje)
+                .getAll(hoje, hoje, banco_id)
                 .then((response) => {
                     this.Movimentacaofinanceira = response.data.data;
                     this.MovimentacaofinanceiraReal = response.data.data;
@@ -143,11 +155,12 @@ export default {
 
             const dt_inicio = new Date(this.form.dt_inicio).toISOString().split('T')[0]; // Formatar para AAAA-MM-DD
             const dt_final = new Date(this.form.dt_final).toISOString().split('T')[0]; // Formatar para AAAA-MM-DD
+            const banco_id = this.bancoSelecionado?.id || null;
 
             this.loading = true;
 
             this.movimentacaofinanceiraService
-                .getAll(dt_inicio, dt_final) // Nova função de serviço para buscar com base nas datas
+                .getAll(dt_inicio, dt_final, banco_id)
                 .then((response) => {
                     this.Movimentacaofinanceira = response.data.data;
                     this.MovimentacaofinanceiraReal = response.data.data;
@@ -239,6 +252,7 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_movimentacaofinanceira');
+        this.loadBancos();
         this.getMovimentacaofinanceira();
     }
 };
@@ -271,6 +285,19 @@ export default {
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <label for="username">Data Final</label>
                             <Calendar dateFormat="dd/mm/yy" v-tooltip.left="'Selecione a data Final'" v-model="form.dt_final" showIcon :showOnFocus="false" class="" />
+                        </div>
+                    </div>
+                    <div class="col-12 md:col-2">
+                        <div class="flex flex-column gap-2 m-2 mt-1">
+                            <label for="banco">Banco</label>
+                            <Dropdown
+                                v-model="bancoSelecionado"
+                                :options="bancos"
+                                optionLabel="name"
+                                placeholder="Todos os bancos"
+                                showClear
+                                class="w-full"
+                            />
                         </div>
                     </div>
                     <div class="col-12 md:col-2">

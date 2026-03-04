@@ -39,13 +39,17 @@ class MovimentacaofinanceiraController extends Controller
 
         $dt_inicio = $request->query('dt_inicio');
         $dt_final = $request->query('dt_final');
+        $banco_id = $request->query('banco_id');
 
+        $query = Movimentacaofinanceira::where('company_id', $request->header('company-id'))
+            ->whereBetween('dt_movimentacao', [$dt_inicio, $dt_final]);
+
+        if ($banco_id) {
+            $query->where('banco_id', $banco_id);
+        }
 
         return MovimentacaofinanceiraResource::collection(
-            Movimentacaofinanceira::where('company_id', $request->header('company-id'))
-                ->whereBetween('dt_movimentacao', [$dt_inicio, $dt_final])
-                ->orderBy('id', 'desc')
-                ->get()
+            $query->orderBy('id', 'desc')->get()
         );
     }
 

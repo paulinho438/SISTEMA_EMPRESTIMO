@@ -12,13 +12,10 @@ export default class MovimentacaofinanceiraService {
 		return await axios.get(`${apiPath}/movimentacaofinanceira/${id}`);
 	};
 
-    getAll = async (dt_inicio, dt_final) => {
-		return await axios.get(`${apiPath}/movimentacaofinanceira`, {
-			params: {
-				dt_inicio,
-				dt_final
-			}
-		});
+    getAll = async (dt_inicio, dt_final, banco_id = null) => {
+		const params = { dt_inicio, dt_final };
+		if (banco_id) params.banco_id = banco_id;
+		return await axios.get(`${apiPath}/movimentacaofinanceira`, { params });
 	};
 
 	getAllControleBcodex = async (dt_inicio, dt_final) => {
