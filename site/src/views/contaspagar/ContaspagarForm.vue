@@ -135,6 +135,9 @@ export default {
 			this.contaspagar.costcenter = this.costcenter;
 			this.contaspagar.banco = this.banco;
 			this.contaspagar.fornecedor = this.fornecedor;
+			if (this.contaspagar.venc) {
+				this.contaspagar.venc = this.formatVencForApi(this.contaspagar.venc) || this.contaspagar.venc;
+			}
 
 			const hasFile = Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0;
 			const payload = hasFile ? this.buildFormData() : this.contaspagar;
@@ -192,6 +195,21 @@ export default {
 		},
 		removeComprovante(index) {
 			this.comprovanteFile.splice(index, 1);
+		},
+		formatVencForApi(venc) {
+			if (!venc) return null;
+			if (venc instanceof Date) {
+				return venc.toISOString().split('T')[0];
+			}
+			const str = String(venc);
+			// DD/MM/YYYY -> YYYY-MM-DD
+			if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+				const [d, m, y] = str.split('/');
+				return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+			}
+			// Já está em YYYY-MM-DD
+			if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+			return str;
 		},
 		buildFormData() {
 			const formData = new FormData();
