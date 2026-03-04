@@ -25,13 +25,12 @@ export default class ContaspagarService {
 	};
 
     save = async (permissions, isFormData = false) => {
-        const config = isFormData ? {} : {};
         if (isFormData) {
             const id = permissions.get?.('id');
             if (id) {
-                return await axios.put(`${apiPath}/contaspagar/${id}`, permissions, config);
+                return await axios.put(`${apiPath}/contaspagar/${id}`, permissions);
             }
-            return await axios.post(`${apiPath}/contaspagar`, permissions, config);
+            return await axios.post(`${apiPath}/contaspagar`, permissions);
         }
         if (undefined === permissions.id) return await axios.post(`${apiPath}/contaspagar`, permissions);
         return await axios.put(`${apiPath}/contaspagar/${permissions.id}`, permissions);

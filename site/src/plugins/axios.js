@@ -15,7 +15,10 @@ axios.interceptors.request.use(
 			config.headers['Authorization'] = `Bearer ${localStorage.getItem('app.emp.token')}`
 			config.headers['company-id'] = `${store?.getters?.isCompany?.id}`
 		}
-		
+		// FormData precisa que o navegador defina Content-Type com boundary
+		if (config.data instanceof FormData) {
+			delete config.headers['Content-Type'];
+		}
 		return config;
 	},
 	(error) => {

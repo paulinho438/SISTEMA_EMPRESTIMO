@@ -189,17 +189,18 @@ export default {
 		},
 		buildFormData() {
 			const formData = new FormData();
-			formData.append('tipodoc', this.contaspagar.tipodoc);
-			formData.append('descricao', this.contaspagar.descricao);
-			formData.append('valor', this.contaspagar.valor);
+			formData.append('tipodoc', this.contaspagar.tipodoc || '');
+			formData.append('descricao', this.contaspagar.descricao || '');
+			formData.append('valor', this.contaspagar.valor ?? 0);
 			formData.append('costcenter', JSON.stringify(this.costcenter));
 			formData.append('banco', JSON.stringify(this.banco));
 			formData.append('fornecedor', JSON.stringify(this.fornecedor));
 			if (this.contaspagar.id) formData.append('id', this.contaspagar.id);
 			if (this.contaspagar.venc) formData.append('venc', this.contaspagar.venc);
 			if (this.contaspagar.cod_barras) formData.append('cod_barras', this.contaspagar.cod_barras);
-			if (Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0) {
-				formData.append('comprovante', this.comprovanteFile[0]);
+			// Comprovante deve ser o último append para garantir que o arquivo seja enviado corretamente
+			if (Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0 && this.comprovanteFile[0] instanceof File) {
+				formData.append('comprovante', this.comprovanteFile[0], this.comprovanteFile[0].name);
 			}
 			return formData;
 		},

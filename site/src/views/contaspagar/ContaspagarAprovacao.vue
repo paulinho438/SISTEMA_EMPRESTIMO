@@ -79,13 +79,11 @@ export default {
                 this.contaspagarService
                     .get(this.route.params.id)
                     .then((response) => {
-                        this.contaspagar = response.data?.data;
+                        this.contaspagar = response.data?.data ?? response.data;
                         this.selectedTipoDocumento = { name: this.contaspagar?.tipodoc, value: this.contaspagar?.tipodoc };
-                        this.costcenter = response.data?.data.costcenter;
-                        this.fornecedor = response.data?.data.fornecedor;
-                        this.banco = response.data?.data.banco;
-
-                        console.log(response.data);
+                        this.costcenter = this.contaspagar?.costcenter;
+                        this.fornecedor = this.contaspagar?.fornecedor;
+                        this.banco = this.contaspagar?.banco;
                     })
                     .catch((error) => {
                         this.toast.add({
@@ -443,6 +441,24 @@ export default {
                     <div v-if="selectedTipoDocumento.value == 'Boleto'" class="field col-12 md:col-12">
                         <label for="firstname2">Código de Barras</label>
                         <InputText id="firstname2" :modelValue="contaspagar?.cod_barras" v-model="contaspagar.cod_barras" type="text" />
+                    </div>
+
+                    <div v-if="contaspagar?.anexo" class="field col-12 md:col-12">
+                        <label>Comprovante</label>
+                        <div class="flex align-items-center gap-2 p-3 surface-100 border-round">
+                            <i class="pi pi-paperclip text-green-600" style="font-size: 1.5rem"></i>
+                            <div>
+                                <a
+                                    v-if="contaspagar?.anexo_url"
+                                    :href="contaspagar.anexo_url"
+                                    target="_blank"
+                                    class="font-semibold text-primary"
+                                >
+                                    Visualizar comprovante
+                                </a>
+                                <span v-else class="text-color-secondary">Comprovante anexado</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-12 px-0 py-0 text-right">
