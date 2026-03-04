@@ -70,14 +70,9 @@ class ContaspagarController extends Controller
         }
         if ($request->has('nome_fornecedor') && $request->nome_fornecedor !== null && $request->nome_fornecedor !== '') {
             $nome = $request->nome_fornecedor;
-            $query->where(function ($q) use ($nome) {
-                $q->whereHas('fornecedor', function ($q2) use ($nome) {
-                    $q2->where('nome_completo', 'LIKE', '%' . $nome . '%');
-                })->orWhereHas('emprestimo', function ($q2) use ($nome) {
-                    $q2->whereHas('client', function ($q3) use ($nome) {
-                        $q3->where('nome_completo', 'LIKE', '%' . $nome . '%');
-                    });
-                });
+            // Busca apenas no fornecedor real; empréstimos exibem "Empréstimo" na coluna
+            $query->whereHas('fornecedor', function ($q2) use ($nome) {
+                $q2->where('nome_completo', 'LIKE', '%' . $nome . '%');
             });
         }
         if ($request->has('tipodoc') && $request->tipodoc !== null && $request->tipodoc !== '') {
