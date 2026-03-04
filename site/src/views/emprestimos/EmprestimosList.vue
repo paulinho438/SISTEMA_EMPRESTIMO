@@ -131,6 +131,25 @@ export default {
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
         },
+        getStatusSeverity(status) {
+            // Severity para os botões de filtro (mesma cor da tabela)
+            switch (status) {
+                case 'Pago':
+                case 'Em Dias':
+                    return 'success';
+                case 'Vencido':
+                    return 'danger';
+                case 'Atrasado':
+                    return 'info';
+                case 'Muito Atrasado':
+                case 'Protesto':
+                    return 'warn';
+                case 'Protestado':
+                    return 'secondary'; // Cor customizada via btn-status-protestado
+                default:
+                    return 'secondary';
+            }
+        },
         showMenu(data) {
             // Lógica para decidir se mostrar ou não o menu com base nos dados
             return true; // Substitua someCondition pela sua lógica específica
@@ -413,12 +432,12 @@ export default {
                             @click="filterByStatus(null)"
                         />
                         <Button
-                            v-for="status in ['Em Dias', 'Vencido', 'Atrasado', 'Muito Atrasado', 'Pago', 'Protesto', 'Protestado']"
+                            v-for="status in ['Pago', 'Em Dias', 'Atrasado', 'Muito Atrasado', 'Vencido', 'Protesto', 'Protestado']"
                             :key="status"
                             :label="`${status} ${statusCounts[status] || 0}`"
-                            :severity="selectedStatus === status ? 'primary' : 'secondary'"
+                            :severity="getStatusSeverity(status)"
                             :outlined="selectedStatus !== status"
-                            class="p-button-sm"
+                            :class="['p-button-sm', status === 'Protestado' ? 'btn-status-protestado' : '']"
                             @click="filterByStatus(status)"
                         />
                     </div>
@@ -683,11 +702,27 @@ export default {
     color: red;
 }
 
-.text-red {
-    color: red;
-}
-
 .bg-roxo {
     background-color: rgb(123, 17, 210);
+}
+
+/* Botão Protestado - cor roxa igual à tabela (rgb 123, 17, 210) */
+.btn-status-protestado.p-button {
+    background: rgb(123, 17, 210) !important;
+    border-color: rgb(123, 17, 210) !important;
+    color: #fff !important;
+}
+.btn-status-protestado.p-button.p-button-outlined {
+    background: transparent !important;
+    color: rgb(123, 17, 210) !important;
+}
+.btn-status-protestado.p-button:hover {
+    background: rgba(123, 17, 210, 0.9) !important;
+    border-color: rgba(123, 17, 210, 0.9) !important;
+    color: #fff !important;
+}
+.btn-status-protestado.p-button.p-button-outlined:hover {
+    background: rgba(123, 17, 210, 0.1) !important;
+    color: rgb(123, 17, 210) !important;
 }
 </style>
