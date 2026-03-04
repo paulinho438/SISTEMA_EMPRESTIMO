@@ -48,21 +48,22 @@ class MensagemAutomaticaRenovacao extends Command
             }
 
             $valorBase = $emprestimo->valor ?? 0;
-            $valorOferta = $valorBase;
+            $temCnpj = !empty(trim($client->cnpj ?? ''));
+            $valorOferta = $valorBase * ($temCnpj ? 3 : 2);
             $nome = $client->nome_completo;
             $mensagem = null;
 
             switch (true) {
                 case ($emprestimo->count_late_parcels <= 2):
-                    $mensagem = "Olá {$nome}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ " . ($valorOferta + 100) . ". Gostaria de contratar?";
+                    $mensagem = "Olá {$nome}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ " . ($valorOferta) . ". Gostaria de contratar?";
                     break;
 
                 case ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5):
-                    $mensagem = "Olá {$nome}, temos um valor pré-aprovado de R$ {$valorOferta} disponível para você. Gostaria de contratar?";
+                    $mensagem = "Olá {$nome}, temos um valor pré-aprovado de R$ {$valorBase} disponível para você. Gostaria de contratar?";
                     break;
 
                 case ($emprestimo->count_late_parcels >= 6 && $emprestimo->count_late_parcels <= 10):
-                    $mensagem = "Olá {$nome}, mesmo com pequenos atrasos, você ainda pode renovar com valor de R$ " . max(0, $valorOferta - 100) . ". Interessado?";
+                    $mensagem = "Olá {$nome}, mesmo com pequenos atrasos, você ainda pode renovar com valor de R$ " . max(0, $valorBase - 100) . ". Interessado?";
                     break;
 
                 default:
