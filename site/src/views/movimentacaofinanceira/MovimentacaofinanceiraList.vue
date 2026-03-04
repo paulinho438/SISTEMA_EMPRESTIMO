@@ -305,8 +305,9 @@ export default {
                             <Button label="Pesquisar" @click.prevent="busca()" class="p-button-primary mr-2 mb-2 mt-4" />
                         </div>
                     </div>
-
-                    <div class="col-12 md:col-3">
+                </div>
+                <div class="grid mt-2">
+                    <div class="col-12 md:col-6">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
@@ -328,8 +329,7 @@ export default {
                             </div>
                         </div>
                     </div>
-
-                    <div class="col-12 md:col-3">
+                    <div class="col-12 md:col-6">
                         <div class="flex flex-column gap-2 m-2 mt-1">
                             <div class="surface-card shadow-2 p-3 border-round">
                                 <div class="flex justify-content-between mb-3">
