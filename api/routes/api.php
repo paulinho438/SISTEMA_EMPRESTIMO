@@ -261,6 +261,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/contaspagar/{id}', [ContaspagarController::class, 'id']);
     Route::get('/contaspagar/{id}/delete', [ContaspagarController::class, 'delete']);
     Route::post('/contaspagar', [ContaspagarController::class, 'insert']);
+    Route::put('/contaspagar/{id}', [ContaspagarController::class, 'update']);
 
     Route::get('/contaspagar/pagamentos/pendentes', [ContaspagarController::class, 'pagamentoPendentes']);
     Route::get('/contaspagar/pagamentos/pendentesaplicativo', [ContaspagarController::class, 'pagamentoPendentesAplicativo']);

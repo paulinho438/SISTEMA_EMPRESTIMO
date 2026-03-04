@@ -23,6 +23,7 @@ class Contaspagar extends Model
         'lanc',
         'venc',
         'valor',
+        'anexo',
         'dt_baixa'
     ];
 

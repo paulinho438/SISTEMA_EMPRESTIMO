@@ -45,7 +45,7 @@ class EmprestimoAllResource extends JsonResource
             "porcentagem" => $porcentagem,
             "saldo_total_parcelas_pagas" => $saldo_total_parcelas_pagas,
             "costcenter" => $this->costcenter,
-            // "banco" => new BancosResource($this->banco),
+            "banco" => $this->banco ? new BancosResource($this->banco) : null,
             "cliente" => new ClientResource($this->client),
             "consultor" => $this->user,
             // "parcelas_vencidas" => $parcelas_vencidas,

@@ -314,6 +314,17 @@ export default {
                             </template>
                         </Column>
 
+                        <Column field="anexo" header="Anexo" style="min-width: 6rem">
+                            <template #body="{ data }">
+                                <span v-if="data.anexo" class="flex align-items-center gap-1">
+                                    <i class="pi pi-paperclip text-green-600"></i>
+                                    <a v-if="data.anexo_url" :href="data.anexo_url" target="_blank" class="text-primary">Comprovante</a>
+                                    <span v-else>Sim</span>
+                                </span>
+                                <span v-else class="text-color-secondary">-</span>
+                            </template>
+                        </Column>
+
                         <Column v-if="permissionsService.hasPermissions('view_contaspagar_delete')" field="edit" header="Excluir" :sortable="false" class="w-1">
 							<template #body="slotProps">
 								<Button v-if="!slotProps.data.standard && slotProps.data.tipodoc != 'Empréstimo' && slotProps.data.status != 'Pagamento Efetuado'" class="p-button p-button-icon-only p-button-text p-button-secondary m-0 p-0" type="button" :disabled="slotProps.data.total_users > 0" :icon="icons.FILE_EXCEL" v-tooltip.top="'Excluir'" @click.prevent="deleteCategory(slotProps.data.id)" />

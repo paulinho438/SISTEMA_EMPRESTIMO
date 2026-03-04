@@ -15,6 +15,7 @@ use App\Http\Resources\ContaspagarResource;
 use App\Http\Resources\ContaspagarAprovacaoResource;
 
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -125,32 +126,42 @@ class ContaspagarController extends Controller
     {
         $array = ['error' => ''];
 
-        $validator = Validator::make($request->all(), [
+        $dados = $request->all();
+
+        // Trata dados vindos de FormData (objetos JSON stringificados)
+        if (is_string($dados['costcenter'] ?? null)) {
+            $dados['costcenter'] = json_decode($dados['costcenter'], true);
+        }
+        if (is_string($dados['banco'] ?? null)) {
+            $dados['banco'] = json_decode($dados['banco'], true);
+        }
+        if (is_string($dados['fornecedor'] ?? null)) {
+            $dados['fornecedor'] = json_decode($dados['fornecedor'], true);
+        }
+
+        $validator = Validator::make($dados, [
             'tipodoc' => 'required',
             'descricao' => 'required',
             'valor' => 'required',
         ]);
 
-        $dados = $request->all();
-
         if (!$validator->fails()) {
-
             $dados['company_id'] = $request->header('company-id');
             $dados['lanc'] = date('Y-m-d');
-            $dados['venc'] = date('Y-m-d');
-            $dados['costcenter_id'] = $dados['costcenter']['id'];
-            $dados['banco_id'] = $dados['banco']['id'];
-            $dados['fornecedor_id'] = $dados['fornecedor']['id'];
+            $dados['venc'] = isset($dados['venc']) ? $dados['venc'] : date('Y-m-d');
+            $dados['costcenter_id'] = $dados['costcenter']['id'] ?? $dados['costcenter_id'] ?? null;
+            $dados['banco_id'] = $dados['banco']['id'] ?? $dados['banco_id'] ?? null;
+            $dados['fornecedor_id'] = $dados['fornecedor']['id'] ?? $dados['fornecedor_id'] ?? null;
             $dados['status'] = 'Aguardando Pagamento';
+
+            // Upload do comprovante (anexo)
+            if ($request->hasFile('comprovante')) {
+                $file = $request->file('comprovante');
+                $path = $file->store('comprovantes', 'public');
+                $dados['anexo'] = $path;
+            }
+
             $newGroup = Contaspagar::create($dados);
-
-            //conferir depois se vai ser necessário
-            // $banco = Banco::find($dados['banco']['id']);
-
-            // if ($banco) {
-            //     $banco->saldo = $banco->saldo - $dados['valor'];
-            //     $banco->save();
-            // }
 
             return $newGroup;
         } else {
@@ -161,6 +172,63 @@ class ContaspagarController extends Controller
         }
 
         return $array;
+    }
+
+    public function update(Request $request, $id)
+    {
+        $contaspagar = Contaspagar::findOrFail($id);
+
+        $dados = $request->all();
+
+        if (is_string($dados['costcenter'] ?? null)) {
+            $dados['costcenter'] = json_decode($dados['costcenter'], true);
+        }
+        if (is_string($dados['banco'] ?? null)) {
+            $dados['banco'] = json_decode($dados['banco'], true);
+        }
+        if (is_string($dados['fornecedor'] ?? null)) {
+            $dados['fornecedor'] = json_decode($dados['fornecedor'], true);
+        }
+
+        $validator = Validator::make($dados, [
+            'tipodoc' => 'required',
+            'descricao' => 'required',
+            'valor' => 'required',
+        ]);
+
+        if (!$validator->fails()) {
+            $contaspagar->tipodoc = $dados['tipodoc'];
+            $contaspagar->descricao = $dados['descricao'];
+            $contaspagar->valor = $dados['valor'];
+            $contaspagar->costcenter_id = $dados['costcenter']['id'] ?? $dados['costcenter_id'] ?? $contaspagar->costcenter_id;
+            $contaspagar->banco_id = $dados['banco']['id'] ?? $dados['banco_id'] ?? $contaspagar->banco_id;
+            $contaspagar->fornecedor_id = $dados['fornecedor']['id'] ?? $dados['fornecedor_id'] ?? $contaspagar->fornecedor_id;
+
+            if (isset($dados['venc'])) {
+                $contaspagar->venc = $dados['venc'];
+            }
+            if (isset($dados['cod_barras'])) {
+                $contaspagar->cod_barras = $dados['cod_barras'];
+            }
+
+            if ($request->hasFile('comprovante')) {
+                if ($contaspagar->anexo) {
+                    Storage::disk('public')->delete($contaspagar->anexo);
+                }
+                $file = $request->file('comprovante');
+                $path = $file->store('comprovantes', 'public');
+                $contaspagar->anexo = $path;
+            }
+
+            $contaspagar->save();
+
+            return $contaspagar;
+        } else {
+            return response()->json([
+                "message" => $validator->errors()->first(),
+                "error" => ""
+            ], Response::HTTP_FORBIDDEN);
+        }
     }
 
 

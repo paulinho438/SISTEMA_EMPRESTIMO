@@ -741,7 +741,8 @@ class EmprestimoController extends Controller
         $perPage = $request->get('per_page', 10);
 
         // Inicia a query
-        $query = Emprestimo::where('company_id', $companyId)
+        $query = Emprestimo::with(['banco', 'parcelas'])
+            ->where('company_id', $companyId)
             ->orderByDesc('id');
 
         // 🔍 Filtros dinâmicos
@@ -750,28 +751,24 @@ class EmprestimoController extends Controller
         // }
 
         if ($request->has('status')) {
-            $status = $request->get('status');
-            $query->whereHas('parcelas', function ($q) use ($status) {
-                $q->where(function ($q) use ($status) {
-                    $q->whereRaw("(
-                        CASE
-                            WHEN emprestimos.protesto = 1 THEN 'Protesto'
-                            WHEN emprestimos.protesto = 2 THEN 'Protestado'
-                            WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 0 THEN
-                                CASE
-                                    WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) = (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Vencido'
-                                    WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) > 4 OR
-                                         (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND atrasadas > 0 AND saldo > 0) * 1.0 /
-                                         (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) > 0.5 THEN 'Muito Atrasado'
-                                    ELSE 'Atrasado'
-                                END
-                            WHEN (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id AND dt_baixa IS NOT NULL) =
-                                 (SELECT COUNT(*) FROM parcelas WHERE emprestimo_id = emprestimos.id) THEN 'Pago'
-                            ELSE 'Em Dias'
-                        END
-                    ) LIKE ?", ["%{$status}%"]);
-                });
-            });
+            $status = trim($request->get('status'));
+            if ($status !== '') {
+                $query->whereRaw("(
+                    CASE
+                        WHEN emprestimos.protesto = 1 THEN 'Protesto'
+                        WHEN emprestimos.protesto = 2 THEN 'Protestado'
+                        WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) > 0 THEN
+                            CASE
+                                WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 10 THEN 'Vencido'
+                                WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 4 THEN 'Muito Atrasado'
+                                ELSE 'Atrasado'
+                            END
+                        WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.dt_baixa IS NOT NULL) =
+                             (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
+                        ELSE 'Em Dias'
+                    END
+                ) LIKE ?", ["%{$status}%"]);
+            }
         }
 
         if ($request->has('id')) {
@@ -787,6 +784,12 @@ class EmprestimoController extends Controller
         if ($request->has('nome_consultor')) {
             $query->whereHas('user', function ($q) use ($request) {
                 $q->where('nome_completo', 'LIKE', "%{$request->nome_consultor}%");
+            });
+        }
+
+        if ($request->has('nome_banco')) {
+            $query->whereHas('banco', function ($q) use ($request) {
+                $q->where('name', 'LIKE', "%{$request->nome_banco}%");
             });
         }
 
@@ -812,6 +815,9 @@ class EmprestimoController extends Controller
                     })
                     ->orWhereHas('user', function ($q) use ($global) {
                         $q->where('nome_completo', 'LIKE', "%{$global}%");
+                    })
+                    ->orWhereHas('banco', function ($q) use ($global) {
+                        $q->where('name', 'LIKE', "%{$global}%");
                     })
                     ->orWhere('valor', 'LIKE', "%{$global}%")
                     ->orWhere('dt_lancamento', 'LIKE', "%{$global}%");

@@ -21,6 +21,15 @@ export default {
     },
     data() {
         return {
+            statusOptions: [
+                { label: 'Em Dias', value: 'Em Dias' },
+                { label: 'Atrasado', value: 'Atrasado' },
+                { label: 'Muito Atrasado', value: 'Muito Atrasado' },
+                { label: 'Vencido', value: 'Vencido' },
+                { label: 'Pago', value: 'Pago' },
+                { label: 'Protesto', value: 'Protesto' },
+                { label: 'Protestado', value: 'Protestado' }
+            ],
             Emprestimos: ref([]),
             loading: ref(false),
             totalPages: ref(0),
@@ -67,13 +76,15 @@ export default {
             this.filters = {
                 global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 
-                status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+                status: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
 
                 id: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
                 nome_cliente: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
                 nome_consultor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
+
+                nome_banco: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
                 valor: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }] },
 
@@ -202,8 +213,13 @@ export default {
             // Adicionando os filtros dinamicamente
             Object.keys(this.filters).forEach((key) => {
                 const constraint = this.filters[key]?.constraints?.[0]; // Verifica se existe constraints[0]
-                if (constraint && constraint.value !== null && constraint.value !== undefined) {
-                    params[key] = constraint.value;
+                if (constraint && constraint.value !== null && constraint.value !== undefined && constraint.value !== '') {
+                    let value = constraint.value;
+                    // Formata data para o formato esperado pela API
+                    if (key === 'dt_lancamento' && value instanceof Date) {
+                        value = value.toISOString().split('T')[0];
+                    }
+                    params[key] = value;
                 }
             });
 
@@ -214,7 +230,7 @@ export default {
             }
 
             // Adiciona o filtro global aos parâmetros
-            if (this.filters.global.value) {
+            if (this.filters.global?.value) {
                 params.global = this.filters.global.value;
             }
 
@@ -228,6 +244,7 @@ export default {
                     this.Emprestimos = this.Emprestimos.map((emprestimo) => {
                         emprestimo.nome_cliente = emprestimo.cliente?.nome_completo || 'N/A';
                         emprestimo.nome_consultor = emprestimo.consultor?.nome_completo || 'N/A';
+                        emprestimo.nome_banco = emprestimo.banco?.name || '-';
 
                         return emprestimo;
                     });
@@ -330,6 +347,7 @@ export default {
         },
         clearFilter() {
             this.initFilters();
+            this.getEmprestimos(1);
         }
     },
     beforeMount() {
@@ -385,12 +403,20 @@ export default {
                         <template #empty> Nenhum Cliente Encontrado. </template>
                         <template #loading> Carregando os Clientes. Aguarde! </template>
 
-                        <Column field="status" header="Status" style="min-width: 9rem">
+                        <Column field="status" header="Status" filterField="status" style="min-width: 9rem">
                             <template #body="slotProps">
                                 <Button :label="slotProps.data.status" :class="getStatusClass(slotProps.data.status)" />
                             </template>
                             <template #filter="{ filterModel }">
-                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Status" />
+                                <Dropdown
+                                    v-model="filterModel.constraints[0].value"
+                                    :options="statusOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Selecione o status"
+                                    class="p-column-filter w-full"
+                                    :showClear="true"
+                                />
                             </template>
                         </Column>
 
@@ -427,6 +453,15 @@ export default {
                             </template>
                             <template #filter="{ filterModel }">
                                 <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Nome do Consultor" />
+                            </template>
+                        </Column>
+
+                        <Column field="nome_banco" header="Banco" filterField="nome_banco" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ data.banco?.name || '-' }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputText type="text" v-model="filterModel.value" class="p-column-filter" placeholder="Buscar Banco" />
                             </template>
                         </Column>
 

@@ -24,11 +24,17 @@ export default class ContaspagarService {
 		return await axios.get(`${apiPath}/contaspagar/${id}/delete`);
 	};
 
-    save = async (permissions) => {
+    save = async (permissions, isFormData = false) => {
+        const config = isFormData ? {} : {};
+        if (isFormData) {
+            const id = permissions.get?.('id');
+            if (id) {
+                return await axios.put(`${apiPath}/contaspagar/${id}`, permissions, config);
+            }
+            return await axios.post(`${apiPath}/contaspagar`, permissions, config);
+        }
         if (undefined === permissions.id) return await axios.post(`${apiPath}/contaspagar`, permissions);
-		else return await axios.put(`${apiPath}/contaspagar/${permissions.id}`, permissions);
-        
-
-	};
+        return await axios.put(`${apiPath}/contaspagar/${permissions.id}`, permissions);
+    };
 
 }

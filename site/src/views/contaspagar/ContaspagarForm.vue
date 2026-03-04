@@ -39,6 +39,7 @@ export default {
 				geolocalizacao: '17.23213, 12.455345'
 			}),
 			loading: ref(false),
+			comprovanteFile: ref([]),
 			selectedTipoDocumento : ref(''),
 			tipoDocumento: ref([
 					{ name: 'Boleto', value: 'Boleto' },
@@ -61,10 +62,11 @@ export default {
 				this.loading = true;
 				this.contaspagarService.get(this.route.params.id)
 				.then((response) => {
-					this.contaspagar = response.data?.data;
+					this.contaspagar = response.data?.data ?? response.data;
 					this.selectedTipoDocumento = { name: this.contaspagar?.tipodoc, value: this.contaspagar?.tipodoc };
-					this.costcenter = response.data?.data.costcenter;
-					this.banco = response.data?.data.banco;
+					this.costcenter = this.contaspagar?.costcenter;
+					this.banco = this.contaspagar?.banco;
+					this.fornecedor = this.contaspagar?.fornecedor;
 				})
 				.catch((error) => {
 					this.toast.add({
@@ -131,11 +133,14 @@ export default {
 			this.contaspagar.banco = this.banco;
 			this.contaspagar.fornecedor = this.fornecedor;
 
-			this.contaspagarService.save(this.contaspagar)
+			const hasFile = Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0;
+			const payload = hasFile ? this.buildFormData() : this.contaspagar;
+
+			this.contaspagarService.save(payload, hasFile)
 			.then((response) => {
-				if (undefined != response.data.data) {
-					this.contaspagar = response.data.data;
-					
+				const data = response.data?.data ?? response.data;
+				if (data) {
+					this.contaspagar = data;
 				}
 
 				this.toast.add({
@@ -177,6 +182,22 @@ export default {
 		},
 		clearCicom() {
 			this.loading = true;
+		},
+		buildFormData() {
+			const formData = new FormData();
+			formData.append('tipodoc', this.contaspagar.tipodoc);
+			formData.append('descricao', this.contaspagar.descricao);
+			formData.append('valor', this.contaspagar.valor);
+			formData.append('costcenter', JSON.stringify(this.costcenter));
+			formData.append('banco', JSON.stringify(this.banco));
+			formData.append('fornecedor', JSON.stringify(this.fornecedor));
+			if (this.contaspagar.id) formData.append('id', this.contaspagar.id);
+			if (this.contaspagar.venc) formData.append('venc', this.contaspagar.venc);
+			if (this.contaspagar.cod_barras) formData.append('cod_barras', this.contaspagar.cod_barras);
+			if (Array.isArray(this.comprovanteFile) && this.comprovanteFile.length > 0) {
+				formData.append('comprovante', this.comprovanteFile[0]);
+			}
+			return formData;
 		},
 	},
 	computed: {
@@ -235,6 +256,27 @@ export default {
 					<div v-if="selectedTipoDocumento.value == 'Boleto'" class="field col-12 md:col-12">
                         <label for="firstname2">Código de Barras</label>
                         <InputText id="firstname2" :modelValue="contaspagar?.cod_barras" v-model="contaspagar.cod_barras" type="text" />
+                    </div>
+
+					<div class="field col-12 md:col-12">
+                        <label for="comprovante">Comprovante (Anexo)</label>
+                        <FileUpload
+                            id="comprovante"
+                            name="comprovante"
+                            :multiple="false"
+                            :maxFileSize="10000000"
+                            accept="image/*,.pdf"
+                            :auto="false"
+                            :showUploadButton="false"
+                            :showCancelButton="false"
+                            chooseLabel="Selecionar comprovante"
+                            :customUpload="true"
+                            @select="comprovanteFile = $event.files"
+                        >
+                            <template #empty>
+                                <p class="m-0 text-color-secondary">Arraste o comprovante aqui ou clique para selecionar (PDF, imagens)</p>
+                            </template>
+                        </FileUpload>
                     </div>
 					
                 </div>
