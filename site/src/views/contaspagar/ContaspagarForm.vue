@@ -47,6 +47,7 @@ export default {
 					{ name: 'Cheque', value: 'Cheque' },
 					{ name: 'Promissória', value: 'Promissória' },
 					{ name: 'Retirada', value: 'Retirada' },
+					{ name: 'Empréstimo', value: 'Empréstimo' },
 					{ name: 'Outros', value: 'Outros' },
 				])
 			}
@@ -63,7 +64,8 @@ export default {
 				this.contaspagarService.get(this.route.params.id)
 				.then((response) => {
 					this.contaspagar = response.data?.data ?? response.data;
-					this.selectedTipoDocumento = { name: this.contaspagar?.tipodoc, value: this.contaspagar?.tipodoc };
+					const tipodoc = this.contaspagar?.tipodoc;
+					this.selectedTipoDocumento = tipodoc ? { name: tipodoc, value: tipodoc } : null;
 					this.costcenter = this.contaspagar?.costcenter;
 					this.banco = this.contaspagar?.banco;
 					this.fornecedor = this.contaspagar?.fornecedor;
@@ -118,17 +120,18 @@ export default {
 			this.changeLoading();
 			this.errors = [];
 
-			if( this.selectedTipoDocumento.value == undefined){
+			const tipodoc = this.selectedTipoDocumento?.value ?? this.selectedTipoDocumento ?? this.contaspagar?.tipodoc;
+			if (!tipodoc) {
 				this.toast.add({
 					severity: ToastSeverity.ERROR,
 					detail: 'Selecione o Tipo de Documento',
 					life: 3000
 				});
-
+				this.changeLoading();
 				return false;
 			}
 
-			this.contaspagar.tipodoc = this.selectedTipoDocumento.value;
+			this.contaspagar.tipodoc = tipodoc;
 			this.contaspagar.costcenter = this.costcenter;
 			this.contaspagar.banco = this.banco;
 			this.contaspagar.fornecedor = this.fornecedor;
@@ -192,7 +195,8 @@ export default {
 		},
 		buildFormData() {
 			const formData = new FormData();
-			formData.append('tipodoc', this.contaspagar.tipodoc || '');
+			const tipodoc = this.contaspagar.tipodoc || this.selectedTipoDocumento?.value ?? this.selectedTipoDocumento ?? '';
+			formData.append('tipodoc', tipodoc);
 			formData.append('descricao', this.contaspagar.descricao || '');
 			formData.append('valor', this.contaspagar.valor ?? 0);
 			formData.append('costcenter', JSON.stringify(this.costcenter));
@@ -265,7 +269,7 @@ export default {
 						<InputNumber id="inputnumber" :modelValue="contaspagar?.valor" v-model="contaspagar.valor" :mode="'currency'" :currency="'BRL'" :locale="'pt-BR'" :precision="2" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.description }"></InputNumber>
                     </div>
 
-					<div v-if="selectedTipoDocumento.value == 'Boleto'" class="field col-12 md:col-12">
+					<div v-if="selectedTipoDocumento?.value == 'Boleto'" class="field col-12 md:col-12">
                         <label for="firstname2">Código de Barras</label>
                         <InputText id="firstname2" :modelValue="contaspagar?.cod_barras" v-model="contaspagar.cod_barras" type="text" />
                     </div>
