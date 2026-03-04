@@ -183,6 +183,10 @@ export default {
 		clearCicom() {
 			this.loading = true;
 		},
+		onComprovanteSelect(event) {
+			const files = event?.target?.files || event?.files || [];
+			this.comprovanteFile = Array.from(files || []);
+		},
 		buildFormData() {
 			const formData = new FormData();
 			formData.append('tipodoc', this.contaspagar.tipodoc);
@@ -260,23 +264,16 @@ export default {
 
 					<div class="field col-12 md:col-12">
                         <label for="comprovante">Comprovante (Anexo)</label>
-                        <FileUpload
-                            id="comprovante"
-                            name="comprovante"
-                            :multiple="false"
-                            :maxFileSize="10000000"
-                            accept="image/*,.pdf"
-                            :auto="false"
-                            :showUploadButton="false"
-                            :showCancelButton="false"
-                            chooseLabel="Selecionar comprovante"
-                            :customUpload="true"
-                            @select="comprovanteFile = $event.files"
-                        >
-                            <template #empty>
-                                <p class="m-0 text-color-secondary">Arraste o comprovante aqui ou clique para selecionar (PDF, imagens)</p>
-                            </template>
-                        </FileUpload>
+                        <div class="flex flex-column gap-2">
+                            <input
+                                id="comprovante"
+                                type="file"
+                                accept="image/*,.pdf"
+                                class="p-inputtext p-component w-full"
+                                @change="onComprovanteSelect($event)"
+                            />
+                            <small class="text-color-secondary">PDF ou imagens (máx. 10MB)</small>
+                        </div>
                     </div>
 					
                 </div>
