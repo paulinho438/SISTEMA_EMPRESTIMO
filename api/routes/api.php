@@ -327,6 +327,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
 
 
     Route::get('/emprestimo', [EmprestimoController::class, 'all']);
+    Route::get('/emprestimo/status-counts', [EmprestimoController::class, 'statusCounts']);
     Route::get('/emprestimo/{id}/basico', [EmprestimoController::class, 'basico']);
     Route::get('/emprestimo/{id}/parcelas', [EmprestimoController::class, 'parcelas']);
     Route::get('/emprestimo/{id}/cliente', [EmprestimoController::class, 'cliente']);

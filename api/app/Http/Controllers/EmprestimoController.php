@@ -845,6 +845,50 @@ class EmprestimoController extends Controller
         return EmprestimoAllResource::collection($query->paginate($perPage));
     }
 
+    /**
+     * Retorna a quantidade de empréstimos por status (para botões de filtro)
+     */
+    public function statusCounts(Request $request)
+    {
+        $companyId = $request->header('company-id');
+        if (!$companyId) {
+            return response()->json(['error' => 'Company ID não fornecido'], 400);
+        }
+
+        $statusExpr = "
+            CASE
+                WHEN emprestimos.protesto = 1 THEN 'Protesto'
+                WHEN emprestimos.protesto = 2 THEN 'Protestado'
+                WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) > 0 THEN
+                    CASE
+                        WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 10 THEN 'Vencido'
+                        WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 4 THEN 'Muito Atrasado'
+                        ELSE 'Atrasado'
+                    END
+                WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.dt_baixa IS NOT NULL) =
+                     (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
+                ELSE 'Em Dias'
+            END
+        ";
+
+        $subQuery = "SELECT ({$statusExpr}) as status FROM emprestimos WHERE company_id = ?";
+        $rows = DB::select("SELECT status, COUNT(*) as total FROM ({$subQuery}) subq GROUP BY status", [$companyId]);
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row->status] = (int) $row->total;
+        }
+
+        // Garantir que todos os status existam (mesmo com 0)
+        $statuses = ['Em Dias', 'Vencido', 'Atrasado', 'Muito Atrasado', 'Pago', 'Protesto', 'Protestado'];
+        $result = [];
+        foreach ($statuses as $s) {
+            $result[$s] = $counts[$s] ?? 0;
+        }
+
+        return response()->json(['data' => $result]);
+    }
+
     public function cobrancaAutomatica()
     {
 

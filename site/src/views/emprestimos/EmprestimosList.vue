@@ -24,8 +24,11 @@ export default {
             Emprestimos: ref([]),
             loading: ref(false),
             totalPages: ref(0),
+            totalRecords: ref(0),
             currentPage: ref(1),
             perPage: ref(10),
+            statusCounts: ref({}),
+            selectedStatus: ref(null),
             filters: ref({
                 global: { value: null, matchMode: FilterMatchMode.CONTAINS },
                 name: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
@@ -191,6 +194,17 @@ export default {
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_emprestimos_sensitive') ? dado : '*********';
         },
+        getStatusCounts() {
+            this.emprestimoService.getStatusCounts()
+                .then((response) => {
+                    this.statusCounts = response.data.data || {};
+                })
+                .catch(() => {});
+        },
+        filterByStatus(status) {
+            this.selectedStatus = this.selectedStatus === status ? null : status;
+            this.getEmprestimos(1);
+        },
         getEmprestimos(page = 1) {
             this.loading = true;
 
@@ -201,8 +215,13 @@ export default {
                 per_page: this.perPage
             };
 
-            // Adicionando os filtros dinamicamente
+            if (this.selectedStatus) {
+                params.status = this.selectedStatus;
+            }
+
+            // Adicionando os filtros dinamicamente (status vem do botão selectedStatus)
             Object.keys(this.filters).forEach((key) => {
+                if (key === 'status' && this.selectedStatus) return;
                 const filter = this.filters[key];
                 const constraint = filter?.constraints?.[0];
                 const value = constraint?.value ?? filter?.value;
@@ -231,7 +250,11 @@ export default {
                 .getAll(params) // Passa paginação na requisição
                 .then((response) => {
                     this.Emprestimos = response.data.data;
-                    this.totalPages = response.data.meta.last_page; // Obtém total de páginas
+                    if (response.data.meta) {
+                        this.totalPages = response.data.meta.last_page;
+                        this.totalRecords = response.data.meta.total || 0;
+                        this.currentPage = response.data.meta.current_page || 1;
+                    }
 
                     // Formata os dados recebidos para melhor uso
                     this.Emprestimos = this.Emprestimos.map((emprestimo) => {
@@ -340,6 +363,12 @@ export default {
         },
         clearFilter() {
             this.initFilters();
+            this.selectedStatus = null;
+            this.getStatusCounts();
+            this.getEmprestimos(1);
+        },
+        changeRowsPerPage(event) {
+            this.perPage = event.rows;
             this.getEmprestimos(1);
         }
     },
@@ -348,7 +377,14 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_emprestimos');
+        this.getStatusCounts();
         this.getEmprestimos();
+    },
+    computed: {
+        totalTodos() {
+            const c = this.statusCounts;
+            return (c['Em Dias'] || 0) + (c['Vencido'] || 0) + (c['Atrasado'] || 0) + (c['Muito Atrasado'] || 0) + (c['Pago'] || 0) + (c['Protesto'] || 0) + (c['Protestado'] || 0);
+        }
     }
 };
 </script>
@@ -368,12 +404,30 @@ export default {
             </div>
             <div class="col-12">
                 <div class="card">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <Button
+                            :label="`Todos ${totalTodos}`"
+                            :severity="selectedStatus === null ? 'primary' : 'secondary'"
+                            :outlined="selectedStatus !== null"
+                            class="p-button-sm"
+                            @click="filterByStatus(null)"
+                        />
+                        <Button
+                            v-for="status in ['Em Dias', 'Vencido', 'Atrasado', 'Muito Atrasado', 'Pago', 'Protesto', 'Protestado']"
+                            :key="status"
+                            :label="`${status} ${statusCounts[status] || 0}`"
+                            :severity="selectedStatus === status ? 'primary' : 'secondary'"
+                            :outlined="selectedStatus !== status"
+                            class="p-button-sm"
+                            @click="filterByStatus(status)"
+                        />
+                    </div>
                     <DataTable
                         :value="Emprestimos"
                         :paginator="true"
                         class="p-datatable-gridlines"
                         :rows="perPage"
-                        :totalRecords="totalPages * perPage"
+                        :totalRecords="totalRecords"
                         :lazy="true"
                         dataKey="id"
                         :rowHover="true"
@@ -381,8 +435,13 @@ export default {
                         filterDisplay="menu"
                         :loading="loading"
                         responsiveLayout="scroll"
+                        :first="(currentPage - 1) * perPage"
                         @filter="getEmprestimos"
                         @page="changePage"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[10, 15, 25, 50]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} Empréstimo(s)"
+                        @rowsPerPageChange="changeRowsPerPage"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row">

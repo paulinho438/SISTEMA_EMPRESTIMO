@@ -37,6 +37,10 @@ export default class EmprestimoService {
 		return await axios.get(`${apiPath}/emprestimo`, { params });
 	};
 
+	getStatusCounts = async () => {
+		return await axios.get(`${apiPath}/emprestimo/status-counts`);
+	};
+
     delete = async (id) => {
 		return await axios.get(`${apiPath}/emprestimo/${id}/delete`);
 	};
