@@ -32,4 +32,8 @@ export default class SimulacaoEmprestimoService {
     revisarAssinatura = async (id, payload) => {
         return await axios.patch(`${apiPath}/contratos/${id}/assinatura/revisao`, payload);
     };
+
+    buscarPdfD4Sign = async (id) => {
+        return await axios.post(`${apiPath}/contratos/${id}/assinatura/buscar-d4sign`);
+    };
 }

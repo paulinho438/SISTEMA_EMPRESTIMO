@@ -358,6 +358,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::patch('/contratos/{id}/assinatura/revisao', [AssinaturaContratoController::class, 'revisar']);
     Route::get('/contratos/{id}/assinatura/pdf-original', [AssinaturaContratoController::class, 'downloadPdfOriginal']);
     Route::get('/contratos/{id}/assinatura/pdf-final', [AssinaturaContratoController::class, 'downloadPdfFinal']);
+    Route::post('/contratos/{id}/assinatura/buscar-d4sign', [AssinaturaContratoController::class, 'buscarPdfD4Sign']);
     Route::get('/contratos/{contratoId}/assinatura/evidencias/{evidenciaId}', [AssinaturaContratoController::class, 'downloadEvidencia']);
 
 

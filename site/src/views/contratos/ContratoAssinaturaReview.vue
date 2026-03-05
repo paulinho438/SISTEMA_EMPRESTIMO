@@ -65,6 +65,21 @@ async function carregar() {
         const id = route.params.id;
         const res = await service.getAssinaturaDetalhes(id);
         detalhes.value = res.data || null;
+
+        // Se tem D4Sign mas não tem PDF final, tentar buscar da D4Sign (fallback quando webhook não rodou)
+        if (detalhes.value?.d4sign_uuid_document && !detalhes.value?.pdf_final_path) {
+            try {
+                const syncRes = await service.buscarPdfD4Sign(id);
+                if (syncRes?.data?.atualizado) {
+                    toast.add({ severity: 'success', summary: 'PDF sincronizado', detail: 'PDF assinado baixado da D4Sign.', life: 3000 });
+                    const res2 = await service.getAssinaturaDetalhes(id);
+                    detalhes.value = res2.data || detalhes.value;
+                }
+            } catch {
+                // Silencioso: webhook pode rodar depois ou doc ainda não finalizado
+            }
+        }
+
         await preloadThumbs();
     } catch (e) {
         toast.add({ severity: 'error', summary: 'Erro', detail: e?.response?.data?.message || 'Não foi possível carregar.', life: 4000 });

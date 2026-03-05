@@ -367,6 +367,90 @@ class AssinaturaContratoController extends Controller
         return response()->download($abs, "contrato-{$contrato->id}-assinado.pdf");
     }
 
+    /**
+     * Busca o PDF assinado da D4Sign quando o documento está finalizado lá mas o webhook não rodou.
+     * Útil quando o webhook falhou ou a URL não é acessível.
+     */
+    public function buscarPdfD4Sign(Request $request, int $id)
+    {
+        $contrato = SimulacaoEmprestimo::findOrFail($id);
+        $this->assertContratoDaCompany($contrato, $request);
+
+        $uuid = $contrato->d4sign_uuid_document;
+        if (empty($uuid)) {
+            return response()->json(['atualizado' => false, 'message' => 'Contrato sem documento D4Sign.']);
+        }
+
+        if ($contrato->pdf_final_path) {
+            return response()->json(['atualizado' => false, 'message' => 'PDF final já existe.']);
+        }
+
+        $d4sign = new D4SignService();
+        if (!$d4sign->isConfigured()) {
+            return response()->json(['atualizado' => false, 'message' => 'D4Sign não configurado.']);
+        }
+
+        $status = $d4sign->obterStatusDocumento($uuid);
+        if (!$status || $status['statusId'] !== '4') {
+            return response()->json([
+                'atualizado' => false,
+                'message' => 'Documento ainda não finalizado na D4Sign.',
+                'status' => $status['statusName'] ?? null,
+            ]);
+        }
+
+        $download = $d4sign->downloadDocumento($uuid);
+        if (!$download || empty($download['url'])) {
+            return response()->json(['atualizado' => false, 'message' => 'Falha ao obter URL de download da D4Sign.']);
+        }
+
+        try {
+            $pdfResponse = Http::timeout(30)->get($download['url']);
+            if (!$pdfResponse->successful()) {
+                throw new \RuntimeException('Falha ao baixar PDF da URL');
+            }
+            $pdfContent = $pdfResponse->body();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('AssinaturaContrato buscarPdfD4Sign: erro ao baixar', [
+                'uuid' => $uuid,
+                'contrato_id' => $contrato->id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['atualizado' => false, 'message' => 'Erro ao baixar PDF da D4Sign.']);
+        }
+
+        $dir = "private/contratos/assinatura/{$contrato->id}/v" . max(1, (int) $contrato->assinatura_versao);
+        $finalPath = "{$dir}/contrato_assinado.pdf";
+        $absDir = storage_path('app/' . $dir);
+        if (!is_dir($absDir)) {
+            mkdir($absDir, 0775, true);
+        }
+        file_put_contents(storage_path('app/' . $finalPath), $pdfContent);
+        $hashFinal = hash_file('sha256', storage_path('app/' . $finalPath)) ?: null;
+
+        $contrato->pdf_final_path = $finalPath;
+        $contrato->pdf_final_sha256 = $hashFinal;
+        $contrato->assinatura_status = self::STATUS_SIGNED;
+        $contrato->finalizado_at = Carbon::now();
+        $contrato->save();
+
+        ContratoAssinaturaEvento::create([
+            'contrato_id' => $contrato->id,
+            'ator_tipo' => 'admin',
+            'ator_id' => (int) (auth('api')->id() ?? 0),
+            'evento_tipo' => 'D4SIGN_SIGNED_MANUAL',
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'device_json' => null,
+            'meta_json' => ['uuid' => $uuid, 'origem' => 'buscar_d4sign'],
+        ]);
+
+        return response()->json([
+            'atualizado' => true,
+            'message' => 'PDF assinado baixado da D4Sign com sucesso.',
+        ]);
+    }
+
     public function downloadEvidencia(Request $request, int $contratoId, int $evidenciaId)
     {
         $contrato = SimulacaoEmprestimo::findOrFail($contratoId);
