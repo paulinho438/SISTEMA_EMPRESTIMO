@@ -92,18 +92,40 @@ class D4SignService
      * Obtém o status do documento via /list.
      * Retorna ['statusId' => '1', 'statusName' => 'Processando'] ou null se falhar.
      * statusId: 1=Processando, 2=Aguardando Signatários, 3=Aguardando Assinaturas, 4=Finalizado.
+     * A API pode retornar o status no root ou dentro de 'list' (primeiro item).
      */
     public function obterStatusDocumento(string $uuidDoc): ?array
     {
         $url = $this->buildUrl("/documents/{$uuidDoc}/list");
         $resp = Http::acceptJson()->get($url);
         if (!$resp->successful()) {
+            Log::debug('D4Sign obterStatusDocumento falhou', ['uuid' => $uuidDoc, 'status' => $resp->status(), 'body' => $resp->body()]);
             return null;
         }
         $data = $resp->json();
-        $statusId = $data['statusId'] ?? $data['status_id'] ?? null;
+        $statusId = $data['statusId'] ?? $data['status_id'] ?? $data['fase'] ?? $data['phase'] ?? null;
         $statusName = $data['statusName'] ?? $data['status_name'] ?? null;
+
+        // Alguns endpoints retornam o documento dentro de 'list' (array ou objeto)
+        if ($statusId === null && isset($data['list'])) {
+            $list = $data['list'];
+            $first = is_array($list) && isset($list[0]) ? $list[0] : $list;
+            if (is_array($first)) {
+                $statusId = $first['statusId'] ?? $first['status_id'] ?? null;
+                $statusName = $first['statusName'] ?? $first['status_name'] ?? $statusName;
+            }
+        }
+
+        // statusName "FINALIZADO" ou "Finished" indica documento pronto (statusId pode vir como int)
+        if ($statusId === null && $statusName !== null) {
+            $sn = strtoupper((string) $statusName);
+            if (str_contains($sn, 'FINALIZADO') || str_contains($sn, 'FINISHED') || str_contains($sn, 'CONCLU')) {
+                $statusId = '4';
+            }
+        }
+
         if ($statusId === null) {
+            Log::debug('D4Sign obterStatusDocumento: statusId não encontrado', ['uuid' => $uuidDoc, 'data_keys' => array_keys($data ?? [])]);
             return null;
         }
         return [

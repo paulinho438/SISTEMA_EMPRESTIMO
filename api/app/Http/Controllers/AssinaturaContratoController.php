@@ -391,17 +391,26 @@ class AssinaturaContratoController extends Controller
         }
 
         $status = $d4sign->obterStatusDocumento($uuid);
-        if (!$status || $status['statusId'] !== '4') {
+        $statusId = $status['statusId'] ?? null;
+        $statusName = $status['statusName'] ?? null;
+
+        // statusId 1, 2, 3 = não finalizado. 4 = finalizado. null = não conseguiu obter (tenta download mesmo assim)
+        if ($statusId !== null && $statusId !== '4') {
             return response()->json([
                 'atualizado' => false,
                 'message' => 'Documento ainda não finalizado na D4Sign.',
-                'status' => $status['statusName'] ?? null,
+                'status' => $statusName,
             ]);
         }
 
+        // Se status é 4 ou null (API pode retornar formato diferente), tenta o download.
+        // O download só funciona para documentos finalizados.
         $download = $d4sign->downloadDocumento($uuid);
         if (!$download || empty($download['url'])) {
-            return response()->json(['atualizado' => false, 'message' => 'Falha ao obter URL de download da D4Sign.']);
+            $msg = $statusId === null
+                ? 'Não foi possível verificar o status. O documento pode ainda não estar finalizado na D4Sign.'
+                : 'Falha ao obter URL de download da D4Sign.';
+            return response()->json(['atualizado' => false, 'message' => $msg]);
         }
 
         try {
