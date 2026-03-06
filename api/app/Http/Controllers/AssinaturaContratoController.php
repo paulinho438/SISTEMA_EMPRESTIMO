@@ -216,8 +216,15 @@ class AssinaturaContratoController extends Controller
                     if (!$enviadoOk) {
                         \Illuminate\Support\Facades\Log::warning('D4Sign: falha ao enviar para assinatura', ['uuid' => $d4signUuidDoc]);
                     }
-                    $webhookUrl = config('services.d4sign.webhook_url') ?: URL::to('/api/webhook/d4sign');
-                    $d4sign->cadastrarWebhook($d4signUuidDoc, $webhookUrl);
+                    $webhookUrl = config('services.d4sign.webhook_url')
+                        ?: 'https://api-sistema-imposto.agecontrole.com.br/api/webhook/d4sign';
+                    $webhookCadastrado = $d4sign->cadastrarWebhook($d4signUuidDoc, $webhookUrl);
+                    if (!$webhookCadastrado) {
+                        \Illuminate\Support\Facades\Log::warning('D4Sign: falha ao cadastrar webhook no documento', [
+                            'uuid' => $d4signUuidDoc,
+                            'webhook_url' => $webhookUrl,
+                        ]);
+                    }
                     if ($enviadoOk) {
                         sleep(1);
                         $d4signEmbedUrl = $d4sign->obterLinkAssinatura($d4signUuidDoc);
