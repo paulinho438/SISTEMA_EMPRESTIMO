@@ -758,14 +758,14 @@ class EmprestimoController extends Controller
                     CASE
                         WHEN emprestimos.protesto = 1 THEN 'Protesto'
                         WHEN emprestimos.protesto = 2 THEN 'Protestado'
+                        WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.dt_baixa IS NOT NULL) =
+                             (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
                         WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) > 0 THEN
                             CASE
                                 WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 10 THEN 'Vencido'
                                 WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 4 THEN 'Muito Atrasado'
                                 ELSE 'Atrasado'
                             END
-                        WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.dt_baixa IS NOT NULL) =
-                             (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
                         ELSE 'Em Dias'
                     END
                 ) = ?", [$status]);
@@ -867,14 +867,14 @@ class EmprestimoController extends Controller
             CASE
                 WHEN emprestimos.protesto = 1 THEN 'Protesto'
                 WHEN emprestimos.protesto = 2 THEN 'Protestado'
+                WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.dt_baixa IS NOT NULL) =
+                     (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
                 WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) > 0 THEN
                     CASE
                         WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 10 THEN 'Vencido'
                         WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.atrasadas > 0 AND p2.saldo > 0) >= 4 THEN 'Muito Atrasado'
                         ELSE 'Atrasado'
                     END
-                WHEN (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id AND p2.dt_baixa IS NOT NULL) =
-                     (SELECT COUNT(*) FROM parcelas p2 WHERE p2.emprestimo_id = emprestimos.id) THEN 'Pago'
                 ELSE 'Em Dias'
             END
         ";
