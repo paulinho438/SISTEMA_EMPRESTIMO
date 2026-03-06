@@ -8,6 +8,7 @@ use App\Models\Costcenter;
 use App\Models\Emprestimo;
 use App\Models\Parcela;
 use App\Models\SimulacaoEmprestimo;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 
 class ContratoEfetivacaoService
@@ -46,6 +47,7 @@ class ContratoEfetivacaoService
             $valor = (float) $simulacao->valor_solicitado;
             $totalPrazo = (float) $simulacao->total_parcelas;
             $lucro = max(0, $totalPrazo - $valor);
+            $userIdEfetivacao = $this->resolverUserIdEfetivacao($simulacao, $companyId, $userId);
 
             $emprestimo = Emprestimo::create([
                 'dt_lancamento' => $simulacao->data_assinatura
@@ -57,7 +59,7 @@ class ContratoEfetivacaoService
                 'costcenter_id' => $costcenter->id,
                 'banco_id' => $simulacao->banco_id,
                 'client_id' => $simulacao->client_id,
-                'user_id' => $userId,
+                'user_id' => $userIdEfetivacao,
                 'company_id' => $companyId,
                 'simulacao_emprestimo_id' => $simulacao->id,
                 'liberar_minimo' => 1,
@@ -115,6 +117,24 @@ class ContratoEfetivacaoService
         }
 
         return Costcenter::where('company_id', $companyId)->first();
+    }
+
+    private function resolverUserIdEfetivacao(SimulacaoEmprestimo $simulacao, int $companyId, ?int $userIdInformado): int
+    {
+        if (!empty($simulacao->user_id)) {
+            return (int) $simulacao->user_id;
+        }
+
+        if (!empty($userIdInformado)) {
+            return (int) $userIdInformado;
+        }
+
+        $userEmpresa = User::where('company_id', $companyId)->orderBy('id')->first();
+        if ($userEmpresa) {
+            return (int) $userEmpresa->id;
+        }
+
+        throw new \InvalidArgumentException('Nenhum usuário encontrado para efetivar o contrato.');
     }
 
     private function garantirParcelasEContasReceber(SimulacaoEmprestimo $simulacao, Emprestimo $emprestimo, int $companyId): bool
