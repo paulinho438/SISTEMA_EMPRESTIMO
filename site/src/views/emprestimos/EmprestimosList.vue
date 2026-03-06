@@ -621,7 +621,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="porcentagem" header="Progresso" :showFilterMatchModes="false" style="min-width: 12rem">
+                        <Column field="porcentagem" header="Progresso" :showFilterMatchModes="false" style="min-width: 9rem">
                             <template #body="{ data }">
                                 {{ $filters.percentage(data.porcentagem) }}
                                 <ProgressBar :value="data.porcentagem" :showValue="false" style="height: 0.5rem"></ProgressBar>
