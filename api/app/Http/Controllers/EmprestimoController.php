@@ -741,7 +741,7 @@ class EmprestimoController extends Controller
         $perPage = $request->get('per_page', 10);
 
         // Inicia a query
-        $query = Emprestimo::with(['banco', 'parcelas'])
+        $query = Emprestimo::with(['banco', 'parcelas.contasreceber'])
             ->where('company_id', $companyId)
             ->orderByDesc('id');
 
@@ -1195,6 +1195,8 @@ class EmprestimoController extends Controller
         $emprestimoAdd['client_id'] = $dados['cliente']['id'];
         $emprestimoAdd['user_id'] = $dados['consultor']['id'];
         $emprestimoAdd['company_id'] = $request->header('company-id');
+        $emprestimoAdd['tipo_origem'] = 'NOVO';
+        $emprestimoAdd['emprestimo_origem_id'] = null;
 
         gerarPixParcelas::dispatch();
 
@@ -1355,7 +1357,8 @@ class EmprestimoController extends Controller
 
         $emprestimoAdd = [];
 
-        $emprestimoAdd['dt_lancamento'] = Carbon::createFromFormat('d/m/Y', $dados['dt_lancamento'])->format('Y-m-d');
+        // Refinanciamento sempre nasce com a data da operação
+        $emprestimoAdd['dt_lancamento'] = Carbon::today()->format('Y-m-d');
         $emprestimoAdd['valor'] = $dados['valor'];
         $emprestimoAdd['lucro'] = $dados['lucro'];
         $emprestimoAdd['juros'] = $dados['juros'];
@@ -1365,6 +1368,8 @@ class EmprestimoController extends Controller
         $emprestimoAdd['user_id'] = $dados['consultor']['id'];
         $emprestimoAdd['company_id'] = $request->header('company-id');
         $emprestimoAdd['liberar_minimo'] = $dados['liberar_minimo'];
+        $emprestimoAdd['tipo_origem'] = 'REFINANCIAMENTO';
+        $emprestimoAdd['emprestimo_origem_id'] = $dados['emprestimo_origem_id'] ?? $dados['id'] ?? null;
 
         $emprestimoAdd = Emprestimo::create($emprestimoAdd);
 
@@ -1392,7 +1397,8 @@ class EmprestimoController extends Controller
 
             $addParcela = [];
             $addParcela['emprestimo_id'] = $emprestimoAdd->id;
-            $addParcela['dt_lancamento'] = date('Y-m-d');
+            // Alinhar com o dt_lancamento do novo empréstimo refinanciado
+            $addParcela['dt_lancamento'] = $emprestimoAdd->dt_lancamento;
             $addParcela['parcela'] = $parcela['parcela'];
             $addParcela['valor'] = $parcela['valor'];
             $addParcela['saldo'] = $parcela['saldo'];
@@ -1491,6 +1497,8 @@ class EmprestimoController extends Controller
         $emprestimoAdd['user_id'] = $dados['consultor']['id'];
         $emprestimoAdd['company_id'] = $request->header('company-id');
         $emprestimoAdd['liberar_minimo'] = 1;
+        $emprestimoAdd['tipo_origem'] = 'RENOVACAO';
+        $emprestimoAdd['emprestimo_origem_id'] = $dados['emprestimo_origem_id'] ?? $dados['id'] ?? null;
 
         $emprestimoAdd = Emprestimo::create($emprestimoAdd);
 

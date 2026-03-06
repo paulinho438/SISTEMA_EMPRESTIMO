@@ -26,17 +26,30 @@ class EmprestimoAllResource extends JsonResource
     public function toArray($request)
     {
         $parcelas = $this->parcelas;
+        $formasExcluidasValorRealPago = ['BAIXA COM DESCONTO', 'REFINANCIAMENTO', 'RENOVACAO'];
 
         $saldoareceber = $parcelas->where('dt_baixa', null)->sum('saldo');
         $saldoatrasado = $parcelas->where('dt_baixa', null)->where('venc_real', now()->toDateString())->sum('saldo');
         $porcentagem = $this->porcent($parcelas->sum('valor'), $parcelas->where('dt_baixa', '<>', null)->sum('valor'));
         $saldo_total_parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->sum('valor');
+        $valor_realmente_pago = $parcelas
+            ->filter(function ($parcela) use ($formasExcluidasValorRealPago) {
+                if (!$parcela->dt_baixa) {
+                    return false;
+                }
+
+                $formaRecebimento = strtoupper(trim((string) optional($parcela->contasreceber)->forma_recebto));
+                return !in_array($formaRecebimento, $formasExcluidasValorRealPago, true);
+            })
+            ->sum('valor');
         $parcelas_vencidas = ParcelaResource::collection($parcelas->where('dt_baixa', null));
         $parcelas_pagas = $parcelas->where('dt_baixa', '<>', null)->values()->all();
 
         return [
             "id" => $this->id,
             "dt_lancamento" => (new DateTime($this->dt_lancamento))->format('d/m/Y'),
+            "tipo_origem" => $this->tipo_origem ?? 'NOVO',
+            "emprestimo_origem_id" => $this->emprestimo_origem_id,
             "valor" => $this->valor,
             "lucro" => $this->lucro,
             "juros" => $this->juros,
@@ -44,6 +57,7 @@ class EmprestimoAllResource extends JsonResource
             "saldoatrasado" => $saldoatrasado,
             "porcentagem" => $porcentagem,
             "saldo_total_parcelas_pagas" => $saldo_total_parcelas_pagas,
+            "valor_realmente_pago" => $valor_realmente_pago,
             "costcenter" => $this->costcenter,
             "banco" => $this->banco ? new BancosResource($this->banco) : null,
             "cliente" => new ClientResource($this->client),

@@ -288,6 +288,14 @@ export default {
                         emprestimo.nome_cliente = emprestimo.cliente?.nome_completo || 'N/A';
                         emprestimo.nome_consultor = emprestimo.consultor?.nome_completo || 'N/A';
                         emprestimo.nome_banco = emprestimo.banco?.name || '-';
+                        const origemTipo = String(emprestimo.tipo_origem || '').toUpperCase();
+                        if (origemTipo === 'REFINANCIAMENTO') {
+                            emprestimo.origem_label = 'Refinanciamento';
+                        } else if (origemTipo === 'RENOVACAO') {
+                            emprestimo.origem_label = 'Renovação';
+                        } else {
+                            emprestimo.origem_label = 'Novo';
+                        }
 
                         return emprestimo;
                     });
@@ -514,6 +522,15 @@ export default {
                             </template>
                         </Column>
 
+                        <Column header="Origem" style="min-width: 11rem">
+                            <template #body="{ data }">
+                                <span v-if="data.origem_label === 'Refinanciamento' || data.origem_label === 'Renovação'">
+                                    {{ data.origem_label }}{{ data.emprestimo_origem_id ? ` (#${data.emprestimo_origem_id})` : '' }}
+                                </span>
+                                <span v-else>{{ data.origem_label }}</span>
+                            </template>
+                        </Column>
+
                         <Column field="nome_cliente" header="Cliente" style="min-width: 12rem">
                             <template #body="{ data }">
                                 {{ data.nome_cliente }}
@@ -562,6 +579,15 @@ export default {
                         <Column header="Valor Pago" filterField="saldo_total_parcelas_pagas" dataType="numeric" style="min-width: 10rem">
                             <template #body="{ data }">
                                 {{ formatValorReal(data.saldo_total_parcelas_pagas) }}
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />
+                            </template>
+                        </Column>
+
+                        <Column header="Valor realmente pago" filterField="valor_realmente_pago" dataType="numeric" style="min-width: 12rem">
+                            <template #body="{ data }">
+                                {{ formatValorReal(data.valor_realmente_pago || 0) }}
                             </template>
                             <template #filter="{ filterModel }">
                                 <InputNumber v-model="filterModel.value" mode="currency" currency="BRL" locale="pt-BR" />

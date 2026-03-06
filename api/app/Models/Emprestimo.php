@@ -21,6 +21,8 @@ class Emprestimo extends Model
         'client_id',
         'user_id',
         'company_id',
+        'tipo_origem',
+        'emprestimo_origem_id',
         'hash_locacao',
         'mensagem_renovacao',
         'liberar_minimo',
@@ -68,6 +70,11 @@ class Emprestimo extends Model
     public function banco()
     {
         return $this->belongsTo(Banco::class, 'banco_id', 'id');
+    }
+
+    public function emprestimoOrigem()
+    {
+        return $this->belongsTo(self::class, 'emprestimo_origem_id', 'id');
     }
 
     public function quitacao()
