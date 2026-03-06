@@ -123,8 +123,39 @@ class RelatorioLucroRealService
             ->get();
 
         $outrasReceitas = 0;
+        $detalhamentoOutrasReceitas = [];
         foreach ($movimentacoesSemParcela as $mov) {
-            $outrasReceitas += (float) $mov->valor;
+            $valor = (float) $mov->valor;
+            $outrasReceitas += $valor;
+            $detalhamentoOutrasReceitas[] = [
+                'id' => $mov->id,
+                'data' => $mov->dt_movimentacao,
+                'descricao' => $mov->descricao,
+                'valor' => $valor,
+                'banco' => $mov->banco ? $mov->banco->name : 'N/A',
+            ];
+        }
+
+        $detalhamentoReceitaBruta = [];
+        foreach ($detalhamentoMovimentacoes as $mov) {
+            $detalhamentoReceitaBruta[] = [
+                'origem' => 'PARCELA',
+                'id' => $mov['id'],
+                'data' => $mov['data'],
+                'descricao' => $mov['descricao'],
+                'valor' => $mov['valor_recebido'],
+                'banco' => $mov['banco'],
+            ];
+        }
+        foreach ($detalhamentoOutrasReceitas as $mov) {
+            $detalhamentoReceitaBruta[] = [
+                'origem' => 'OUTRA_RECEITA',
+                'id' => $mov['id'],
+                'data' => $mov['data'],
+                'descricao' => $mov['descricao'],
+                'valor' => $mov['valor'],
+                'banco' => $mov['banco'],
+            ];
         }
 
         return [
@@ -134,6 +165,8 @@ class RelatorioLucroRealService
             'receita_bruta_total' => round($valorRecebidoTotal + $outrasReceitas, 2),
             'detalhamento_emprestimos' => array_values($emprestimosMap),
             'detalhamento_movimentacoes' => $detalhamentoMovimentacoes,
+            'detalhamento_outras_receitas' => $detalhamentoOutrasReceitas,
+            'detalhamento_receita_bruta' => $detalhamentoReceitaBruta,
             'total_parcelas_processadas' => count($movimentacoes),
             'total_emprestimos' => count($emprestimosMap),
         ];
@@ -166,6 +199,8 @@ class RelatorioLucroRealService
             ],
             'detalhamento_emprestimos' => $calculo['detalhamento_emprestimos'],
             'detalhamento_movimentacoes' => $calculo['detalhamento_movimentacoes'],
+            'detalhamento_outras_receitas' => $calculo['detalhamento_outras_receitas'],
+            'detalhamento_receita_bruta' => $calculo['detalhamento_receita_bruta'],
         ];
     }
 }

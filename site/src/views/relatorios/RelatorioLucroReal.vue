@@ -173,6 +173,131 @@
 						</div>
 					</div>
 
+					<!-- Auditoria dos Cards -->
+					<div class="grid mb-4">
+						<div class="col-12">
+							<h6>Auditoria - Receita Bruta Total</h6>
+							<DataTable
+								:value="relatorio.detalhamento_receita_bruta || []"
+								:paginator="true"
+								:rows="10"
+								responsiveLayout="scroll"
+								class="p-datatable-sm"
+							>
+								<template #empty> Nenhum item encontrado para Receita Bruta. </template>
+								<Column field="origem" header="Origem" />
+								<Column field="id" header="ID Mov." />
+								<Column field="data" header="Data">
+									<template #body="{ data }">{{ formatDate(data.data) }}</template>
+								</Column>
+								<Column field="descricao" header="Descrição" style="min-width: 24rem" />
+								<Column field="banco" header="Banco" />
+								<Column field="valor" header="Valor">
+									<template #body="{ data }">{{ formatValorReal(data.valor || 0) }}</template>
+								</Column>
+							</DataTable>
+						</div>
+					</div>
+
+					<div class="grid mb-4">
+						<div class="col-12">
+							<h6>Auditoria - Valor Recebido (Parcelas)</h6>
+							<DataTable
+								:value="relatorio.detalhamento_movimentacoes || []"
+								:paginator="true"
+								:rows="10"
+								responsiveLayout="scroll"
+								class="p-datatable-sm"
+							>
+								<template #empty> Nenhuma parcela recebida no período. </template>
+								<Column field="id" header="ID Mov." />
+								<Column field="data" header="Data">
+									<template #body="{ data }">{{ formatDate(data.data) }}</template>
+								</Column>
+								<Column field="cliente" header="Cliente" style="min-width: 18rem" />
+								<Column field="parcela" header="Parcela" />
+								<Column field="descricao" header="Descrição" style="min-width: 22rem" />
+								<Column field="banco" header="Banco" />
+								<Column field="valor_recebido" header="Valor Recebido">
+									<template #body="{ data }">{{ formatValorReal(data.valor_recebido || 0) }}</template>
+								</Column>
+							</DataTable>
+						</div>
+					</div>
+
+					<div class="grid mb-4">
+						<div class="col-12">
+							<h6>Auditoria - Lucro Real Total</h6>
+							<DataTable
+								:value="relatorio.detalhamento_movimentacoes || []"
+								:paginator="true"
+								:rows="10"
+								responsiveLayout="scroll"
+								class="p-datatable-sm"
+							>
+								<template #empty> Nenhum item de lucro real no período. </template>
+								<Column field="id" header="ID Mov." />
+								<Column field="data" header="Data">
+									<template #body="{ data }">{{ formatDate(data.data) }}</template>
+								</Column>
+								<Column field="cliente" header="Cliente" style="min-width: 18rem" />
+								<Column field="parcela" header="Parcela" />
+								<Column field="descricao" header="Descrição" style="min-width: 22rem" />
+								<Column field="lucro_real" header="Lucro Real">
+									<template #body="{ data }">
+										<strong class="text-green-500">{{ formatValorReal(data.lucro_real || 0) }}</strong>
+									</template>
+								</Column>
+							</DataTable>
+						</div>
+					</div>
+
+					<div class="grid mb-4">
+						<div class="col-12">
+							<h6>Auditoria - Parcelas Processadas</h6>
+							<DataTable
+								:value="relatorio.detalhamento_movimentacoes || []"
+								:paginator="true"
+								:rows="10"
+								responsiveLayout="scroll"
+								class="p-datatable-sm"
+							>
+								<template #empty> Nenhuma parcela processada no período. </template>
+								<Column field="id" header="ID Mov." />
+								<Column field="parcela" header="Parcela" />
+								<Column field="cliente" header="Cliente" style="min-width: 18rem" />
+								<Column field="data" header="Data">
+									<template #body="{ data }">{{ formatDate(data.data) }}</template>
+								</Column>
+								<Column field="descricao" header="Descrição" style="min-width: 24rem" />
+							</DataTable>
+						</div>
+					</div>
+
+					<div class="grid mb-4">
+						<div class="col-12">
+							<h6>Auditoria - Outras Receitas</h6>
+							<DataTable
+								:value="relatorio.detalhamento_outras_receitas || []"
+								:paginator="true"
+								:rows="10"
+								responsiveLayout="scroll"
+								class="p-datatable-sm"
+							>
+								<template #empty> Nenhuma outra receita no período. </template>
+								<Column field="id" header="ID Mov." />
+								<Column field="data" header="Data">
+									<template #body="{ data }">{{ formatDate(data.data) }}</template>
+								</Column>
+								<Column field="descricao" header="Descrição" style="min-width: 24rem" />
+								<Column field="banco" header="Banco" />
+								<Column field="valor" header="Valor">
+									<template #body="{ data }">{{ formatValorReal(data.valor || 0) }}</template>
+								</Column>
+							</DataTable>
+						</div>
+					</div>
+
 					<!-- Detalhamento por Empréstimo -->
 					<div v-if="relatorio.detalhamento_emprestimos && relatorio.detalhamento_emprestimos.length > 0" class="grid mb-4">
 						<div class="col-12">

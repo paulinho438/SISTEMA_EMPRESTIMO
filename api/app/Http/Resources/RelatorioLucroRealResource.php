@@ -19,6 +19,8 @@ class RelatorioLucroRealResource extends JsonResource
             'resumo' => $this->resource['resumo'],
             'detalhamento_emprestimos' => $this->resource['detalhamento_emprestimos'],
             'detalhamento_movimentacoes' => $this->resource['detalhamento_movimentacoes'],
+            'detalhamento_outras_receitas' => $this->resource['detalhamento_outras_receitas'] ?? [],
+            'detalhamento_receita_bruta' => $this->resource['detalhamento_receita_bruta'] ?? [],
         ];
     }
 }
