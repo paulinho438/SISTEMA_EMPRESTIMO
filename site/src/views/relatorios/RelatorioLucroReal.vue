@@ -176,7 +176,10 @@
 					<!-- Auditoria dos Cards -->
 					<div class="grid mb-4">
 						<div class="col-12">
-							<h6>Auditoria - Receita Bruta Total</h6>
+							<div class="flex justify-content-between align-items-center mb-2">
+								<h6 class="m-0">Auditoria - Receita Bruta Total</h6>
+								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaReceitaBruta" />
+							</div>
 							<DataTable
 								:value="relatorio.detalhamento_receita_bruta || []"
 								:paginator="true"
@@ -201,7 +204,10 @@
 
 					<div class="grid mb-4">
 						<div class="col-12">
-							<h6>Auditoria - Valor Recebido (Parcelas)</h6>
+							<div class="flex justify-content-between align-items-center mb-2">
+								<h6 class="m-0">Auditoria - Valor Recebido (Parcelas)</h6>
+								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaValorRecebido" />
+							</div>
 							<DataTable
 								:value="relatorio.detalhamento_movimentacoes || []"
 								:paginator="true"
@@ -227,7 +233,10 @@
 
 					<div class="grid mb-4">
 						<div class="col-12">
-							<h6>Auditoria - Lucro Real Total</h6>
+							<div class="flex justify-content-between align-items-center mb-2">
+								<h6 class="m-0">Auditoria - Lucro Real Total</h6>
+								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaLucroReal" />
+							</div>
 							<DataTable
 								:value="relatorio.detalhamento_movimentacoes || []"
 								:paginator="true"
@@ -254,7 +263,10 @@
 
 					<div class="grid mb-4">
 						<div class="col-12">
-							<h6>Auditoria - Parcelas Processadas</h6>
+							<div class="flex justify-content-between align-items-center mb-2">
+								<h6 class="m-0">Auditoria - Parcelas Processadas</h6>
+								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaParcelasProcessadas" />
+							</div>
 							<DataTable
 								:value="relatorio.detalhamento_movimentacoes || []"
 								:paginator="true"
@@ -276,7 +288,10 @@
 
 					<div class="grid mb-4">
 						<div class="col-12">
-							<h6>Auditoria - Outras Receitas</h6>
+							<div class="flex justify-content-between align-items-center mb-2">
+								<h6 class="m-0">Auditoria - Outras Receitas</h6>
+								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaOutrasReceitas" />
+							</div>
 							<DataTable
 								:value="relatorio.detalhamento_outras_receitas || []"
 								:paginator="true"
@@ -616,6 +631,95 @@ export default {
 			if (!dateString) return '-';
 			const date = new Date(dateString);
 			return date.toLocaleDateString('pt-BR');
+		},
+		exportarCsv(nomeArquivo, colunas, linhas) {
+			const escapeCsv = (valor) => {
+				const v = valor === null || valor === undefined ? '' : String(valor);
+				return `"${v.replace(/"/g, '""')}"`;
+			};
+			const header = colunas.map((c) => escapeCsv(c.titulo)).join(';');
+			const body = (linhas || []).map((linha) => {
+				return colunas.map((c) => escapeCsv(typeof c.valor === 'function' ? c.valor(linha) : linha[c.valor])).join(';');
+			}).join('\n');
+			const csv = '\uFEFF' + header + '\n' + body;
+			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', `${nomeArquivo}.csv`);
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			window.URL.revokeObjectURL(url);
+		},
+		exportarAuditoriaReceitaBruta() {
+			this.exportarCsv(
+				'auditoria-receita-bruta',
+				[
+					{ titulo: 'Origem', valor: 'origem' },
+					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
+					{ titulo: 'Descricao', valor: 'descricao' },
+					{ titulo: 'Banco', valor: 'banco' },
+					{ titulo: 'Valor', valor: (l) => this.formatValorReal(l.valor || 0) }
+				],
+				this.relatorio?.detalhamento_receita_bruta || []
+			);
+		},
+		exportarAuditoriaValorRecebido() {
+			this.exportarCsv(
+				'auditoria-valor-recebido',
+				[
+					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
+					{ titulo: 'Cliente', valor: 'cliente' },
+					{ titulo: 'Parcela', valor: 'parcela' },
+					{ titulo: 'Descricao', valor: 'descricao' },
+					{ titulo: 'Banco', valor: 'banco' },
+					{ titulo: 'Valor Recebido', valor: (l) => this.formatValorReal(l.valor_recebido || 0) }
+				],
+				this.relatorio?.detalhamento_movimentacoes || []
+			);
+		},
+		exportarAuditoriaLucroReal() {
+			this.exportarCsv(
+				'auditoria-lucro-real',
+				[
+					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
+					{ titulo: 'Cliente', valor: 'cliente' },
+					{ titulo: 'Parcela', valor: 'parcela' },
+					{ titulo: 'Descricao', valor: 'descricao' },
+					{ titulo: 'Lucro Real', valor: (l) => this.formatValorReal(l.lucro_real || 0) }
+				],
+				this.relatorio?.detalhamento_movimentacoes || []
+			);
+		},
+		exportarAuditoriaParcelasProcessadas() {
+			this.exportarCsv(
+				'auditoria-parcelas-processadas',
+				[
+					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Parcela', valor: 'parcela' },
+					{ titulo: 'Cliente', valor: 'cliente' },
+					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
+					{ titulo: 'Descricao', valor: 'descricao' }
+				],
+				this.relatorio?.detalhamento_movimentacoes || []
+			);
+		},
+		exportarAuditoriaOutrasReceitas() {
+			this.exportarCsv(
+				'auditoria-outras-receitas',
+				[
+					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
+					{ titulo: 'Descricao', valor: 'descricao' },
+					{ titulo: 'Banco', valor: 'banco' },
+					{ titulo: 'Valor', valor: (l) => this.formatValorReal(l.valor || 0) }
+				],
+				this.relatorio?.detalhamento_outras_receitas || []
+			);
 		}
 	}
 };
