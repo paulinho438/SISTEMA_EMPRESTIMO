@@ -36,7 +36,7 @@ class D4SignWebhookController extends Controller
         }
 
         // type_post "1" = documento finalizado (FINISHED)
-        if ($typePost !== '1') {
+        if ($typePost !== '4') {
             return response()->json(['message' => 'Evento ignorado']);
         }
 
