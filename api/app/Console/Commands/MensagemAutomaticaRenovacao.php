@@ -49,7 +49,7 @@ class MensagemAutomaticaRenovacao extends Command
 
             $valorBase = $emprestimo->valor ?? 0;
             $temCnpj = !empty(trim($client->cnpj ?? ''));
-            $valorOferta = $valorBase * ($temCnpj ? 3 : 2);
+            $valorOferta = $valorBase + ($temCnpj ? 300 : 200);
             $nome = $client->nome_completo;
             $mensagem = null;
 
