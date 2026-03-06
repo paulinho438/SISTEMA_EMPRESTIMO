@@ -174,6 +174,21 @@
 					</div>
 
 					<!-- Auditoria dos Cards -->
+					<div class="grid mb-3">
+						<div class="col-12 md:col-4">
+							<label class="block mb-2">Filtro por tipo (auditoria)</label>
+							<Dropdown
+								v-model="tipoAuditoriaSelecionado"
+								:options="tiposAuditoria"
+								optionLabel="label"
+								optionValue="value"
+								placeholder="Selecione o tipo"
+								showClear
+								class="w-full"
+							/>
+						</div>
+					</div>
+
 					<div class="grid mb-4">
 						<div class="col-12">
 							<div class="flex justify-content-between align-items-center mb-2">
@@ -181,7 +196,7 @@
 								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaReceitaBruta" />
 							</div>
 							<DataTable
-								:value="relatorio.detalhamento_receita_bruta || []"
+								:value="filtrarAuditoriaPorTipo(relatorio.detalhamento_receita_bruta || [])"
 								:paginator="true"
 								:rows="10"
 								responsiveLayout="scroll"
@@ -189,6 +204,7 @@
 							>
 								<template #empty> Nenhum item encontrado para Receita Bruta. </template>
 								<Column field="origem" header="Origem" />
+								<Column field="tipo" header="Tipo" />
 								<Column field="id" header="ID Mov." />
 								<Column field="data" header="Data">
 									<template #body="{ data }">{{ formatDate(data.data) }}</template>
@@ -209,7 +225,7 @@
 								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaValorRecebido" />
 							</div>
 							<DataTable
-								:value="relatorio.detalhamento_movimentacoes || []"
+								:value="filtrarAuditoriaPorTipo(relatorio.detalhamento_movimentacoes || [])"
 								:paginator="true"
 								:rows="10"
 								responsiveLayout="scroll"
@@ -217,6 +233,7 @@
 							>
 								<template #empty> Nenhuma parcela recebida no período. </template>
 								<Column field="id" header="ID Mov." />
+								<Column field="tipo" header="Tipo" />
 								<Column field="data" header="Data">
 									<template #body="{ data }">{{ formatDate(data.data) }}</template>
 								</Column>
@@ -238,7 +255,7 @@
 								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaLucroReal" />
 							</div>
 							<DataTable
-								:value="relatorio.detalhamento_movimentacoes || []"
+								:value="filtrarAuditoriaPorTipo(relatorio.detalhamento_movimentacoes || [])"
 								:paginator="true"
 								:rows="10"
 								responsiveLayout="scroll"
@@ -246,6 +263,7 @@
 							>
 								<template #empty> Nenhum item de lucro real no período. </template>
 								<Column field="id" header="ID Mov." />
+								<Column field="tipo" header="Tipo" />
 								<Column field="data" header="Data">
 									<template #body="{ data }">{{ formatDate(data.data) }}</template>
 								</Column>
@@ -268,7 +286,7 @@
 								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaParcelasProcessadas" />
 							</div>
 							<DataTable
-								:value="relatorio.detalhamento_movimentacoes || []"
+								:value="filtrarAuditoriaPorTipo(relatorio.detalhamento_movimentacoes || [])"
 								:paginator="true"
 								:rows="10"
 								responsiveLayout="scroll"
@@ -276,6 +294,7 @@
 							>
 								<template #empty> Nenhuma parcela processada no período. </template>
 								<Column field="id" header="ID Mov." />
+								<Column field="tipo" header="Tipo" />
 								<Column field="parcela" header="Parcela" />
 								<Column field="cliente" header="Cliente" style="min-width: 18rem" />
 								<Column field="data" header="Data">
@@ -293,7 +312,7 @@
 								<Button label="Exportar Excel" icon="pi pi-file-excel" class="p-button-success p-button-sm" @click="exportarAuditoriaOutrasReceitas" />
 							</div>
 							<DataTable
-								:value="relatorio.detalhamento_outras_receitas || []"
+								:value="filtrarAuditoriaPorTipo(relatorio.detalhamento_outras_receitas || [])"
 								:paginator="true"
 								:rows="10"
 								responsiveLayout="scroll"
@@ -301,6 +320,7 @@
 							>
 								<template #empty> Nenhuma outra receita no período. </template>
 								<Column field="id" header="ID Mov." />
+								<Column field="tipo" header="Tipo" />
 								<Column field="data" header="Data">
 									<template #body="{ data }">{{ formatDate(data.data) }}</template>
 								</Column>
@@ -417,7 +437,19 @@ export default {
 				data_fim: null
 			},
 			relatorio: null,
-			expandedRows: []
+			expandedRows: [],
+			tipoAuditoriaSelecionado: null,
+			tiposAuditoria: [
+				{ label: 'Refinanciamento', value: 'REFINANCIAMENTO' },
+				{ label: 'Baixa automática', value: 'BAIXA AUTOMATICA' },
+				{ label: 'Fechamento de caixa', value: 'FECHAMENTO DE CAIXA' },
+				{ label: 'Baixa manual', value: 'BAIXA MANUAL' },
+				{ label: 'Quitação', value: 'QUITACAO' },
+				{ label: 'Pix', value: 'PIX' },
+				{ label: 'Baixa com desconto', value: 'BAIXA COM DESCONTO' },
+				{ label: 'Renovação', value: 'RENOVACAO' },
+				{ label: 'Outros', value: 'OUTROS' }
+			]
 		};
 	},
 	mounted() {
@@ -652,18 +684,25 @@ export default {
 			link.remove();
 			window.URL.revokeObjectURL(url);
 		},
+		filtrarAuditoriaPorTipo(lista) {
+			if (!this.tipoAuditoriaSelecionado) {
+				return lista || [];
+			}
+			return (lista || []).filter((item) => String(item?.tipo || 'OUTROS').toUpperCase() === this.tipoAuditoriaSelecionado);
+		},
 		exportarAuditoriaReceitaBruta() {
 			this.exportarCsv(
 				'auditoria-receita-bruta',
 				[
 					{ titulo: 'Origem', valor: 'origem' },
+					{ titulo: 'Tipo', valor: 'tipo' },
 					{ titulo: 'ID Mov.', valor: 'id' },
 					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
 					{ titulo: 'Descricao', valor: 'descricao' },
 					{ titulo: 'Banco', valor: 'banco' },
 					{ titulo: 'Valor', valor: (l) => this.formatValorReal(l.valor || 0) }
 				],
-				this.relatorio?.detalhamento_receita_bruta || []
+				this.filtrarAuditoriaPorTipo(this.relatorio?.detalhamento_receita_bruta || [])
 			);
 		},
 		exportarAuditoriaValorRecebido() {
@@ -671,6 +710,7 @@ export default {
 				'auditoria-valor-recebido',
 				[
 					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Tipo', valor: 'tipo' },
 					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
 					{ titulo: 'Cliente', valor: 'cliente' },
 					{ titulo: 'Parcela', valor: 'parcela' },
@@ -678,7 +718,7 @@ export default {
 					{ titulo: 'Banco', valor: 'banco' },
 					{ titulo: 'Valor Recebido', valor: (l) => this.formatValorReal(l.valor_recebido || 0) }
 				],
-				this.relatorio?.detalhamento_movimentacoes || []
+				this.filtrarAuditoriaPorTipo(this.relatorio?.detalhamento_movimentacoes || [])
 			);
 		},
 		exportarAuditoriaLucroReal() {
@@ -686,13 +726,14 @@ export default {
 				'auditoria-lucro-real',
 				[
 					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Tipo', valor: 'tipo' },
 					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
 					{ titulo: 'Cliente', valor: 'cliente' },
 					{ titulo: 'Parcela', valor: 'parcela' },
 					{ titulo: 'Descricao', valor: 'descricao' },
 					{ titulo: 'Lucro Real', valor: (l) => this.formatValorReal(l.lucro_real || 0) }
 				],
-				this.relatorio?.detalhamento_movimentacoes || []
+				this.filtrarAuditoriaPorTipo(this.relatorio?.detalhamento_movimentacoes || [])
 			);
 		},
 		exportarAuditoriaParcelasProcessadas() {
@@ -700,12 +741,13 @@ export default {
 				'auditoria-parcelas-processadas',
 				[
 					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Tipo', valor: 'tipo' },
 					{ titulo: 'Parcela', valor: 'parcela' },
 					{ titulo: 'Cliente', valor: 'cliente' },
 					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
 					{ titulo: 'Descricao', valor: 'descricao' }
 				],
-				this.relatorio?.detalhamento_movimentacoes || []
+				this.filtrarAuditoriaPorTipo(this.relatorio?.detalhamento_movimentacoes || [])
 			);
 		},
 		exportarAuditoriaOutrasReceitas() {
@@ -713,12 +755,13 @@ export default {
 				'auditoria-outras-receitas',
 				[
 					{ titulo: 'ID Mov.', valor: 'id' },
+					{ titulo: 'Tipo', valor: 'tipo' },
 					{ titulo: 'Data', valor: (l) => this.formatDate(l.data) },
 					{ titulo: 'Descricao', valor: 'descricao' },
 					{ titulo: 'Banco', valor: 'banco' },
 					{ titulo: 'Valor', valor: (l) => this.formatValorReal(l.valor || 0) }
 				],
-				this.relatorio?.detalhamento_outras_receitas || []
+				this.filtrarAuditoriaPorTipo(this.relatorio?.detalhamento_outras_receitas || [])
 			);
 		}
 	}

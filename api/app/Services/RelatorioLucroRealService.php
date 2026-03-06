@@ -49,6 +49,7 @@ class RelatorioLucroRealService
             if (in_array($formaRecebto, ['BAIXA COM DESCONTO', 'REFINANCIAMENTO', 'RENOVACAO'])) {
                 continue;
             }
+            $tipoMovimentacao = $this->classificarTipoMovimentacao($movimentacao->descricao, $formaRecebto);
 
             $emprestimo = $movimentacao->parcela->emprestimo;
             $emprestimoId = $emprestimo->id;
@@ -91,6 +92,7 @@ class RelatorioLucroRealService
                 'lucro_real' => $lucroRealParcela,
                 'descricao' => $movimentacao->descricao,
                 'banco' => $movimentacao->banco ? $movimentacao->banco->name : 'N/A',
+                'tipo' => $tipoMovimentacao,
             ];
 
             $emprestimosMap[$emprestimoId]['total_valor_recebido'] += $valorRecebido;
@@ -106,6 +108,7 @@ class RelatorioLucroRealService
                 'parcela' => $movimentacao->parcela->parcela ?? 'N/A',
                 'cliente' => $emprestimo->client ? $emprestimo->client->nome_completo : 'N/A',
                 'banco' => $movimentacao->banco ? $movimentacao->banco->name : 'N/A',
+                'tipo' => $tipoMovimentacao,
             ];
         }
 
@@ -127,12 +130,14 @@ class RelatorioLucroRealService
         foreach ($movimentacoesSemParcela as $mov) {
             $valor = (float) $mov->valor;
             $outrasReceitas += $valor;
+            $tipoMovimentacao = $this->classificarTipoMovimentacao($mov->descricao);
             $detalhamentoOutrasReceitas[] = [
                 'id' => $mov->id,
                 'data' => $mov->dt_movimentacao,
                 'descricao' => $mov->descricao,
                 'valor' => $valor,
                 'banco' => $mov->banco ? $mov->banco->name : 'N/A',
+                'tipo' => $tipoMovimentacao,
             ];
         }
 
@@ -145,6 +150,7 @@ class RelatorioLucroRealService
                 'descricao' => $mov['descricao'],
                 'valor' => $mov['valor_recebido'],
                 'banco' => $mov['banco'],
+                'tipo' => $mov['tipo'] ?? 'OUTROS',
             ];
         }
         foreach ($detalhamentoOutrasReceitas as $mov) {
@@ -155,6 +161,7 @@ class RelatorioLucroRealService
                 'descricao' => $mov['descricao'],
                 'valor' => $mov['valor'],
                 'banco' => $mov['banco'],
+                'tipo' => $mov['tipo'] ?? 'OUTROS',
             ];
         }
 
@@ -202,6 +209,39 @@ class RelatorioLucroRealService
             'detalhamento_outras_receitas' => $calculo['detalhamento_outras_receitas'],
             'detalhamento_receita_bruta' => $calculo['detalhamento_receita_bruta'],
         ];
+    }
+
+    private function classificarTipoMovimentacao(?string $descricao, ?string $formaRecebto = null): string
+    {
+        $desc = mb_strtoupper((string) $descricao, 'UTF-8');
+        $forma = mb_strtoupper(trim((string) $formaRecebto), 'UTF-8');
+
+        if ($forma === 'REFINANCIAMENTO' || str_contains($desc, 'REFINANCI')) {
+            return 'REFINANCIAMENTO';
+        }
+        if ($forma === 'RENOVACAO' || str_contains($desc, 'RENOVA')) {
+            return 'RENOVACAO';
+        }
+        if ($forma === 'BAIXA COM DESCONTO' || str_contains($desc, 'DESCONTO')) {
+            return 'BAIXA COM DESCONTO';
+        }
+        if (str_contains($desc, 'BAIXA AUTOM')) {
+            return 'BAIXA AUTOMATICA';
+        }
+        if (str_contains($desc, 'BAIXA MANUAL')) {
+            return 'BAIXA MANUAL';
+        }
+        if (str_contains($desc, 'FECHAMENTO DE CAIXA')) {
+            return 'FECHAMENTO DE CAIXA';
+        }
+        if (str_contains($desc, 'QUITA')) {
+            return 'QUITACAO';
+        }
+        if ($forma === 'PIX') {
+            return 'PIX';
+        }
+
+        return 'OUTROS';
     }
 }
 
