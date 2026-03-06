@@ -1632,6 +1632,9 @@ class EmprestimoController extends Controller
             $array = ['error' => ''];
 
             $user = auth()->user();
+            $usuarioAuditavel = $user
+                ? "{$user->nome_completo} (ID {$user->id})"
+                : 'Usuário não identificado';
 
             $emprestimo = Emprestimo::find($id);
 
@@ -3260,12 +3263,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
                 $movimentacaoFinanceira['parcela_id'] = $emprestimo->parcelas[0]->id;
-                $movimentacaoFinanceira['descricao'] = 'Baixa com desconto no Empréstimo Nº ' . $emprestimo->id . ', que tinha um saldo pendente de R$ ' . number_format($request->saldo, 2, ',', '.') . ' e recebeu um desconto de R$ ' . number_format(($request->saldo - $request->valor), 2, ',', '.');
+                $movimentacaoFinanceira['descricao'] = 'Baixa com desconto no Empréstimo Nº ' . $emprestimo->id . ', que tinha um saldo pendente de R$ ' . number_format($request->saldo, 2, ',', '.') . ' e recebeu um desconto de R$ ' . number_format(($request->saldo - $request->valor), 2, ',', '.') . '. Ação realizada por: ' . $usuarioAuditavel . '.';
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $request->valor;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                if ($user) {
+                    $this->custom_log->create([
+                        'user_id' => $user->id,
+                        'content' => 'Baixa com desconto realizada no empréstimo Nº ' . $emprestimo->id . ' por ' . $usuarioAuditavel . '.',
+                        'operation' => 'custom'
+                    ]);
+                }
             }
 
             DB::commit();
@@ -3290,6 +3301,9 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $array = ['error' => ''];
 
             $user = auth()->user();
+            $usuarioAuditavel = $user
+                ? "{$user->nome_completo} (ID {$user->id})"
+                : 'Usuário não identificado';
 
             $emprestimo = Emprestimo::find($id);
 
@@ -3317,12 +3331,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $movimentacaoFinanceira = [];
                 $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
                 $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
-                $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
+                $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo . '. Ação realizada por: ' . $usuarioAuditavel . '.';
                 $movimentacaoFinanceira['tipomov'] = 'E';
                 $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
                 $movimentacaoFinanceira['valor'] = $request->saldo;
 
                 Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                if ($user) {
+                    $this->custom_log->create([
+                        'user_id' => $user->id,
+                        'content' => 'Refinanciamento realizado no empréstimo Nº ' . $emprestimo->id . ' por ' . $usuarioAuditavel . '.',
+                        'operation' => 'custom'
+                    ]);
+                }
             }
 
             DB::commit();
@@ -3347,6 +3369,9 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $array = ['error' => ''];
 
             $user = auth()->user();
+            $usuarioAuditavel = $user
+                ? "{$user->nome_completo} (ID {$user->id})"
+                : 'Usuário não identificado';
 
             $emprestimo = Emprestimo::find($id);
 
@@ -3368,15 +3393,23 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     }
                 }
 
-                // $movimentacaoFinanceira = [];
-                // $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
-                // $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
-                // $movimentacaoFinanceira['descricao'] = 'Renovação 80% Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
-                // $movimentacaoFinanceira['tipomov'] = 'E';
-                // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                // $movimentacaoFinanceira['valor'] = $request->saldo;
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $emprestimo->banco_id;
+                $movimentacaoFinanceira['company_id'] = $emprestimo->company_id;
+                $movimentacaoFinanceira['descricao'] = 'Renovação Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo . '. Ação realizada por: ' . $usuarioAuditavel . '.';
+                $movimentacaoFinanceira['tipomov'] = 'E';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = (float) ($request->saldo ?? 0);
 
-                // Movimentacaofinanceira::create($movimentacaoFinanceira);
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
+
+                if ($user) {
+                    $this->custom_log->create([
+                        'user_id' => $user->id,
+                        'content' => 'Renovação realizada no empréstimo Nº ' . $emprestimo->id . ' por ' . $usuarioAuditavel . '.',
+                        'operation' => 'custom'
+                    ]);
+                }
             }
 
             DB::commit();
