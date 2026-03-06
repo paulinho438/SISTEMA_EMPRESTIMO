@@ -803,6 +803,13 @@ class EmprestimoController extends Controller
             $query->where('valor', 'LIKE', "%{$request->valor}%");
         }
 
+        if ($request->has('tipo_origem')) {
+            $tipoOrigem = strtoupper(trim((string) $request->get('tipo_origem')));
+            if ($tipoOrigem !== '') {
+                $query->where('tipo_origem', $tipoOrigem);
+            }
+        }
+
         if ($request->has('saldoareceber_min') && $request->has('saldoareceber_max')) {
             $query->whereBetween('saldoareceber', [$request->saldoareceber_min, $request->saldoareceber_max]);
         }

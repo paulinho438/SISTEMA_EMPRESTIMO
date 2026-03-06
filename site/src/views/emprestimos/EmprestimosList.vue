@@ -91,6 +91,8 @@ export default {
                     constraints: [{ value: null, matchMode: 'dateIs' }]
                 },
 
+                tipo_origem: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.EQUALS }] },
+
                 porcentagem: { value: [0, 100], matchMode: FilterMatchMode.BETWEEN }
 
                 // cpf: {
@@ -522,12 +524,27 @@ export default {
                             </template>
                         </Column>
 
-                        <Column header="Origem" style="min-width: 11rem">
+                        <Column header="Origem" field="tipo_origem" filterField="tipo_origem" style="min-width: 11rem">
                             <template #body="{ data }">
                                 <span v-if="data.origem_label === 'Refinanciamento' || data.origem_label === 'Renovação'">
                                     {{ data.origem_label }}{{ data.emprestimo_origem_id ? ` (#${data.emprestimo_origem_id})` : '' }}
                                 </span>
                                 <span v-else>{{ data.origem_label }}</span>
+                            </template>
+                            <template #filter="{ filterModel }">
+                                <Dropdown
+                                    v-model="filterModel.value"
+                                    :options="[
+                                        { label: 'Novo', value: 'NOVO' },
+                                        { label: 'Refinanciamento', value: 'REFINANCIAMENTO' },
+                                        { label: 'Renovação', value: 'RENOVACAO' }
+                                    ]"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Selecione origem"
+                                    showClear
+                                    class="p-column-filter w-full"
+                                />
                             </template>
                         </Column>
 
