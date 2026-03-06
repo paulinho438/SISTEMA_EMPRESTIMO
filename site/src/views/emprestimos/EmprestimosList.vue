@@ -602,7 +602,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column header="Valor realmente pago" filterField="valor_realmente_pago" dataType="numeric" style="min-width: 12rem">
+                        <Column header="Valor Real" filterField="valor_realmente_pago" dataType="numeric" style="min-width: 6rem">
                             <template #body="{ data }">
                                 {{ formatValorReal(data.valor_realmente_pago || 0) }}
                             </template>
