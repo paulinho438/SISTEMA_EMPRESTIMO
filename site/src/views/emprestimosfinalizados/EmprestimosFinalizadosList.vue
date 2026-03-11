@@ -21,6 +21,7 @@ export default {
         return {
             Clientes: ref([]),
             loading: ref(false),
+            selectedRiskCategory: ref(null),
             filters: ref({
                 global: {value: null, matchMode: FilterMatchMode.CONTAINS},
                 name: {value: null, matchMode: FilterMatchMode.STARTS_WITH},
@@ -37,6 +38,109 @@ export default {
         };
     },
     methods: {
+        getRiskCategoryFromLateParcels(lateParcels) {
+            const totalLateParcels = Number(lateParcels || 0);
+            if (totalLateParcels <= 2) return 'verde';
+            if (totalLateParcels <= 5) return 'azul';
+            if (totalLateParcels <= 8) return 'amarelo';
+            return 'vermelho';
+        },
+        getRiskCategoryLabel(category) {
+            const labels = {
+                verde: 'Bom pagador',
+                azul: 'Pagador mediano',
+                amarelo: 'Pagador ruim',
+                vermelho: 'Pessimo pagador'
+            };
+            return labels[category] || 'Sem classificacao';
+        },
+        getRiskCategoryHelpText(category) {
+            const descriptions = {
+                verde: 'Historico com poucos atrasos e boa recorrencia de pagamento.',
+                azul: 'Tem atrasos pontuais, mas ainda mantem um comportamento de pagamento regular.',
+                amarelo: 'Frequencia de atraso elevada, exigindo maior atencao na renovacao.',
+                vermelho: 'Inadimplencia critica e alto risco para nova concessao de credito.'
+            };
+            return descriptions[category] || '';
+        },
+        getRiskButtonSeverity(category) {
+            const severityMap = {
+                verde: 'success',
+                azul: 'info',
+                amarelo: 'warning',
+                vermelho: 'danger'
+            };
+            return severityMap[category] || 'secondary';
+        },
+        getRiskCategoryCount(category) {
+            return this.Clientes.filter((client) => this.getRiskCategoryFromLateParcels(client.emprestimos?.count_late_parcels) === category).length;
+        },
+        getTotalClientesClassificados() {
+            return this.Clientes.length;
+        },
+        filterByRiskCategory(category) {
+            this.selectedRiskCategory = this.selectedRiskCategory === category ? null : category;
+            this.getClientes();
+        },
+        getApiFilterValue(filterKey) {
+            const filter = this.filters[filterKey];
+            if (!filter) return null;
+            const constraint = filter?.constraints?.[0];
+            const value = constraint?.value ?? filter?.value;
+            if (value === null || value === undefined || value === '') return null;
+            if (value instanceof Date) return value.toISOString().split('T')[0];
+            return value;
+        },
+        buildClientesDisponiveisParams() {
+            const params = {
+                tem_cnpj: this.filtroComCnpj ? 1 : 0
+            };
+
+            if (this.selectedRiskCategory) {
+                params.risco_pagador = this.selectedRiskCategory;
+            }
+
+            const filterKeys = ['global', 'nome_completo', 'cpf', 'rg', 'cnpj', 'telefone_celular_1', 'telefone_celular_2', 'data_nascimento', 'created_at', 'data_quitacao'];
+            filterKeys.forEach((key) => {
+                const value = this.getApiFilterValue(key);
+                if (value !== null) {
+                    params[key] = value;
+                }
+            });
+
+            return params;
+        },
+        async exportarExcel() {
+            try {
+                this.loading = true;
+                const params = this.buildClientesDisponiveisParams();
+                const response = await this.clientService.exportarClientesDisponiveisExcel(params);
+
+                const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `clientes_finalizados_renovacao_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Excel exportado com sucesso',
+                    life: 3000
+                });
+            } catch (error) {
+                this.toast.add({
+                    severity: ToastSeverity.ERROR,
+                    detail: 'Erro ao exportar Excel',
+                    life: 3000
+                });
+            } finally {
+                this.loading = false;
+            }
+        },
         async close() {
             try {
                 await this.clientService.mensagemEmMassa(this.form);
@@ -109,6 +213,20 @@ export default {
                     return 'p-button-rounded p-button-danger mr-2 mb-2'; // Padrão
             }
         },
+        getStatusLabelByLateParcels(lateParcels) {
+            const category = this.getRiskCategoryFromLateParcels(lateParcels);
+            return this.getRiskCategoryLabel(category);
+        },
+        getStatusClassByLateParcels(lateParcels) {
+            const category = this.getRiskCategoryFromLateParcels(lateParcels);
+            const classMap = {
+                verde: 'p-button-rounded p-button-success mr-2 mb-2',
+                azul: 'p-button-rounded p-button-info mr-2 mb-2',
+                amarelo: 'p-button-rounded p-button-warning mr-2 mb-2',
+                vermelho: 'p-button-rounded p-button-danger mr-2 mb-2'
+            };
+            return classMap[category] || 'p-button-rounded p-button-secondary mr-2 mb-2';
+        },
         async handleToggleChange() {
             this.clientService
                 .alterEnvioAutomaticoRenovacao()
@@ -168,7 +286,11 @@ export default {
                 });
 
             this.clientService
-                .getClientesDisponiveis(this.filtroComCnpj)
+                .getClientesDisponiveis({
+                    ...this.buildClientesDisponiveisParams(),
+                    temCnpj: this.filtroComCnpj,
+                    riscoPagador: this.selectedRiskCategory
+                })
                 .then((response) => {
                     this.Clientes = response.data;
 
@@ -318,6 +440,8 @@ export default {
         },
         clearFilter() {
             this.initFilters();
+            this.selectedRiskCategory = null;
+            this.getClientes();
         }
     },
     beforeMount() {
@@ -371,6 +495,25 @@ export default {
 
             <div class="col-12">
                 <div class="card">
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <Button
+                            :label="`Todos ${getTotalClientesClassificados()}`"
+                            :severity="selectedRiskCategory === null ? 'primary' : 'secondary'"
+                            :outlined="selectedRiskCategory !== null"
+                            class="p-button-sm"
+                            @click="filterByRiskCategory(null)"
+                        />
+                        <Button
+                            v-for="category in ['verde', 'azul', 'amarelo', 'vermelho']"
+                            :key="category"
+                            :label="`${getRiskCategoryLabel(category)} ${getRiskCategoryCount(category)}`"
+                            :severity="getRiskButtonSeverity(category)"
+                            :outlined="selectedRiskCategory !== category"
+                            class="p-button-sm"
+                            v-tooltip.top="getRiskCategoryHelpText(category)"
+                            @click="filterByRiskCategory(category)"
+                        />
+                    </div>
                     <DataTable
                         :value="Clientes"
                         :paginator="true"
@@ -384,6 +527,7 @@ export default {
                         :filters="filters"
                         responsiveLayout="scroll"
                         :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
+                        @filter="getClientes"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">
@@ -397,11 +541,17 @@ export default {
                                         icon="pi pi-building"
                                         @click="filtroComCnpj = !filtroComCnpj; getClientes()"
                                     />
+                                    <Button
+                                        label="Exportar Excel"
+                                        icon="pi pi-file-excel"
+                                        class="p-button-success mb-2"
+                                        @click="exportarExcel"
+                                    />
                                 </div>
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
                                     <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
-                                               style="width: 100%"/>
+                                               style="width: 100%" @input="getClientes"/>
                                 </span>
                             </div>
                         </template>
@@ -417,10 +567,13 @@ export default {
                                            placeholder="Buscar Nome Completo Cliente"/>
                             </template>
                         </Column>
-                        <Column field="status" header="status" :sortable="true" class="w-2">
+                        <Column field="status" header="Status" :sortable="true" class="w-2">
                             <template #body="slotProps">
-                                <Button :label="slotProps.data.emprestimos?.count_late_parcels"
-                                        :class="getStatusClass(slotProps.data.emprestimos?.count_late_parcels)"/>
+                                <Button
+                                    :label="getStatusLabelByLateParcels(slotProps.data.emprestimos?.count_late_parcels)"
+                                    :class="getStatusClassByLateParcels(slotProps.data.emprestimos?.count_late_parcels)"
+                                    @click="filterByRiskCategory(getRiskCategoryFromLateParcels(slotProps.data.emprestimos?.count_late_parcels))"
+                                />
                             </template>
                         </Column>
 

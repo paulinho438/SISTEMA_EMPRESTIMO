@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ClientesDisponiveisExport;
 use App\Models\CobrarAmanhaUltimaLocalizacao;
 use App\Services\WAPIService;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ClientController extends Controller
 {
@@ -419,6 +421,21 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
+        $clients = $this->obterClientesDisponiveisFiltrados($request);
+
+        return response()->json($clients->values());
+    }
+
+    public function exportarClientesDisponiveisExcel(Request $request)
+    {
+        $clients = $this->obterClientesDisponiveisFiltrados($request);
+        $nomeArquivo = 'clientes_disponiveis_' . now()->format('Y_m_d_His') . '.xlsx';
+
+        return Excel::download(new ClientesDisponiveisExport($clients->values()), $nomeArquivo);
+    }
+
+    private function obterClientesDisponiveisFiltrados(Request $request)
+    {
         $query = Client::where('company_id', $request->header('company-id'))
             ->whereDoesntHave('emprestimos', function ($query) {
                 $query->whereHas('parcelas', function ($query) {
@@ -437,11 +454,97 @@ class ClientController extends Controller
 
         $clients = $query->get();
 
+        $riscoPagador = strtolower((string) $request->query('risco_pagador', ''));
+        if ($riscoPagador !== '') {
+            $clients = $clients->filter(function ($client) use ($riscoPagador) {
+                $lateParcels = (int) optional($client->emprestimos)->count_late_parcels;
+
+                if ($riscoPagador === 'verde') {
+                    return $lateParcels <= 2;
+                }
+
+                if ($riscoPagador === 'azul') {
+                    return $lateParcels >= 3 && $lateParcels <= 5;
+                }
+
+                if ($riscoPagador === 'amarelo') {
+                    return $lateParcels >= 6 && $lateParcels <= 8;
+                }
+
+                if ($riscoPagador === 'vermelho') {
+                    return $lateParcels >= 9;
+                }
+
+                return true;
+            });
+        }
+
+        $global = strtolower((string) $request->query('global', ''));
+        if ($global !== '') {
+            $clients = $clients->filter(function ($client) use ($global) {
+                return str_contains(strtolower((string) $client->nome_completo), $global) ||
+                    str_contains(strtolower((string) $client->cpf), $global) ||
+                    str_contains(strtolower((string) $client->cnpj), $global) ||
+                    str_contains(strtolower((string) $client->rg), $global) ||
+                    str_contains(strtolower((string) $client->telefone_celular_1), $global) ||
+                    str_contains(strtolower((string) $client->telefone_celular_2), $global);
+            });
+        }
+
+        $textFilters = [
+            'nome_completo',
+            'cpf',
+            'rg',
+            'cnpj',
+            'telefone_celular_1',
+            'telefone_celular_2'
+        ];
+
+        foreach ($textFilters as $filterKey) {
+            $filterValue = strtolower((string) $request->query($filterKey, ''));
+            if ($filterValue !== '') {
+                $clients = $clients->filter(function ($client) use ($filterKey, $filterValue) {
+                    return str_contains(strtolower((string) data_get($client, $filterKey)), $filterValue);
+                });
+            }
+        }
+
+        $dataNascimento = (string) $request->query('data_nascimento', '');
+        if ($dataNascimento !== '') {
+            $clients = $clients->filter(function ($client) use ($dataNascimento) {
+                if (!$client->data_nascimento) {
+                    return false;
+                }
+                return Carbon::parse($client->data_nascimento)->format('Y-m-d') === $dataNascimento;
+            });
+        }
+
+        $dataCriacao = (string) $request->query('created_at', '');
+        if ($dataCriacao !== '') {
+            $clients = $clients->filter(function ($client) use ($dataCriacao) {
+                if (!$client->created_at) {
+                    return false;
+                }
+                return Carbon::parse($client->created_at)->format('Y-m-d') === $dataCriacao;
+            });
+        }
+
+        $dataQuitacao = (string) $request->query('data_quitacao', '');
+        if ($dataQuitacao !== '') {
+            $clients = $clients->filter(function ($client) use ($dataQuitacao) {
+                $quitacao = optional($client->emprestimos)->data_quitacao;
+                if (!$quitacao) {
+                    return false;
+                }
+                return Carbon::parse($quitacao)->format('Y-m-d') === $dataQuitacao;
+            });
+        }
+
         $clients = $clients->sortByDesc(function ($client) {
             return optional($client->emprestimos)->data_quitacao;
         });
 
-        return response()->json($clients->values());
+        return $clients;
     }
 
     public function insert(Request $request)

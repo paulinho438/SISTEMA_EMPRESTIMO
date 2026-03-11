@@ -206,6 +206,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
 
 
     Route::get('/clientesdisponiveis', [ClientController::class, 'clientesDisponiveis']);
+    Route::get('/clientesdisponiveis/excel', [ClientController::class, 'exportarClientesDisponiveisExcel']);
     Route::post('/enviarmensagemmassa', [ClientController::class, 'enviarMensagemMassa']);
 
     Route::get('/cliente', [ClientController::class, 'all']);
