@@ -1,5 +1,5 @@
 <script>
-import {ref, nextTick} from 'vue';
+import {nextTick} from 'vue';
 import {useRouter} from 'vue-router';
 import {FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator} from 'primevue/api';
 import ClientService from '@/service/ClientService';
@@ -19,27 +19,37 @@ export default {
     },
     data() {
         return {
-            Clientes: ref([]),
-            riskCounts: ref({ total: 0, verde: 0, azul: 0, amarelo: 0, vermelho: 0 }),
-            loading: ref(false),
-            selectedRiskCategory: ref(null),
-            filters: ref({
+            Clientes: [],
+            riskCounts: { total: 0, verde: 0, azul: 0, amarelo: 0, vermelho: 0 },
+            loading: false,
+            selectedRiskCategory: null,
+            filters: {
                 global: {value: null, matchMode: FilterMatchMode.CONTAINS},
                 name: {value: null, matchMode: FilterMatchMode.STARTS_WITH},
                 'country.name': {value: null, matchMode: FilterMatchMode.STARTS_WITH},
                 representative: {value: null, matchMode: FilterMatchMode.IN},
                 status: {value: null, matchMode: FilterMatchMode.EQUALS},
                 verified: {value: null, matchMode: FilterMatchMode.EQUALS}
-            }),
-            display: ref(false),
-            form: ref({}),
-            toggleValue: ref(false),
-            mensagemAudioValue: ref(false),
-            filtroComCnpj: ref(false),
+            },
+            display: false,
+            form: {},
+            toggleValue: false,
+            mensagemAudioValue: false,
+            filtroComCnpj: false,
             _getClientesSeq: 0,
             _getClientesTimer: null,
-            _suppressFilterEvent: false
+            _suppressFilterEvent: false,
+            _lastFetchKey: null,
+            _clientesAbortController: null
         };
+    },
+    watch: {
+        filters: {
+            deep: true,
+            handler() {
+                this.scheduleGetClientes();
+            }
+        }
     },
     methods: {
         getRiskCategoryFromLateParcels(lateParcels) {
@@ -92,6 +102,16 @@ export default {
             this._getClientesTimer = setTimeout(() => {
                 this.getClientes();
             }, 300);
+        },
+        buildParamsKey(params) {
+            try {
+                const keys = Object.keys(params || {}).sort();
+                const obj = {};
+                for (const k of keys) obj[k] = params[k];
+                return JSON.stringify(obj);
+            } catch (e) {
+                return String(Date.now());
+            }
         },
         getApiFilterValue(filterKey) {
             const filter = this.filters[filterKey];
@@ -173,7 +193,7 @@ export default {
             this.valorDesconto = 0;
         },
         open() {
-            this.display.value = true;
+            this.display = true;
         },
         goToWhatsApp(telefone, data) {
             let mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo.`;
@@ -303,8 +323,20 @@ export default {
                 riscoPagador: this.selectedRiskCategory
             };
 
+            const fetchKey = this.buildParamsKey(paramsLista);
+            if (this._lastFetchKey === fetchKey) {
+                this.loading = false;
+                return;
+            }
+            this._lastFetchKey = fetchKey;
+
+            if (this._clientesAbortController) {
+                try { this._clientesAbortController.abort(); } catch (e) {}
+            }
+            this._clientesAbortController = new AbortController();
+
             this.clientService
-                .getClientesDisponiveis(paramsLista)
+                .getClientesDisponiveis(paramsLista, { signal: this._clientesAbortController.signal })
                 .then((resp) => {
                     if (seq !== this._getClientesSeq) return;
                     this._suppressFilterEvent = true;
@@ -322,6 +354,7 @@ export default {
                 })
                 .catch((error) => {
                     if (seq !== this._getClientesSeq) return;
+                    if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
                     this.toast.add({
                         severity: ToastSeverity.ERROR,
                         detail: error.message,
@@ -554,7 +587,6 @@ export default {
                         :loading="loading"
                         responsiveLayout="scroll"
                         :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
-                        @filter="scheduleGetClientes"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">

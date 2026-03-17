@@ -20,7 +20,7 @@ export default class ClientService {
 		return await axios.get(`${apiPath}/cliente`);
 	};
 
-	getClientesDisponiveis = async (options = {}) => {
+	getClientesDisponiveis = async (options = {}, axiosConfig = {}) => {
 		const { temCnpj = false, riscoPagador = null, ...rest } = options;
 		const params = {
 			tem_cnpj: temCnpj ? 1 : 0,
@@ -29,7 +29,7 @@ export default class ClientService {
 		if (riscoPagador) {
 			params.risco_pagador = riscoPagador;
 		}
-		return await axios.get(`${apiPath}/clientesdisponiveis`, { params });
+		return await axios.get(`${apiPath}/clientesdisponiveis`, { params, ...axiosConfig });
 	};
 
 	exportarClientesDisponiveisExcel = async (params = {}) => {
