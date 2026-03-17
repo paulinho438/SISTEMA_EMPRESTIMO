@@ -1,5 +1,5 @@
 <script>
-import {ref} from 'vue';
+import {ref, nextTick} from 'vue';
 import {useRouter} from 'vue-router';
 import {FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator} from 'primevue/api';
 import ClientService from '@/service/ClientService';
@@ -37,7 +37,8 @@ export default {
             mensagemAudioValue: ref(false),
             filtroComCnpj: ref(false),
             _getClientesSeq: 0,
-            _getClientesTimer: null
+            _getClientesTimer: null,
+            _suppressFilterEvent: false
         };
     },
     methods: {
@@ -86,6 +87,7 @@ export default {
             this.getClientes();
         },
         scheduleGetClientes() {
+            if (this._suppressFilterEvent) return;
             if (this._getClientesTimer) clearTimeout(this._getClientesTimer);
             this._getClientesTimer = setTimeout(() => {
                 this.getClientes();
@@ -100,12 +102,12 @@ export default {
             if (value instanceof Date) return value.toISOString().split('T')[0];
             return value;
         },
-        buildClientesDisponiveisParams() {
+        buildClientesDisponiveisParams({includeRisk = true} = {}) {
             const params = {
                 tem_cnpj: this.filtroComCnpj ? 1 : 0
             };
 
-            if (this.selectedRiskCategory) {
+            if (includeRisk && this.selectedRiskCategory) {
                 params.risco_pagador = this.selectedRiskCategory;
             }
 
@@ -291,12 +293,13 @@ export default {
             const seq = ++this._getClientesSeq;
 
             const baseParams = {
-                ...this.buildClientesDisponiveisParams(),
+                ...this.buildClientesDisponiveisParams({includeRisk: false}),
                 temCnpj: this.filtroComCnpj
             };
 
             const paramsLista = {
                 ...baseParams,
+                ...this.buildClientesDisponiveisParams({includeRisk: true}),
                 riscoPagador: this.selectedRiskCategory
             };
 
@@ -311,8 +314,12 @@ export default {
             ])
                 .then(([respContagem, respLista]) => {
                     if (seq !== this._getClientesSeq) return;
+                    this._suppressFilterEvent = true;
                     this.ClientesParaContagem = this.normalizarClientes(respContagem.data);
                     this.Clientes = this.normalizarClientes(respLista.data);
+                    nextTick(() => {
+                        this._suppressFilterEvent = false;
+                    });
                 })
                 .catch((error) => {
                     if (seq !== this._getClientesSeq) return;
@@ -546,7 +553,6 @@ export default {
                         v-model:filters="filters"
                         filterDisplay="menu"
                         :loading="loading"
-                        :filters="filters"
                         responsiveLayout="scroll"
                         :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
                         @filter="scheduleGetClientes"
