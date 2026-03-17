@@ -1,5 +1,5 @@
 <script>
-import {nextTick} from 'vue';
+import {ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator} from 'primevue/api';
 import ClientService from '@/service/ClientService';
@@ -19,37 +19,30 @@ export default {
     },
     data() {
         return {
-            Clientes: [],
-            riskCounts: { total: 0, verde: 0, azul: 0, amarelo: 0, vermelho: 0 },
-            loading: false,
-            selectedRiskCategory: null,
-            filters: {
+            Clientes: ref([]),
+            loading: ref(false),
+            selectedRiskCategory: ref(null),
+            counts: ref({
+                total: 0,
+                verde: 0,
+                azul: 0,
+                amarelo: 0,
+                vermelho: 0
+            }),
+            filters: ref({
                 global: {value: null, matchMode: FilterMatchMode.CONTAINS},
                 name: {value: null, matchMode: FilterMatchMode.STARTS_WITH},
                 'country.name': {value: null, matchMode: FilterMatchMode.STARTS_WITH},
                 representative: {value: null, matchMode: FilterMatchMode.IN},
                 status: {value: null, matchMode: FilterMatchMode.EQUALS},
                 verified: {value: null, matchMode: FilterMatchMode.EQUALS}
-            },
-            display: false,
-            form: {},
-            toggleValue: false,
-            mensagemAudioValue: false,
-            filtroComCnpj: false,
-            _getClientesSeq: 0,
-            _getClientesTimer: null,
-            _suppressFilterEvent: false,
-            _lastFetchKey: null,
-            _clientesAbortController: null
+            }),
+            display: ref(false),
+            form: ref({}),
+            toggleValue: ref(false),
+            mensagemAudioValue: ref(false),
+            filtroComCnpj: ref(false)
         };
-    },
-    watch: {
-        filters: {
-            deep: true,
-            handler() {
-                this.scheduleGetClientes();
-            }
-        }
     },
     methods: {
         getRiskCategoryFromLateParcels(lateParcels) {
@@ -87,31 +80,18 @@ export default {
             return severityMap[category] || 'secondary';
         },
         getRiskCategoryCount(category) {
-            return Number(this.riskCounts?.[category] ?? 0);
+            const countFromApi = this.counts?.[category];
+            if (Number.isFinite(countFromApi)) return countFromApi;
+            return this.Clientes.filter((client) => this.getRiskCategoryFromLateParcels(client.emprestimos?.count_late_parcels) === category).length;
         },
         getTotalClientesClassificados() {
-            return Number(this.riskCounts?.total ?? 0);
+            const totalFromApi = this.counts?.total;
+            if (Number.isFinite(totalFromApi)) return totalFromApi;
+            return this.Clientes.length;
         },
         filterByRiskCategory(category) {
             this.selectedRiskCategory = this.selectedRiskCategory === category ? null : category;
             this.getClientes();
-        },
-        scheduleGetClientes() {
-            if (this._suppressFilterEvent) return;
-            if (this._getClientesTimer) clearTimeout(this._getClientesTimer);
-            this._getClientesTimer = setTimeout(() => {
-                this.getClientes();
-            }, 300);
-        },
-        buildParamsKey(params) {
-            try {
-                const keys = Object.keys(params || {}).sort();
-                const obj = {};
-                for (const k of keys) obj[k] = params[k];
-                return JSON.stringify(obj);
-            } catch (e) {
-                return String(Date.now());
-            }
         },
         getApiFilterValue(filterKey) {
             const filter = this.filters[filterKey];
@@ -122,12 +102,12 @@ export default {
             if (value instanceof Date) return value.toISOString().split('T')[0];
             return value;
         },
-        buildClientesDisponiveisParams({includeRisk = true} = {}) {
+        buildClientesDisponiveisParams() {
             const params = {
                 tem_cnpj: this.filtroComCnpj ? 1 : 0
             };
 
-            if (includeRisk && this.selectedRiskCategory) {
+            if (this.selectedRiskCategory) {
                 params.risco_pagador = this.selectedRiskCategory;
             }
 
@@ -193,7 +173,7 @@ export default {
             this.valorDesconto = 0;
         },
         open() {
-            this.display = true;
+            this.display.value = true;
         },
         goToWhatsApp(telefone, data) {
             let mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo.`;
@@ -264,7 +244,9 @@ export default {
                 .then((response) => {
                     this.toggleValue = response.data.envio_automatico_renovacao;
                 })
-                .catch(() => {});
+                .finally(() => {
+                    this.loading = false;
+                });
         },
         async mensagemAudioChange() {
             this.clientService
@@ -272,15 +254,15 @@ export default {
                 .then((response) => {
                     this.mensagemAudioValue = response.data.mensagem_audio;
                 })
-                .catch(() => {});
+                .finally(() => {
+                    this.loading = false;
+                });
         },
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_clientes_sensitive') ? dado : '*********';
         },
         formatDate(dateStr) {
-            if (!dateStr) return '—';
             const date = new Date(dateStr);
-            if (Number.isNaN(date.getTime())) return '—';
             return date.toLocaleDateString('pt-BR', {
                 year: 'numeric',
                 month: '2-digit',
@@ -293,71 +275,73 @@ export default {
             if (digits.length !== 14) return cnpj;
             return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
         },
-        normalizarClientes(raw) {
-            const arr = Array.isArray(raw) ? raw : [];
-            return arr.map((Clientes) => {
-                if (Clientes.created_at) {
-                    Clientes.created_at = new Date(Clientes.created_at);
-                }
-
-                if (Clientes.data_nascimento) {
-                    Clientes.data_nascimento = new Date(`${Clientes.data_nascimento}T00:00:00`);
-                }
-
-                if (Clientes.emprestimos?.data_quitacao) {
-                    Clientes.data_quitacao = new Date(Clientes.emprestimos.data_quitacao);
-                }
-
-                return Clientes;
-            });
-        },
         getClientes() {
             this.loading = true;
-            const seq = ++this._getClientesSeq;
-
-            const baseParams = {
-                ...this.buildClientesDisponiveisParams({includeRisk: false}),
-                temCnpj: this.filtroComCnpj
-            };
-
-            const paramsLista = {
-                ...baseParams,
-                ...this.buildClientesDisponiveisParams({includeRisk: true}),
-                riscoPagador: this.selectedRiskCategory
-            };
-
-            const fetchKey = this.buildParamsKey(paramsLista);
-            if (this._lastFetchKey === fetchKey) {
-                this.loading = false;
-                return;
-            }
-            this._lastFetchKey = fetchKey;
-
-            if (this._clientesAbortController) {
-                try { this._clientesAbortController.abort(); } catch (e) {}
-            }
-            this._clientesAbortController = new AbortController();
 
             this.clientService
-                .getClientesDisponiveis(paramsLista, { signal: this._clientesAbortController.signal })
-                .then((resp) => {
-                    if (seq !== this._getClientesSeq) return;
-                    this._suppressFilterEvent = true;
+                .getEnvioAutomaticoRenovacao()
+                .then((response) => {
+                    this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
 
-                    const payload = resp?.data || {};
-                    const listaRaw = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
-                    const counts = payload?.counts || null;
+            this.clientService
+                .getMensagemAudioAutomatico()
+                .then((response) => {
+                    this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
+                })
+                .finally(() => {
+                    this.loading = false;
+                });
 
-                    this.Clientes = [...this.normalizarClientes(listaRaw)];
-                    if (counts) this.riskCounts = counts;
+            this.clientService
+                .getClientesDisponiveis({
+                    ...this.buildClientesDisponiveisParams(),
+                    temCnpj: this.filtroComCnpj,
+                    riscoPagador: this.selectedRiskCategory
+                })
+                .then((response) => {
+                    const payload = response?.data;
+                    const list = Array.isArray(payload) ? payload : payload?.data;
+                    const counts = Array.isArray(payload) ? null : payload?.counts;
 
-                    nextTick(() => {
-                        this._suppressFilterEvent = false;
+                    if (counts && typeof counts === 'object') {
+                        this.counts = {
+                            total: Number(counts.total || 0),
+                            verde: Number(counts.verde || 0),
+                            azul: Number(counts.azul || 0),
+                            amarelo: Number(counts.amarelo || 0),
+                            vermelho: Number(counts.vermelho || 0)
+                        };
+                    } else {
+                        this.counts = {
+                            total: 0,
+                            verde: 0,
+                            azul: 0,
+                            amarelo: 0,
+                            vermelho: 0
+                        };
+                    }
+
+                    this.Clientes = (Array.isArray(list) ? list : []).map((Clientes) => {
+                        if (Clientes.created_at) {
+                            Clientes.created_at = new Date(Clientes.created_at); // Concatena e cria um objeto Date
+                        }
+
+                        if (Clientes.data_nascimento) {
+                            Clientes.data_nascimento = new Date(`${Clientes.data_nascimento}T00:00:00`); // Concatena e cria um objeto Date
+                        }
+
+                        if (Clientes.emprestimos?.data_quitacao) {
+                            Clientes.data_quitacao = new Date(Clientes.emprestimos.data_quitacao); // Concatena e cria um objeto Date
+                        }
+
+                        return Clientes;
                     });
                 })
                 .catch((error) => {
-                    if (seq !== this._getClientesSeq) return;
-                    if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
                     this.toast.add({
                         severity: ToastSeverity.ERROR,
                         detail: error.message,
@@ -365,24 +349,8 @@ export default {
                     });
                 })
                 .finally(() => {
-                    if (seq !== this._getClientesSeq) return;
                     this.loading = false;
                 });
-        },
-        carregarPreferenciasAutomacoes() {
-            this.clientService
-                .getEnvioAutomaticoRenovacao()
-                .then((response) => {
-                    this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
-                })
-                .catch(() => {});
-
-            this.clientService
-                .getMensagemAudioAutomatico()
-                .then((response) => {
-                    this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
-                })
-                .catch(() => {});
         },
         editCategory(id) {
             if (undefined === id) this.router.push('/clientes/add');
@@ -512,7 +480,6 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_clientes');
-        this.carregarPreferenciasAutomacoes();
         this.getClientes();
     }
 };
@@ -588,8 +555,10 @@ export default {
                         v-model:filters="filters"
                         filterDisplay="menu"
                         :loading="loading"
+                        :filters="filters"
                         responsiveLayout="scroll"
                         :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
+                        @filter="getClientes"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">
@@ -613,7 +582,7 @@ export default {
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
                                     <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
-                                               style="width: 100%" />
+                                               style="width: 100%" @input="getClientes"/>
                                 </span>
                             </div>
                         </template>
