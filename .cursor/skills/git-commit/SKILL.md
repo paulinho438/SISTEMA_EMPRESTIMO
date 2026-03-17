@@ -1,16 +1,16 @@
 ---
 name: git-commit
-description: 'ajuda a criar commits no git de forma simples e organizada. use quando a pessoa pedir para salvar alterações, criar um commit, fazer um commit no projeto ou mencionar "/commit". a skill analisa o que mudou, sugere uma mensagem clara em português, separa os arquivos quando fizer sentido, explica de forma fácil o que está sendo salvo, cria apenas o commit local e nunca faz git push.'
+description: 'ajuda a organizar alterações no git de forma simples e clara. use quando a pessoa pedir para salvar alterações, preparar um commit, montar a mensagem de commit, fazer o git add ou mencionar "/commit". a skill analisa o que mudou, sugere uma mensagem clara em português, separa os arquivos quando fizer sentido, executa o git add do que deve entrar naquele registro e entrega o comando exato do git commit para a pessoa executar manualmente no terminal. nunca executa git push e nunca executa o git commit automaticamente.'
 ---
 
-# Criar commit no Git de forma simples
+# Organizar alterações no Git de forma simples
 
 ## O que esta skill faz
 
-Esta skill ajuda a **salvar alterações do projeto no Git** de um jeito mais organizado e fácil de entender.
+Esta skill ajuda a **preparar alterações do projeto no Git** de um jeito mais organizado e fácil de entender.
 
 Ela foi feita para pessoas que não querem lidar com muitos termos técnicos.  
-Antes de salvar, a skill olha o que foi alterado e tenta explicar de forma simples:
+Antes de finalizar, a skill olha o que foi alterado e tenta explicar de forma simples:
 
 - o que mudou
 - quais arquivos fazem parte dessa mudança
@@ -23,25 +23,30 @@ A ideia é que a pessoa entenda **o que está sendo registrado no projeto**, sem
 
 ## Regra principal
 
-Esta skill pode analisar alterações, organizar arquivos e criar commits, mas **nunca pode executar `git push`**.
+Esta skill pode analisar alterações, organizar arquivos e executar `git add`, mas **nunca pode executar `git commit` nem `git push`**.
 
-Depois de criar o commit, ela deve parar e informar que a revisão final e o envio para o repositório devem ser feitos manualmente pela pessoa usuária.
+Depois de preparar os arquivos, ela deve informar:
 
-O envio com `git push` deve ser sempre manual e nunca automático.
+- quais arquivos foram adicionados
+- qual mensagem de commit foi sugerida
+- qual comando `git commit` a pessoa deve copiar e executar manualmente no terminal
+
+A criação do commit e o envio com `git push` devem ser sempre manuais.
 
 ---
 
 ## Como a skill deve agir
 
-Quando a pessoa pedir para criar um commit:
+Quando a pessoa pedir para preparar um commit:
 
 1. Verificar o que foi alterado no projeto
 2. Explicar isso em linguagem simples
 3. Separar os arquivos, se necessário, para não misturar mudanças diferentes
 4. Sugerir uma mensagem de commit clara em português
-5. Fazer o commit somente com o que faz sentido naquele registro
-6. Parar após o commit, sem enviar nada para o repositório remoto
-7. Informar que a pessoa deve revisar e fazer o `git push` manualmente, se quiser
+5. Executar `git add` somente com os arquivos que fazem sentido naquele registro
+6. Mostrar exatamente o comando `git commit` para a pessoa executar manualmente
+7. Parar após isso, sem executar `git commit` e sem enviar nada para o repositório remoto
+8. Informar que a revisão final e o `git push` devem ser feitos manualmente, se a pessoa quiser
 
 Sempre priorize explicações curtas, diretas e fáceis de entender.
 
@@ -62,24 +67,25 @@ Em vez de falar:
 Prefira dizer:
 
 - "ver o que mudou"
-- "ver quais arquivos serão salvos"
+- "ver quais arquivos serão preparados"
 - "identificar a parte do projeto afetada"
 - "criar uma mensagem clara"
-- "registrar a alteração de forma organizada"
+- "deixar tudo pronto para o commit"
 
 Sempre que possível, explique como se estivesse falando com alguém iniciante.
 
 Exemplo de explicação boa:
 
 - "Encontrei mudanças na tela de login e no texto de ajuda."
-- "Vou separar isso em um commit organizado."
-- "A mensagem vai resumir de forma simples o que foi feito."
+- "Vou separar isso em uma preparação organizada."
+- "Já deixei os arquivos certos no git add."
+- "Agora é só você executar o comando do commit no terminal."
 
 ---
 
 ## Tipos de alteração
 
-Quando precisar escolher o tipo do commit, use estes significados internos:
+Quando precisar escolher o tipo da mensagem do commit, use estes significados internos:
 
 | Tipo       | Quando usar |
 | ---------- | ----------- |
@@ -95,7 +101,7 @@ Quando precisar escolher o tipo do commit, use estes significados internos:
 | `chore`    | quando for manutenção geral |
 | `revert`   | quando for desfazer uma alteração anterior |
 
-Esses nomes podem aparecer no commit, mas a explicação para a pessoa deve continuar em português simples.
+Esses nomes podem aparecer na mensagem, mas a explicação para a pessoa deve continuar em português simples.
 
 ---
 
@@ -116,7 +122,7 @@ Isso inclui, **sem exceção**:
 - `Co-Authored-By`
 - qualquer assinatura semelhante
 
-A saída final do commit deve conter somente:
+A saída final da mensagem deve conter somente:
 
 - título do commit
 - corpo opcional, se realmente necessário
@@ -125,17 +131,21 @@ Sem linhas extras no final.
 
 ---
 
-## Checklist antes de executar o commit (obrigatório)
+## Checklist antes de entregar o comando do commit (obrigatório)
 
-Antes de rodar `git commit`, confirmar:
+Antes de mostrar o comando `git commit`, confirmar:
 
-- a mensagem do commit contém **apenas** o título e (se necessário) um corpo curto
-- **não existe** `Made-with: Cursor` (nem variações) no título ou no corpo
+- a mensagem do commit contém **apenas** o título e, se necessário, um corpo curto
+- **não existe** `Made-with: Cursor` nem variações
 - **não existe** nenhum rodapé de ferramenta, assinatura ou crédito automático
+- o `git add` foi feito apenas com os arquivos corretos
+- o comando final de `git commit` está pronto para a pessoa copiar e executar
+
+---
 
 ## Como analisar as mudanças
 
-Primeiro, verificar o que já está preparado para commit e o que ainda não está.
+Primeiro, verificar o que já está preparado e o que ainda não está.
 
 Use:
 
