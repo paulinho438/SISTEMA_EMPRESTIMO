@@ -20,6 +20,7 @@ export default {
     data() {
         return {
             Clientes: ref([]),
+            ClientesParaContagem: ref([]),
             loading: ref(false),
             selectedRiskCategory: ref(null),
             filters: ref({
@@ -34,7 +35,9 @@ export default {
             form: ref({}),
             toggleValue: ref(false),
             mensagemAudioValue: ref(false),
-            filtroComCnpj: ref(false)
+            filtroComCnpj: ref(false),
+            _getClientesSeq: 0,
+            _getClientesTimer: null
         };
     },
     methods: {
@@ -73,14 +76,20 @@ export default {
             return severityMap[category] || 'secondary';
         },
         getRiskCategoryCount(category) {
-            return this.Clientes.filter((client) => this.getRiskCategoryFromLateParcels(client.emprestimos?.count_late_parcels) === category).length;
+            return this.ClientesParaContagem.filter((client) => this.getRiskCategoryFromLateParcels(client.emprestimos?.count_late_parcels) === category).length;
         },
         getTotalClientesClassificados() {
-            return this.Clientes.length;
+            return this.ClientesParaContagem.length;
         },
         filterByRiskCategory(category) {
             this.selectedRiskCategory = this.selectedRiskCategory === category ? null : category;
             this.getClientes();
+        },
+        scheduleGetClientes() {
+            if (this._getClientesTimer) clearTimeout(this._getClientesTimer);
+            this._getClientesTimer = setTimeout(() => {
+                this.getClientes();
+            }, 300);
         },
         getApiFilterValue(filterKey) {
             const filter = this.filters[filterKey];
@@ -233,9 +242,7 @@ export default {
                 .then((response) => {
                     this.toggleValue = response.data.envio_automatico_renovacao;
                 })
-                .finally(() => {
-                    this.loading = false;
-                });
+                .catch(() => {});
         },
         async mensagemAudioChange() {
             this.clientService
@@ -243,9 +250,7 @@ export default {
                 .then((response) => {
                     this.mensagemAudioValue = response.data.mensagem_audio;
                 })
-                .finally(() => {
-                    this.loading = false;
-                });
+                .catch(() => {});
         },
         dadosSensiveis(dado) {
             return this.permissionsService.hasPermissions('view_clientes_sensitive') ? dado : '*********';
@@ -264,53 +269,53 @@ export default {
             if (digits.length !== 14) return cnpj;
             return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
         },
+        normalizarClientes(raw) {
+            return (raw || []).map((Clientes) => {
+                if (Clientes.created_at) {
+                    Clientes.created_at = new Date(Clientes.created_at);
+                }
+
+                if (Clientes.data_nascimento) {
+                    Clientes.data_nascimento = new Date(`${Clientes.data_nascimento}T00:00:00`);
+                }
+
+                if (Clientes.emprestimos?.data_quitacao) {
+                    Clientes.data_quitacao = new Date(Clientes.emprestimos.data_quitacao);
+                }
+
+                return Clientes;
+            });
+        },
         getClientes() {
             this.loading = true;
+            const seq = ++this._getClientesSeq;
 
-            this.clientService
-                .getEnvioAutomaticoRenovacao()
-                .then((response) => {
-                    this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
+            const baseParams = {
+                ...this.buildClientesDisponiveisParams(),
+                temCnpj: this.filtroComCnpj
+            };
 
-            this.clientService
-                .getMensagemAudioAutomatico()
-                .then((response) => {
-                    this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
+            const paramsLista = {
+                ...baseParams,
+                riscoPagador: this.selectedRiskCategory
+            };
 
-            this.clientService
-                .getClientesDisponiveis({
-                    ...this.buildClientesDisponiveisParams(),
-                    temCnpj: this.filtroComCnpj,
-                    riscoPagador: this.selectedRiskCategory
-                })
-                .then((response) => {
-                    this.Clientes = response.data;
+            const paramsContagem = {
+                ...baseParams,
+                riscoPagador: null
+            };
 
-                    this.Clientes = response.data.map((Clientes) => {
-                        if (Clientes.created_at) {
-                            Clientes.created_at = new Date(Clientes.created_at); // Concatena e cria um objeto Date
-                        }
-
-                        if (Clientes.data_nascimento) {
-                            Clientes.data_nascimento = new Date(`${Clientes.data_nascimento}T00:00:00`); // Concatena e cria um objeto Date
-                        }
-
-                        if (Clientes.emprestimos?.data_quitacao) {
-                            Clientes.data_quitacao = new Date(Clientes.emprestimos.data_quitacao); // Concatena e cria um objeto Date
-                        }
-
-                        return Clientes;
-                    });
+            Promise.all([
+                this.clientService.getClientesDisponiveis(paramsContagem),
+                this.clientService.getClientesDisponiveis(paramsLista)
+            ])
+                .then(([respContagem, respLista]) => {
+                    if (seq !== this._getClientesSeq) return;
+                    this.ClientesParaContagem = this.normalizarClientes(respContagem.data);
+                    this.Clientes = this.normalizarClientes(respLista.data);
                 })
                 .catch((error) => {
+                    if (seq !== this._getClientesSeq) return;
                     this.toast.add({
                         severity: ToastSeverity.ERROR,
                         detail: error.message,
@@ -318,8 +323,24 @@ export default {
                     });
                 })
                 .finally(() => {
+                    if (seq !== this._getClientesSeq) return;
                     this.loading = false;
                 });
+        },
+        carregarPreferenciasAutomacoes() {
+            this.clientService
+                .getEnvioAutomaticoRenovacao()
+                .then((response) => {
+                    this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
+                })
+                .catch(() => {});
+
+            this.clientService
+                .getMensagemAudioAutomatico()
+                .then((response) => {
+                    this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
+                })
+                .catch(() => {});
         },
         editCategory(id) {
             if (undefined === id) this.router.push('/clientes/add');
@@ -449,6 +470,7 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_clientes');
+        this.carregarPreferenciasAutomacoes();
         this.getClientes();
     }
 };
@@ -527,7 +549,7 @@ export default {
                         :filters="filters"
                         responsiveLayout="scroll"
                         :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
-                        @filter="getClientes"
+                        @filter="scheduleGetClientes"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">
@@ -551,7 +573,7 @@ export default {
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
                                     <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
-                                               style="width: 100%" @input="getClientes"/>
+                                               style="width: 100%" @input="scheduleGetClientes"/>
                                 </span>
                             </div>
                         </template>
