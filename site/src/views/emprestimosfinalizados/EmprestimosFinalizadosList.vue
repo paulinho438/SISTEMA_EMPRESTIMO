@@ -292,7 +292,8 @@ export default {
             return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
         },
         normalizarClientes(raw) {
-            return (raw || []).map((Clientes) => {
+            const arr = Array.isArray(raw) ? raw : [];
+            return arr.map((Clientes) => {
                 if (Clientes.created_at) {
                     Clientes.created_at = new Date(Clientes.created_at);
                 }
@@ -342,10 +343,10 @@ export default {
                     this._suppressFilterEvent = true;
 
                     const payload = resp?.data || {};
-                    const lista = Array.isArray(payload.data) ? payload.data : payload;
-                    const counts = payload.counts || null;
+                    const listaRaw = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+                    const counts = payload?.counts || null;
 
-                    this.Clientes = this.normalizarClientes(lista);
+                    this.Clientes = [...this.normalizarClientes(listaRaw)];
                     if (counts) this.riskCounts = counts;
 
                     nextTick(() => {
