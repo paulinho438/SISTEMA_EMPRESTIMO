@@ -421,20 +421,48 @@ class ClientController extends Controller
             'operation' => 'index'
         ]);
 
-        $clients = $this->obterClientesDisponiveisFiltrados($request);
+        // Lista sem filtro de risco (base para contagens dos botões)
+        $clientsSemRisco = $this->obterClientesDisponiveisFiltrados($request, false);
 
-        return response()->json($clients->values());
+        // Lista final (pode vir com risco_pagador aplicado)
+        $clients = $this->obterClientesDisponiveisFiltrados($request, true);
+
+        $counts = [
+            'total' => $clientsSemRisco->count(),
+            'verde' => 0,
+            'azul' => 0,
+            'amarelo' => 0,
+            'vermelho' => 0
+        ];
+
+        foreach ($clientsSemRisco as $client) {
+            $lateParcels = (int) optional($client->emprestimos)->count_late_parcels;
+            if ($lateParcels <= 2) {
+                $counts['verde']++;
+            } elseif ($lateParcels <= 5) {
+                $counts['azul']++;
+            } elseif ($lateParcels <= 8) {
+                $counts['amarelo']++;
+            } else {
+                $counts['vermelho']++;
+            }
+        }
+
+        return response()->json([
+            'data' => $clients->values(),
+            'counts' => $counts
+        ]);
     }
 
     public function exportarClientesDisponiveisExcel(Request $request)
     {
-        $clients = $this->obterClientesDisponiveisFiltrados($request);
+        $clients = $this->obterClientesDisponiveisFiltrados($request, true);
         $nomeArquivo = 'clientes_disponiveis_' . now()->format('Y_m_d_His') . '.xlsx';
 
         return Excel::download(new ClientesDisponiveisExport($clients->values()), $nomeArquivo);
     }
 
-    private function obterClientesDisponiveisFiltrados(Request $request)
+    private function obterClientesDisponiveisFiltrados(Request $request, bool $aplicarRisco = true)
     {
         $query = Client::where('company_id', $request->header('company-id'))
             ->whereDoesntHave('emprestimos', function ($query) {
@@ -446,6 +474,11 @@ class ClientController extends Controller
                 $query->whereDoesntHave('parcelas', function ($query) {
                     $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
                 });
+                $query->withCount([
+                    'parcelas as count_late_parcels' => function ($q) {
+                        $q->where('atrasadas', '>', 0);
+                    }
+                ]);
             }]);
 
         if ($request->boolean('tem_cnpj')) {
@@ -455,7 +488,7 @@ class ClientController extends Controller
         $clients = $query->get();
 
         $riscoPagador = strtolower((string) $request->query('risco_pagador', ''));
-        if ($riscoPagador !== '') {
+        if ($aplicarRisco && $riscoPagador !== '') {
             $clients = $clients->filter(function ($client) use ($riscoPagador) {
                 $lateParcels = (int) optional($client->emprestimos)->count_late_parcels;
 

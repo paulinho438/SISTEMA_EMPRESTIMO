@@ -94,6 +94,10 @@ class Emprestimo extends Model
 
     public function getCountLateParcelsAttribute()
     {
+        // Se a query já trouxe o valor (ex.: withCount com alias), evita N+1
+        if (array_key_exists('count_late_parcels', $this->attributes)) {
+            return (int) $this->attributes['count_late_parcels'];
+        }
         return $this->parcelas()->where('atrasadas', '>', 0)->count();
     }
 

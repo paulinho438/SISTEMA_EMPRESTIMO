@@ -20,7 +20,7 @@ export default {
     data() {
         return {
             Clientes: ref([]),
-            ClientesParaContagem: ref([]),
+            riskCounts: ref({ total: 0, verde: 0, azul: 0, amarelo: 0, vermelho: 0 }),
             loading: ref(false),
             selectedRiskCategory: ref(null),
             filters: ref({
@@ -77,10 +77,10 @@ export default {
             return severityMap[category] || 'secondary';
         },
         getRiskCategoryCount(category) {
-            return this.ClientesParaContagem.filter((client) => this.getRiskCategoryFromLateParcels(client.emprestimos?.count_late_parcels) === category).length;
+            return Number(this.riskCounts?.[category] ?? 0);
         },
         getTotalClientesClassificados() {
-            return this.ClientesParaContagem.length;
+            return Number(this.riskCounts?.total ?? 0);
         },
         filterByRiskCategory(category) {
             this.selectedRiskCategory = this.selectedRiskCategory === category ? null : category;
@@ -303,20 +303,19 @@ export default {
                 riscoPagador: this.selectedRiskCategory
             };
 
-            const paramsContagem = {
-                ...baseParams,
-                riscoPagador: null
-            };
-
-            Promise.all([
-                this.clientService.getClientesDisponiveis(paramsContagem),
-                this.clientService.getClientesDisponiveis(paramsLista)
-            ])
-                .then(([respContagem, respLista]) => {
+            this.clientService
+                .getClientesDisponiveis(paramsLista)
+                .then((resp) => {
                     if (seq !== this._getClientesSeq) return;
                     this._suppressFilterEvent = true;
-                    this.ClientesParaContagem = this.normalizarClientes(respContagem.data);
-                    this.Clientes = this.normalizarClientes(respLista.data);
+
+                    const payload = resp?.data || {};
+                    const lista = Array.isArray(payload.data) ? payload.data : payload;
+                    const counts = payload.counts || null;
+
+                    this.Clientes = this.normalizarClientes(lista);
+                    if (counts) this.riskCounts = counts;
+
                     nextTick(() => {
                         this._suppressFilterEvent = false;
                     });
@@ -579,7 +578,7 @@ export default {
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
                                     <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
-                                               style="width: 100%" @input="scheduleGetClientes"/>
+                                               style="width: 100%" />
                                 </span>
                             </div>
                         </template>
