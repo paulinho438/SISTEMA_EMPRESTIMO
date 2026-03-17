@@ -22,6 +22,9 @@ export default {
             Clientes: ref([]),
             loading: ref(false),
             selectedRiskCategory: ref(null),
+            _getClientesTimer: null,
+            _getClientesSeq: 0,
+            _lastFetchKey: null,
             counts: ref({
                 total: 0,
                 verde: 0,
@@ -45,6 +48,32 @@ export default {
         };
     },
     methods: {
+        buildParamsKey(params) {
+            const safeParams = params && typeof params === 'object' ? params : {};
+            return JSON.stringify(
+                Object.keys(safeParams)
+                    .sort()
+                    .map((key) => [key, safeParams[key]])
+            );
+        },
+        scheduleGetClientes() {
+            if (this._getClientesTimer) {
+                clearTimeout(this._getClientesTimer);
+            }
+            this._getClientesTimer = setTimeout(() => {
+                this._getClientesTimer = null;
+                this.getClientes();
+            }, 400);
+        },
+        carregarPreferenciasAutomacoes() {
+            this.clientService.getEnvioAutomaticoRenovacao().then((response) => {
+                this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
+            });
+
+            this.clientService.getMensagemAudioAutomatico().then((response) => {
+                this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
+            });
+        },
         getRiskCategoryFromLateParcels(lateParcels) {
             const totalLateParcels = Number(lateParcels || 0);
             if (totalLateParcels <= 2) return 'verde';
@@ -276,33 +305,19 @@ export default {
             return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
         },
         getClientes() {
+            const seq = ++this._getClientesSeq;
+            const params = this.buildClientesDisponiveisParams();
+            const fetchKey = this.buildParamsKey(params);
+            if (this._lastFetchKey === fetchKey) return;
+            this._lastFetchKey = fetchKey;
             this.loading = true;
 
             this.clientService
-                .getEnvioAutomaticoRenovacao()
-                .then((response) => {
-                    this.toggleValue = response.data.envio_automatico_renovacao == 1 ? true : false;
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
-
-            this.clientService
-                .getMensagemAudioAutomatico()
-                .then((response) => {
-                    this.mensagemAudioValue = response.data.mensagem_audio == 1 ? true : false;
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
-
-            this.clientService
                 .getClientesDisponiveis({
-                    ...this.buildClientesDisponiveisParams(),
-                    temCnpj: this.filtroComCnpj,
-                    riscoPagador: this.selectedRiskCategory
+                    ...params
                 })
                 .then((response) => {
+                    if (seq !== this._getClientesSeq) return;
                     const payload = response?.data;
                     const list = Array.isArray(payload) ? payload : payload?.data;
                     const counts = Array.isArray(payload) ? null : payload?.counts;
@@ -342,6 +357,7 @@ export default {
                     });
                 })
                 .catch((error) => {
+                    if (seq !== this._getClientesSeq) return;
                     this.toast.add({
                         severity: ToastSeverity.ERROR,
                         detail: error.message,
@@ -349,6 +365,7 @@ export default {
                     });
                 })
                 .finally(() => {
+                    if (seq !== this._getClientesSeq) return;
                     this.loading = false;
                 });
         },
@@ -480,6 +497,7 @@ export default {
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_clientes');
+        this.carregarPreferenciasAutomacoes();
         this.getClientes();
     }
 };
@@ -558,7 +576,7 @@ export default {
                         :filters="filters"
                         responsiveLayout="scroll"
                         :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
-                        @filter="getClientes"
+                        @filter="scheduleGetClientes"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">
@@ -582,7 +600,7 @@ export default {
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
                                     <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
-                                               style="width: 100%" @input="getClientes"/>
+                                               style="width: 100%" @input="scheduleGetClientes"/>
                                 </span>
                             </div>
                         </template>
