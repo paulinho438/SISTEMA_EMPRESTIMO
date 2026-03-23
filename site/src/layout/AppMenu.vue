@@ -3,20 +3,12 @@ import { ref } from 'vue';
 
 import AppMenuItem from './AppMenuItem.vue';
 import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
-import ClientService from '@/service/ClientService';
 import { useRouter, useRoute } from 'vue-router';
 
 import store from '@/store';
-const confirmPopup = useConfirm();
-
 
 const router = useRouter();
 const route = useRoute();
-
-
-const clientService = new ClientService();
-
 
 const toast = useToast();
 
@@ -410,36 +402,6 @@ const model = ref([
     // }
 ]);
 
-const confirm = (event) => {
-    confirmPopup.require({
-        target: event.target,
-        message: 'Tem certeza que deseja cobrar todos os clientes?',
-        icon: 'pi pi-exclamation-triangle',
-		acceptLabel: 'Sim',
-        rejectLabel: 'Não',
-        accept: () => {
-			cobrarTodosClientes();
-        },
-        reject: () => {
-            toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Rotina não iniciada!', life: 3000 });
-        }
-    });
-};
-
-const cobrarTodosClientes = async (event) => {
-
-	try {
-		
-		await clientService.cobrarClientes();
-
-		toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Clientes cobrados com sucesso!', life: 3000 });
-
-	} catch (e) {
-		toast.add({ severity: 'error', summary: 'Erro', detail: 'Rotina já foi iniciada!', life: 3000 });
-	}
-
-};
-
 const searchCostcenter = async (event) => {
     try {
         console.log(store?.getters?.companies);
@@ -484,11 +446,6 @@ const changeCompany = async () => {
             <li v-if="item.separator" class="menu-separator"></li>
         </template>
     </ul>
-    <ConfirmPopup></ConfirmPopup>
-    <button ref="popup" @click="confirm($event)" class="p-link hidden-on-small">
-        <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
-        <span>Cobrar Todos Clientes</span>
-    </button>
     <button v-if="store?.getters?.companies.length > 1" @click="() => {changed = true}" class="p-link hidden-on-small">
         <i class="pi pi-link" style="margin-right: 10px"></i>
         <span>Alterar Empresa</span>

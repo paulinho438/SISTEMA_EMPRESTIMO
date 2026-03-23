@@ -574,8 +574,13 @@ class ClientController extends Controller
         }
 
         $clients = $clients->sortByDesc(function ($client) {
-            return optional($client->emprestimos)->data_quitacao;
-        });
+            $quitacao = optional($client->emprestimos)->data_quitacao;
+            if ($quitacao === null || $quitacao === '') {
+                return PHP_INT_MIN;
+            }
+
+            return Carbon::parse($quitacao)->timestamp;
+        })->values();
 
         return $clients;
     }

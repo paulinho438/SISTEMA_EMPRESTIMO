@@ -4,23 +4,15 @@ import { useLayout } from '@/layout/composables/layout';
 import { useRouter } from 'vue-router';
 import AuthService from '@/service/AuthService';
 import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
-import ClientService from '@/service/ClientService';
-
-
-import { ToastSeverity } from 'primevue/api';
 import store from "@/store";
 
 const { layoutConfig, onMenuToggle, contextPath } = useLayout();
-
-const clientService = new ClientService();
 
 const outsideClickListener = ref(null);
 const topbarMenuActive = ref(false);
 const router = useRouter();
 const authService = new AuthService();
 const toast = useToast();
-const confirmPopup = useConfirm();
 
 onMounted(() => {
     bindOutsideClickListener();
@@ -86,39 +78,6 @@ const logout = async () => {
     }
 };
 
-const confirm = (event) => {
-    confirmPopup.require({
-        target: event.target,
-        message: 'Tem certeza que deseja cobrar todos os clientes?',
-        icon: 'pi pi-exclamation-triangle',
-		acceptLabel: 'Sim',
-        rejectLabel: 'Não',
-        accept: () => {
-			cobrarTodosClientes();
-        },
-        reject: () => {
-            toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Rotina não iniciada!', life: 3000 });
-        }
-    });
-};
-
-const cobrarTodosClientes = async (event) => {
-
-	try {
-		
-		await clientService.cobrarClientes();
-
-        alert('Clientes cobrados com sucesso!');
-
-		toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Clientes cobrados com sucesso!', life: 3000 });
-
-	} catch (e) {
-        alert('Rotina já foi iniciada!');
-		toast.add({ severity: 'error', summary: 'Erro', detail: 'Rotina já foi iniciada!', life: 3000 });
-	}
-
-};
-
 const searchCostcenter = async (event) => {
     try {
         console.log(store?.getters?.companies);
@@ -174,13 +133,7 @@ const changeCompany = async () => {
         </button>
 
 
-		<ConfirmPopup></ConfirmPopup>
-
         <div style="display: flex; flex: 1; gap: 20px; flex-direction: row; justify-content: end">
-            <button ref="popup" @click="confirm($event)" class="p-link hidden-on-small">
-                <i class="pi pi-whatsapp" style="margin-right: 10px"></i>
-                <span>Cobrar Todos Clientes</span>
-            </button>
             <button  v-if="store?.getters?.companies.length > 1" @click="() => {changed = true}" class="p-link hidden-on-small">
                 <i class="pi pi-link" style="margin-right: 10px"></i>
                 <span>Alterar Empresa</span>

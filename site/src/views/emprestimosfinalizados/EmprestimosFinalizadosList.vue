@@ -321,6 +321,14 @@ export default {
             if (digits.length !== 14) return cnpj;
             return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
         },
+        sortClientesByDataQuitacaoDesc(rows) {
+            const list = Array.isArray(rows) ? rows : [];
+            return [...list].sort((a, b) => {
+                const ta = a?.data_quitacao ? new Date(a.data_quitacao).getTime() : Number.NEGATIVE_INFINITY;
+                const tb = b?.data_quitacao ? new Date(b.data_quitacao).getTime() : Number.NEGATIVE_INFINITY;
+                return tb - ta;
+            });
+        },
         getClientes() {
             const params = this.buildClientesDisponiveisParams();
             const fetchKey = this.buildParamsKey(params);
@@ -357,7 +365,7 @@ export default {
                         };
                     }
 
-                    this.Clientes = (Array.isArray(list) ? list : []).map((Clientes) => {
+                    const mapped = (Array.isArray(list) ? list : []).map((Clientes) => {
                         if (Clientes.created_at) {
                             Clientes.created_at = new Date(Clientes.created_at); // Concatena e cria um objeto Date
                         }
@@ -372,6 +380,7 @@ export default {
 
                         return Clientes;
                     });
+                    this.Clientes = this.sortClientesByDataQuitacaoDesc(mapped);
                 })
                 .catch((error) => {
                     if (seq !== this._getClientesSeq) return;
@@ -648,7 +657,7 @@ export default {
                                            placeholder="Buscar Nome Completo Cliente"/>
                             </template>
                         </Column>
-                        <Column field="status" header="Status" :sortable="true" class="w-2">
+                        <Column field="status" header="Status" :sortable="false" class="w-2">
                             <template #body="slotProps">
                                 <Button
                                     :label="getStatusLabelByLateParcels(slotProps.data.emprestimos?.count_late_parcels)"
@@ -731,8 +740,14 @@ export default {
                             </template>
                         </Column>
 
-                        <Column header="Dt. Quitação" filterField="data_quitacao" dataType="date"
-                                style="min-width: 10rem">
+                        <Column
+                            field="data_quitacao"
+                            header="Dt. Quitação"
+                            filterField="data_quitacao"
+                            dataType="date"
+                            :sortable="false"
+                            style="min-width: 10rem"
+                        >
                             <template #body="{ data }">
                                 {{ formatDate(data?.data_quitacao) }}
                             </template>
