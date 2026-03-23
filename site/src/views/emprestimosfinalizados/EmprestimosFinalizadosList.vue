@@ -23,8 +23,11 @@ export default {
             loading: ref(false),
             selectedRiskCategory: ref(null),
             _getClientesTimer: null,
+            _globalSearchTimer: null,
             _getClientesSeq: 0,
             _lastFetchKey: null,
+            /** Texto da busca global; separado de filters.global para o DataTable não filtrar ~500 linhas a cada tecla. */
+            globalSearchDraft: '',
             counts: ref({
                 total: 0,
                 verde: 0,
@@ -62,6 +65,15 @@ export default {
             }
             this._getClientesTimer = setTimeout(() => {
                 this._getClientesTimer = null;
+                this.getClientes();
+            }, 400);
+        },
+        onGlobalSearchInput() {
+            if (this._globalSearchTimer) {
+                clearTimeout(this._globalSearchTimer);
+            }
+            this._globalSearchTimer = setTimeout(() => {
+                this._globalSearchTimer = null;
                 this.getClientes();
             }, 400);
         },
@@ -123,6 +135,11 @@ export default {
             this.getClientes();
         },
         getApiFilterValue(filterKey) {
+            if (filterKey === 'global') {
+                const v = this.globalSearchDraft;
+                if (v === null || v === undefined || String(v).trim() === '') return null;
+                return String(v).trim();
+            }
             const filter = this.filters[filterKey];
             if (!filter) return null;
             const constraint = filter?.constraints?.[0];
@@ -487,6 +504,11 @@ export default {
             };
         },
         clearFilter() {
+            if (this._globalSearchTimer) {
+                clearTimeout(this._globalSearchTimer);
+                this._globalSearchTimer = null;
+            }
+            this.globalSearchDraft = '';
             this.initFilters();
             this.selectedRiskCategory = null;
             this.getClientes();
@@ -494,6 +516,16 @@ export default {
     },
     beforeMount() {
         this.initFilters();
+    },
+    beforeUnmount() {
+        if (this._getClientesTimer) {
+            clearTimeout(this._getClientesTimer);
+            this._getClientesTimer = null;
+        }
+        if (this._globalSearchTimer) {
+            clearTimeout(this._globalSearchTimer);
+            this._globalSearchTimer = null;
+        }
     },
     mounted() {
         this.permissionsService.hasPermissionsView('view_clientes');
@@ -575,7 +607,7 @@ export default {
                         :loading="loading"
                         :filters="filters"
                         responsiveLayout="scroll"
-                        :globalFilterFields="['nome_completo', 'cpf', 'cnpj']"
+                        :globalFilterFields="[]"
                         @filter="scheduleGetClientes"
                     >
                         <template #header>
@@ -599,8 +631,8 @@ export default {
                                 </div>
                                 <span class="p-input-icon-left mb-2">
                                     <i class="pi pi-search"/>
-                                    <InputText v-model="filters['global'].value" placeholder="Pesquisar ..."
-                                               style="width: 100%" @input="scheduleGetClientes"/>
+                                    <InputText v-model="globalSearchDraft" placeholder="Pesquisar ..."
+                                               style="width: 100%" @input="onGlobalSearchInput"/>
                                 </span>
                             </div>
                         </template>
