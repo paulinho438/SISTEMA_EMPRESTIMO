@@ -147,3 +147,15 @@ dependencies {
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+
+// Gradle 8+ requires explicit task dependency for vector icon fonts in release lint model generation.
+afterEvaluate {
+    def copyVectorIconsTask = tasks.findByName("copyReactNativeVectorIconFonts")
+    if (copyVectorIconsTask != null) {
+        tasks.matching { task ->
+            task.name.endsWith("LintVitalReportModel")
+        }.configureEach { task ->
+            task.dependsOn(copyVectorIconsTask)
+        }
+    }
+}

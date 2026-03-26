@@ -376,6 +376,7 @@ export default {
 
 <template>
     <FullScreenLoading :isLoading="loading" />
+    <ConfirmPopup />
     <Dialog header="Encerramento de Caixa" v-model:visible="displayFechamento.enabled" :breakpoints="{ '960px': '75vw' }" :style="{ width: '30vw' }" :modal="true">
         <div class="field col-12 md:col-12">
             <label for="zip">Saldo no Banco</label>
