@@ -30,7 +30,9 @@ export default {
             loadingPix: ref(false),
             /** Quando XGate: { tipo: 'saldoPendente'|'quitacao'|'parcela', id } do botão que está gerando o QR */
             loadingPixContext: ref(null),
-            valorPendenteHojeCalculado: ref(0)
+            valorPendenteHojeCalculado: ref(0),
+            displayPixManualModal: false,
+            pixChaveParaModal: ''
         };
     },
 
@@ -117,6 +119,31 @@ export default {
             }
             return ok;
         },
+        openPixManualModal(chave) {
+            this.pixChaveParaModal = chave || '';
+            this.displayPixManualModal = true;
+        },
+        closePixManualModal() {
+            this.displayPixManualModal = false;
+        },
+        async copiarChavePixModal() {
+            if (!this.pixChaveParaModal) return;
+            const ok = await this.copyToClipboard(this.pixChaveParaModal);
+            if (ok) {
+                this.toast.add({
+                    severity: ToastSeverity.SUCCESS,
+                    detail: 'Chave PIX copiada para a área de transferência!',
+                    life: 3500
+                });
+                this.closePixManualModal();
+            } else {
+                this.toast.add({
+                    severity: ToastSeverity.WARN,
+                    detail: 'Não foi possível copiar automaticamente. Selecione o código acima e use Copiar do teclado.',
+                    life: 5000
+                });
+            }
+        },
         isEsteBotaoLoading(tipo, id) {
             const ctx = this.loadingPixContext;
             return !!ctx && ctx.tipo === tipo && ctx.id == id;
@@ -148,9 +175,13 @@ export default {
                             if (p) p.chave_pix = chave;
                         }
                         if (copiou) {
-                            alert('Chave PIX copiado para a área de transferência!');
+                            this.toast.add({
+                                severity: ToastSeverity.SUCCESS,
+                                detail: 'Chave PIX copiada para a área de transferência!',
+                                life: 3500
+                            });
                         } else {
-                            alert('Chave PIX gerada. Copie manualmente:\n\n' + chave);
+                            this.openPixManualModal(chave);
                         }
                     } else {
                         alert(res?.data?.message || 'Não foi possível gerar a chave PIX.');
@@ -165,9 +196,13 @@ export default {
             } else {
                 const copiou = await this.copyToClipboard(textoAtual);
                 if (copiou) {
-                    alert('Chave PIX copiado para a área de transferência!');
+                    this.toast.add({
+                        severity: ToastSeverity.SUCCESS,
+                        detail: 'Chave PIX copiada para a área de transferência!',
+                        life: 3500
+                    });
                 } else if (textoAtual) {
-                    alert('Copie manualmente a chave:\n\n' + textoAtual);
+                    this.openPixManualModal(textoAtual);
                 }
             }
         },
@@ -197,6 +232,14 @@ export default {
             
             this.valorPendenteHojeCalculado = Math.round(total * 100) / 100;
             console.log('Valor pendente hoje atualizado:', this.valorPendenteHojeCalculado);
+        }
+    },
+
+    watch: {
+        displayPixManualModal(val) {
+            if (!val) {
+                this.pixChaveParaModal = '';
+            }
         }
     },
 
@@ -393,6 +436,25 @@ export default {
             <Button label="Enviar" @click="closeConfirmation" icon="pi pi-check" class="p-button-outlined" />
         </template>
     </Dialog>
+
+    <Dialog
+        v-model:visible="displayPixManualModal"
+        header="Chave PIX"
+        :modal="true"
+        :closable="true"
+        :dismissableMask="true"
+        :breakpoints="{ '960px': '90vw' }"
+        :style="{ width: 'min(520px, 94vw)' }"
+    >
+        <p class="pix-manual-intro m-0 mb-3 line-height-3">Chave PIX gerada. Use o botão abaixo para copiar ou selecione o código.</p>
+        <div class="pix-manual-chave-wrap">
+            <textarea class="pix-manual-chave" readonly rows="6" :value="pixChaveParaModal" @focus="$event.target.select()" />
+        </div>
+        <template #footer>
+            <Button label="Fechar" icon="pi pi-times" class="p-button-text" @click="closePixManualModal" />
+            <Button label="Copiar chave PIX" icon="pi pi-copy" class="p-button-primary" @click="copiarChavePixModal" />
+        </template>
+    </Dialog>
 </template>
 
 <style scoped>
@@ -530,5 +592,30 @@ button:disabled {
 
 .card {
     margin-top: 1rem;
+}
+
+.pix-manual-chave-wrap {
+    width: 100%;
+}
+
+.pix-manual-chave {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    word-break: break-all;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    resize: vertical;
+    min-height: 120px;
+    background: #f8f9fa;
+    color: #212529;
+}
+
+.pix-manual-intro {
+    color: #495057;
+    font-size: 0.95rem;
 }
 </style>
