@@ -463,7 +463,7 @@ class ProcessarWebhookXgate extends Command
     private function recriarCobrancaSaldoPendente($emprestimo, PagamentoSaldoPendente $pagamento): void
     {
         $banco = $emprestimo->banco ?? null;
-        if (!$banco || ($banco->bank_type ?? 'normal') !== 'xgate') {
+        if (!$banco || $banco->resolvedBankType() !== 'xgate') {
             return;
         }
         try {
@@ -490,7 +490,7 @@ class ProcessarWebhookXgate extends Command
     private function recriarCobrancaQuitacaoOuSaldoPendente($emprestimo, Parcela $parcela): void
     {
         $banco = $emprestimo->banco ?? null;
-        if (!$banco || ($banco->bank_type ?? 'normal') !== 'xgate') {
+        if (!$banco || $banco->resolvedBankType() !== 'xgate') {
             return;
         }
 

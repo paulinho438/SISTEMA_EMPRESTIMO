@@ -24,20 +24,11 @@ class MigrarEmprestimoBancoService
     }
 
     /**
-     * Define qual integração de PIX usar. Prioriza bank_type (xgate, apix, etc.) sobre a flag wallet,
-     * para não tratar XGATE/APIX como Bcodex quando o cadastro tiver wallet=1 por engano ou legado.
+     * Integração de PIX: credenciais XGate (e-mail) e bank_type armazenado, com fallback wallet→bcodex.
      */
     private function tipoBancoParaCobrancaPix(Banco $banco): string
     {
-        $tipo = $banco->bank_type ?? 'normal';
-        if (in_array($tipo, ['apix', 'xgate', 'velana', 'cora'], true)) {
-            return $tipo;
-        }
-        if ($banco->wallet) {
-            return 'bcodex';
-        }
-
-        return $tipo;
+        return $banco->resolvedBankType();
     }
 
     /**

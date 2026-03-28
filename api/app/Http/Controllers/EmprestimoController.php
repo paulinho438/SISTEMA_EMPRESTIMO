@@ -121,7 +121,7 @@ class EmprestimoController extends Controller
      */
     protected function criarCobrancaPorTipoBanco(float $valor, Banco $banco, $entidade = null, ?string $txId = null)
     {
-        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+        $bankType = $banco->resolvedBankType();
 
         if ($bankType === 'cora') {
             // Usar CoraService para banco Cora
@@ -425,7 +425,7 @@ class EmprestimoController extends Controller
             $cliente = Client::find($dados['cliente_id']);
 
             // Verificar se o banco é do tipo Cora
-            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $bankType = $banco->resolvedBankType();
             
             if ($bankType !== 'cora') {
                 return response()->json([
@@ -1655,10 +1655,9 @@ class EmprestimoController extends Controller
                 $valorPagamento = $emprestimo->valor;
             }
 
+            $bankTipoPagamento = $emprestimo->banco->resolvedBankType();
             $isWalletOuXgateOuVelanaOuApix = ($emprestimo->banco->wallet == 1)
-                || (($emprestimo->banco->bank_type ?? 'normal') === 'xgate')
-                || (($emprestimo->banco->bank_type ?? 'normal') === 'velana')
-                || (($emprestimo->banco->bank_type ?? 'normal') === 'apix');
+                || in_array($bankTipoPagamento, ['xgate', 'velana', 'apix'], true);
 
             if ($isWalletOuXgateOuVelanaOuApix) {
                 if (!$emprestimo->client->pix_cliente) {
@@ -1669,7 +1668,7 @@ class EmprestimoController extends Controller
                 }
 
                 // Verificar se é banco Velana
-                if (($emprestimo->banco->bank_type ?? 'normal') === 'velana') {
+                if ($bankTipoPagamento === 'velana') {
                     $velanaService = new VelanaService($emprestimo->banco);
                     $description = 'Transferência Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
                     
@@ -1728,7 +1727,7 @@ class EmprestimoController extends Controller
                             "error" => $response->body() ?? 'Erro ao realizar transferência via Velana'
                         ], Response::HTTP_FORBIDDEN);
                     }
-                } elseif (($emprestimo->banco->bank_type ?? 'normal') === 'xgate') {
+                } elseif ($bankTipoPagamento === 'xgate') {
                     // Usar XGateService para banco XGate
                     try {
                         $cnpjDigits = preg_replace('/\D/', '', (string) ($emprestimo->client->cnpj ?? ''));
@@ -1846,7 +1845,7 @@ class EmprestimoController extends Controller
                             "error" => $e->getMessage()
                         ], Response::HTTP_FORBIDDEN);
                     }
-                } elseif (($emprestimo->banco->bank_type ?? 'normal') === 'apix') {
+                } elseif ($bankTipoPagamento === 'apix') {
                     // Usar ApixService para banco APIX (saque/withdraw PIX)
                     try {
                         $apixService = new ApixService($emprestimo->banco);
@@ -2010,7 +2009,7 @@ class EmprestimoController extends Controller
                 }
             } else {
                 // Banco não é wallet/xgate/velana/apix: fluxo sem API (ex.: transferência manual)
-                $bankType = $emprestimo->banco->bank_type ?? 'normal';
+                $bankType = $emprestimo->banco->resolvedBankType();
                 if ($bankType === 'xgate' || $bankType === 'velana' || $bankType === 'apix') {
                     Log::channel($bankType === 'apix' ? 'apix' : 'xgate')->error('Pagamento ao cliente: banco ' . strtoupper($bankType) . ' sem chamada à API (wallet=0?). Não marcar como pago.', [
                         'emprestimo_id' => $emprestimo->id,
@@ -2203,7 +2202,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $bankType = $contaspagar->banco->bank_type ?? 'normal';
+            $bankType = $contaspagar->banco->resolvedBankType();
             if ($bankType === 'xgate' || $bankType === 'apix') {
                 if (!$contaspagar->fornecedor->pix_fornecedor) {
                     return response()->json([
@@ -2328,7 +2327,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $bankType = $contaspagar->banco->bank_type ?? 'normal';
+            $bankType = $contaspagar->banco->resolvedBankType();
 
             if ($bankType === 'xgate') {
                 if (!$contaspagar->fornecedor->pix_fornecedor) {
@@ -2705,7 +2704,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $bankType = $emprestimo->banco->bank_type ?? 'normal';
+            $bankType = $emprestimo->banco->resolvedBankType();
 
             if ($bankType === 'xgate' || $bankType === 'apix') {
                 if (!$emprestimo->client->pix_cliente) {
@@ -3588,7 +3587,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $bancoArr = $banco ? [
             'chavepix'          => (string) ($banco->chavepix ?? ''),
             'info_recebedor_pix' => (string) ($banco->info_recebedor_pix ?? ''),
-            'bank_type'         => (string) ($banco->bank_type ?? 'normal'),
+            'bank_type'         => $banco->resolvedBankType(),
         ] : null;
 
         // -------- OUTROS CAMPOS USADOS PELO FRONT --------
@@ -3653,7 +3652,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         $banco = $pagamentoSaldoPendente->emprestimo->banco;
-        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+        $bankType = $banco->resolvedBankType();
 
         // Se valor <= 0: retorna a chave PIX da próxima parcela em aberto
         if ((float) $pagamentoSaldoPendente->valor <= 0) {
@@ -3737,7 +3736,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         $banco = $parcela->emprestimo->banco;
-        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+        $bankType = $banco->resolvedBankType();
         $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix'); // XGate/APIX: sempre nova cobrança ao clicar
 
         if ($parcela->ult_dt_geracao_pix) {
@@ -3777,7 +3776,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         $banco = $parcela->emprestimo->banco;
-        $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+        $bankType = $banco->resolvedBankType();
 
         if ($banco->wallet == 0 && $bankType !== 'xgate' && $bankType !== 'apix') {
             return ['chave_pix' => $banco->chave_pix];
@@ -5013,7 +5012,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $parcela->atrasadas = $parcela->atrasadas + 1;
 
                 $banco = $parcela->emprestimo->banco;
-                $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+                $bankType = $banco->resolvedBankType();
 
                 if ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate') {
                     $txId = $parcela->identificador ? $parcela->identificador : null;

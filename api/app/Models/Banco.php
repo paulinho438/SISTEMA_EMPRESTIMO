@@ -50,4 +50,27 @@ class Banco extends Model
         return $this->hasMany(Deposito::class, 'banco_id', 'id');
     }
 
+    /**
+     * Tipo efetivo para rotas PIX/API: credenciais XGate (e-mail) indicam integração XGate
+     * mesmo se bank_type no banco estiver desatualizado (ex.: bcodex + wallet).
+     */
+    public function resolvedBankType(): string
+    {
+        $email = $this->attributes['xgate_email'] ?? null;
+        if (is_string($email) && trim($email) !== '') {
+            return 'xgate';
+        }
+
+        $stored = $this->attributes['bank_type'] ?? null;
+        if ($stored !== null && $stored !== '') {
+            return (string) $stored;
+        }
+
+        if ((int) ($this->attributes['wallet'] ?? 0) === 1) {
+            return 'bcodex';
+        }
+
+        return 'normal';
+    }
+
 }

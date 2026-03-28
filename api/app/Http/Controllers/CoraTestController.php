@@ -66,7 +66,7 @@ class CoraTestController extends Controller
             }
 
             $banco = Banco::find($request->banco_id);
-            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $bankType = $banco->resolvedBankType();
             if ($bankType !== 'cora') {
                 return response()->json([
                     'success' => false,
@@ -145,7 +145,7 @@ class CoraTestController extends Controller
             }
 
             $banco = Banco::find($request->banco_id);
-            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $bankType = $banco->resolvedBankType();
             if ($bankType !== 'cora') {
                 return response()->json([
                     'success' => false,

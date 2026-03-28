@@ -34,7 +34,7 @@ class XGateTestController extends Controller
 
             $banco = Banco::find($request->banco_id);
             
-            if (($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     'success' => false,
                     'message' => 'O banco selecionado não é do tipo XGate'
@@ -150,7 +150,7 @@ class XGateTestController extends Controller
 
             $banco = Banco::find($request->banco_id);
             
-            if (($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     'success' => false,
                     'message' => 'O banco selecionado não é do tipo XGate'
@@ -224,7 +224,7 @@ class XGateTestController extends Controller
 
             $banco = Banco::find($request->banco_id);
             
-            if (($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     'success' => false,
                     'message' => 'O banco selecionado não é do tipo XGate'
@@ -304,7 +304,7 @@ class XGateTestController extends Controller
 
             $banco = Banco::find($request->banco_id);
             
-            if (($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     'success' => false,
                     'message' => 'O banco selecionado não é do tipo XGate'
@@ -369,7 +369,7 @@ class XGateTestController extends Controller
 
             $banco = Banco::find($request->banco_id);
             
-            if (($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     'success' => false,
                     'message' => 'O banco selecionado não é do tipo XGate'

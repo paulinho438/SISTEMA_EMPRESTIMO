@@ -33,7 +33,8 @@ export default {
 				{ label: 'Bcodex', value: 'bcodex' },
 				{ label: 'Cora', value: 'cora' },
 				{ label: 'Velana', value: 'velana' },
-				{ label: 'XGate', value: 'xgate' }
+				{ label: 'XGate', value: 'xgate' },
+				{ label: 'APIX', value: 'apix' }
 			]
 		}
 	},
@@ -81,14 +82,7 @@ export default {
 			this.changeLoading();
 			this.errors = [];
 
-			this.banco.wallet = (this.banco.wallet) ? 1 : 0;
-			
-			// Se for bcodex, manter wallet = 1, se for cora ou normal, wallet = 0
-			if (this.banco.bank_type === 'bcodex') {
-				this.banco.wallet = 1;
-			} else {
-				this.banco.wallet = 0;
-			}
+			this.banco.wallet = this.banco.wallet ? 1 : 0;
 
 			this.bancoService.saveComCertificado(this.banco)
 			.then((response) => {
@@ -129,6 +123,10 @@ export default {
 	computed: {
 		title() {
 			return this.route.params?.id ? 'Editar Banco' : 'Criar Banco';
+		},
+		walletEditavel() {
+			const t = this.banco?.bank_type;
+			return ['bcodex', 'xgate', 'apix', 'velana'].includes(t);
 		}
 	},
 	mounted() {
@@ -242,14 +240,14 @@ export default {
 
 			<div class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
-					<h5>Efi Bank? (Bcodex)</h5>
-					<InputSwitch :modelValue="banco?.wallet" v-model="banco.wallet" :disabled="banco?.bank_type !== 'bcodex'" />
-					<small class="text-gray-500 pl-2">Ativo apenas para bancos Bcodex</small>
+					<h5>Wallet</h5>
+					<InputSwitch :modelValue="banco?.wallet" v-model="banco.wallet" :disabled="!walletEditavel" />
+					<small class="text-gray-500 pl-2">Opcional para Bcodex, XGate, APIX e Velana</small>
 				</div>
 			</div>
 
 			<!-- Campos Bcodex -->
-			<div v-if="banco?.bank_type === 'bcodex' || banco?.wallet" class="formgrid grid">
+			<div v-if="banco?.bank_type === 'bcodex'" class="formgrid grid">
 				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
 					<label for="document">B.CODEX Documento</label>
 					<InputText :modelValue="banco?.document" v-model="banco.document" id="document" type="text" class="w-full p-inputtext-sm" :class="{ 'p-invalid': errors?.document }" />

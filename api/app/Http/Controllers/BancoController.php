@@ -71,18 +71,14 @@ class BancoController extends Controller
         if (!$validator->fails()) {
 
             $dados['company_id'] = $request->header('company-id');
-            
-            // Sincronizar wallet e bank_type: wallet=1 implica bank_type=bcodex
-            if (isset($dados['wallet']) && $dados['wallet'] == 1) {
-                $dados['wallet'] = 1;
-                $dados['bank_type'] = 'bcodex';
-            } elseif (!isset($dados['wallet'])) {
-                $dados['wallet'] = ($dados['bank_type'] ?? 'normal') === 'bcodex' ? 1 : 0;
+
+            $dados['bank_type'] = (string) ($dados['bank_type'] ?? 'normal');
+            // wallet independente do tipo: XGate/APIX/Velana podem usar wallet=1 (ex.: mesma UX de “conta integrada”)
+            if (array_key_exists('wallet', $dados)) {
+                $dados['wallet'] = ((int) $dados['wallet'] === 1) ? 1 : 0;
+            } else {
+                $dados['wallet'] = ($dados['bank_type'] === 'bcodex') ? 1 : 0;
             }
-            if (!isset($dados['bank_type'])) {
-                $dados['bank_type'] = isset($dados['wallet']) && $dados['wallet'] == 1 ? 'bcodex' : 'normal';
-            }
-            $dados['bank_type'] = (string)($dados['bank_type'] ?? 'normal');
 
             // Campos Velana
             if (($dados['bank_type'] ?? 'normal') === 'velana') {
@@ -100,18 +96,17 @@ class BancoController extends Controller
                 $dados['velana_public_key'] = null;
             }
 
-            // Campos XGate
-            if (($dados['bank_type'] ?? 'normal') === 'xgate') {
-                // Criptografar senha XGate se fornecida
+            // Campos XGate (tipo xgate OU e-mail preenchido → integração XGate; não apagar credenciais por bank_type legado)
+            $criarComoXgate = (($dados['bank_type'] ?? 'normal') === 'xgate')
+                || (trim((string) ($dados['xgate_email'] ?? '')) !== '');
+            if ($criarComoXgate) {
                 if (isset($dados['xgate_password']) && !empty($dados['xgate_password'])) {
                     $dados['xgate_password'] = Crypt::encryptString($dados['xgate_password']);
                 }
-                // Email não precisa ser criptografado
                 if (isset($dados['xgate_email']) && empty($dados['xgate_email'])) {
                     unset($dados['xgate_email']);
                 }
             } else {
-                // Limpar campos XGate se não for banco XGate
                 $dados['xgate_email'] = null;
                 $dados['xgate_password'] = null;
             }
@@ -173,25 +168,15 @@ class BancoController extends Controller
                 $EditBanco->conta = $dados['conta'];
                 $EditBanco->saldo = $dados['saldo'];
                 
-                // Definir wallet e bank_type (sincronizar: wallet=1 implica bank_type=bcodex)
-                if (($dados['wallet'] ?? 0) == 1) {
-                    $EditBanco->wallet = 1;
-                    $EditBanco->bank_type = 'bcodex';
-                } elseif (isset($dados['bank_type'])) {
-                    $EditBanco->bank_type = (string)$dados['bank_type'];
-                    $EditBanco->wallet = ($dados['bank_type'] === 'bcodex') ? 1 : 0;
-                } else {
-                    $EditBanco->wallet = $dados['wallet'] ?? 0;
-                    $EditBanco->bank_type = ($EditBanco->wallet == 1) ? 'bcodex' : ($dados['bank_type'] ?? 'normal');
-                }
-                $EditBanco->bank_type = (string)($EditBanco->bank_type ?? 'normal');
+                $EditBanco->bank_type = (string) ($dados['bank_type'] ?? $EditBanco->bank_type ?? 'normal');
+                $EditBanco->wallet = ((int) ($dados['wallet'] ?? 0) === 1) ? 1 : 0;
                 
                 $EditBanco->info_recebedor_pix = $dados['info_recebedor_pix'] ?? null;
                 $EditBanco->chavepix = $dados['chavepix'] ?? null;
                 $EditBanco->juros = $dados['juros'] ?? null;
 
-                // Campos Bcodex
-                if (($EditBanco->bank_type ?? 'normal') === 'bcodex' || $EditBanco->wallet == 1) {
+                // Campos Bcodex (somente tipo bcodex; wallet=1 em XGate não preenche estes campos)
+                if (($EditBanco->bank_type ?? 'normal') === 'bcodex') {
                     $EditBanco->document = $dados['document'] ?? null;
                     $EditBanco->accountId = $dados['accountId'] ?? null;
                 }
@@ -222,21 +207,20 @@ class BancoController extends Controller
                     $EditBanco->velana_public_key = null;
                 }
 
-                // Campos XGate
-                if (($EditBanco->bank_type ?? 'normal') === 'xgate') {
-                    // Criptografar senha XGate se fornecida
+                // Campos XGate: tipo xgate, e-mail novo preenchido ou e-mail já salvo (evita limpar ao mudar só bank_type)
+                $xgateEmailNoRequest = array_key_exists('xgate_email', $dados) ? trim((string) $dados['xgate_email']) : null;
+                $tinhaEmailXgate = trim((string) ($EditBanco->getOriginal('xgate_email') ?? '')) !== '';
+                $atualizarComoXgate = (($EditBanco->bank_type ?? 'normal') === 'xgate')
+                    || ($xgateEmailNoRequest !== null && $xgateEmailNoRequest !== '')
+                    || ($xgateEmailNoRequest === null && $tinhaEmailXgate);
+                if ($atualizarComoXgate) {
                     if (isset($dados['xgate_password']) && !empty($dados['xgate_password'])) {
                         $EditBanco->xgate_password = Crypt::encryptString($dados['xgate_password']);
-                    } elseif (isset($dados['xgate_password']) && empty($dados['xgate_password'])) {
-                        // Se enviar vazio, manter o valor atual (não sobrescrever)
-                        // Não fazer nada, manter o valor existente
                     }
-                    // Email (não precisa criptografar)
                     if (isset($dados['xgate_email'])) {
-                        $EditBanco->xgate_email = $dados['xgate_email'];
+                        $EditBanco->xgate_email = $dados['xgate_email'] ?: null;
                     }
                 } else {
-                    // Limpar campos XGate se não for banco XGate
                     $EditBanco->xgate_email = null;
                     $EditBanco->xgate_password = null;
                 }
@@ -870,14 +854,14 @@ class BancoController extends Controller
             $dados = $request->all();
             $banco = Banco::find($id);
 
-            if (!$banco->wallet && ($banco->bank_type ?? 'normal') !== 'xgate') {
+            if (!$banco->wallet && $banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     "message" => "Banco não é do tipo wallet.",
                     "error" => "Banco não é do tipo wallet."
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $bankType = $banco->resolvedBankType();
 
             if ($bankType === 'xgate') {
                 if (empty($banco->chavepix)) {
@@ -952,7 +936,7 @@ class BancoController extends Controller
             $dados = $request->all();
             $banco = Banco::find($id);
 
-            if ($banco->wallet != 1 && ($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->wallet != 1 && $banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     "message" => "Banco não é do tipo wallet.",
                     "error" => "Banco não é do tipo wallet."
@@ -966,7 +950,7 @@ class BancoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $bankType = $banco->resolvedBankType();
 
             if ($bankType === 'xgate') {
                 $xgateService = new XGateService($banco);
@@ -1025,7 +1009,7 @@ class BancoController extends Controller
             $dados = $request->all();
             $banco = Banco::find($id);
 
-            if ($banco->wallet != 1 && ($banco->bank_type ?? 'normal') !== 'xgate') {
+            if ($banco->wallet != 1 && $banco->resolvedBankType() !== 'xgate') {
                 return response()->json([
                     "message" => "Banco não é do tipo wallet.",
                     "error" => "Banco não é do tipo wallet."
@@ -1039,7 +1023,7 @@ class BancoController extends Controller
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $bankType = $banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal');
+            $bankType = $banco->resolvedBankType();
             $valor = (float) ($dados['valor'] ?? 0);
             $nomeDestino = $banco->name ?: 'Conta destino';
 

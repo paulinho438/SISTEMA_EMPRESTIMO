@@ -119,7 +119,7 @@ class RecalcularParcelas extends Command
                     }
 
                     $banco = $parcela->emprestimo->banco;
-                    $bankType = $banco ? ($banco->bank_type ?? ($banco->wallet ? 'bcodex' : 'normal')) : 'normal';
+                    $bankType = $banco ? $banco->resolvedBankType() : 'normal';
                     $isWalletOuVirtual = $banco && ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate' || $bankType === 'apix');
 
                     // Cobrança principal (parcela) – Bcodex, Velana ou XGate

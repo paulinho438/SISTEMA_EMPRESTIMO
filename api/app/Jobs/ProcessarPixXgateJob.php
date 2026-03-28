@@ -97,7 +97,7 @@ class ProcessarPixXgateJob implements ShouldQueue
     private function processarCobrancasXgate(): void
     {
         $banco = $this->emprestimo->banco;
-        if (($banco->bank_type ?? 'normal') !== 'xgate') {
+        if ($banco->resolvedBankType() !== 'xgate') {
             return;
         }
 
