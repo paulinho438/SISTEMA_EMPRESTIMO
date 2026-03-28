@@ -1,5 +1,5 @@
 <script>
-import { ref } from 'vue';
+import { ref, unref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import EmprestimoService from '@/service/EmprestimoService';
@@ -68,12 +68,24 @@ export default {
             loadingFullScreen: ref(false),
             /** XGate: cliente com CPF e CNPJ — escolha antes da consulta/confirmação */
             displayModalDocumentoXgate: ref(false),
-            xgateDocumentoTipo: ref(null)
+            xgateDocumentoTipo: ref(null),
+            /** Consulta já retornou mas falta escolher documento antes da confirmação */
+            pendingXgateConsultaParaConfirmacao: null
         };
     },
     methods: {
+        /** city/client vêm como ref() no data — sem unref, cnpj fica invisível nos métodos */
+        getClienteEmprestimoDesembrulhado() {
+            const cidade = unref(this.city);
+            if (cidade && typeof cidade === 'object' && 'nome_completo' in cidade) {
+                return cidade;
+            }
+            const emp = unref(this.client);
+            return emp?.cliente ?? null;
+        },
         clienteTemCnpjPreenchido() {
-            const raw = this.city?.cnpj;
+            const cliente = this.getClienteEmprestimoDesembrulhado();
+            const raw = cliente?.cnpj;
             if (raw === null || raw === undefined || String(raw).trim() === '') {
                 return false;
             }
@@ -82,40 +94,61 @@ export default {
         },
         fecharModalDocumentoXgate() {
             this.displayModalDocumentoXgate = false;
+            this.pendingXgateConsultaParaConfirmacao = null;
         },
         confirmarDocumentoXgate(tipo) {
             this.xgateDocumentoTipo = tipo;
             this.displayModalDocumentoXgate = false;
+            if (this.pendingXgateConsultaParaConfirmacao) {
+                const { data, valor, isXgate, isApix } = this.pendingXgateConsultaParaConfirmacao;
+                this.pendingXgateConsultaParaConfirmacao = null;
+                this.abrirDialogoConfirmacaoTransferencia(data, valor, isXgate, isApix);
+                return;
+            }
             this.executarConsultaTransferenciaWalletOuPix();
         },
+        abrirDialogoConfirmacaoTransferencia(consultData, valor, isXgate, isApix) {
+            const cliente = this.getClienteEmprestimoDesembrulhado();
+            const nomeBeneficiario =
+                consultData?.creditParty?.name ?? cliente?.nome_completo ?? 'Não informado';
+            const mensagem = `Tem certeza que deseja realizar a transferência de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
+            if ((isXgate || isApix) && consultData?.chave_pix) {
+                this.displayConfirmationChavePix = consultData.chave_pix;
+                this.displayConfirmationNome = nomeBeneficiario;
+                this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            } else {
+                this.displayConfirmationChavePix = null;
+                this.displayConfirmationNome = null;
+                this.displayConfirmationValor = null;
+            }
+            this.displayConfirmationMessage = mensagem;
+            this.displayConfirmation = true;
+        },
         executarConsultaTransferenciaWalletOuPix() {
+            const emp = unref(this.client);
             let valor = 0;
-            if (this.client?.valor_deposito) {
-                valor = this.client.valor_deposito;
-            } else if (this.client?.valor) {
-                valor = this.client.valor;
+            if (emp?.valor_deposito) {
+                valor = emp.valor_deposito;
+            } else if (emp?.valor) {
+                valor = emp.valor;
             }
 
-            const isXgate = this.banco?.bank_type === 'xgate';
-            const isApix = this.banco?.bank_type === 'apix';
+            const bancoU = unref(this.banco);
+            const isXgate = bancoU?.bank_type === 'xgate';
+            const isApix = bancoU?.bank_type === 'apix';
 
             this.loadingFullScreen = true;
             this.emprestimoService
                 .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
                 .then((response) => {
-                    const nomeBeneficiario = response.data?.creditParty?.name ?? this.city?.nome_completo ?? 'Não informado';
-                    let mensagem = `Tem certeza que deseja realizar a transferência de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
-                    if ((isXgate || isApix) && response.data?.chave_pix) {
-                        this.displayConfirmationChavePix = response.data.chave_pix;
-                        this.displayConfirmationNome = nomeBeneficiario;
-                        this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    } else {
-                        this.displayConfirmationChavePix = null;
-                        this.displayConfirmationNome = null;
-                        this.displayConfirmationValor = null;
+                    const data = response.data;
+                    const requerDoc = data?.requer_escolha_documento_xgate === true;
+                    if (isXgate && requerDoc && !this.xgateDocumentoTipo) {
+                        this.pendingXgateConsultaParaConfirmacao = { data, valor, isXgate, isApix };
+                        this.displayModalDocumentoXgate = true;
+                        return;
                     }
-                    this.displayConfirmationMessage = mensagem;
-                    this.displayConfirmation = true;
+                    this.abrirDialogoConfirmacaoTransferencia(data, valor, isXgate, isApix);
                 })
                 .catch((error) => {
                     if (error?.response?.status != 422) {
@@ -178,14 +211,15 @@ export default {
                 return;
             }
 
-            const isXgate = this.banco?.bank_type === 'xgate';
+            const bancoU = unref(this.banco);
+            const isXgate = bancoU?.bank_type === 'xgate';
             if (isXgate && this.clienteTemCnpjPreenchido()) {
                 this.displayModalDocumentoXgate = true;
                 return;
             }
 
-            const isApix = this.banco?.bank_type === 'apix';
-            if (this.banco.wallet || isXgate || isApix) {
+            const isApix = bancoU?.bank_type === 'apix';
+            if (bancoU?.wallet || isXgate || isApix) {
                 this.executarConsultaTransferenciaWalletOuPix();
             } else {
                 this.loadingFullScreen = true;
@@ -353,6 +387,7 @@ export default {
             this.displayConfirmationNome = null;
             this.displayConfirmationValor = null;
             this.xgateDocumentoTipo = null;
+            this.pendingXgateConsultaParaConfirmacao = null;
             this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
         },
 
@@ -360,7 +395,7 @@ export default {
             this.displayConfirmation = false;
             this.loadingFullScreen = true;
             const payload = {};
-            if (this.banco?.bank_type === 'xgate' && this.clienteTemCnpjPreenchido() && this.xgateDocumentoTipo) {
+            if (unref(this.banco)?.bank_type === 'xgate' && this.xgateDocumentoTipo) {
                 payload.documento_xgate = this.xgateDocumentoTipo;
             }
             this.emprestimoService
