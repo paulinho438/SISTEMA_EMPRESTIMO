@@ -51,15 +51,22 @@ class ProcessarPixJob implements ShouldQueue
     protected $wapiService;
 
     /**
+     * Quando true (ex.: migração de banco), não gera movimentação "Refinanciamento" nem altera saldo do banco;
+     * apenas regenera cobranças PIX e mensagens como no fluxo normal.
+     */
+    public bool $somenteRegenerarCobrancas;
+
+    /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Emprestimo $emprestimo, BcodexService $bcodexService, ?array $comprovante = [])
+    public function __construct(Emprestimo $emprestimo, BcodexService $bcodexService, ?array $comprovante = [], bool $somenteRegenerarCobrancas = false)
     {
         $this->emprestimo = $emprestimo;
         $this->bcodexService = $bcodexService;
         $this->comprovante = $comprovante;
+        $this->somenteRegenerarCobrancas = $somenteRegenerarCobrancas;
         $this->wapiService = new WAPIService();
     }
 
@@ -124,33 +131,34 @@ class ProcessarPixJob implements ShouldQueue
                 }
             }
 
-            $valor = $this->emprestimo->valor;
-            if ($this->emprestimo->valor_deposito > 0) {
-                $valor = $this->emprestimo->valor_deposito;
-            }
-
-            $movimentacaoFinanceira = [];
-            $movimentacaoFinanceira['banco_id'] = $this->emprestimo->banco->id;
-            $movimentacaoFinanceira['company_id'] = $this->emprestimo->company_id;
-            if ($this->comprovante) {
+            if (!$this->somenteRegenerarCobrancas) {
+                $valor = $this->emprestimo->valor;
                 if ($this->emprestimo->valor_deposito > 0) {
-                    $movimentacaoFinanceira['descricao'] = 'Renovação 80% Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
-                } else {
-                    $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
+                    $valor = $this->emprestimo->valor_deposito;
                 }
 
-            } else {
-                $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
-            }
-            $movimentacaoFinanceira['tipomov'] = 'S';
-            $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-            $movimentacaoFinanceira['valor'] = $valor;
+                $movimentacaoFinanceira = [];
+                $movimentacaoFinanceira['banco_id'] = $this->emprestimo->banco->id;
+                $movimentacaoFinanceira['company_id'] = $this->emprestimo->company_id;
+                if ($this->comprovante) {
+                    if ($this->emprestimo->valor_deposito > 0) {
+                        $movimentacaoFinanceira['descricao'] = 'Renovação 80% Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
+                    } else {
+                        $movimentacaoFinanceira['descricao'] = 'Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
+                    }
+                } else {
+                    $movimentacaoFinanceira['descricao'] = 'Refinanciamento Empréstimo Nº ' . $this->emprestimo->id . ' para ' . $this->emprestimo->client->nome_completo;
+                }
+                $movimentacaoFinanceira['tipomov'] = 'S';
+                $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
+                $movimentacaoFinanceira['valor'] = $valor;
 
-            Movimentacaofinanceira::create($movimentacaoFinanceira);
+                Movimentacaofinanceira::create($movimentacaoFinanceira);
 
-            if ($this->comprovante) {
-                $this->emprestimo->banco->saldo -= $valor;
-                $this->emprestimo->banco->save();
+                if ($this->comprovante) {
+                    $this->emprestimo->banco->saldo -= $valor;
+                    $this->emprestimo->banco->save();
+                }
             }
 
             if(1 == 0){

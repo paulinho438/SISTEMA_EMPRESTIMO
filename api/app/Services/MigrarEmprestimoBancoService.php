@@ -24,6 +24,23 @@ class MigrarEmprestimoBancoService
     }
 
     /**
+     * Define qual integração de PIX usar. Prioriza bank_type (xgate, apix, etc.) sobre a flag wallet,
+     * para não tratar XGATE/APIX como Bcodex quando o cadastro tiver wallet=1 por engano ou legado.
+     */
+    private function tipoBancoParaCobrancaPix(Banco $banco): string
+    {
+        $tipo = $banco->bank_type ?? 'normal';
+        if (in_array($tipo, ['apix', 'xgate', 'velana', 'cora'], true)) {
+            return $tipo;
+        }
+        if ($banco->wallet) {
+            return 'bcodex';
+        }
+
+        return $tipo;
+    }
+
+    /**
      * Migra um empréstimo para outro banco (mesma regra do endpoint migrar-banco).
      *
      * @return array{success: bool, message: string, emprestimo?: Emprestimo}
@@ -50,7 +67,7 @@ class MigrarEmprestimoBancoService
         }
 
         $bankTypesPermitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
-        $bankType = ($bancoDestino->wallet ? 'bcodex' : null) ?? $bancoDestino->bank_type ?? 'normal';
+        $bankType = $this->tipoBancoParaCobrancaPix($bancoDestino);
         if (!in_array($bankType, $bankTypesPermitidos, true)) {
             return ['success' => false, 'message' => 'O banco destino deve ser do tipo Bcodex, APIX, XGate, Velana ou Cora.'];
         }
@@ -107,8 +124,8 @@ class MigrarEmprestimoBancoService
                 ProcessarPixApixJob::dispatch($emprestimo, []);
             } elseif ($bankType === 'xgate') {
                 ProcessarPixXgateJob::dispatch($emprestimo, []);
-            } elseif ($bankType === 'bcodex' || (int) $bancoDestino->wallet === 1) {
-                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, []);
+            } elseif ($bankType === 'bcodex') {
+                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, [], true);
             }
 
             return [

@@ -52,7 +52,7 @@
 						</template>
 						<Column field="id" header="ID" sortable v-if="temCampoId">
 							<template #body="{ data }">
-								{{ data.id ?? data._id ?? '-' }}
+								{{ data.id ?? data._id ?? data.insertedId ?? data.messageId ?? '-' }}
 							</template>
 						</Column>
 						<Column header="Dados" v-if="itensFila.length">
@@ -66,7 +66,7 @@
 									icon="pi pi-trash"
 									class="p-button-danger p-button-text p-button-sm"
 									v-tooltip.top="'Remover da fila'"
-									:loading="deletingId === (data.id ?? data._id)"
+									:loading="deletingId === idFilaItem(data)"
 									@click="deletarItem(data)"
 								/>
 							</template>
@@ -79,7 +79,6 @@
 </template>
 
 <script>
-import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import { ToastSeverity } from 'primevue/api';
@@ -107,11 +106,16 @@ export default {
 		itensFila() {
 			if (!this.filaData) return [];
 			const d = this.filaData.data ?? this.filaData;
-			return Array.isArray(d) ? d : (d.items ?? d.list ?? []);
+			if (Array.isArray(d)) return d;
+			// W-API retorna os itens em `messages` (não `items` / `list`)
+			const arr = d.messages ?? d.items ?? d.list ?? [];
+			return Array.isArray(arr) ? arr : [];
 		},
 		temCampoId() {
 			return this.itensFila.some(
-				(item) => item != null && ('id' in item || '_id' in item)
+				(item) =>
+					item != null &&
+					('id' in item || '_id' in item || 'insertedId' in item || 'messageId' in item)
 			);
 		},
 		filaCarregada() {
@@ -126,6 +130,10 @@ export default {
 		this.carregarCompanies();
 	},
 	methods: {
+		idFilaItem(item) {
+			if (!item) return null;
+			return item.id ?? item._id ?? item.insertedId ?? item.messageId ?? item.key ?? null;
+		},
 		async carregarCompanies() {
 			try {
 				const response = await axios.get(`${apiPath}/wapi/fila/companies`);
@@ -178,7 +186,7 @@ export default {
 			}
 		},
 		async deletarItem(item) {
-			const id = item.id ?? item._id ?? item.key;
+			const id = this.idFilaItem(item);
 			if (id == null) {
 				this.toast.add({
 					severity: ToastSeverity.WARN,
