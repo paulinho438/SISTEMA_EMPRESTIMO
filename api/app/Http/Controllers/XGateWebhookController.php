@@ -55,8 +55,26 @@ class XGateWebhookController extends Controller
                 }
                 $tipoEvento = 'withdraw';
             } elseif (isset($data['id'])) {
+                // Payload plano (ex.: PIX/DEPOSIT com id, amount, status, operation na raiz)
                 $identificador = $data['id'];
-                $tipoEvento = 'other';
+                if (isset($data['status'])) {
+                    $status = $data['status'];
+                }
+                if (isset($data['amount'])) {
+                    $valor = (float) $data['amount'];
+                }
+                if (! empty($data['operation'])) {
+                    $op = strtoupper((string) $data['operation']);
+                    if ($op === 'DEPOSIT') {
+                        $tipoEvento = 'deposit';
+                    } elseif (in_array($op, ['WITHDRAW', 'WITHDRAWAL'], true)) {
+                        $tipoEvento = 'withdraw';
+                    } else {
+                        $tipoEvento = 'other';
+                    }
+                } else {
+                    $tipoEvento = 'other';
+                }
             }
 
             // Verificar se já existe um webhook com o mesmo identificador não processado
