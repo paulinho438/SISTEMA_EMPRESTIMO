@@ -71,11 +71,31 @@ export default {
                 console.log(e);
             }
         },
+        /** Preferir XGATE ao abrir a tela; senão mantém o primeiro da lista. */
+        bancoPadraoFechamento(bancos) {
+            if (!Array.isArray(bancos) || bancos.length === 0) {
+                return null;
+            }
+            const porTipo = bancos.find((b) => b.bank_type === 'xgate');
+            if (porTipo) {
+                return porTipo;
+            }
+            const nomeNorm = (b) => (b.name || '').toString().trim().toUpperCase();
+            const porNomeExato = bancos.find((b) => nomeNorm(b) === 'XGATE');
+            if (porNomeExato) {
+                return porNomeExato;
+            }
+            const porNomeContem = bancos.find((b) => nomeNorm(b).includes('XGATE'));
+            if (porNomeContem) {
+                return porNomeContem;
+            }
+            return bancos[0];
+        },
         async selecionarBanco() {
             try {
                 let response = await this.emprestimoService.searchbancofechamento('');
                 this.bancos = response.data.data;
-                this.banco = this.bancos[0];
+                this.banco = this.bancoPadraoFechamento(this.bancos);
             } catch (e) {
                 console.log(e);
             }
