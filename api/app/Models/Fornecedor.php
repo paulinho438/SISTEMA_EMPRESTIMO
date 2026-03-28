@@ -17,6 +17,7 @@ class Fornecedor extends Model
     protected $fillable = [
         'nome_completo',
         'cpfcnpj',
+        'cnpj',
         'telefone_celular_1',
         'telefone_celular_2',
         'address',

@@ -136,6 +136,16 @@ export default {
 				// CNPJ
 				this.fornecedor.cpfcnpj = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
 			}
+		},
+		/** CNPJ adicional quando o documento principal (acima) for CPF — usado na transferência XGate */
+		formatCnpjAdicional() {
+			if (!this.fornecedor?.cnpj) {
+				return;
+			}
+			let value = String(this.fornecedor.cnpj).replace(/\D/g, '');
+			if (value.length <= 14) {
+				this.fornecedor.cnpj = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+			}
 		}
 		
 	},
@@ -195,8 +205,20 @@ export default {
 			<div class="col-12">
                 <div class="p-fluid formgrid grid">
 					<div class="field col-12 md:col-3">
-                        <label for="state">CPF / CNPJ</label>
+                        <label for="state">CPF / CNPJ (principal)</label>
                         <InputText id="inputmask" :modelValue="fornecedor?.cpfcnpj" v-model="fornecedor.cpfcnpj" @input="formatCpfCnpj" ></InputText>
+                    </div>
+					<div class="field col-12 md:col-6">
+                        <label for="cnpjAdicional">CNPJ adicional (opcional)</label>
+                        <InputText
+							id="cnpjAdicional"
+							:modelValue="fornecedor?.cnpj"
+							v-model="fornecedor.cnpj"
+							placeholder="Se o principal for CPF e existir CNPJ"
+							@input="formatCnpjAdicional"
+							class="w-full"
+						/>
+                        <small class="text-600">Para pagamento XGate: permite escolher CPF ou CNPJ na transferência.</small>
                     </div>
                     <div class="field col-12 md:col-3">
                         <label for="firstname2">Nome Completo</label>

@@ -1731,13 +1731,30 @@ class EmprestimoController extends Controller
                 } elseif (($emprestimo->banco->bank_type ?? 'normal') === 'xgate') {
                     // Usar XGateService para banco XGate
                     try {
+                        $cnpjDigits = preg_replace('/\D/', '', (string) ($emprestimo->client->cnpj ?? ''));
+                        $clienteTemCnpj = strlen($cnpjDigits) >= 14;
+                        $documentoXgate = 'cpf';
+                        if ($clienteTemCnpj) {
+                            $docReq = $request->input('documento_xgate');
+                            if (!in_array($docReq, ['cpf', 'cnpj'], true)) {
+                                DB::rollBack();
+
+                                return response()->json([
+                                    'message' => 'Informe se a transferência deve usar o CPF ou o CNPJ do cliente.',
+                                    'error' => 'documento_xgate_obrigatorio',
+                                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                            }
+                            $documentoXgate = $docReq;
+                        }
+
                         $xgateService = new XGateService($emprestimo->banco);
                         $description = 'Transferência Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo;
                         
                         $response = $xgateService->realizarTransferenciaPixComCliente(
                             $valorPagamento,
                             $emprestimo->client,
-                            $description
+                            $description,
+                            $documentoXgate
                         );
 
                         if (isset($response['success']) && $response['success']) {
@@ -2112,6 +2129,32 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         return substr($digits, 0, 3) . '.' . substr($digits, 3, 3) . '.' . substr($digits, 6, 3) . '-' . substr($digits, 9, 2);
     }
 
+    /**
+     * Fornecedor com CPF em cpfcnpj (11 dígitos) e CNPJ adicional — exige escolha CPF/CNPJ na transferência XGate.
+     */
+    protected function fornecedorRequerEscolhaDocumentoXgate(Fornecedor $fornecedor): bool
+    {
+        $dCpf = preg_replace('/\D/', '', (string) ($fornecedor->cpfcnpj ?? ''));
+        $dCnpjExtra = preg_replace('/\D/', '', (string) ($fornecedor->cnpj ?? ''));
+
+        return strlen($dCpf) === 11 && strlen($dCnpjExtra) >= 14;
+    }
+
+    /**
+     * @return string|null null se faltar documento_xgate quando obrigatório
+     */
+    protected function resolverDocumentoXgateParaFornecedor(Request $request, Fornecedor $fornecedor): ?string
+    {
+        if ($this->fornecedorRequerEscolhaDocumentoXgate($fornecedor)) {
+            $doc = $request->input('documento_xgate');
+
+            return in_array($doc, ['cpf', 'cnpj'], true) ? $doc : null;
+        }
+        $d = preg_replace('/\D/', '', (string) ($fornecedor->cpfcnpj ?? ''));
+
+        return strlen($d) >= 14 ? 'cnpj' : 'cpf';
+    }
+
     function obterSaudacao()
     {
         $hora = date('H');
@@ -2168,12 +2211,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         "error" => 'Fornecedor não possui chave PIX cadastrada'
                     ], Response::HTTP_FORBIDDEN);
                 }
+                $requerEscolhaDocumentoXgate = ($bankType === 'xgate')
+                    && $this->fornecedorRequerEscolhaDocumentoXgate($contaspagar->fornecedor);
                 DB::commit();
                 return response()->json([
                     'creditParty' => [
                         'name' => $contaspagar->fornecedor->nome_completo,
                     ],
                     'chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
+                    'requer_escolha_documento_xgate' => $requerEscolhaDocumentoXgate,
                 ]);
             }
 
@@ -2292,12 +2338,23 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     ], Response::HTTP_FORBIDDEN);
                 }
                 try {
+                    $documentoXgate = $this->resolverDocumentoXgateParaFornecedor($request, $contaspagar->fornecedor);
+                    if ($documentoXgate === null) {
+                        DB::rollBack();
+
+                        return response()->json([
+                            'message' => 'Informe se a transferência deve usar o CPF ou o CNPJ do fornecedor.',
+                            'error' => 'documento_xgate_obrigatorio',
+                        ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                    }
+
                     $xgateService = new XGateService($contaspagar->banco);
                     $description = 'Transferência Título Nº ' . $contaspagar->id . ' para ' . $contaspagar->fornecedor->nome_completo;
-                    $response = $xgateService->realizarTransferenciaPix(
+                    $response = $xgateService->realizarTransferenciaPixComFornecedor(
                         (float) $contaspagar->valor,
-                        $contaspagar->fornecedor->pix_fornecedor,
-                        $description
+                        $contaspagar->fornecedor,
+                        $description,
+                        $documentoXgate
                     );
                     if (isset($response['success']) && $response['success']) {
                         $statusXGate = strtoupper((string) ($response['status'] ?? ''));
@@ -2657,12 +2714,15 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                         "error" => 'Cliente não possui chave PIX cadastrada'
                     ], Response::HTTP_FORBIDDEN);
                 }
+                $cnpjDigitsConsulta = preg_replace('/\D/', '', (string) ($emprestimo->client->cnpj ?? ''));
+                $requerEscolhaDocumentoXgate = ($bankType === 'xgate') && strlen($cnpjDigitsConsulta) >= 14;
                 DB::commit();
                 return response()->json([
                     'creditParty' => [
                         'name' => $emprestimo->client->nome_completo,
                     ],
                     'chave_pix' => $emprestimo->client->pix_cliente,
+                    'requer_escolha_documento_xgate' => $requerEscolhaDocumentoXgate,
                 ]);
             }
 

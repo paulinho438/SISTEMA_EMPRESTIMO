@@ -65,10 +65,71 @@ export default {
             displayConfirmationChavePix: ref(null),
             displayConfirmationNome: ref(null),
             displayConfirmationValor: ref(null),
-            loadingFullScreen: ref(false)
+            loadingFullScreen: ref(false),
+            /** XGate: cliente com CPF e CNPJ — escolha antes da consulta/confirmação */
+            displayModalDocumentoXgate: ref(false),
+            xgateDocumentoTipo: ref(null)
         };
     },
     methods: {
+        clienteTemCnpjPreenchido() {
+            const raw = this.city?.cnpj;
+            if (raw === null || raw === undefined || String(raw).trim() === '') {
+                return false;
+            }
+            const digits = String(raw).replace(/\D/g, '');
+            return digits.length >= 14;
+        },
+        fecharModalDocumentoXgate() {
+            this.displayModalDocumentoXgate = false;
+        },
+        confirmarDocumentoXgate(tipo) {
+            this.xgateDocumentoTipo = tipo;
+            this.displayModalDocumentoXgate = false;
+            this.executarConsultaTransferenciaWalletOuPix();
+        },
+        executarConsultaTransferenciaWalletOuPix() {
+            let valor = 0;
+            if (this.client?.valor_deposito) {
+                valor = this.client.valor_deposito;
+            } else if (this.client?.valor) {
+                valor = this.client.valor;
+            }
+
+            const isXgate = this.banco?.bank_type === 'xgate';
+            const isApix = this.banco?.bank_type === 'apix';
+
+            this.loadingFullScreen = true;
+            this.emprestimoService
+                .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
+                .then((response) => {
+                    const nomeBeneficiario = response.data?.creditParty?.name ?? this.city?.nome_completo ?? 'Não informado';
+                    let mensagem = `Tem certeza que deseja realizar a transferência de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
+                    if ((isXgate || isApix) && response.data?.chave_pix) {
+                        this.displayConfirmationChavePix = response.data.chave_pix;
+                        this.displayConfirmationNome = nomeBeneficiario;
+                        this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    } else {
+                        this.displayConfirmationChavePix = null;
+                        this.displayConfirmationNome = null;
+                        this.displayConfirmationValor = null;
+                    }
+                    this.displayConfirmationMessage = mensagem;
+                    this.displayConfirmation = true;
+                })
+                .catch((error) => {
+                    if (error?.response?.status != 422) {
+                        this.toast.add({
+                            severity: ToastSeverity.ERROR,
+                            detail: UtilService.message(error.response.data),
+                            life: 3000
+                        });
+                    }
+                })
+                .finally(() => {
+                    this.loadingFullScreen = false;
+                });
+        },
         changeLoading() {
             this.loading = !this.loading;
         },
@@ -113,120 +174,48 @@ export default {
             this.client.juros = emprestimo.juros;
         },
         realizarTransferencia() {
-            this.loadingFullScreen = true;
-            let valor = 0;
-
-            if(this.client?.valor_deposito) {
-                valor = this.client.valor_deposito;
-            } else if (this.client?.valor) {
-                valor = this.client.valor;
+            if (!this.route.params?.id) {
+                return;
             }
 
-            if (this.route.params?.id) {
-                const isXgate = this.banco?.bank_type === 'xgate';
-                const isApix = this.banco?.bank_type === 'apix';
-                if (this.banco.wallet || isXgate || isApix) {
-                    this.emprestimoService
-                        .efetuarPagamentoEmprestimoConsulta(this.route.params.id)
-                        .then((response) => {
-                            this.loadingFullScreen = false;
-                            const nomeBeneficiario = response.data?.creditParty?.name ?? this.city?.nome_completo ?? 'Não informado';
-                            let mensagem = `Tem certeza que deseja realizar a transferência de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
-                            if ((isXgate || isApix) && response.data?.chave_pix) {
-                                this.displayConfirmationChavePix = response.data.chave_pix;
-                                this.displayConfirmationNome = nomeBeneficiario;
-                                this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                            } else {
-                                this.displayConfirmationChavePix = null;
-                                this.displayConfirmationNome = null;
-                                this.displayConfirmationValor = null;
-                            }
-                            this.displayConfirmationMessage = mensagem;
-                            this.displayConfirmation = true;
-
-                            // this.confirmPopup.require({
-                            //     target: event.target,
-                            //     message: `Tem certeza que deseja realizar o de ${this.client?.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${response.data.creditParty.name}?`,
-                            //     icon: 'pi pi-exclamation-triangle',
-                            //     acceptLabel: 'Sim',
-                            //     rejectLabel: 'Não',
-                            //     accept: () => {
-                            //         if (this.route.params?.id) {
-                            //             this.emprestimoService
-                            //                 .efetuarPagamentoEmprestimo(this.route.params.id)
-                            //                 .then((response) => {
-                            //                     if (response) {
-                            //                         this.toast.add({
-                            //                             severity: ToastSeverity.SUCCESS,
-                            //                             detail: 'Pagamento Efetuado',
-                            //                             life: 3000
-                            //                         });
-                            //                         setTimeout(() => {
-                            //                             this.router.push(`/aprovacao`);
-                            //                         }, 1200);
-                            //                     }
-                            //                 })
-                            //                 .catch((error) => {
-                            //                     if (error?.response?.status != 422) {
-                            //                         this.toast.add({
-                            //                             severity: ToastSeverity.ERROR,
-                            //                             detail: UtilService.message(error.response.data),
-                            //                             life: 3000
-                            //                         });
-                            //                     }
-                            //                 })
-                            //                 .finally(() => {});
-                            //         }
-                            //     },
-                            //     reject: () => {
-                            //         this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
-                            //     }
-                            // });
-                        })
-                        .catch((error) => {
-                            if (error?.response?.status != 422) {
-                                this.toast.add({
-                                    severity: ToastSeverity.ERROR,
-                                    detail: UtilService.message(error.response.data),
-                                    life: 3000
-                                });
-                            }
-                        })
-                        .finally(() => {
-                            this.loadingFullScreen = false;
-                        });
-                } else {
-                    this.emprestimoService
-                        .efetuarPagamentoEmprestimo(this.route.params.id)
-                        .then((response) => {
-                            if (response) {
-                                this.toast.add({
-                                    severity: ToastSeverity.SUCCESS,
-                                    detail: 'Pagamento Efetuado',
-                                    life: 3000
-                                });
-                                setTimeout(() => {
-                                    this.router.push(`/aprovacao`);
-                                }, 1200);
-                            }
-                        })
-                        .catch((error) => {
-                            if (error?.response?.status != 422) {
-                                this.toast.add({
-                                    severity: ToastSeverity.ERROR,
-                                    detail: UtilService.message(error.response.data),
-                                    life: 3000
-                                });
-                            }
-                        })
-                        .finally(() => {
-                            this.loadingFullScreen = false;
-                        });
-                }
-
-                
+            const isXgate = this.banco?.bank_type === 'xgate';
+            if (isXgate && this.clienteTemCnpjPreenchido()) {
+                this.displayModalDocumentoXgate = true;
+                return;
             }
 
+            const isApix = this.banco?.bank_type === 'apix';
+            if (this.banco.wallet || isXgate || isApix) {
+                this.executarConsultaTransferenciaWalletOuPix();
+            } else {
+                this.loadingFullScreen = true;
+                this.emprestimoService
+                    .efetuarPagamentoEmprestimo(this.route.params.id)
+                    .then((response) => {
+                        if (response) {
+                            this.toast.add({
+                                severity: ToastSeverity.SUCCESS,
+                                detail: 'Pagamento Efetuado',
+                                life: 3000
+                            });
+                            setTimeout(() => {
+                                this.router.push(`/aprovacao`);
+                            }, 1200);
+                        }
+                    })
+                    .catch((error) => {
+                        if (error?.response?.status != 422) {
+                            this.toast.add({
+                                severity: ToastSeverity.ERROR,
+                                detail: UtilService.message(error.response.data),
+                                life: 3000
+                            });
+                        }
+                    })
+                    .finally(() => {
+                        this.loadingFullScreen = false;
+                    });
+            }
         },
         reprovarEmprestimo() {
             if (this.route.params?.id) {
@@ -363,14 +352,19 @@ export default {
             this.displayConfirmationChavePix = null;
             this.displayConfirmationNome = null;
             this.displayConfirmationValor = null;
+            this.xgateDocumentoTipo = null;
             this.toast.add({ severity: 'info', summary: 'Cancelar', detail: 'Pagamento não realizado!', life: 3000 });
         },
 
         closeConfirmationPagamento() {
             this.displayConfirmation = false;
             this.loadingFullScreen = true;
+            const payload = {};
+            if (this.banco?.bank_type === 'xgate' && this.clienteTemCnpjPreenchido() && this.xgateDocumentoTipo) {
+                payload.documento_xgate = this.xgateDocumentoTipo;
+            }
             this.emprestimoService
-                .efetuarPagamentoEmprestimo(this.route.params.id)
+                .efetuarPagamentoEmprestimo(this.route.params.id, payload)
                 .then((response) => {
                     if (response) {
                         this.toast.add({
@@ -394,6 +388,7 @@ export default {
                 })
                 .finally(() => {
                     this.loadingFullScreen = false;
+                    this.xgateDocumentoTipo = null;
                 });
         }
     },
@@ -410,6 +405,22 @@ export default {
 
 <template>
     <FullScreenLoading :isLoading="loadingFullScreen" />
+
+    <Dialog
+        header="Documento para a transferência (XGate)"
+        v-model:visible="displayModalDocumentoXgate"
+        :style="{ width: '440px' }"
+        :modal="true"
+    >
+        <p class="m-0 line-height-3">
+            Este cliente possui <strong>CPF</strong> e <strong>CNPJ</strong> cadastrados. Qual documento deve ser enviado à API da XGate na transferência PIX?
+        </p>
+        <template #footer>
+            <Button label="Cancelar" icon="pi pi-times" class="p-button-text" @click="fecharModalDocumentoXgate" />
+            <Button label="Usar CPF" icon="pi pi-id-card" class="p-button-secondary" @click="confirmarDocumentoXgate('cpf')" />
+            <Button label="Usar CNPJ" icon="pi pi-briefcase" @click="confirmarDocumentoXgate('cnpj')" />
+        </template>
+    </Dialog>
 
     <Dialog header="Confirmation" v-model:visible="displayConfirmation" :style="{ width: displayConfirmationChavePix ? '420px' : '350px' }" :modal="true">
         <div class="flex flex-column gap-2">

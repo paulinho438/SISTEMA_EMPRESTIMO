@@ -22,6 +22,7 @@ class FornecedorResource extends JsonResource
             "id"                    => $this->id,
             "nome_completo"         => $this->nome_completo,
             "cpfcnpj"               => $this->cpfcnpj,
+            "cnpj"                  => $this->cnpj,
             "telefone_celular_1"    => $this->telefone_celular_1,
             "telefone_celular_2"    => $this->telefone_celular_2,
             "address"               => $this->address,

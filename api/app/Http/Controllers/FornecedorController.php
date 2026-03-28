@@ -103,6 +103,7 @@ class FornecedorController extends Controller
 
                 $EditFornecedor->nome_completo = $dados['nome_completo'];
                 $EditFornecedor->cpfcnpj = $dados['cpfcnpj'];
+                $EditFornecedor->cnpj = $dados['cnpj'] ?? null;
                 $EditFornecedor->telefone_celular_1 = $dados['telefone_celular_1'];
                 $EditFornecedor->telefone_celular_2 = $dados['telefone_celular_2'];
                 $EditFornecedor->address = $dados['address'];

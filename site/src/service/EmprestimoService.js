@@ -118,16 +118,16 @@ export default class EmprestimoService {
 		return await axios.get(`${apiPath}/parcela/${id}/cancelarbaixamanual`);
 	};
 
-	efetuarPagamentoEmprestimo = async (id) => {
-		return await axios.post(`${apiPath}/contaspagar/pagamentos/transferencia/${id}`);
+	efetuarPagamentoEmprestimo = async (id, body = {}) => {
+		return await axios.post(`${apiPath}/contaspagar/pagamentos/transferencia/${id}`, body);
 	};
 
 	efetuarPagamentoEmprestimoConsulta = async (id) => {
 		return await axios.post(`${apiPath}/contaspagar/pagamentos/transferenciaconsultar/${id}`);
 	};
 
-	efetuarPagamentoTitulo = async (id) => {
-		return await axios.post(`${apiPath}/contaspagar/pagamentos/transferenciatitulo/${id}`);
+	efetuarPagamentoTitulo = async (id, body = {}) => {
+		return await axios.post(`${apiPath}/contaspagar/pagamentos/transferenciatitulo/${id}`, body);
 	};
 
 	efetuarPagamentoTituloConsulta = async (id) => {

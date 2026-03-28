@@ -684,12 +684,14 @@ class XGateService
      * @param float $valor Valor da transferência
      * @param \App\Models\Client $cliente Cliente destinatário
      * @param string $description Descrição da transferência
+     * @param string $documentoParaTransferencia "cpf" ou "cnpj" — quando o cliente tem CNPJ, define qual documento enviar à API
      * @return array
      */
     public function realizarTransferenciaPixComCliente(
         float $valor,
         $cliente,
-        string $description = 'Transferência PIX'
+        string $description = 'Transferência PIX',
+        string $documentoParaTransferencia = 'cpf'
     ) {
         try {
             if (!$cliente->pix_cliente) {
@@ -699,8 +701,19 @@ class XGateService
             $pixKey = $cliente->pix_cliente;
             $pixKeyType = $this->determinarTipoChavePix($pixKey);
 
-            // Preparar dados do cliente
-            $document = preg_replace('/\D/', '', $cliente->cpf);
+            $documentoParaTransferencia = strtolower($documentoParaTransferencia) === 'cnpj' ? 'cnpj' : 'cpf';
+            if ($documentoParaTransferencia === 'cnpj') {
+                $document = preg_replace('/\D/', '', (string) ($cliente->cnpj ?? ''));
+                if (strlen($document) < 14) {
+                    throw new \Exception('CNPJ do cliente inválido ou não informado');
+                }
+            } else {
+                $document = preg_replace('/\D/', '', (string) ($cliente->cpf ?? ''));
+                if (strlen($document) < 11) {
+                    throw new \Exception('CPF do cliente inválido ou não informado');
+                }
+            }
+
             $customerData = [
                 'name' => $cliente->nome_completo,
                 'document' => $document
@@ -821,6 +834,156 @@ class XGateService
                 'success' => false,
                 'error' => $e->getMessage(),
                 'last_response' => $this->lastResponse
+            ];
+        }
+    }
+
+    /**
+     * Transferência PIX XGate usando dados do fornecedor (nome + documento CPF ou CNPJ).
+     * Substitui realizarTransferenciaPix (que usava a chave PIX como documento).
+     *
+     * @param string $documentoParaTransferencia "cpf" ou "cnpj"
+     */
+    public function realizarTransferenciaPixComFornecedor(
+        float $valor,
+        $fornecedor,
+        string $description = 'Transferência PIX',
+        string $documentoParaTransferencia = 'cpf'
+    ) {
+        try {
+            if (!$fornecedor->pix_fornecedor) {
+                throw new \Exception('Fornecedor não possui chave PIX cadastrada');
+            }
+
+            $pixKey = $fornecedor->pix_fornecedor;
+            $pixKeyType = $this->determinarTipoChavePix($pixKey);
+
+            $documentoParaTransferencia = strtolower($documentoParaTransferencia) === 'cnpj' ? 'cnpj' : 'cpf';
+            if ($documentoParaTransferencia === 'cnpj') {
+                $cnpjCol = preg_replace('/\D/', '', (string) ($fornecedor->cnpj ?? ''));
+                $legacy = preg_replace('/\D/', '', (string) ($fornecedor->cpfcnpj ?? ''));
+                if (strlen($cnpjCol) >= 14) {
+                    $document = $cnpjCol;
+                } elseif (strlen($legacy) >= 14) {
+                    $document = $legacy;
+                } else {
+                    throw new \Exception('CNPJ do fornecedor inválido ou não informado');
+                }
+            } else {
+                $document = preg_replace('/\D/', '', (string) ($fornecedor->cpfcnpj ?? ''));
+                if (strlen($document) !== 11) {
+                    throw new \Exception('CPF do fornecedor inválido ou não informado (documento principal deve ser CPF com 11 dígitos)');
+                }
+            }
+
+            $customerData = [
+                'name' => $fornecedor->nome_completo,
+                'document' => $document,
+            ];
+
+            $customerId = $this->criarOuObterCliente($customerData);
+
+            $pixKeysListResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key", []);
+            if ($pixKeysListResponse->successful()) {
+                $pixKeysList = $pixKeysListResponse->json();
+                $pixKeysList = is_array($pixKeysList) ? $pixKeysList : [];
+                foreach ($pixKeysList as $keyItem) {
+                    if (isset($keyItem['key']) && $this->chavePixCorresponde($pixKey, $keyItem['key']) && !empty($keyItem['_id'])) {
+                        $this->removerChavePix($customerId, $keyItem['_id']);
+                        Log::channel('xgate')->info('Chave PIX existente removida para recadastro com tipo correto.', [
+                            'customer_id' => $customerId,
+                            'key_id' => $keyItem['_id'],
+                        ]);
+                        break;
+                    }
+                }
+            }
+
+            $keyValue = in_array($pixKeyType, ['PHONE', 'PHONENUMBER'], true) ? $this->formatarChavePixTelefone($pixKey) : $pixKey;
+            $pixKeyData = [
+                'key' => $keyValue,
+                'type' => $pixKeyType,
+            ];
+
+            $pixResponse = $this->makeRequest('POST', "/pix/customer/{$customerId}/key", $pixKeyData);
+
+            if (!$pixResponse->successful()) {
+                $pixData = $pixResponse->json();
+                throw new \Exception('Erro ao criar chave PIX: ' . ($pixData['message'] ?? 'Erro desconhecido'));
+            }
+
+            $currencies = $this->getCurrenciesWithdraw();
+            $pixCurrency = null;
+            foreach ($currencies as $currency) {
+                if (isset($currency['type']) && $currency['type'] === 'PIX') {
+                    $pixCurrency = $currency;
+                    break;
+                }
+            }
+
+            if (!$pixCurrency) {
+                throw new \Exception('Moeda PIX não encontrada para saque na conta XGate');
+            }
+
+            $pixKeysResponse = $this->makeRequest('GET', "/pix/customer/{$customerId}/key");
+            $pixKeys = $pixKeysResponse->json();
+
+            $pixKeyToUse = null;
+            foreach ($pixKeys as $key) {
+                if ($this->chavePixCorresponde($pixKey, $key['key'] ?? '')) {
+                    $pixKeyToUse = $key;
+                    break;
+                }
+            }
+
+            if (!$pixKeyToUse) {
+                throw new \Exception('Chave PIX não encontrada para o fornecedor');
+            }
+
+            $pixKeyToUse['type'] = $this->determinarTipoChavePix($pixKey);
+
+            $withdrawData = [
+                'amount' => $valor,
+                'customerId' => $customerId,
+                'currency' => $pixCurrency,
+                'pixKey' => $pixKeyToUse,
+            ];
+
+            $inicioAtualizacao = microtime(true);
+
+            $response = $this->makeRequest('POST', '/withdraw', $withdrawData);
+
+            $duracaoAtualizacao = round(microtime(true) - $inicioAtualizacao, 4);
+            Log::channel('xgate')->info("CHAMADA XGATE TRANSFERÊNCIA PIX COM FORNECEDOR - Tempo para chamar: {$duracaoAtualizacao}s", [
+                'valor' => $valor,
+                'fornecedor_id' => $fornecedor->id,
+            ]);
+
+            if (!$response->successful()) {
+                $errorData = $response->json();
+                $errorMessage = $errorData['message'] ?? 'Erro ao realizar transferência na API XGate';
+
+                throw new \Exception($errorMessage);
+            }
+
+            $responseData = $response->json();
+
+            return [
+                'success' => true,
+                'transaction_id' => $responseData['_id'] ?? null,
+                'status' => $responseData['status'] ?? 'PENDING',
+                'message' => $responseData['message'] ?? 'Transferência iniciada',
+                'response' => $responseData,
+            ];
+        } catch (\Exception $e) {
+            Log::channel('xgate')->error('Erro ao realizar transferência PIX XGate com fornecedor: ' . $e->getMessage(), [
+                'last_response' => $this->lastResponse,
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'last_response' => $this->lastResponse,
             ];
         }
     }
