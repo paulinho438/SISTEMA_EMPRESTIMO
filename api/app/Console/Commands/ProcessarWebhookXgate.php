@@ -121,7 +121,7 @@ class ProcessarWebhookXgate extends Command
         }
 
         // 6) Pagamento Saldo Pendente
-        $pagamentoSaldo = PagamentoSaldoPendente::where('identificador', $txId)->whereNull('dt_baixa')->first();
+        $pagamentoSaldo = PagamentoSaldoPendente::where('identificador', $txId)->first();
         if ($pagamentoSaldo) {
             $this->baixaPagamentoSaldoPendente($pagamentoSaldo, $valor, $horario, $pagadorNome, $txId);
             return true;
@@ -440,6 +440,9 @@ class ProcessarWebhookXgate extends Command
                 ->orderBy('parcela', 'asc')
                 ->first();
         }
+
+        $pagamento->dt_baixa = Carbon::parse($horario)->format('Y-m-d');
+        $pagamento->save();
 
         $proximaParcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
             ->whereNull('dt_baixa')

@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\File;
 
 
 use App\Services\BcodexService;
+use App\Services\MigrarEmprestimoBancoService;
 use App\Services\ApixService;
 use App\Services\CoraService;
 use App\Services\VelanaService;
@@ -2874,125 +2875,36 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
      * Migra um empréstimo para outro banco (ex: Bcodex -> APIX ou vice-versa).
      * Atualiza referências e invalida cobranças PIX antigas para que novas sejam geradas no banco destino.
      */
-    public function migrarBanco(Request $request, $id)
+    public function migrarBanco(Request $request, $id, MigrarEmprestimoBancoService $migrarEmprestimoBancoService)
     {
-        DB::beginTransaction();
-        try {
-            $validator = Validator::make($request->all(), [
-                'banco_id' => 'required|exists:bancos,id',
-            ]);
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => $validator->errors()->first(),
-                    'error' => $validator->errors()->first(),
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $emprestimo = Emprestimo::with(['banco', 'parcelas.contasreceber', 'quitacao', 'pagamentominimo', 'pagamentosaldopendente'])
-                ->find($id);
-
-            if (!$emprestimo) {
-                return response()->json([
-                    'message' => 'Empréstimo não encontrado.',
-                    'error' => 'Empréstimo não encontrado.',
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            $novoBancoId = (int) $request->banco_id;
-            $bancoAtualId = (int) $emprestimo->banco_id;
-
-            if ($novoBancoId === $bancoAtualId) {
-                return response()->json([
-                    'message' => 'O banco destino deve ser diferente do banco atual.',
-                    'error' => 'Banco destino igual ao atual.',
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $bancoDestino = Banco::find($novoBancoId);
-            if (!$bancoDestino) {
-                return response()->json([
-                    'message' => 'Banco destino não encontrado.',
-                    'error' => 'Banco destino não encontrado.',
-                ], Response::HTTP_NOT_FOUND);
-            }
-
-            $bankTypesPermitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
-            $bankType = ($bancoDestino->wallet ? 'bcodex' : null) ?? $bancoDestino->bank_type ?? 'normal';
-            if (!in_array($bankType, $bankTypesPermitidos)) {
-                return response()->json([
-                    'message' => 'O banco destino deve ser do tipo Bcodex, APIX, XGate, Velana ou Cora.',
-                    'error' => 'Banco destino incompatível com cobrança PIX.',
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $temParcelaPendente = $emprestimo->parcelas->contains(fn ($p) => $p->dt_baixa === null);
-            if (!$temParcelaPendente) {
-                return response()->json([
-                    'message' => 'Não é possível migrar empréstimo quitado.',
-                    'error' => 'Empréstimo quitado.',
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            Emprestimo::where('id', $id)->update(['banco_id' => $novoBancoId]);
-            Contaspagar::where('emprestimo_id', $id)->update(['banco_id' => $novoBancoId]);
-
-            $parcelaIds = $emprestimo->parcelas->pluck('id')->toArray();
-            if (!empty($parcelaIds)) {
-                Contasreceber::whereIn('parcela_id', $parcelaIds)->update(['banco_id' => $novoBancoId]);
-            }
-
-            Parcela::where('emprestimo_id', $id)->update([
-                'identificador' => null,
-                'chave_pix' => null,
-                'ult_dt_geracao_pix' => null,
-            ]);
-
-            Quitacao::where('emprestimo_id', $id)->update([
-                'identificador' => null,
-                'chave_pix' => null,
-                'ult_dt_geracao_pix' => null,
-            ]);
-
-            PagamentoMinimo::where('emprestimo_id', $id)->update([
-                'identificador' => null,
-                'chave_pix' => null,
-                'ult_dt_geracao_pix' => null,
-            ]);
-
-            PagamentoSaldoPendente::where('emprestimo_id', $id)->update([
-                'identificador' => null,
-                'chave_pix' => null,
-                'ult_dt_geracao_pix' => null,
-            ]);
-
-            DB::commit();
-
-            $emprestimo->refresh();
-            $emprestimo->load('banco');
-
-            if ($bankType === 'apix') {
-                ProcessarPixApixJob::dispatch($emprestimo, []);
-            } elseif ($bankType === 'xgate') {
-                ProcessarPixXgateJob::dispatch($emprestimo, []);
-            } elseif ($bankType === 'bcodex' || $bancoDestino->wallet == 1) {
-                ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, []);
-            }
-
+        $validator = Validator::make($request->all(), [
+            'banco_id' => 'required|exists:bancos,id',
+        ]);
+        if ($validator->fails()) {
             return response()->json([
-                'message' => 'Empréstimo migrado para o banco ' . ($bancoDestino->name ?? 'destino') . ' com sucesso.',
-                'emprestimo' => $emprestimo,
-            ], Response::HTTP_OK);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erro ao migrar empréstimo de banco: ' . $e->getMessage(), [
-                'emprestimo_id' => $id,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return response()->json([
-                'message' => 'Erro ao migrar empréstimo para o novo banco.',
-                'error' => $e->getMessage(),
-            ], Response::HTTP_FORBIDDEN);
+                'message' => $validator->errors()->first(),
+                'error' => $validator->errors()->first(),
+            ], Response::HTTP_BAD_REQUEST);
         }
+
+        $result = $migrarEmprestimoBancoService->migrar((int) $id, (int) $request->banco_id);
+
+        if (!$result['success']) {
+            $status = str_contains($result['message'], 'não encontrado') ? Response::HTTP_NOT_FOUND : Response::HTTP_BAD_REQUEST;
+            if (str_contains($result['message'], 'Erro ao migrar')) {
+                $status = Response::HTTP_FORBIDDEN;
+            }
+
+            return response()->json([
+                'message' => $result['message'],
+                'error' => $result['message'],
+            ], $status);
+        }
+
+        return response()->json([
+            'message' => $result['message'],
+            'emprestimo' => $result['emprestimo'],
+        ], Response::HTTP_OK);
     }
 
     public function cancelarBaixaManual(Request $request, $id)
@@ -4562,69 +4474,51 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             ->first();
                     }
 
-                    $proximaParcela = $parcela->emprestimo->parcelas->firstWhere('dt_baixa', null);
+                    $pagamento->dt_baixa = Carbon::parse($horario)->format('Y-m-d');
+                    $pagamento->save();
+
+                    $proximaParcela = $pagamento->emprestimo->parcelas->firstWhere('dt_baixa', null);
 
                     if ($proximaParcela) {
                         $pagamento->valor = $proximaParcela->saldo;
                         $pagamento->save();
 
-                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $parcela->emprestimo->banco->document, null);
+                        $response = $this->bcodexService->criarCobranca($proximaParcela->saldo, $pagamento->emprestimo->banco->document, null);
 
                         if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
                             $pagamento->identificador = $response->json()['txid'];
                             $pagamento->chave_pix = $response->json()['pixCopiaECola'];
                             $pagamento->save();
                         }
-                    }
 
-                    if ($proximaParcela->contasreceber) {
-                        $proximaParcela->contasreceber->status = 'Pago';
-                        $proximaParcela->contasreceber->dt_baixa = date('Y-m-d');
-                        $proximaParcela->contasreceber->forma_recebto = 'PIX';
-                        $proximaParcela->contasreceber->save();
+                        // Próxima parcela segue em aberto até novo pagamento — não marcar contas a receber como Pago aqui.
 
-                        # MOVIMENTAÇÃO FINANCEIRA DE ENTRADA REFERENTE A BAIXA MANUAL
+                        $emprestimoRef = $pagamento->emprestimo;
 
+                        if ($emprestimoRef->quitacao && $emprestimoRef->quitacao->chave_pix) {
+                            $emprestimoRef->quitacao->valor = $emprestimoRef->parcelas[0]->totalPendente();
+                            $emprestimoRef->quitacao->saldo = $emprestimoRef->parcelas[0]->totalPendente();
+                            $emprestimoRef->quitacao->save();
 
-                        // $movimentacaoFinanceira = [];
-                        // $movimentacaoFinanceira['banco_id'] = $proximaParcela->emprestimo->banco_id;
-                        // $movimentacaoFinanceira['company_id'] = $proximaParcela->emprestimo->company_id;
-                        // $movimentacaoFinanceira['descricao'] = 'Juros de ' . $proximaParcela->emprestimo->banco->juros . '% referente a baixa automática via pix da proximaParcela Nº ' . $proximaParcela->proximaParcela . ' do emprestimo n° ' . $proximaParcela->emprestimo_id;
-                        // $movimentacaoFinanceira['tipomov'] = 'S';
-                        // $movimentacaoFinanceira['proximaParcela_id'] = $proximaParcela->id;
-                        // $movimentacaoFinanceira['dt_movimentacao'] = date('Y-m-d');
-                        // $movimentacaoFinanceira['valor'] = $juros;
-
-                        // Movimentacaofinanceira::create($movimentacaoFinanceira);
-
-                        if ($parcela->emprestimo->quitacao->chave_pix) {
-
-                            $parcela->emprestimo->quitacao->valor = $parcela->emprestimo->parcelas[0]->totalPendente();
-                            $parcela->emprestimo->quitacao->saldo = $parcela->emprestimo->parcelas[0]->totalPendente();
-                            $parcela->emprestimo->quitacao->save();
-
-                            $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
-                            $response = $this->bcodexService->criarCobranca($parcela->emprestimo->parcelas[0]->totalPendente(), $parcela->emprestimo->banco->document, null);
+                            $response = $this->bcodexService->criarCobranca($emprestimoRef->parcelas[0]->totalPendente(), $emprestimoRef->banco->document, null);
 
                             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                                $parcela->emprestimo->quitacao->identificador = $response->json()['txid'];
-                                $parcela->emprestimo->quitacao->chave_pix = $response->json()['pixCopiaECola'];
-                                $parcela->emprestimo->quitacao->save();
+                                $emprestimoRef->quitacao->identificador = $response->json()['txid'];
+                                $emprestimoRef->quitacao->chave_pix = $response->json()['pixCopiaECola'];
+                                $emprestimoRef->quitacao->save();
                             }
                         }
 
-                        if ($proximaParcela->emprestimo->pagamentosaldopendente && $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix) {
+                        if ($emprestimoRef->pagamentosaldopendente && $emprestimoRef->pagamentosaldopendente->chave_pix) {
+                            $emprestimoRef->pagamentosaldopendente->valor = $proximaParcela->saldo;
+                            $emprestimoRef->pagamentosaldopendente->save();
 
-                            $proximaParcela->emprestimo->pagamentosaldopendente->valor = $proximaParcela->saldo;
-
-                            $proximaParcela->emprestimo->pagamentosaldopendente->save();
-                            $txId = $proximaParcela->emprestimo->pagamentosaldopendente->identificador ? $proximaParcela->emprestimo->pagamentosaldopendente->identificador : null;
-                            $response = $this->bcodexService->criarCobranca($proximaParcela->emprestimo->pagamentosaldopendente->valor, $proximaParcela->emprestimo->banco->document, null);
+                            $response = $this->bcodexService->criarCobranca($emprestimoRef->pagamentosaldopendente->valor, $emprestimoRef->banco->document, null);
 
                             if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                                $proximaParcela->emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'];
-                                $proximaParcela->emprestimo->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
-                                $proximaParcela->emprestimo->pagamentosaldopendente->save();
+                                $emprestimoRef->pagamentosaldopendente->identificador = $response->json()['txid'];
+                                $emprestimoRef->pagamentosaldopendente->chave_pix = $response->json()['pixCopiaECola'];
+                                $emprestimoRef->pagamentosaldopendente->save();
                             }
                         }
                     }

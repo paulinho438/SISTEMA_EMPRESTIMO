@@ -533,7 +533,7 @@ class ProcessarWebhookCobranca extends Command
                             continue;
                         }
 
-                        $pagamento = PagamentoSaldoPendente::where('identificador', $txId)->whereNull('dt_baixa')->first();
+                        $pagamento = PagamentoSaldoPendente::where('identificador', $txId)->first();
                         if ($pagamento) {
                             $emprestimo = $pagamento->emprestimo; // manter ref estável
 
@@ -642,6 +642,9 @@ class ProcessarWebhookCobranca extends Command
                                     ->first();
                             }
 
+                            $pagamento->dt_baixa = Carbon::parse($horario)->format('Y-m-d');
+                            $pagamento->save();
+
                             // Próxima parcela após o pagamento
                             $proximaParcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
                                 ->whereNull('dt_baixa')
@@ -659,38 +662,33 @@ class ProcessarWebhookCobranca extends Command
                                     $pagamento->save();
                                 }
 
-                                if ($proximaParcela->contasreceber) {
-                                    $proximaParcela->contasreceber->status        = 'Pago';
-                                    $proximaParcela->contasreceber->dt_baixa      = date('Y-m-d');
-                                    $proximaParcela->contasreceber->forma_recebto = 'PIX';
-                                    $proximaParcela->contasreceber->save();
+                                // Próxima parcela segue em aberto até haver pagamento — não marcar contas a receber como Pago aqui.
 
-                                    // Recalcula/recobra Quitação
-                                    if ($emprestimo?->quitacao?->chave_pix) {
-                                        $totalPendente = $emprestimo->parcelas[0]->totalPendente() ?? 0;
-                                        $emprestimo->quitacao->valor = $totalPendente;
-                                        $emprestimo->quitacao->saldo = $totalPendente;
+                                // Recalcula/recobra Quitação
+                                if ($emprestimo?->quitacao?->chave_pix) {
+                                    $totalPendente = $emprestimo->parcelas[0]->totalPendente() ?? 0;
+                                    $emprestimo->quitacao->valor = $totalPendente;
+                                    $emprestimo->quitacao->saldo = $totalPendente;
+                                    $emprestimo->quitacao->save();
+
+                                    $response = $this->bcodexService->criarCobranca($totalPendente, $emprestimo->banco->document, null);
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                        $emprestimo->quitacao->identificador = $response->json()['txid'] ?? null;
+                                        $emprestimo->quitacao->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
                                         $emprestimo->quitacao->save();
-
-                                        $response = $this->bcodexService->criarCobranca($totalPendente, $emprestimo->banco->document, null);
-                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                                            $emprestimo->quitacao->identificador = $response->json()['txid'] ?? null;
-                                            $emprestimo->quitacao->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
-                                            $emprestimo->quitacao->save();
-                                        }
                                     }
+                                }
 
-                                    // Recalcula/recobra Saldo Pendente
-                                    if ($emprestimo?->pagamentosaldopendente?->chave_pix) {
-                                        $emprestimo->pagamentosaldopendente->valor = (float)$proximaParcela->saldo;
+                                // Recalcula/recobra Saldo Pendente (valor da próxima cobrança, sem quitar parcela no financeiro)
+                                if ($emprestimo?->pagamentosaldopendente?->chave_pix) {
+                                    $emprestimo->pagamentosaldopendente->valor = (float)$proximaParcela->saldo;
+                                    $emprestimo->pagamentosaldopendente->save();
+
+                                    $response = $this->bcodexService->criarCobranca($emprestimo->pagamentosaldopendente->valor, $emprestimo->banco->document, null);
+                                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                                        $emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'] ?? null;
+                                        $emprestimo->pagamentosaldopendente->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
                                         $emprestimo->pagamentosaldopendente->save();
-
-                                        $response = $this->bcodexService->criarCobranca($emprestimo->pagamentosaldopendente->valor, $emprestimo->banco->document, null);
-                                        if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                                            $emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'] ?? null;
-                                            $emprestimo->pagamentosaldopendente->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
-                                            $emprestimo->pagamentosaldopendente->save();
-                                        }
                                     }
                                 }
                             }
