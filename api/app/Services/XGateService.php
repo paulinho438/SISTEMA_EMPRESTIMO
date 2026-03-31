@@ -351,7 +351,6 @@ class XGateService
 
             // CPF sempre apenas dígitos (principal campo a atualizar quando cliente já existe)
             $document = preg_replace('/\D/', '', (string) $customerData['document']);
-            $document = strlen($document) >= 11 ? str_pad(substr($document, -11), 11, '0', STR_PAD_LEFT) : str_pad($document, 11, '0', STR_PAD_LEFT);
 
             $payload = [
                 'name' => $customerData['name'],
