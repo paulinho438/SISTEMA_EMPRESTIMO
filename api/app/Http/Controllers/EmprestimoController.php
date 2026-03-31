@@ -1824,7 +1824,7 @@ class EmprestimoController extends Controller
                             $emprestimo->banco->save();
 
                             // Job específico XGate: comprovante, cobranças via API XGate, envio msg/vídeo/áudio
-                            ProcessarPixXgateJob::dispatch($emprestimo, $array);
+                            ProcessarPixXgateJob::dispatch($emprestimo, $array, $documentoXgate);
 
                             Log::channel('xgate')->info('Pagamento XGate autorizado e comprovante enfileirado', [
                                 'emprestimo_id' => $emprestimo->id,

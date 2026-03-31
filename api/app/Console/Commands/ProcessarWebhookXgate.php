@@ -209,15 +209,24 @@ class ProcessarWebhookXgate extends Command
 
         // Uma movimentação de saída de R$ 0,30 (taxa XGate) por transação recebida
         $descricaoTaxa = 'Taxa XGate (R$ ' . number_format(self::TAXA_XGATE, 2, ',', '.') . ')' . $sufixoId;
-        Movimentacaofinanceira::create([
-            'banco_id'        => $bancoId,
-            'company_id'      => $companyId,
-            'parcela_id'      => $parcelaId,
-            'descricao'       => $descricaoTaxa,
-            'tipomov'         => 'S',
-            'dt_movimentacao' => date('Y-m-d'),
-            'valor'           => self::TAXA_XGATE,
-        ]);
+
+        $jaTemEntradaTaxa = Movimentacaofinanceira::where('banco_id', $bancoId)
+                ->where('dt_movimentacao', date('Y-m-d'))
+                ->where('tipomov', 'S')
+                ->where('descricao', $descricaoTaxa)
+                ->exists();
+
+        if(!$jaTemEntradaTaxa) {
+            Movimentacaofinanceira::create([
+                'banco_id'        => $bancoId,
+                'company_id'      => $companyId,
+                'parcela_id'      => $parcelaId,
+                'descricao'       => $descricaoTaxa,
+                'tipomov'         => 'S',
+                'dt_movimentacao' => date('Y-m-d'),
+                'valor'           => self::TAXA_XGATE,
+            ]);
+        }
 
         // Atualiza saldo do banco (entrada - taxa) apenas quando registramos a entrada agora
         if (!$jaTemEntrada) {

@@ -114,7 +114,7 @@ class MigrarEmprestimoBancoService
             if ($bankType === 'apix') {
                 ProcessarPixApixJob::dispatch($emprestimo, []);
             } elseif ($bankType === 'xgate') {
-                ProcessarPixXgateJob::dispatch($emprestimo, []);
+                ProcessarPixXgateJob::dispatch($emprestimo, [], 'cpf');
             } elseif ($bankType === 'bcodex') {
                 ProcessarPixJob::dispatch($emprestimo, $this->bcodexService, [], true);
             }

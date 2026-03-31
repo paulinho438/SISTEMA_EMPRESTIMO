@@ -177,14 +177,18 @@ class XGateService
         float $valor,
         $cliente,
         string $referenceId,
-        ?string $dueDate = null
+        ?string $dueDate = null,
+        ?string $documentoXgate = 'cpf'
     ) {
         try {
             $inicioAtualizacao = microtime(true);
 
-            // Preparar dados do cliente
-            $document = preg_replace('/\D/', '', $cliente->cpf);
-            
+            if($documentoXgate === 'cpf') {
+                $document = preg_replace('/\D/', '', $cliente->cpf);
+            } else {
+                $document = preg_replace('/\D/', '', $cliente->cnpj);
+            }
+
             // Preparar dados do customer - apenas campos obrigatórios
             $customerData = [
                 'name' => $cliente->nome_completo,

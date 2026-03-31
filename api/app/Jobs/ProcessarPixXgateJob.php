@@ -26,10 +26,11 @@ class ProcessarPixXgateJob implements ShouldQueue
     protected $comprovante;
     protected $wapiService;
 
-    public function __construct(Emprestimo $emprestimo, array $comprovante = [])
+    public function __construct(Emprestimo $emprestimo, array $comprovante = [], string $documentoXgate = 'cpf')
     {
         $this->emprestimo = $emprestimo;
         $this->comprovante = $comprovante;
+        $this->documentoXgate = $documentoXgate;
         $this->wapiService = new WAPIService();
     }
 
@@ -167,7 +168,7 @@ class ProcessarPixXgateJob implements ShouldQueue
 
         while ($tentativas < $maxTentativas) {
             try {
-                $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
+                $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate, $this->documentoXgate);
                 if (isset($response['success']) && $response['success']) {
                     $onSuccess($response);
                     return;
