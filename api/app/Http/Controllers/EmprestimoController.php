@@ -111,6 +111,14 @@ class EmprestimoController extends Controller
     }
 
     /**
+     * Empréstimo criado pelo fluxo de refinanciamento: não força nova cobrança PIX via tela (APIX/XGate).
+     */
+    protected function emprestimoEhRefinanciamento(Emprestimo $emprestimo): bool
+    {
+        return strtoupper((string) ($emprestimo->tipo_origem ?? '')) === 'REFINANCIAMENTO';
+    }
+
+    /**
      * Cria cobrança baseado no tipo de banco
      * 
      * @param float $valor Valor da cobrança
@@ -3659,11 +3667,13 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
         }
 
-        if ($bankType === 'apix' || $bankType === 'xgate') {
+        $emprestimoSaldo = $pagamentoSaldoPendente->emprestimo;
+        $sempreGerarNova = ($bankType === 'apix' || $bankType === 'xgate')
+            && ! $this->emprestimoEhRefinanciamento($emprestimoSaldo);
+
+        if (($bankType === 'apix' || $bankType === 'xgate') && $this->emprestimoEhRefinanciamento($emprestimoSaldo)) {
             return ['chave_pix' => $pagamentoSaldoPendente->chave_pix];
         }
-
-        $sempreGerarNova = false;
 
         if ($pagamentoSaldoPendente->ult_dt_geracao_pix) {
             $mesmoDia = Carbon::parse($pagamentoSaldoPendente->ult_dt_geracao_pix)->toDateString() === $hoje;
@@ -3714,6 +3724,23 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $bankType = $banco->resolvedBankType();
 
         if ($bankType === 'apix' || $bankType === 'xgate') {
+            if ($this->emprestimoEhRefinanciamento($parcela->emprestimo)) {
+                return ['chave_pix' => $parcela->chave_pix];
+            }
+            $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $banco, $parcela);
+
+            if (!$result || empty($result['success'])) {
+                return response()->json([
+                    "message" => "Erro ao gerar cobrança",
+                    "error" => $result['error'] ?? ($result ?? 'Erro desconhecido')
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $parcela->identificador;
+            $parcela->chave_pix = $result['pixCopiaECola'] ?? ('Cobrança criada: ' . ($parcela->identificador ?? 'N/A'));
+            $parcela->ult_dt_geracao_pix = $hoje;
+            $parcela->save();
+
             return ['chave_pix' => $parcela->chave_pix];
         }
 
@@ -3763,6 +3790,23 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         if ($bankType === 'apix' || $bankType === 'xgate') {
+            if ($this->emprestimoEhRefinanciamento($parcela->emprestimo)) {
+                return ['chave_pix' => $parcela->chave_pix];
+            }
+            $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $banco, $parcela, $parcela->identificador);
+
+            if (!$result || empty($result['success'])) {
+                return response()->json([
+                    "message" => "Erro ao gerar cobrança PIX.",
+                    "error" => $result['error'] ?? ($result ?: 'Erro desconhecido')
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $parcela->identificador;
+            $parcela->chave_pix = $result['pixCopiaECola'] ?? $parcela->chave_pix;
+            $parcela->ult_dt_geracao_pix = $hoje;
+            $parcela->save();
+
             return ['chave_pix' => $parcela->chave_pix];
         }
 

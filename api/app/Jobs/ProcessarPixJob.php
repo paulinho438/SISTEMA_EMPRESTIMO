@@ -243,6 +243,11 @@ class ProcessarPixJob implements ShouldQueue
 
         $bankType = $this->emprestimo->banco->resolvedBankType();
 
+        $tipoOrigem = strtoupper((string) ($this->emprestimo->tipo_origem ?? ''));
+        if ($tipoOrigem === 'REFINANCIAMENTO' && in_array($bankType, ['xgate', 'apix'], true)) {
+            return;
+        }
+
         while ($tentativas < $maxTentativas && !$sucesso) {
             try {
                 if ($bankType === 'xgate') {
