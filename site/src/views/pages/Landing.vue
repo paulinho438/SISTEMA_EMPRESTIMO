@@ -215,23 +215,33 @@ export default {
             return {};
         },
         calcularValorPendenteHoje() {
-            // Calcular e atualizar o valor pendente hoje
             if (!this.products?.data?.emprestimo?.parcelas || !Array.isArray(this.products.data.emprestimo.parcelas)) {
                 this.valorPendenteHojeCalculado = 0;
                 return;
             }
-            
-            const hoje = moment().format('DD/MM/YYYY');
+
+            const hoje = moment().startOf('day');
             let total = 0;
-            
-            this.products.data.emprestimo.parcelas.forEach((parcela) => {
-                if ((!parcela.dt_baixa || parcela.dt_baixa === '') && parcela.venc_real === hoje) {
+            const abertas = this.products.data.emprestimo.parcelas.filter(
+                (parcela) => !parcela.dt_baixa || parcela.dt_baixa === ''
+            );
+
+            abertas.forEach((parcela) => {
+                if (!parcela.venc_real) {
+                    return;
+                }
+                const vr = moment(parcela.venc_real, 'DD/MM/YYYY', true);
+                if (vr.isValid() && vr.isSameOrBefore(hoje, 'day')) {
                     total += parseFloat(parcela.saldo || 0);
                 }
             });
-            
-            this.valorPendenteHojeCalculado = Math.round(total * 100) / 100;
-            console.log('Valor pendente hoje atualizado:', this.valorPendenteHojeCalculado);
+
+            total = Math.round(total * 100) / 100;
+            if (total === 0 && abertas.length > 0) {
+                total = Math.round(parseFloat(abertas[0].saldo || 0) * 100) / 100;
+            }
+
+            this.valorPendenteHojeCalculado = total;
         }
     },
 

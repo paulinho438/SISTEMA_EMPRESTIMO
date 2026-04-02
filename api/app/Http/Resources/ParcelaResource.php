@@ -115,14 +115,24 @@ class ParcelaResource extends JsonResource
         // Sempre usar dados carregados se disponíveis
         if ($this->emprestimo && $this->emprestimo->relationLoaded('parcelas')) {
             $hoje = now()->toDateString();
-            return round((float) $this->emprestimo->parcelas
-                ->whereNull('dt_baixa')
-                ->filter(function($p) use ($hoje) {
-                    if (!$p->venc_real) return false;
-                    $vencDate = is_string($p->venc_real) ? $p->venc_real : $p->venc_real->toDateString();
-                    return $vencDate === $hoje;
-                })
-                ->sum('saldo'), 2);
+            $abertas = $this->emprestimo->parcelas->whereNull('dt_baixa');
+            $total = (float) $abertas->filter(function ($p) use ($hoje) {
+                if (!$p->venc_real) {
+                    return false;
+                }
+                $vencDate = is_string($p->venc_real)
+                    ? \Carbon\Carbon::parse($p->venc_real)->toDateString()
+                    : $p->venc_real->toDateString();
+
+                return $vencDate <= $hoje;
+            })->sum('saldo');
+            $total = round($total, 2);
+            if ($total > 0) {
+                return $total;
+            }
+            $proxima = $abertas->sortBy('parcela')->first();
+
+            return $proxima ? round((float) ($proxima->saldo ?? 0), 2) : 0.0;
         }
         // Fallback: usar método do modelo (faz query + log)
         return $this->totalPendenteHoje();

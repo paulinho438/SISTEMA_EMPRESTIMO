@@ -96,29 +96,26 @@ class Parcela extends Model
 
     public function totalPendenteHoje()
     {
-        $hoje = now()->toDateString(); // YYYY-MM-DD
-        
-        // Buscar todas as parcelas pendentes que vencem hoje
-        // Usar whereDate para comparar apenas a data (ignora hora)
-        $parcelasHoje = Parcela::where('emprestimo_id', $this->emprestimo_id)
-            ->whereNull('dt_baixa')
-            ->whereDate('venc_real', $hoje)
-            ->get();
-        
-        // Se não encontrou com whereDate, tentar com whereRaw como fallback
-        if ($parcelasHoje->isEmpty()) {
-            $parcelasHoje = Parcela::where('emprestimo_id', $this->emprestimo_id)
-                ->whereNull('dt_baixa')
-                ->whereRaw("DATE(venc_real) = ?", [$hoje])
-                ->get();
-        }
-        
-        // Somar os saldos manualmente para garantir precisão
-        $totalPendente = $parcelasHoje->sum(function($parcela) {
-            return (float) ($parcela->saldo ?? 0);
-        });
+        $hoje = now()->toDateString();
 
-        // Arredonda o valor para 2 casas decimais e retorna como float
-        return round((float) $totalPendente, 2);
+        // Atrasadas ou que vencem hoje (tudo que já deveria ter sido pago até a data atual)
+        $totalVencidoOuHoje = (float) Parcela::where('emprestimo_id', $this->emprestimo_id)
+            ->whereNull('dt_baixa')
+            ->whereNotNull('venc_real')
+            ->whereDate('venc_real', '<=', $hoje)
+            ->sum('saldo');
+
+        $totalVencidoOuHoje = round($totalVencidoOuHoje, 2);
+        if ($totalVencidoOuHoje > 0) {
+            return $totalVencidoOuHoje;
+        }
+
+        // Empréstimo novo (todas as parcelas com vencimento futuro): exibir saldo da próxima parcela em aberto
+        $proxima = Parcela::where('emprestimo_id', $this->emprestimo_id)
+            ->whereNull('dt_baixa')
+            ->orderBy('parcela')
+            ->first();
+
+        return $proxima ? round((float) ($proxima->saldo ?? 0), 2) : 0.0;
     }
 }

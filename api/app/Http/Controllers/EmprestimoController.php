@@ -647,14 +647,21 @@ class EmprestimoController extends Controller
         });
         $totalPendente = round((float) $emprestimo->parcelas->whereNull('dt_baixa')->sum('saldo'), 2);
         $hoje = now()->toDateString();
-        $totalPendenteHoje = round((float) $emprestimo->parcelas
-            ->whereNull('dt_baixa')
-            ->filter(function($p) use ($hoje) {
-                if (!$p->venc_real) return false;
-                $vencDate = is_string($p->venc_real) ? $p->venc_real : $p->venc_real->toDateString();
-                return $vencDate === $hoje;
+        $abertas = $emprestimo->parcelas->whereNull('dt_baixa');
+        $totalPendenteHoje = round((float) $abertas
+            ->filter(function ($p) use ($hoje) {
+                if (!$p->venc_real) {
+                    return false;
+                }
+                $vencDate = is_string($p->venc_real) ? Carbon::parse($p->venc_real)->toDateString() : $p->venc_real->toDateString();
+
+                return $vencDate <= $hoje;
             })
             ->sum('saldo'), 2);
+        if ($totalPendenteHoje <= 0) {
+            $proxima = $abertas->sortBy('parcela')->first();
+            $totalPendenteHoje = $proxima ? round((float) ($proxima->saldo ?? 0), 2) : 0.0;
+        }
         
         // Garantir que cada parcela tenha acesso ao empréstimo completo
         // com todas as parcelas já carregadas (necessário para cálculos no Resource)
@@ -3514,8 +3521,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         $emprestimo = $parcela->emprestimo;
 
+        $valorPendenteHoje = (method_exists($parcela, 'totalPendenteHoje'))
+            ? $parcela->totalPendenteHoje()
+            : null;
+
         // -------- PARCELAS --------
-        $parcelas = ($emprestimo?->parcelas ?? collect())->sortBy('parcela')->map(function ($p) {
+        $parcelas = ($emprestimo?->parcelas ?? collect())->sortBy('parcela')->map(function ($p) use ($valorPendenteHoje) {
             $venc      = $p->venc      ? Carbon::parse($p->venc)->format('d/m/Y')      : null;
             $venc_real = $p->venc_real ? Carbon::parse($p->venc_real)->format('d/m/Y') : null;
 
@@ -3531,27 +3542,13 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
                 // Campos opcionais que aparecem no template (comentados)
                 'total_pendente'      => (float) ($p->total_pendente ?? 0),
-                'total_pendente_hoje' => (float) ($p->total_pendente_hoje ?? 0),
+                'total_pendente_hoje' => (float) ($valorPendenteHoje ?? 0),
             ];
         })->values()->toArray();
 
         // -------- PAGAMENTO SALDO PENDENTE (opcional) --------
         $pagamentoSaldoPendente = $emprestimo?->pagamentosaldopendente;
-        // Calcular valor pendente do dia dinamicamente (soma de todas as parcelas que vencem hoje)
-        $valorPendenteHoje = null;
-        if ($parcela && method_exists($parcela, 'totalPendenteHoje')) {
-            $valorPendenteHoje = $parcela->totalPendenteHoje();
-            // Log para debug (remover depois se necessário)
-            \Log::info('Valor pendente hoje calculado', [
-                'emprestimo_id' => $parcela->emprestimo_id,
-                'parcela_id' => $parcela->id,
-                'valor_calculado' => $valorPendenteHoje,
-                'valor_salvo' => $pagamentoSaldoPendente->valor ?? 0,
-                'hoje' => now()->toDateString(),
-            ]);
-        }
-        // SEMPRE usar o valor calculado quando disponível (mesmo que seja 0), pois reflete a realidade atual
-        // Se não conseguir calcular, usar o valor salvo como fallback
+        // Valor calculado: atrasadas/vencem hoje, ou próxima parcela se tudo futuro
         $valorFinal = $valorPendenteHoje !== null ? $valorPendenteHoje : ($pagamentoSaldoPendente->valor ?? 0);
         $pagamentoSaldoPendenteArr = $pagamentoSaldoPendente ? [
             'id'        => (int) ($pagamentoSaldoPendente->id ?? 0),
