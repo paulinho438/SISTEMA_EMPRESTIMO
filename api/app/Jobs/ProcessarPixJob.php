@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\CustomLog;
 use App\Models\Movimentacaofinanceira;
+use App\Models\CobrancaPixIdentificadorHistorico;
 
 use App\Services\WAPIService;
 use Illuminate\Support\Facades\File;
@@ -277,6 +278,14 @@ class ProcessarPixJob implements ShouldQueue
                         $entidade->identificador = $response['transaction_id'] ?? $referenceId;
                         $entidade->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
                         $entidade->save();
+                        $entidade->loadMissing('emprestimo.banco', 'emprestimo.client');
+                        CobrancaPixIdentificadorHistorico::registrarCobranca(
+                            'xgate',
+                            $entidade->identificador,
+                            $entidade,
+                            (float) $valor,
+                            $referenceId
+                        );
                         $sucesso = true;
                     } else {
                         $tentativas++;

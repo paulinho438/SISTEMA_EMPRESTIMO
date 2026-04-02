@@ -88,6 +88,7 @@ use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Support\Facades\Http;
 use App\Models\ControleBcodex;
+use App\Models\CobrancaPixIdentificadorHistorico;
 
 class EmprestimoController extends Controller
 {
@@ -233,6 +234,13 @@ class EmprestimoController extends Controller
                 $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
 
                 if (isset($response['success']) && $response['success']) {
+                    CobrancaPixIdentificadorHistorico::registrarCobranca(
+                        'xgate',
+                        $response['transaction_id'] ?? null,
+                        $entidade,
+                        $valor,
+                        $referenceId
+                    );
                     return [
                         'success' => true,
                         'transaction_id' => $response['transaction_id'] ?? $referenceId,
@@ -272,6 +280,13 @@ class EmprestimoController extends Controller
                 $response = $apixService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
 
                 if (isset($response['success']) && $response['success']) {
+                    CobrancaPixIdentificadorHistorico::registrarCobranca(
+                        'apix',
+                        $response['transaction_id'] ?? null,
+                        $entidade,
+                        $valor,
+                        $referenceId
+                    );
                     return [
                         'success' => true,
                         'transaction_id' => $response['transaction_id'] ?? $referenceId,

@@ -12,6 +12,7 @@ use App\Models\Quitacao;
 use App\Models\PagamentoPersonalizado;
 use App\Models\PagamentoSaldoPendente;
 use App\Models\Deposito;
+use App\Models\CobrancaPixIdentificadorHistorico;
 use App\Services\XGateService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -148,8 +149,113 @@ class ProcessarWebhookXgate extends Command
             return true;
         }
 
+        $historico = CobrancaPixIdentificadorHistorico::where('identificador', $txId)->first();
+        if ($historico && $this->processarPagamentoPorHistorico($historico, $valor, $horario, $pagadorNome, $txId)) {
+            return true;
+        }
+
         Log::channel('xgate')->info('Webhook XGate sem entidade associada ao pagamento', ['identificador' => $txId]);
         return false;
+    }
+
+    /**
+     * Baixa via tabela de histórico de identificadores (PIX gerado mais de uma vez; entidade atual sem o tx antigo).
+     */
+    private function processarPagamentoPorHistorico(
+        CobrancaPixIdentificadorHistorico $h,
+        float $valor,
+        string $horario,
+        string $pagadorNome,
+        string $txId
+    ): bool {
+        switch ($h->tipo_entidade) {
+            case 'parcela':
+                $parcela = Parcela::with(['emprestimo.banco', 'emprestimo.client', 'contasreceber'])->find($h->entidade_id);
+                if (!$parcela || $parcela->dt_baixa) {
+                    Log::channel('xgate')->info('Histórico PIX XGate: parcela já baixada ou inexistente', [
+                        'identificador' => $txId,
+                        'parcela_id' => $h->entidade_id,
+                    ]);
+
+                    return false;
+                }
+                $this->baixaParcela($parcela, $valor, $horario, $pagadorNome, $txId);
+
+                return true;
+
+            case 'quitacao':
+                $quitacao = Quitacao::with(['emprestimo.client', 'emprestimo.banco', 'emprestimo.parcelas'])->find($h->entidade_id);
+                if (!$quitacao) {
+                    return false;
+                }
+                $aberta = Parcela::where('emprestimo_id', $quitacao->emprestimo_id)->whereNull('dt_baixa')->exists();
+                if (!$aberta) {
+                    Log::channel('xgate')->info('Histórico PIX XGate: empréstimo já quitado', [
+                        'identificador' => $txId,
+                        'quitacao_id' => $h->entidade_id,
+                    ]);
+
+                    return false;
+                }
+                $this->baixaQuitacao($quitacao, $valor, $horario, $pagadorNome, $txId);
+
+                return true;
+
+            case 'pagamento_minimo':
+                $minimo = PagamentoMinimo::with(['emprestimo.client', 'emprestimo.banco'])->find($h->entidade_id);
+                if (!$minimo || $minimo->dt_baixa) {
+                    return false;
+                }
+                $this->baixaPagamentoMinimo($minimo, $valor, $horario, $pagadorNome, $txId);
+
+                return true;
+
+            case 'pagamento_saldo_pendente':
+                $pagamento = PagamentoSaldoPendente::with(['emprestimo.client', 'emprestimo.banco'])->find($h->entidade_id);
+                if (!$pagamento || $pagamento->dt_baixa) {
+                    return false;
+                }
+                $this->baixaPagamentoSaldoPendente($pagamento, $valor, $horario, $pagadorNome, $txId);
+
+                return true;
+
+            case 'pagamento_personalizado':
+                $pagamento = PagamentoPersonalizado::with(['emprestimo.client', 'emprestimo.banco'])->find($h->entidade_id);
+                if (!$pagamento || $pagamento->dt_baixa) {
+                    return false;
+                }
+                $this->baixaPagamentoPersonalizado($pagamento, $valor, $horario, $pagadorNome, $txId);
+
+                return true;
+
+            case 'locacao':
+                $locacao = Locacao::find($h->entidade_id);
+                if (!$locacao || $locacao->data_pagamento) {
+                    return false;
+                }
+                $locacao->data_pagamento = $horario;
+                $locacao->save();
+
+                return true;
+
+            case 'deposito':
+                $deposito = Deposito::find($h->entidade_id);
+                if (!$deposito || $deposito->data_pagamento) {
+                    return false;
+                }
+                if ($deposito->identificador !== $txId) {
+                    $deposito->identificador = $txId;
+                }
+                $deposito->data_pagamento = $horario;
+                $deposito->save();
+                $this->registrarMovimentacaoETaxa($deposito->banco_id, $deposito->company_id, null, $valor,
+                    sprintf('Depósito Nº %d - Pagador: %s', $deposito->id, $pagadorNome), $pagadorNome, $txId);
+
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     /**
@@ -474,6 +580,14 @@ class ProcessarWebhookXgate extends Command
                 $pagamento->identificador = $res['transaction_id'] ?? $ref;
                 $pagamento->chave_pix = $res['pixCopiaECola'] ?? $res['qr_code'] ?? null;
                 $pagamento->save();
+                $pagamento->loadMissing('emprestimo.banco', 'emprestimo.client');
+                CobrancaPixIdentificadorHistorico::registrarCobranca(
+                    'xgate',
+                    $pagamento->identificador,
+                    $pagamento,
+                    (float) $pagamento->valor,
+                    $ref
+                );
             }
         } catch (\Throwable $e) {
             Log::channel('xgate')->warning('ProcessarWebhookXgate: falha ao recriar cobrança saldo pendente XGate', [
@@ -508,6 +622,14 @@ class ProcessarWebhookXgate extends Command
                     $emprestimo->quitacao->identificador = $res['transaction_id'] ?? $ref;
                     $emprestimo->quitacao->chave_pix = $res['pixCopiaECola'] ?? $res['qr_code'] ?? null;
                     $emprestimo->quitacao->save();
+                    $emprestimo->quitacao->loadMissing('emprestimo.banco', 'emprestimo.client');
+                    CobrancaPixIdentificadorHistorico::registrarCobranca(
+                        'xgate',
+                        $emprestimo->quitacao->identificador,
+                        $emprestimo->quitacao,
+                        (float) $totalPendente,
+                        $ref
+                    );
                 }
             }
 
@@ -521,6 +643,14 @@ class ProcessarWebhookXgate extends Command
                     $emprestimo->pagamentosaldopendente->identificador = $res['transaction_id'] ?? $ref;
                     $emprestimo->pagamentosaldopendente->chave_pix = $res['pixCopiaECola'] ?? $res['qr_code'] ?? null;
                     $emprestimo->pagamentosaldopendente->save();
+                    $emprestimo->pagamentosaldopendente->loadMissing('emprestimo.banco', 'emprestimo.client');
+                    CobrancaPixIdentificadorHistorico::registrarCobranca(
+                        'xgate',
+                        $emprestimo->pagamentosaldopendente->identificador,
+                        $emprestimo->pagamentosaldopendente,
+                        (float) $emprestimo->pagamentosaldopendente->valor,
+                        $ref
+                    );
                 }
             }
         } catch (\Throwable $e) {

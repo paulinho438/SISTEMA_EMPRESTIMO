@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Emprestimo;
+use App\Models\CobrancaPixIdentificadorHistorico;
 use App\Services\XGateService;
 use App\Services\WAPIService;
 use Illuminate\Bus\Queueable;
@@ -171,6 +172,14 @@ class ProcessarPixXgateJob implements ShouldQueue
                 $response = $xgateService->criarCobranca($valor, $cliente, $referenceId, $dueDate, $this->documentoXgate);
                 if (isset($response['success']) && $response['success']) {
                     $onSuccess($response);
+                    $entidade->loadMissing('emprestimo.banco', 'emprestimo.client');
+                    CobrancaPixIdentificadorHistorico::registrarCobranca(
+                        'xgate',
+                        $response['transaction_id'] ?? null,
+                        $entidade,
+                        $valor,
+                        $referenceId
+                    );
                     return;
                 }
                 $tentativas++;
