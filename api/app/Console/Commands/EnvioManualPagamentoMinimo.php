@@ -91,6 +91,10 @@ class EnvioManualPagamentoMinimo extends Command
                     });
                 })->orderBy('venc', 'desc')->first();
 
+                if (!$primeiroRegistro || !$ultimoRegistro) {
+                    continue;
+                }
+
                 $caminhoAbsoluto = storage_path('app/public/documentos/' . $banco['certificado']);
                 $options = [
                     'clientId' => $banco['clienteid'],
