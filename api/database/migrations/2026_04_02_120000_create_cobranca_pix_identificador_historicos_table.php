@@ -21,7 +21,8 @@ return new class extends Migration
             $table->string('provedor', 20)->default('xgate');
             $table->timestamps();
 
-            $table->index(['tipo_entidade', 'entidade_id']);
+            // Nome curto: MySQL limita identificadores a 64 caracteres
+            $table->index(['tipo_entidade', 'entidade_id'], 'cb_pix_hist_tipo_ent_idx');
         });
     }
 
