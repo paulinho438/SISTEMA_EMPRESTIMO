@@ -2241,37 +2241,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $response = $this->bcodexService->consultarChavePix(($contaspagar->valor * 100), $contaspagar->fornecedor->pix_fornecedor, $accountId);
 
                 if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-
-                    $array['response'] = $response->json();
-
-                    $bank = Bank::where('ispb', $array['response']['creditParty']['bank'])->first();
-
-                    $dados = [
-                        'valor' => $contaspagar->valor,
-                        'tipo_transferencia' => 'PIX',
-                        'descricao' => 'Transferência realizada com sucesso',
-                        'destino_nome' => $array['response']['creditParty']['name'],
-                        'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
-                        'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
-                        'destino_instituicao' => $bank->short_name ?? 'Unknown',
-                        'destino_banco' => $bank->code_number ?? '000',
-                        'destino_agencia' => str_pad($array['response']['creditParty']['branch'] ?? 000, 4, '0', STR_PAD_LEFT),
-                        'destino_conta' => substr_replace($array['response']['creditParty']['accountNumber'] ?? 000, '-', -1, 0),
-                        'origem_nome' => 'BCODEX TECNOLOGIA E SERVICOS LTDA',
-                        'origem_cnpj' => '52.196.079/0001-71',
-                        'origem_instituicao' => 'BANCO BTG PACTUAL S.A.',
-                        'data_hora' => date('d/m/Y H:i:s'),
-                        'id_transacao' => $array['response']['endToEndId'],
-                    ];
-
-                    $array['dados'] = $dados;
-
-                    EnviarComprovanteFornecedor::dispatch($contaspagar, $this->bcodexService, $array);
-
-
-
-
-
+                    // Apenas consulta para o diálogo de confirmação — não envia comprovante nem efetiva pagamento
+                    DB::commit();
 
                     return $response->json();
                 } else {
