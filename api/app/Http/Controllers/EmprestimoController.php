@@ -120,6 +120,20 @@ class EmprestimoController extends Controller
     }
 
     /**
+     * Valor total para quitação: soma dos saldos das parcelas em aberto.
+     * O campo quitacao.saldo no banco pode ficar defasado após pagamentos; não usar só ele.
+     */
+    protected function valorQuitacaoTotal(Emprestimo $emprestimo): float
+    {
+        $primeira = Parcela::where('emprestimo_id', $emprestimo->id)
+            ->whereNull('dt_baixa')
+            ->orderBy('parcela')
+            ->first();
+
+        return $primeira ? $primeira->totalPendente() : 0.0;
+    }
+
+    /**
      * Cria cobrança baseado no tipo de banco
      * 
      * @param float $valor Valor da cobrança
@@ -3567,9 +3581,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         // -------- QUITAÇÃO (opcional) --------
         $quitacao = $emprestimo?->quitacao;
+        $saldoQuitacaoCalculado = $quitacao ? $this->valorQuitacaoTotal($emprestimo) : 0.0;
         $quitacaoArr = $quitacao ? [
             'id'        => (int) ($quitacao->id ?? 0),
-            'saldo'     => (float) ($quitacao->saldo ?? 0),
+            'saldo'     => (float) $saldoQuitacaoCalculado,
             'chave_pix' => (string) ($quitacao->chave_pix ?? ''),
         ] : null;
 
@@ -3589,7 +3604,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             'quitacao'               => $quitacaoArr,
             'banco'                  => $bancoArr,
 
-            'saldoareceber' => (float) ($emprestimo->saldoareceber ?? 0),
+            'saldoareceber' => round((float) ($emprestimo->parcelas ?? collect())->whereNull('dt_baixa')->sum('saldo'), 2),
             'liberar_minimo' => (int)   ($emprestimo->liberar_minimo ?? 0),
             'lucro'         => (float) ($emprestimo->lucro ?? 0),
 
@@ -3722,24 +3737,33 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function gerarPixPagamentoQuitacao(Request $request, $id)
     {
-        $parcela = Quitacao::with(['emprestimo.banco'])->find($id);
+        $quitacao = Quitacao::with(['emprestimo.banco'])->find($id);
         $hoje = Carbon::today()->toDateString();
 
-        if (!$parcela) {
+        if (!$quitacao) {
             return response()->json([
                 "message" => "Erro ao buscar pix da parcela",
                 "error" => ''
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $banco = $parcela->emprestimo->banco;
+        $emprestimo = $quitacao->emprestimo;
+        $banco = $emprestimo->banco;
         $bankType = $banco->resolvedBankType();
+        $valorCobranca = $this->valorQuitacaoTotal($emprestimo);
+
+        if ($valorCobranca <= 0) {
+            return response()->json([
+                "message" => "Não há saldo em aberto para quitação.",
+                "error" => ''
+            ], Response::HTTP_FORBIDDEN);
+        }
 
         if ($bankType === 'apix' || $bankType === 'xgate') {
-            if ($this->emprestimoEhRefinanciamento($parcela->emprestimo)) {
-                return ['chave_pix' => $parcela->chave_pix];
+            if ($this->emprestimoEhRefinanciamento($emprestimo)) {
+                return ['chave_pix' => $quitacao->chave_pix];
             }
-            $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $banco, $parcela);
+            $result = $this->criarCobrancaPorTipoBanco($valorCobranca, $banco, $quitacao);
 
             if (!$result || empty($result['success'])) {
                 return response()->json([
@@ -3748,24 +3772,26 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 ], Response::HTTP_FORBIDDEN);
             }
 
-            $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $parcela->identificador;
-            $parcela->chave_pix = $result['pixCopiaECola'] ?? ('Cobrança criada: ' . ($parcela->identificador ?? 'N/A'));
-            $parcela->ult_dt_geracao_pix = $hoje;
-            $parcela->save();
+            $quitacao->saldo = $valorCobranca;
+            $quitacao->valor = $valorCobranca;
+            $quitacao->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $quitacao->identificador;
+            $quitacao->chave_pix = $result['pixCopiaECola'] ?? ('Cobrança criada: ' . ($quitacao->identificador ?? 'N/A'));
+            $quitacao->ult_dt_geracao_pix = $hoje;
+            $quitacao->save();
 
-            return ['chave_pix' => $parcela->chave_pix];
+            return ['chave_pix' => $quitacao->chave_pix];
         }
 
         $sempreGerarNova = false;
 
-        if ($parcela->ult_dt_geracao_pix) {
-            $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
+        if ($quitacao->ult_dt_geracao_pix) {
+            $mesmoDia = Carbon::parse($quitacao->ult_dt_geracao_pix)->toDateString() === $hoje;
             if (!$sempreGerarNova && $mesmoDia) {
-                return ['chave_pix' => $parcela->chave_pix];
+                return ['chave_pix' => $quitacao->chave_pix];
             }
         }
 
-        $result = $this->criarCobrancaPorTipoBanco($parcela->saldo, $banco, $parcela);
+        $result = $this->criarCobrancaPorTipoBanco($valorCobranca, $banco, $quitacao);
 
         if (!$result || empty($result['success'])) {
             return response()->json([
@@ -3774,12 +3800,14 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $parcela->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $parcela->identificador;
-        $parcela->chave_pix = $result['pixCopiaECola'] ?? ('Cobrança criada: ' . ($parcela->identificador ?? 'N/A'));
-        $parcela->ult_dt_geracao_pix = $hoje;
-        $parcela->save();
+        $quitacao->saldo = $valorCobranca;
+        $quitacao->valor = $valorCobranca;
+        $quitacao->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $quitacao->identificador;
+        $quitacao->chave_pix = $result['pixCopiaECola'] ?? ('Cobrança criada: ' . ($quitacao->identificador ?? 'N/A'));
+        $quitacao->ult_dt_geracao_pix = $hoje;
+        $quitacao->save();
 
-        return ['chave_pix' => $parcela->chave_pix];
+        return ['chave_pix' => $quitacao->chave_pix];
     }
 
     public function gerarPixPagamentoParcela(Request $request, $id)

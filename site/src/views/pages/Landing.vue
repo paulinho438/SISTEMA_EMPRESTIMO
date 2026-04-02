@@ -351,7 +351,7 @@ export default {
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" :disabled="loadingPix" @click="copiarChavePix('quitacao', this.products?.data?.emprestimo?.quitacao?.id, this.products?.data?.emprestimo?.quitacao?.chave_pix)">
-                    Copiar Chave Pix - Quitar Empréstimo <br />{{ this.products?.data?.emprestimo?.quitacao?.saldo }}
+                    Copiar Chave Pix - Quitar Empréstimo <br />{{ Number(this.products?.data?.emprestimo?.quitacao?.saldo || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                 </button>
             </section>
 

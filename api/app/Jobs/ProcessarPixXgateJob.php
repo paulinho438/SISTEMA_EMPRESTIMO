@@ -121,7 +121,8 @@ class ProcessarPixXgateJob implements ShouldQueue
 
         if ($this->emprestimo->quitacao) {
             $q = $this->emprestimo->quitacao;
-            $valorQuitacao = $q->saldo ?? 0;
+            $primeiraAberta = $this->emprestimo->parcelas->whereNull('dt_baixa')->sortBy('parcela')->first();
+            $valorQuitacao = $primeiraAberta ? $primeiraAberta->totalPendente() : 0.0;
             if ($valorQuitacao > 0) {
                 $this->criarCobrancaXgate($xgateService, $q, $valorQuitacao, 'quitacao_' . $q->id, null, function ($resp) use ($q) {
                     $q->identificador = $resp['transaction_id'] ?? $q->identificador;
