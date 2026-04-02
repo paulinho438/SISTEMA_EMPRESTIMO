@@ -10,6 +10,11 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\BcodexService;
+use App\Services\XGateService;
+use App\Models\Parcela;
+use App\Models\Quitacao;
+use App\Models\PagamentoMinimo;
+use App\Models\PagamentoSaldoPendente;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\CustomLog;
@@ -78,6 +83,15 @@ class ProcessarPixJob implements ShouldQueue
     public function handle()
     {
         try {
+            $this->emprestimo->loadMissing([
+                'banco',
+                'client',
+                'company',
+                'parcelas',
+                'pagamentominimo',
+                'quitacao',
+                'pagamentosaldopendente',
+            ]);
 
             if ($this->comprovante) {
                 // Renderizar o HTML da view
@@ -227,10 +241,10 @@ class ProcessarPixJob implements ShouldQueue
     }
 
     /**
-     * Processar cobrança com tentativas
+     * Processar cobrança com tentativas (B.Codex ou XGate conforme o banco).
      *
-     * @param $entidade
-     * @param $valor
+     * @param \App\Models\Parcela|\App\Models\Quitacao|\App\Models\PagamentoMinimo|\App\Models\PagamentoSaldoPendente $entidade
+     * @param float|int $valor
      */
     private function processarCobrancaComTentativas($entidade, $valor)
     {
@@ -238,45 +252,128 @@ class ProcessarPixJob implements ShouldQueue
         $maxTentativas = 5;
         $sucesso = false;
 
+        $bankType = $this->emprestimo->banco->resolvedBankType();
+
         while ($tentativas < $maxTentativas && !$sucesso) {
             try {
-                $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
+                if ($bankType === 'xgate') {
+                    $cliente = $this->emprestimo->client;
+                    if (!$cliente) {
+                        Log::channel('xgate')->error('ProcessarPixJob: cliente ausente para cobrança XGate', [
+                            'emprestimo_id' => $this->emprestimo->id,
+                        ]);
+                        break;
+                    }
 
-                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                    $entidade->identificador = $response->json()['txid'];
-                    $entidade->chave_pix = $response->json()['pixCopiaECola'];
-                    $entidade->save();
-                    $sucesso = true;
+                    $banco = $this->emprestimo->banco;
+                    $xgateService = new XGateService($banco);
+                    $referenceId = $this->montarReferenceIdCobranca($entidade);
+                    $dueDate = $this->dueDateParaCobrancaXgate($entidade);
+                    $documentoXgate = $this->documentoXgateParaCliente($cliente);
+
+                    $response = $xgateService->criarCobranca(
+                        (float) $valor,
+                        $cliente,
+                        $referenceId,
+                        $dueDate,
+                        $documentoXgate
+                    );
+
+                    if (is_array($response) && !empty($response['success'])) {
+                        $entidade->identificador = $response['transaction_id'] ?? $referenceId;
+                        $entidade->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
+                        $entidade->save();
+                        $sucesso = true;
+                    } else {
+                        $tentativas++;
+                        if ($tentativas < $maxTentativas) {
+                            sleep(min($tentativas * 2, 10));
+                        }
+                    }
                 } else {
-                    $tentativas++;
-                    // Adicionar delay entre tentativas para evitar sobrecarga
-                    if ($tentativas < $maxTentativas) {
-                        sleep(min($tentativas * 2, 10)); // Delay progressivo: 2s, 4s, 6s, 8s, max 10s
+                    $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
+
+                    if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                        $entidade->identificador = $response->json()['txid'];
+                        $entidade->chave_pix = $response->json()['pixCopiaECola'];
+                        $entidade->save();
+                        $sucesso = true;
+                    } else {
+                        $tentativas++;
+                        if ($tentativas < $maxTentativas) {
+                            sleep(min($tentativas * 2, 10));
+                        }
                     }
                 }
             } catch (\Exception $e) {
                 Log::error('Erro ao processar cobrança: ' . $e->getMessage(), [
                     'tentativa' => $tentativas + 1,
                     'max_tentativas' => $maxTentativas,
-                    'entidade_id' => $entidade->id ?? null
+                    'entidade_id' => $entidade->id ?? null,
+                    'bank_type' => $bankType,
                 ]);
                 $tentativas++;
-                // Adicionar delay entre tentativas para evitar sobrecarga
                 if ($tentativas < $maxTentativas) {
-                    sleep(min($tentativas * 2, 10)); // Delay progressivo: 2s, 4s, 6s, 8s, max 10s
+                    sleep(min($tentativas * 2, 10));
                 }
             }
 
             if (!$sucesso && $tentativas >= $maxTentativas) {
-                // Armazenar que não deu certo após 5 tentativas
                 Log::error('Falha ao processar cobrança após 5 tentativas.', [
                     'entidade_id' => $entidade->id ?? null,
                     'valor' => $valor,
-                    'emprestimo_id' => $this->emprestimo->id ?? null
+                    'emprestimo_id' => $this->emprestimo->id ?? null,
+                    'bank_type' => $bankType,
                 ]);
-                // Você pode adicionar lógica adicional aqui para marcar o pagamento como falhado no banco de dados, se necessário
             }
         }
+    }
+
+    /**
+     * Mesmos prefixos usados em EmprestimoController para cobranças XGate (quitação, mínimo, saldo).
+     */
+    private function montarReferenceIdCobranca($entidade): string
+    {
+        $id = $entidade->id;
+        $ts = time();
+
+        if ($entidade instanceof Parcela) {
+            return $id . '_' . $ts;
+        }
+        if ($entidade instanceof Quitacao) {
+            return 'quitacao_' . $id . '_' . $ts;
+        }
+        if ($entidade instanceof PagamentoMinimo) {
+            return 'pagamento_minimo_' . $id . '_' . $ts;
+        }
+        if ($entidade instanceof PagamentoSaldoPendente) {
+            return 'saldo_' . $id . '_' . $ts;
+        }
+
+        return 'cobranca_' . $id . '_' . $ts;
+    }
+
+    private function dueDateParaCobrancaXgate($entidade): ?string
+    {
+        if ($entidade instanceof Parcela && $entidade->venc_real) {
+            $v = $entidade->venc_real;
+
+            return method_exists($v, 'format')
+                ? $v->format('Y-m-d')
+                : date('Y-m-d', strtotime((string) $v));
+        }
+
+        return null;
+    }
+
+    private function documentoXgateParaCliente($cliente): string
+    {
+        $cnpj = preg_replace('/\D/', '', (string) ($cliente->cnpj ?? ''));
+        if (strlen($cnpj) >= 14) {
+            return 'cnpj';
+        }
+
+        return 'cpf';
     }
 
     /**
