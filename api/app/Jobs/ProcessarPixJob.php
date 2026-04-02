@@ -175,15 +175,6 @@ class ProcessarPixJob implements ShouldQueue
                 }
             }
 
-            if(1 == 0){
-                $this->envioMensagemVideoYoutubeANTIGO($this->emprestimo->parcelas[0]);
-
-            }else{
-                $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);
-
-            }
-
-
             foreach ($this->emprestimo->parcelas as $parcela) {
                 $this->processarCobrancaComTentativas($parcela, $parcela['valor']);
             }
@@ -200,38 +191,36 @@ class ProcessarPixJob implements ShouldQueue
                 $this->processarCobrancaComTentativas($this->emprestimo->pagamentosaldopendente, $this->emprestimo->pagamentosaldopendente->valor);
             }
 
-            if(1 == 0){
-                $this->envioMensagemANTIGO($this->emprestimo->parcelas[0]);
+            $this->emprestimo->refresh();
+            $this->emprestimo->load(['parcelas', 'pagamentominimo', 'quitacao', 'pagamentosaldopendente', 'client', 'company']);
 
-            }else{
-
-                $this->envioMensagem($this->emprestimo->parcelas[0]);
-
+            $primeiraParcela = $this->emprestimo->parcelas->first();
+            if ($primeiraParcela) {
+                $this->envioMensagemVideoYoutube($primeiraParcela);
+                $this->envioMensagem($primeiraParcela);
+            } else {
+                Log::warning('ProcessarPixJob: sem parcelas para enviar vídeo/mensagem', [
+                    'emprestimo_id' => $this->emprestimo->id,
+                ]);
             }
 
 
-            if ($this->comprovante) {
+            if ($this->comprovante && $primeiraParcela) {
+                $nomeArquivo = 'msginicio.ogg';
+                $caminhoArquivo = storage_path('app/public/audios/' . $nomeArquivo);
 
-                if(1 == 0){
-                    $this->envioAudio($this->emprestimo->parcelas[0]);
-                }else{
-                    $nomeArquivo = 'msginicio.ogg';
-                    $caminhoArquivo = storage_path('app/public/audios/' . $nomeArquivo);
+                if (File::exists($caminhoArquivo)) {
+                    $conteudo = File::get($caminhoArquivo);
+                    $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
 
-                    if (File::exists($caminhoArquivo)) {
+                    $company = $this->emprestimo->company;
+                    $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
+                    $numeroCliente = "55" . $telefone;
 
-                        $conteudo = File::get($caminhoArquivo);
-                        $base64 = 'data:audio/ogg;base64,' . base64_encode($conteudo);
-
-                        $company = $this->emprestimo->company;
-                        $telefone = preg_replace('/\D/', '', $this->emprestimo->client->telefone_celular_1);
-                        $numeroCliente = "55" . $telefone;
-
-                        $this->wapiService->enviarMensagemAudio($company->token_api_wtz, $company->instance_id, ["delayMessage" => 1, "phone" => $numeroCliente, "audio" => $base64]);
-                    }
+                    $this->wapiService->enviarMensagemAudio($company->token_api_wtz, $company->instance_id, ["delayMessage" => 1, "phone" => $numeroCliente, "audio" => $base64]);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Erro ao processar PIX: ' . $e->getMessage(), [
                 'emprestimo_id' => $this->emprestimo->id ?? null,
                 'trace' => $e->getTraceAsString()
@@ -294,18 +283,22 @@ class ProcessarPixJob implements ShouldQueue
                     $response = $this->bcodexService->criarCobranca($valor, $this->emprestimo->banco->document);
 
                     if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                        $entidade->identificador = $response->json()['txid'];
-                        $entidade->chave_pix = $response->json()['pixCopiaECola'];
-                        $entidade->save();
-                        $sucesso = true;
-                    } else {
+                        $json = $response->json();
+                        if (is_array($json) && isset($json['txid'], $json['pixCopiaECola'])) {
+                            $entidade->identificador = $json['txid'];
+                            $entidade->chave_pix = $json['pixCopiaECola'];
+                            $entidade->save();
+                            $sucesso = true;
+                        }
+                    }
+                    if (!$sucesso) {
                         $tentativas++;
                         if ($tentativas < $maxTentativas) {
                             sleep(min($tentativas * 2, 10));
                         }
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Erro ao processar cobrança: ' . $e->getMessage(), [
                     'tentativa' => $tentativas + 1,
                     'max_tentativas' => $maxTentativas,
@@ -381,10 +374,11 @@ class ProcessarPixJob implements ShouldQueue
      *
      * @return void
      */
-    public function failed(\Exception $exception)
+    public function failed(\Throwable $exception)
     {
-        // Registrar informações adicionais quando o job falha
-        Log::error('Job ProcessarPixJob falhou: ' . $exception->getMessage());
+        Log::error('Job ProcessarPixJob falhou: ' . $exception->getMessage(), [
+            'exception' => get_class($exception),
+        ]);
     }
 
     function obterSaudacao()
@@ -463,7 +457,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $this->wapiService->enviarMensagemVideo($company->token_api_wtz, $company->instance_id, ["delayMessage" => 1, "phone" => $telefoneCliente, "video" => $base64]);
             }
         } catch (\Throwable $th) {
-            dd($th);
+            Log::error('ProcessarPixJob envioMensagemVideoYoutube: ' . $th->getMessage(), [
+                'emprestimo_id' => $parcela->emprestimo->id ?? null,
+                'trace' => $th->getTraceAsString(),
+            ]);
         }
     }
 

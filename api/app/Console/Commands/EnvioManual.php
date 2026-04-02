@@ -92,6 +92,11 @@ class EnvioManual extends Command
                     });
                 })->orderBy('venc', 'desc')->first();
 
+                if (!$primeiroRegistro || !$ultimoRegistro) {
+                    $this->warn("Banco {$banco->id}: nenhuma parcela em aberto para montar intervalo Efi; ignorando.");
+                    continue;
+                }
+
                 $caminhoAbsoluto = storage_path('app/public/documentos/' . $banco['certificado']);
                 $options = [
                     'clientId' => $banco['clienteid'],

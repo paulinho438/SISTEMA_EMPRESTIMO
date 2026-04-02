@@ -3688,7 +3688,11 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
         }
 
-        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix');
+        if ($bankType === 'apix' || $bankType === 'xgate') {
+            return ['chave_pix' => $pagamentoSaldoPendente->chave_pix];
+        }
+
+        $sempreGerarNova = false;
 
         if ($pagamentoSaldoPendente->ult_dt_geracao_pix) {
             $mesmoDia = Carbon::parse($pagamentoSaldoPendente->ult_dt_geracao_pix)->toDateString() === $hoje;
@@ -3737,7 +3741,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         $banco = $parcela->emprestimo->banco;
         $bankType = $banco->resolvedBankType();
-        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix'); // XGate/APIX: sempre nova cobrança ao clicar
+
+        if ($bankType === 'apix' || $bankType === 'xgate') {
+            return ['chave_pix' => $parcela->chave_pix];
+        }
+
+        $sempreGerarNova = false;
 
         if ($parcela->ult_dt_geracao_pix) {
             $mesmoDia = Carbon::parse($parcela->ult_dt_geracao_pix)->toDateString() === $hoje;
@@ -3782,9 +3791,12 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             return ['chave_pix' => $banco->chave_pix];
         }
 
-        // XGate/APIX: gera nova cobrança ao clicar (QR expira ou geração sob demanda)
-        $sempreGerarNova = ($bankType === 'xgate' || $bankType === 'apix');
-        $deveGerar = $sempreGerarNova || ($parcela->ult_dt_geracao_pix != $hoje);
+        if ($bankType === 'apix' || $bankType === 'xgate') {
+            return ['chave_pix' => $parcela->chave_pix];
+        }
+
+        // B.Codex etc.: regenera se não gerou hoje
+        $deveGerar = ($parcela->ult_dt_geracao_pix != $hoje);
 
         if (!$deveGerar) {
             return ['chave_pix' => $parcela->chave_pix];
