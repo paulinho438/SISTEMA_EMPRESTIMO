@@ -387,31 +387,19 @@ class ProcessarWebhookXgate extends Command
     private function baixaPagamentoSaldoPendente(PagamentoSaldoPendente $pagamento, float $valor, string $horario, string $pagadorNome, string $identificadorTransacao = ''): void
     {
         $emprestimo = $pagamento->emprestimo;
+        $valorRecebido = round((float) $valor, 2);
+        $valorRestante = $valorRecebido;
+
         $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
             ->whereNull('dt_baixa')
             ->orderBy('parcela', 'asc')
             ->first();
 
-        while ($parcela && $valor > 0) {
-            if ($valor >= (float) $parcela->saldo) {
+        while ($parcela && $valorRestante > 0) {
+            if ($valorRestante >= (float) $parcela->saldo) {
                 $valorParcela = (float) $parcela->saldo;
-                $descricao = sprintf(
-                    'Baixa automática XGate - parcela Nº %d do empréstimo Nº %d do cliente %s',
-                    $parcela->id,
-                    $parcela->emprestimo_id,
-                    $parcela->emprestimo->client->nome_completo ?? 'N/I'
-                );
-                $this->registrarMovimentacaoETaxa(
-                    $parcela->emprestimo->banco_id,
-                    $parcela->emprestimo->company_id,
-                    $parcela->id,
-                    $valorParcela,
-                    $descricao,
-                    $pagadorNome,
-                    $identificadorTransacao
-                );
-                $valor -= $valorParcela;
-                $valor = round($valor, 2);
+                $valorRestante -= $valorParcela;
+                $valorRestante = round($valorRestante, 2);
                 $parcela->saldo = 0;
                 $parcela->dt_baixa = $horario;
                 $parcela->save();
@@ -422,32 +410,34 @@ class ProcessarWebhookXgate extends Command
                     $parcela->contasreceber->save();
                 }
             } else {
-                $descricao = sprintf(
-                    'Baixa parcial XGate - parcela Nº %d do empréstimo Nº %d do cliente %s',
-                    $parcela->id,
-                    $parcela->emprestimo_id,
-                    $parcela->emprestimo->client->nome_completo ?? 'N/I'
-                );
-                $this->registrarMovimentacaoETaxa(
-                    $parcela->emprestimo->banco_id,
-                    $parcela->emprestimo->company_id,
-                    $parcela->id,
-                    $valor,
-                    $descricao,
-                    $pagadorNome,
-                    $identificadorTransacao
-                );
-                $parcela->saldo -= $valor;
-                $parcela->saldo = round($parcela->saldo, 2);
+                $parcela->saldo -= $valorRestante;
+                $parcela->saldo = round((float) $parcela->saldo, 2);
                 $parcela->dt_baixa = $horario;
                 $parcela->save();
-                $valor = 0;
+                $valorRestante = 0;
             }
 
             $parcela = Parcela::where('emprestimo_id', $pagamento->emprestimo_id)
                 ->whereNull('dt_baixa')
                 ->orderBy('parcela', 'asc')
                 ->first();
+        }
+
+        if ($valorRecebido > 0 && $emprestimo->banco_id && $emprestimo->company_id !== null) {
+            $descricao = sprintf(
+                'Pagamento saldo pendente XGate - empréstimo Nº %d do cliente %s',
+                $emprestimo->id,
+                $emprestimo->client->nome_completo ?? 'N/I'
+            );
+            $this->registrarMovimentacaoETaxa(
+                $emprestimo->banco_id,
+                $emprestimo->company_id,
+                null,
+                $valorRecebido,
+                $descricao,
+                $pagadorNome,
+                $identificadorTransacao
+            );
         }
 
         $pagamento->dt_baixa = Carbon::parse($horario)->format('Y-m-d');
