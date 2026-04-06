@@ -158,7 +158,10 @@ export default {
             return !!ctx && ctx.tipo === tipo && ctx.id == id;
         },
         async copiarChavePix(tipo, id, textoAtual) {
-            if ((this.isXGate || this.isApix) && id) {
+            const gerarPixNoServidor =
+                tipo === 'pagamentoMinimo' || ((this.isXGate || this.isApix) && id);
+
+            if (gerarPixNoServidor) {
                 this.loadingPix = true;
                 this.loadingPixContext = { tipo, id };
                 try {
@@ -167,6 +170,8 @@ export default {
                         res = await this.emprestimoService.gerarPixPagamentoSaldoPendente(id);
                     } else if (tipo === 'quitacao') {
                         res = await this.emprestimoService.gerarPixPagamentoQuitacao(id);
+                    } else if (tipo === 'pagamentoMinimo') {
+                        res = await this.emprestimoService.gerarPixPagamentoMinimo(this.id_pedido);
                     } else {
                         res = await this.emprestimoService.gerarPixPagamentoParcela(id);
                     }
@@ -182,6 +187,9 @@ export default {
                         if (tipo === 'parcela' && this.products?.data?.emprestimo?.parcelas) {
                             const p = this.products.data.emprestimo.parcelas.find((x) => x.id === id);
                             if (p) p.chave_pix = chave;
+                        }
+                        if (tipo === 'pagamentoMinimo' && this.products?.data?.emprestimo?.pagamentominimo) {
+                            this.products.data.emprestimo.pagamentominimo.chave_pix = chave;
                         }
                         if (copiou) {
                             this.toast.add({
@@ -371,7 +379,13 @@ export default {
             <section v-if="this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.liberar_minimo == 1" class="payment-section">
                 <h2>Pagamento Mínimo - Juros</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.products?.data?.emprestimo?.pagamentominimo.chave_pix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.pagamentominimo.valor }}</button>
+                <button
+                    class="btn-primary"
+                    :disabled="loadingPix"
+                    @click="copiarChavePix('pagamentoMinimo', this.id_pedido, this.products?.data?.emprestimo?.pagamentominimo?.chave_pix)"
+                >
+                    Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.pagamentominimo.valor }}
+                </button>
             </section>
 
             <!-- Pagamento Mínimo -->

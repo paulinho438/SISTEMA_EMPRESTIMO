@@ -149,6 +149,7 @@ Route::post('/parcela/{id}/personalizarpagamento', [EmprestimoController::class,
 Route::post('/parcela/{id}/gerarpixpagamentoparcela', [EmprestimoController::class, 'gerarPixPagamentoParcela']);
 Route::post('/parcela/{id}/gerarpixpagamentoquitacao', [EmprestimoController::class, 'gerarPixPagamentoQuitacao']);
 Route::post('/parcela/{id}/gerarpixpagamentosaldopendente', [EmprestimoController::class, 'gerarPixPagamentoSaldoPendente']);
+Route::post('/parcela/{id}/gerarpixpagamentominimo', [EmprestimoController::class, 'gerarPixPagamentoMinimo']);
 
 Route::middleware(['auth:clientes', 'single.token'])->group(function () {
     Route::get('/clientes/app/emprestimos_andamento', [ClientController::class, 'buscarEmprestimosAndamento']);

@@ -207,8 +207,13 @@ class EmprestimoController extends Controller
 
             // Passar a parcela para enviar WhatsApp após criar cobrança
             $parcela = null;
-            if ($entidade && isset($entidade->id)) {
-                // Tentar encontrar a parcela pelo ID da entidade
+            if ($entidade instanceof PagamentoPersonalizado) {
+                $parcela = \App\Models\Parcela::with(['emprestimo.company'])
+                    ->where('emprestimo_id', $entidade->emprestimo_id)
+                    ->whereNull('dt_baixa')
+                    ->orderBy('parcela')
+                    ->first();
+            } elseif ($entidade && isset($entidade->id)) {
                 $parcela = \App\Models\Parcela::with(['emprestimo.company'])->find($entidade->id);
             }
             
@@ -3861,6 +3866,88 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         return ['chave_pix' => $quitacao->chave_pix];
     }
 
+    /**
+     * Gera/atualiza PIX do pagamento mínimo (landing pública). Id da rota = id da parcela.
+     */
+    public function gerarPixPagamentoMinimo(Request $request, $parcelaId)
+    {
+        $parcela = Parcela::with(['emprestimo.banco', 'emprestimo.client', 'emprestimo.pagamentominimo'])->find($parcelaId);
+        $hoje = Carbon::today()->toDateString();
+
+        if (!$parcela) {
+            return response()->json([
+                'message' => 'Parcela não encontrada.',
+                'error' => '',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $emprestimo = $parcela->emprestimo;
+        $minimo = $emprestimo?->pagamentominimo;
+        if (!$minimo) {
+            return response()->json([
+                'message' => 'Pagamento mínimo não configurado para este empréstimo.',
+                'error' => '',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $banco = $emprestimo->banco;
+        $bankType = $banco->resolvedBankType();
+        $valorCobranca = (float) ($minimo->valor ?? 0);
+
+        if ($valorCobranca <= 0) {
+            return response()->json([
+                'message' => 'Valor de pagamento mínimo inválido.',
+                'error' => '',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $minimo->load(['emprestimo.banco', 'emprestimo.client', 'emprestimo.company']);
+
+        if ($bankType === 'apix' || $bankType === 'xgate') {
+            if ($this->emprestimoEhRefinanciamento($emprestimo)) {
+                return ['chave_pix' => $minimo->chave_pix];
+            }
+            $result = $this->criarCobrancaPorTipoBanco($valorCobranca, $banco, $minimo);
+
+            if (!$result || empty($result['success'])) {
+                return response()->json([
+                    'message' => 'Erro ao gerar cobrança PIX.',
+                    'error' => $result['error'] ?? ($result ?? 'Erro desconhecido'),
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $minimo->identificador = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? $minimo->identificador;
+            $minimo->chave_pix = $result['pixCopiaECola'] ?? $minimo->chave_pix;
+            $minimo->ult_dt_geracao_pix = $hoje;
+            $minimo->save();
+
+            return ['chave_pix' => $minimo->chave_pix];
+        }
+
+        if ($minimo->ult_dt_geracao_pix) {
+            $mesmoDia = Carbon::parse($minimo->ult_dt_geracao_pix)->toDateString() === $hoje;
+            if ($mesmoDia && $minimo->chave_pix) {
+                return ['chave_pix' => $minimo->chave_pix];
+            }
+        }
+
+        $result = $this->criarCobrancaPorTipoBanco($valorCobranca, $banco, $minimo, $minimo->identificador);
+
+        if (!$result || empty($result['success'])) {
+            return response()->json([
+                'message' => 'Erro ao gerar cobrança PIX.',
+                'error' => $result['error'] ?? ($result ?? 'Erro desconhecido'),
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $minimo->identificador = $result['txid'] ?? $result['transaction_id'] ?? $minimo->identificador;
+        $minimo->chave_pix = $result['pixCopiaECola'] ?? $minimo->chave_pix;
+        $minimo->ult_dt_geracao_pix = $hoje;
+        $minimo->save();
+
+        return ['chave_pix' => $minimo->chave_pix];
+    }
+
     public function gerarPixPagamentoParcela(Request $request, $id)
     {
         $parcela = Parcela::with(['emprestimo.banco'])->find($id);
@@ -3930,53 +4017,79 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
     public function personalizarPagamento(Request $request, $id)
     {
-
-        $array = ['error' => '', 'data' => []];
-
-        $user = auth()->user();
-
         $dados = $request->all();
-
-        $parcela = Parcela::find($id);
-
-        if ($parcela) {
-
-            //API COBRANCA B.CODEX
-            $response = $this->bcodexService->criarCobranca($dados['valor'], $parcela->emprestimo->banco->document);
-
-            if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
-                $newPagamento = [];
-
-                $newPagamento['emprestimo_id'] = $parcela->emprestimo_id;
-                $newPagamento['valor'] = $dados['valor'];
-
-                $newPagamento['identificador'] = $response->json()['txid'];
-                $newPagamento['chave_pix'] = $response->json()['pixCopiaECola'];
-
-                PagamentoPersonalizado::create($newPagamento);
-
-                self::enviarMensagem($parcela, 'Olá ' . $parcela->emprestimo->client->nome_completo . ', estamos entrando em contato para informar sobre seu empréstimo. Conforme solicitado segue chave pix referente ao valor personalizado de R$ ' . $dados['valor'] . '');
-
-                self::enviarMensagem($parcela, $response->json()['pixCopiaECola']);
-
-                return 'ok';
-            } else {
-                return response()->json([
-                    "message" => "Erro ao gerar pagamento personalizado",
-                    "error" => $response->json()
-                ], Response::HTTP_FORBIDDEN);
-            }
-        } else {
+        $valor = isset($dados['valor']) ? (float) $dados['valor'] : 0.0;
+        if ($valor <= 0) {
             return response()->json([
-                "message" => "Erro ao gerar pagamento personalizado",
-                "error" => ''
+                'message' => 'Valor inválido.',
+                'error' => '',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $parcela = Parcela::with(['emprestimo.banco', 'emprestimo.client', 'emprestimo.company'])->find($id);
+        if (!$parcela || !$parcela->emprestimo) {
+            return response()->json([
+                'message' => 'Parcela não encontrada.',
+                'error' => '',
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if ($parcela) {
-            $array['data']['emprestimo'] = new EmprestimoResource($parcela->emprestimo);
-            return $array;
+        $emprestimo = $parcela->emprestimo;
+        $banco = $emprestimo->banco;
+        if (!$banco) {
+            return response()->json([
+                'message' => 'Banco não configurado.',
+                'error' => '',
+            ], Response::HTTP_FORBIDDEN);
         }
+
+        $pagamentoPersonalizado = PagamentoPersonalizado::create([
+            'emprestimo_id' => $emprestimo->id,
+            'valor' => $valor,
+        ]);
+
+        $pagamentoPersonalizado->load(['emprestimo.banco', 'emprestimo.client', 'emprestimo.company']);
+
+        $result = $this->criarCobrancaPorTipoBanco($valor, $banco, $pagamentoPersonalizado, null);
+
+        if (!$result || empty($result['success'])) {
+            $pagamentoPersonalizado->delete();
+
+            return response()->json([
+                'message' => 'Erro ao gerar pagamento personalizado',
+                'error' => is_array($result) ? ($result['error'] ?? '') : '',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $txid = $result['txid'] ?? $result['transaction_id'] ?? $result['invoice_id'] ?? $result['code'] ?? null;
+        $chave = $result['pixCopiaECola'] ?? null;
+
+        if (empty($chave) && $banco->resolvedBankType() !== 'cora') {
+            $pagamentoPersonalizado->delete();
+
+            return response()->json([
+                'message' => 'Erro ao gerar cobrança PIX (chave vazia).',
+                'error' => '',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $pagamentoPersonalizado->identificador = $txid;
+        $pagamentoPersonalizado->chave_pix = $chave ?? '';
+        $pagamentoPersonalizado->save();
+
+        $nomeCliente = $parcela->emprestimo->client->nome_completo ?? 'Cliente';
+        self::enviarMensagem(
+            $parcela,
+            'Olá ' . $nomeCliente . ', estamos entrando em contato para informar sobre seu empréstimo. Conforme solicitado segue chave pix referente ao valor personalizado de R$ ' . $valor . ''
+        );
+        if ($chave) {
+            self::enviarMensagem($parcela, $chave);
+        }
+
+        return response()->json([
+            'message' => 'ok',
+            'data' => ['chave_pix' => $chave],
+        ]);
     }
 
     public function webhookRetornoCobranca(Request $request)
