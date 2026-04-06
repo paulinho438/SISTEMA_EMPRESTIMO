@@ -116,6 +116,7 @@ class EmprestimoController extends Controller
      */
     protected function emprestimoEhRefinanciamento(Emprestimo $emprestimo): bool
     {
+        return false;
         return strtoupper((string) ($emprestimo->tipo_origem ?? '')) === 'REFINANCIAMENTO';
     }
 
