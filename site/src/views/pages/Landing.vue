@@ -9,6 +9,15 @@ import { useConfirm } from 'primevue/useconfirm';
 
 import moment from 'moment';
 
+/**
+ * Landing "Histórico de Parcelas" — botões PIX.
+ * Fonte de dados: EmprestimoService.infoEmprestimoFront → POST /parcela/:id/infoemprestimofront
+ * (EmprestimoController::infoEmprestimoFront).
+ *
+ * - Valor pendente do dia: renderiza se `emprestimo.pagamentosaldopendente` existir (a API pode criar
+ *   o registro em `pagamento_saldo_pendente` quando faltava, desde que haja parcela aberta e valor > 0).
+ * - Quitar empréstimo: renderiza se `emprestimo.quitacao` existir e `quitacao.saldo` > 0 (total em aberto).
+ */
 export default {
     components: {
         FullScreenLoading, // Registra o componente
@@ -346,8 +355,11 @@ export default {
                 </button>
             </section>
 
-            <!-- Quitar Empréstimo -->
-            <section v-if="(this.products?.data?.emprestimo?.quitacao?.saldo && this.products?.data?.emprestimo?.quitacao?.saldo != this.products?.data?.emprestimo?.pagamentosaldopendente?.valor) && (this.products?.data?.emprestimo?.saldoareceber != this.encontrarPrimeiraParcelaPendente().saldo)" class="payment-section">
+            <!-- Quitar Empréstimo (independe do valor pendente do dia; ambos podem aparecer juntos) -->
+            <section
+                v-if="this.products?.data?.emprestimo?.quitacao && Number(this.products?.data?.emprestimo?.quitacao?.saldo) > 0"
+                class="payment-section"
+            >
                 <h2>Quitar Empréstimo</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix para quitar o valor total do empréstimo.</p>
                 <button class="btn-primary" :disabled="loadingPix" @click="copiarChavePix('quitacao', this.products?.data?.emprestimo?.quitacao?.id, this.products?.data?.emprestimo?.quitacao?.chave_pix)">

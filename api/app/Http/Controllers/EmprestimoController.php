@@ -135,6 +135,45 @@ class EmprestimoController extends Controller
     }
 
     /**
+     * Garante registro em `pagamento_saldo_pendente` para empréstimos antigos ou migrados sem linha,
+     * para a landing pública exibir o botão "Valor pendente do dia" e o endpoint `gerarPixPagamentoSaldoPendente` ter id.
+     *
+     * Visibilidade no front (Landing): bloco saldo pendente depende de `pagamentosaldopendente` não nulo;
+     * quitação usa `quitacao.saldo` > 0 (valor total em aberto via totalPendente).
+     */
+    protected function ensurePagamentoSaldoPendenteParaLanding(Emprestimo $emprestimo, Parcela $parcelaReferencia): void
+    {
+        if ($emprestimo->pagamentosaldopendente) {
+            return;
+        }
+
+        $temParcelaAberta = $emprestimo->parcelas->whereNull('dt_baixa')->isNotEmpty();
+        if (!$temParcelaAberta) {
+            return;
+        }
+
+        $valor = 0.0;
+        if (method_exists($parcelaReferencia, 'totalPendenteHoje')) {
+            $valor = (float) $parcelaReferencia->totalPendenteHoje();
+        }
+        if ($valor <= 0) {
+            $primeiraAberta = Parcela::where('emprestimo_id', $emprestimo->id)
+                ->whereNull('dt_baixa')
+                ->orderBy('parcela')
+                ->first();
+            $valor = $primeiraAberta ? (float) ($primeiraAberta->saldo ?? 0) : 0.0;
+        }
+        if ($valor <= 0) {
+            return;
+        }
+
+        PagamentoSaldoPendente::firstOrCreate(
+            ['emprestimo_id' => $emprestimo->id],
+            ['valor' => round($valor, 2)]
+        );
+    }
+
+    /**
      * Cria cobrança baseado no tipo de banco
      * 
      * @param float $valor Valor da cobrança
@@ -3515,6 +3554,14 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
     }
 
 
+    /**
+     * Dados da landing pública "Histórico de Parcelas" (site).
+     *
+     * Campos relevantes para PIX:
+     * - `pagamentosaldopendente`: presente se existir linha em `pagamento_saldo_pendente` (ou criada por ensure ao abrir a tela);
+     *   `valor` reflete o pendente do dia (totalPendenteHoje alinhado ao cálculo do front).
+     * - `quitacao`: presente se existir registro de quitação; `saldo` = total em aberto do empréstimo (soma das parcelas sem baixa).
+     */
     public function infoEmprestimoFront(Request $request, $id)
     {
         $parcela = Parcela::with([
@@ -3535,6 +3582,9 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         $emprestimo = $parcela->emprestimo;
+
+        $this->ensurePagamentoSaldoPendenteParaLanding($emprestimo, $parcela);
+        $emprestimo->load('pagamentosaldopendente');
 
         $valorPendenteHoje = (method_exists($parcela, 'totalPendenteHoje'))
             ? $parcela->totalPendenteHoje()
