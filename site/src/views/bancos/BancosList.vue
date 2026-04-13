@@ -86,7 +86,8 @@ export default {
             });
         },
         getSaldoExibir(data) {
-            const usaSaldoApi = data.wallet || data.bank_type === 'xgate';
+            const usaSaldoApi =
+                data.wallet || ['xgate', 'apix', 'goldpix'].includes(data.bank_type);
             const valor = usaSaldoApi ? (data.saldo_banco ?? data.saldo) : data.saldo;
             return valor != null ? valor : 0;
         },

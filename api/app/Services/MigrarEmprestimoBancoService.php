@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Jobs\ProcessarPixApixJob;
+use App\Jobs\ProcessarPixGoldpixJob;
 use App\Jobs\ProcessarPixJob;
 use App\Jobs\ProcessarPixXgateJob;
 use App\Models\Banco;
@@ -57,10 +58,10 @@ class MigrarEmprestimoBancoService
             return ['success' => false, 'message' => 'Banco destino não encontrado.'];
         }
 
-        $bankTypesPermitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
+        $bankTypesPermitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora', 'goldpix'];
         $bankType = $this->tipoBancoParaCobrancaPix($bancoDestino);
         if (!in_array($bankType, $bankTypesPermitidos, true)) {
-            return ['success' => false, 'message' => 'O banco destino deve ser do tipo Bcodex, APIX, XGate, Velana ou Cora.'];
+            return ['success' => false, 'message' => 'O banco destino deve ser do tipo Bcodex, APIX, XGate, Velana, Cora ou GoldPix.'];
         }
 
         $temParcelaPendente = $emprestimo->parcelas->contains(fn ($p) => $p->dt_baixa === null);
@@ -113,6 +114,8 @@ class MigrarEmprestimoBancoService
 
             if ($bankType === 'apix') {
                 ProcessarPixApixJob::dispatch($emprestimo, []);
+            } elseif ($bankType === 'goldpix') {
+                ProcessarPixGoldpixJob::dispatch($emprestimo, []);
             } elseif ($bankType === 'xgate') {
                 ProcessarPixXgateJob::dispatch($emprestimo, [], 'cpf');
             } elseif ($bankType === 'bcodex') {

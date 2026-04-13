@@ -35,6 +35,8 @@ use App\Http\Controllers\{
     XGateWebhookController,
     ApixWebhookController,
     ApixTestController,
+    GoldPixTestController,
+    GoldPixWebhookController,
     CoraTestController,
     RelatorioFiscalController,
     RelatorioLucroRealController,
@@ -87,6 +89,7 @@ Route::post('/webhook/retorno_cobranca', [EmprestimoController::class, 'webhookR
 Route::post('/webhook/retorno_pagamento', [EmprestimoController::class, 'webhookPagamento']);
 Route::post('/webhook/xgate', [XGateWebhookController::class, 'receber']);
 Route::post('/webhook/apix', [ApixWebhookController::class, 'receber']);
+Route::post('/webhook/goldpix', [GoldPixWebhookController::class, 'receber']);
 Route::post('/webhook/corrigir_registros_webhook', [EmprestimoController::class, 'corrigirRegistrosWebhook']);
 Route::post('/manutencao/corrigir_pix', [EmprestimoController::class, 'corrigirPix']);
 Route::post('/manutencao/corrigir_pix_parcela', [EmprestimoController::class, 'corrigirValoresPix']);
@@ -138,6 +141,10 @@ Route::middleware(['throttle:test'])->group(function () {
     Route::post('/apix/teste/cobranca', [ApixTestController::class, 'testarCobranca']);
     Route::post('/apix/teste/saque', [ApixTestController::class, 'testarSaque']);
     Route::post('/apix/teste/consultar-saldo', [ApixTestController::class, 'consultarSaldo']);
+
+    Route::post('/goldpix/teste/cobranca', [GoldPixTestController::class, 'testarCobranca']);
+    Route::post('/goldpix/teste/saque', [GoldPixTestController::class, 'testarSaque']);
+    Route::post('/goldpix/teste/consultar-saldo', [GoldPixTestController::class, 'consultarSaldo']);
 });
 
 Route::post('/auth/login', [AuthController::class, 'login']);

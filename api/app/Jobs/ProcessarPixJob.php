@@ -9,7 +9,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use App\Services\ApixService;
 use App\Services\BcodexService;
+use App\Services\GoldPixService;
 use App\Services\XGateService;
 use App\Models\Parcela;
 use App\Models\Quitacao;
@@ -245,34 +247,53 @@ class ProcessarPixJob implements ShouldQueue
         $bankType = $this->emprestimo->banco->resolvedBankType();
 
         $tipoOrigem = strtoupper((string) ($this->emprestimo->tipo_origem ?? ''));
-        if ($tipoOrigem === 'REFINANCIAMENTO' && in_array($bankType, ['xgate', 'apix'], true)) {
+        if ($tipoOrigem === 'REFINANCIAMENTO' && in_array($bankType, ['xgate', 'apix', 'goldpix'], true)) {
             return;
         }
 
         while ($tentativas < $maxTentativas && !$sucesso) {
             try {
-                if ($bankType === 'xgate') {
+                if ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                     $cliente = $this->emprestimo->client;
                     if (!$cliente) {
-                        Log::channel('xgate')->error('ProcessarPixJob: cliente ausente para cobrança XGate', [
+                        $ch = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                        Log::channel($ch)->error("ProcessarPixJob: cliente ausente para cobrança {$bankType}", [
                             'emprestimo_id' => $this->emprestimo->id,
                         ]);
                         break;
                     }
 
                     $banco = $this->emprestimo->banco;
-                    $xgateService = new XGateService($banco);
                     $referenceId = $this->montarReferenceIdCobranca($entidade);
                     $dueDate = $this->dueDateParaCobrancaXgate($entidade);
-                    $documentoXgate = $this->documentoXgateParaCliente($cliente);
 
-                    $response = $xgateService->criarCobranca(
-                        (float) $valor,
-                        $cliente,
-                        $referenceId,
-                        $dueDate,
-                        $documentoXgate
-                    );
+                    if ($bankType === 'xgate') {
+                        $xgateService = new XGateService($banco);
+                        $documentoXgate = $this->documentoXgateParaCliente($cliente);
+                        $response = $xgateService->criarCobranca(
+                            (float) $valor,
+                            $cliente,
+                            $referenceId,
+                            $dueDate,
+                            $documentoXgate
+                        );
+                    } elseif ($bankType === 'apix') {
+                        $apixService = new ApixService($banco);
+                        $response = $apixService->criarCobranca(
+                            (float) $valor,
+                            $cliente,
+                            $referenceId,
+                            $dueDate
+                        );
+                    } else {
+                        $goldPixService = new GoldPixService($banco);
+                        $response = $goldPixService->criarCobranca(
+                            (float) $valor,
+                            $cliente,
+                            $referenceId,
+                            $dueDate
+                        );
+                    }
 
                     if (is_array($response) && !empty($response['success'])) {
                         $entidade->identificador = $response['transaction_id'] ?? $referenceId;
@@ -280,7 +301,7 @@ class ProcessarPixJob implements ShouldQueue
                         $entidade->save();
                         $entidade->loadMissing('emprestimo.banco', 'emprestimo.client');
                         CobrancaPixIdentificadorHistorico::registrarCobranca(
-                            'xgate',
+                            $bankType,
                             $entidade->identificador,
                             $entidade,
                             (float) $valor,

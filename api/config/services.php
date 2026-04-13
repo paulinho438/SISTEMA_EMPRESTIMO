@@ -36,4 +36,8 @@ return [
         'website' => env('APIX_WEBSITE_URL', 'https://api.agecontrole.com.br'),
     ],
 
+    'goldpix' => [
+        'callback_url' => env('GOLDPIX_CALLBACK_URL', 'https://api.agecontrole.com.br/api/webhook/goldpix'),
+    ],
+
 ];

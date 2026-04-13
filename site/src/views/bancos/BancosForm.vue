@@ -46,7 +46,8 @@ export default {
 				{ label: 'Cora', value: 'cora' },
 				{ label: 'Velana', value: 'velana' },
 				{ label: 'XGate', value: 'xgate' },
-				{ label: 'APIX', value: 'apix' }
+				{ label: 'APIX', value: 'apix' },
+				{ label: 'GoldPix', value: 'goldpix' }
 			]
 		}
 	},
@@ -214,7 +215,7 @@ export default {
 		/** Wallet pode ser usado com Bcodex, XGate, APIX ou Velana */
 		walletEditavel() {
 			const t = this.banco?.bank_type;
-			return ['bcodex', 'xgate', 'apix', 'velana'].includes(t);
+			return ['bcodex', 'xgate', 'apix', 'velana', 'goldpix'].includes(t);
 		}
 	},
 	mounted() {
@@ -555,6 +556,51 @@ export default {
 					/>
 					<small v-if="errors?.apix_client_secret" class="text-red-500 pl-2">{{ errors?.apix_client_secret[0] }}</small>
 					<small class="text-gray-500 pl-2">Será criptografado. Obtenha no painel APIX.</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'goldpix'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="goldpix_base_url">GoldPix — URL da API</label>
+					<InputText
+						:modelValue="banco?.goldpix_base_url"
+						v-model="banco.goldpix_base_url"
+						id="goldpix_base_url"
+						class="w-full p-inputtext-sm"
+						placeholder="https://api.goldpix.tech (vazio = padrão)"
+						:class="{ 'p-invalid': errors?.goldpix_base_url }"
+					/>
+					<small v-if="errors?.goldpix_base_url" class="text-red-500 pl-2">{{ errors?.goldpix_base_url[0] }}</small>
+					<small class="text-gray-500 pl-2">Documentação: api.goldpix.tech/docs</small>
+				</div>
+			</div>
+			<div v-if="banco?.bank_type === 'goldpix'" class="formgrid grid">
+				<div class="field col-12 md:col-6 lg:col-6 xl:col-6">
+					<label for="goldpix_api_key">GoldPix — API Key (X-API-Key)</label>
+					<InputText
+						:modelValue="banco?.goldpix_api_key"
+						v-model="banco.goldpix_api_key"
+						id="goldpix_api_key"
+						type="password"
+						class="w-full p-inputtext-sm"
+						placeholder="Sua API Key"
+						:class="{ 'p-invalid': errors?.goldpix_api_key }"
+					/>
+					<small v-if="errors?.goldpix_api_key" class="text-red-500 pl-2">{{ errors?.goldpix_api_key[0] }}</small>
+					<small class="text-gray-500 pl-2">Será criptografada no servidor.</small>
+				</div>
+				<div class="field col-12 md:col-6 lg:col-6 xl:col-6">
+					<label for="goldpix_webhook_secret">GoldPix — segredo do webhook (opcional)</label>
+					<InputText
+						:modelValue="banco?.goldpix_webhook_secret"
+						v-model="banco.goldpix_webhook_secret"
+						id="goldpix_webhook_secret"
+						type="password"
+						class="w-full p-inputtext-sm"
+						placeholder="Para validação de assinatura"
+						:class="{ 'p-invalid': errors?.goldpix_webhook_secret }"
+					/>
+					<small v-if="errors?.goldpix_webhook_secret" class="text-red-500 pl-2">{{ errors?.goldpix_webhook_secret[0] }}</small>
 				</div>
 			</div>
 

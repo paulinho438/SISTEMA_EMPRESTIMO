@@ -208,6 +208,12 @@ const model = ref([
                         permission: 'view_dashboard'
                     },
                     {
+                        label: 'Teste GoldPix',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/goldpix/teste',
+                        permission: 'view_dashboard'
+                    },
+                    {
                         label: 'Teste Cora',
                         icon: 'pi pi-fw pi-cog',
                         to: '/cora/teste',

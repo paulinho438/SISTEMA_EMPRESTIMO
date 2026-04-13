@@ -8,6 +8,7 @@ use App\Models\Permgroup;
 use App\Models\Parcela;
 use App\Services\ApixService;
 use App\Services\BcodexService;
+use App\Services\GoldPixService;
 use App\Services\XGateService;
 use App\Models\CustomLog;
 use Illuminate\Support\Facades\Log;
@@ -83,6 +84,19 @@ class BancosComSaldoResource extends JsonResource
                 }
             } catch (\Throwable $e) {
                 Log::channel('apix')->warning('BancosComSaldoResource: erro ao consultar saldo APIX - ' . $e->getMessage());
+            }
+            return null;
+        }
+
+        if ($bankType === 'goldpix') {
+            try {
+                $goldPixService = new GoldPixService($this->resource);
+                $result = $goldPixService->consultarSaldoDisponivel();
+                if (!empty($result['success']) && isset($result['balance']) && is_numeric($result['balance'])) {
+                    return (float) $result['balance'];
+                }
+            } catch (\Throwable $e) {
+                Log::channel('goldpix')->warning('BancosComSaldoResource: erro ao consultar saldo GoldPix - ' . $e->getMessage());
             }
             return null;
         }

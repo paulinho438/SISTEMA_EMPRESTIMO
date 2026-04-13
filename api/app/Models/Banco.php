@@ -32,7 +32,10 @@ class Banco extends Model
         'apix_base_url',
         'apix_api_key',
         'apix_client_id',
-        'apix_client_secret'
+        'apix_client_secret',
+        'goldpix_api_key',
+        'goldpix_base_url',
+        'goldpix_webhook_secret',
     ];
 
     public function company()

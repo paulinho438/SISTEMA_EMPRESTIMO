@@ -26,6 +26,7 @@ import localizacaousuarioRoutes from './localizacaousuario.js';
 import VelanaRoutes from './velana.js';
 import XGateRoutes from './xgate.js';
 import ApixRoutes from './apix.js';
+import GoldpixRoutes from './goldpix.js';
 import CoraRoutes from './cora.js';
 import WapiRoutes from './wapi.js';
 import RelatoriosRoutes from './relatorios.js';
@@ -70,6 +71,7 @@ const router = createRouter({
                 ...VelanaRoutes,
                 ...XGateRoutes,
                 ...ApixRoutes,
+                ...GoldpixRoutes,
                 ...CoraRoutes,
                 ...WapiRoutes,
                 ...RelatoriosRoutes,

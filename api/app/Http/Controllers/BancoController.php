@@ -126,6 +126,22 @@ class BancoController extends Controller
                 $dados['apix_client_secret'] = null;
             }
 
+            if (($dados['bank_type'] ?? 'normal') === 'goldpix') {
+                if (isset($dados['goldpix_api_key']) && !empty($dados['goldpix_api_key'])) {
+                    $dados['goldpix_api_key'] = Crypt::encryptString($dados['goldpix_api_key']);
+                }
+                if (isset($dados['goldpix_webhook_secret']) && !empty($dados['goldpix_webhook_secret'])) {
+                    $dados['goldpix_webhook_secret'] = Crypt::encryptString($dados['goldpix_webhook_secret']);
+                }
+                if (isset($dados['goldpix_base_url']) && empty($dados['goldpix_base_url'])) {
+                    unset($dados['goldpix_base_url']);
+                }
+            } else {
+                $dados['goldpix_api_key'] = null;
+                $dados['goldpix_base_url'] = null;
+                $dados['goldpix_webhook_secret'] = null;
+            }
+
             $newGroup = Banco::create($dados);
 
             return response()->json([
@@ -241,6 +257,22 @@ class BancoController extends Controller
                     $EditBanco->apix_api_key = null;
                     $EditBanco->apix_client_id = null;
                     $EditBanco->apix_client_secret = null;
+                }
+
+                if (($EditBanco->bank_type ?? 'normal') === 'goldpix') {
+                    if (isset($dados['goldpix_api_key']) && !empty($dados['goldpix_api_key'])) {
+                        $EditBanco->goldpix_api_key = Crypt::encryptString($dados['goldpix_api_key']);
+                    }
+                    if (isset($dados['goldpix_webhook_secret']) && !empty($dados['goldpix_webhook_secret'])) {
+                        $EditBanco->goldpix_webhook_secret = Crypt::encryptString($dados['goldpix_webhook_secret']);
+                    }
+                    if (isset($dados['goldpix_base_url'])) {
+                        $EditBanco->goldpix_base_url = $dados['goldpix_base_url'] ?: null;
+                    }
+                } else {
+                    $EditBanco->goldpix_api_key = null;
+                    $EditBanco->goldpix_base_url = null;
+                    $EditBanco->goldpix_webhook_secret = null;
                 }
 
                 $EditBanco->save();

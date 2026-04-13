@@ -60,6 +60,9 @@ export default {
         isApix() {
             return this.products?.data?.emprestimo?.banco?.bank_type === 'apix';
         },
+        isGoldpix() {
+            return this.products?.data?.emprestimo?.banco?.bank_type === 'goldpix';
+        },
         valorPendenteHoje() {
             // Retornar o valor calculado e armazenado
             return this.valorPendenteHojeCalculado || 0;
@@ -175,7 +178,7 @@ export default {
             }
 
             const gerarPixNoServidor =
-                tipo === 'pagamentoMinimo' || ((this.isXGate || this.isApix) && idEfetivo);
+                tipo === 'pagamentoMinimo' || ((this.isXGate || this.isApix || this.isGoldpix) && idEfetivo);
 
             if (gerarPixNoServidor) {
                 this.loadingPix = true;

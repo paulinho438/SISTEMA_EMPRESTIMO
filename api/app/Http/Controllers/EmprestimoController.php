@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\File;
 use App\Services\BcodexService;
 use App\Services\MigrarEmprestimoBancoService;
 use App\Services\ApixService;
+use App\Services\GoldPixService;
 use App\Services\CoraService;
 use App\Services\VelanaService;
 use App\Services\XGateService;
@@ -47,6 +48,7 @@ use Efi\Exception\EfiException;
 use Efi\EfiPay;
 
 use App\Jobs\ProcessarPixApixJob;
+use App\Jobs\ProcessarPixGoldpixJob;
 use App\Jobs\ProcessarPixJob;
 use App\Jobs\ProcessarPixXgateJob;
 use App\Jobs\EnviarComprovanteFornecedor;
@@ -97,6 +99,9 @@ class EmprestimoController extends Controller
 
     /** Taxa APIX em reais (cobrada em cada transferência e em cada recebimento) */
     private const TAXA_APIX = 0.30;
+
+    /** Taxa GoldPix em reais (cobrada em cada transferência e em cada recebimento) */
+    private const TAXA_GOLDPIX = 0.30;
 
     protected $custom_log;
     protected $bcodexService;
@@ -361,6 +366,51 @@ class EmprestimoController extends Controller
                 }
             } catch (\Exception $e) {
                 Log::channel('apix')->error('Exceção ao criar cobrança APIX: ' . $e->getMessage());
+                return false;
+            }
+        } elseif ($bankType === 'goldpix') {
+            if (!$entidade || !$entidade->emprestimo || !$entidade->emprestimo->client) {
+                Log::channel('goldpix')->error('Erro ao criar cobrança GoldPix: Entidade, empréstimo ou cliente não encontrado');
+                return false;
+            }
+
+            try {
+                $goldPixService = new GoldPixService($banco);
+                $cliente = $entidade->emprestimo->client;
+                $cliente->loadMissing('address');
+                $referenceId = $entidade->id . '_' . time();
+
+                $dueDate = null;
+                if (isset($entidade->venc_real) && $entidade->venc_real) {
+                    $dueDate = is_string($entidade->venc_real)
+                        ? date('Y-m-d', strtotime($entidade->venc_real))
+                        : $entidade->venc_real->format('Y-m-d');
+                }
+
+                $response = $goldPixService->criarCobranca($valor, $cliente, $referenceId, $dueDate);
+
+                if (isset($response['success']) && $response['success']) {
+                    CobrancaPixIdentificadorHistorico::registrarCobranca(
+                        'goldpix',
+                        $response['transaction_id'] ?? null,
+                        $entidade,
+                        $valor,
+                        $referenceId
+                    );
+                    return [
+                        'success' => true,
+                        'transaction_id' => $response['transaction_id'] ?? $referenceId,
+                        'txid' => $response['transaction_id'] ?? $referenceId,
+                        'code' => $response['code'] ?? null,
+                        'reference_id' => $referenceId,
+                        'pixCopiaECola' => $response['pixCopiaECola'] ?? $response['qr_code'] ?? null,
+                        'response' => $response['response'] ?? $response,
+                    ];
+                }
+                Log::channel('goldpix')->error('Erro ao criar cobrança GoldPix: ' . ($response['error'] ?? 'Resposta inválida'));
+                return false;
+            } catch (\Exception $e) {
+                Log::channel('goldpix')->error('Exceção ao criar cobrança GoldPix: ' . $e->getMessage());
                 return false;
             }
         } elseif ($bankType === 'bcodex' || $banco->wallet == 1) {
@@ -1746,7 +1796,7 @@ class EmprestimoController extends Controller
 
             $bankTipoPagamento = $emprestimo->banco->resolvedBankType();
             $isWalletOuXgateOuVelanaOuApix = ($emprestimo->banco->wallet == 1)
-                || in_array($bankTipoPagamento, ['xgate', 'velana', 'apix'], true);
+                || in_array($bankTipoPagamento, ['xgate', 'velana', 'apix', 'goldpix'], true);
 
             if ($isWalletOuXgateOuVelanaOuApix) {
                 if (!$emprestimo->client->pix_cliente) {
@@ -2035,6 +2085,104 @@ class EmprestimoController extends Controller
                             "error" => $e->getMessage()
                         ], Response::HTTP_FORBIDDEN);
                     }
+                } elseif ($bankTipoPagamento === 'goldpix') {
+                    try {
+                        $goldPixService = new GoldPixService($emprestimo->banco);
+                        $keyInfo = $goldPixService->obterPixKeyTypeParaSaque(
+                            $emprestimo->client->pix_cliente,
+                            $emprestimo->client->cpf ?? null
+                        );
+                        if (!$keyInfo['ok']) {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => $keyInfo['error']
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                        $tipoPix = $keyInfo['pix_key_type'];
+                        $pixKeyEnvio = $goldPixService->normalizarChavePixParaEnvio($emprestimo->client->pix_cliente, $tipoPix);
+                        $externalId = 'emp_' . $emprestimo->id . '_' . time();
+                        $postbackUrl = config('services.goldpix.callback_url');
+
+                        $response = $goldPixService->solicitarSaque(
+                            (float) $valorPagamento,
+                            $pixKeyEnvio,
+                            $tipoPix,
+                            $externalId,
+                            $postbackUrl
+                        );
+
+                        if (isset($response['success']) && $response['success']) {
+                            $emprestimo->contaspagar->status = 'Pagamento Efetuado';
+                            $emprestimo->contaspagar->dt_baixa = date('Y-m-d');
+                            $emprestimo->contaspagar->save();
+
+                            $array['response'] = $response;
+
+                            $idTransacao = $response['transaction_id'] ?? $externalId;
+                            $dados = [
+                                'valor' => $valorPagamento,
+                                'tipo_transferencia' => 'PIX',
+                                'descricao' => 'Transferência realizada com sucesso',
+                                'destino_nome' => $emprestimo->client->nome_completo,
+                                'destino_cpf' => self::mascararString($emprestimo->client->cpf),
+                                'destino_chave_pix' => $emprestimo->client->pix_cliente,
+                                'destino_instituicao' => 'GoldPix',
+                                'destino_banco' => '000',
+                                'destino_agencia' => '0000',
+                                'destino_conta' => '000000-0',
+                                'origem_nome' => 'GoldPix',
+                                'origem_cnpj' => '',
+                                'origem_instituicao' => 'GoldPix',
+                                'data_hora' => date('d/m/Y H:i:s'),
+                                'id_transacao' => $idTransacao,
+                                'is_goldpix' => true,
+                            ];
+
+                            $array['dados'] = $dados;
+
+                            Movimentacaofinanceira::create([
+                                'banco_id' => $emprestimo->banco->id,
+                                'company_id' => $emprestimo->company_id,
+                                'descricao' => 'T Empréstimo Nº ' . $emprestimo->id . ' para ' . $emprestimo->client->nome_completo . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                                'tipomov' => 'S',
+                                'dt_movimentacao' => date('Y-m-d'),
+                                'valor' => $valorPagamento,
+                            ]);
+
+                            Movimentacaofinanceira::create([
+                                'banco_id' => $emprestimo->banco->id,
+                                'company_id' => $emprestimo->company_id,
+                                'descricao' => 'Taxa GoldPix (R$ ' . number_format(self::TAXA_GOLDPIX, 2, ',', '.') . ')' . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                                'tipomov' => 'S',
+                                'dt_movimentacao' => date('Y-m-d'),
+                                'valor' => self::TAXA_GOLDPIX,
+                            ]);
+
+                            $emprestimo->banco->saldo -= ($valorPagamento + self::TAXA_GOLDPIX);
+                            $emprestimo->banco->save();
+
+                            ProcessarPixGoldpixJob::dispatch($emprestimo, $array);
+
+                            Log::channel('goldpix')->info('Pagamento GoldPix autorizado e comprovante enfileirado', [
+                                'emprestimo_id' => $emprestimo->id,
+                                'valor' => $valorPagamento,
+                                'transaction_id' => $idTransacao,
+                            ]);
+                        } else {
+                            return response()->json([
+                                "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                                "error" => $response['error'] ?? 'Erro ao realizar transferência via GoldPix'
+                            ], Response::HTTP_FORBIDDEN);
+                        }
+                    } catch (\Exception $e) {
+                        Log::channel('goldpix')->error('Erro ao efetuar transferência GoldPix: ' . $e->getMessage(), [
+                            'emprestimo_id' => $emprestimo->id,
+                        ]);
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferencia do Emprestimo.",
+                            "error" => $e->getMessage()
+                        ], Response::HTTP_FORBIDDEN);
+                    }
                 } else {
                     // Lógica Bcodex (mantida como estava)
                     $accountId = $emprestimo->banco->accountId ?? null;
@@ -2099,15 +2247,16 @@ class EmprestimoController extends Controller
             } else {
                 // Banco não é wallet/xgate/velana/apix: fluxo sem API (ex.: transferência manual)
                 $bankType = $emprestimo->banco->resolvedBankType();
-                if ($bankType === 'xgate' || $bankType === 'velana' || $bankType === 'apix') {
-                    Log::channel($bankType === 'apix' ? 'apix' : 'xgate')->error('Pagamento ao cliente: banco ' . strtoupper($bankType) . ' sem chamada à API (wallet=0?). Não marcar como pago.', [
+                if ($bankType === 'xgate' || $bankType === 'velana' || $bankType === 'apix' || $bankType === 'goldpix') {
+                    $logChannel = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                    Log::channel($logChannel)->error('Pagamento ao cliente: banco ' . strtoupper($bankType) . ' sem chamada à API (wallet=0?). Não marcar como pago.', [
                         'emprestimo_id' => $emprestimo->id,
                         'banco_id' => $emprestimo->banco->id,
                         'bank_type' => $bankType,
                     ]);
                     return response()->json([
                         "message" => "Erro ao efetuar a transferencia do Emprestimo.",
-                        "error" => 'Configuração inválida: banco XGate/Velana/APIX deve ter wallet ativo. Contate o suporte.'
+                        "error" => 'Configuração inválida: banco XGate/Velana/APIX/GoldPix deve ter wallet ativo. Contate o suporte.'
                     ], Response::HTTP_FORBIDDEN);
                 }
 
@@ -2292,7 +2441,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             }
 
             $bankType = $contaspagar->banco->resolvedBankType();
-            if ($bankType === 'xgate' || $bankType === 'apix') {
+            if ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                 if (!$contaspagar->fornecedor->pix_fornecedor) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferência.",
@@ -2594,6 +2743,108 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 }
             }
 
+            if ($bankType === 'goldpix') {
+                if (!$contaspagar->fornecedor->pix_fornecedor) {
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => 'Fornecedor não possui chave PIX cadastrada'
+                    ], Response::HTTP_FORBIDDEN);
+                }
+                try {
+                    $goldPixService = new GoldPixService($contaspagar->banco);
+                    $docFornecedor = preg_replace('/\D/', '', (string) ($contaspagar->fornecedor->cpfcnpj ?? ''));
+                    $keyInfo = $goldPixService->obterPixKeyTypeParaSaque(
+                        $contaspagar->fornecedor->pix_fornecedor,
+                        $docFornecedor !== '' ? $docFornecedor : null
+                    );
+                    if (!$keyInfo['ok']) {
+                        return response()->json([
+                            "message" => "Erro ao efetuar a transferência do Título.",
+                            "error" => $keyInfo['error']
+                        ], Response::HTTP_FORBIDDEN);
+                    }
+                    $tipoPix = $keyInfo['pix_key_type'];
+                    $pixKeyEnvio = $goldPixService->normalizarChavePixParaEnvio($contaspagar->fornecedor->pix_fornecedor, $tipoPix);
+                    $externalId = 'tit_' . $contaspagar->id . '_' . time();
+                    $postbackUrl = config('services.goldpix.callback_url');
+
+                    $response = $goldPixService->solicitarSaque(
+                        (float) $contaspagar->valor,
+                        $pixKeyEnvio,
+                        $tipoPix,
+                        $externalId,
+                        $postbackUrl
+                    );
+                    if (isset($response['success']) && $response['success']) {
+                        $contaspagar->status = 'Pagamento Efetuado';
+                        $contaspagar->dt_baixa = date('Y-m-d');
+                        $contaspagar->save();
+
+                        $idTransacao = $response['transaction_id'] ?? $externalId;
+                        $dados = [
+                            'valor' => $contaspagar->valor,
+                            'tipo_transferencia' => 'PIX',
+                            'descricao' => 'Transferência realizada com sucesso',
+                            'destino_nome' => $contaspagar->fornecedor->nome_completo,
+                            'destino_cpf' => self::mascararString($contaspagar->fornecedor->cpfcnpj),
+                            'destino_chave_pix' => $contaspagar->fornecedor->pix_fornecedor,
+                            'destino_instituicao' => 'GoldPix',
+                            'destino_banco' => '000',
+                            'destino_agencia' => '0000',
+                            'destino_conta' => '000000-0',
+                            'origem_nome' => 'GoldPix',
+                            'origem_cnpj' => '',
+                            'origem_instituicao' => 'GoldPix',
+                            'data_hora' => date('d/m/Y H:i:s'),
+                            'id_transacao' => $idTransacao,
+                        ];
+                        $array['response'] = $response;
+                        $array['dados'] = $dados;
+
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $contaspagar->banco->id,
+                            'company_id' => $contaspagar->company_id,
+                            'descricao' => 'T Título Nº ' . $contaspagar->id . ' para ' . $contaspagar->fornecedor->nome_completo . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => $contaspagar->valor,
+                        ]);
+                        Movimentacaofinanceira::create([
+                            'banco_id' => $contaspagar->banco->id,
+                            'company_id' => $contaspagar->company_id,
+                            'descricao' => 'Taxa GoldPix (R$ ' . number_format(self::TAXA_GOLDPIX, 2, ',', '.') . ')' . ($idTransacao ? ' | ID transação: ' . $idTransacao : ''),
+                            'tipomov' => 'S',
+                            'dt_movimentacao' => date('Y-m-d'),
+                            'valor' => self::TAXA_GOLDPIX,
+                        ]);
+                        $contaspagar->banco->saldo -= ($contaspagar->valor + self::TAXA_GOLDPIX);
+                        $contaspagar->banco->save();
+
+                        EnviarComprovanteFornecedor::dispatch($contaspagar, $this->bcodexService, $array);
+
+                        $this->custom_log->create([
+                            'user_id' => auth()->user()->id,
+                            'content' => 'O usuário: ' . auth()->user()->nome_completo . ' autorizou o pagamento do titulo ' . $id . ' no valor de R$ ' . $contaspagar->valor . ' para o fornecedor ' . $contaspagar->fornecedor->nome_completo,
+                            'operation' => 'edit'
+                        ]);
+                        DB::commit();
+                        return $array;
+                    }
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => $response['error'] ?? 'Erro ao realizar transferência via GoldPix'
+                    ], Response::HTTP_FORBIDDEN);
+                } catch (\Exception $e) {
+                    Log::channel('goldpix')->error('Erro ao efetuar transferência GoldPix título: ' . $e->getMessage(), [
+                        'contaspagar_id' => $contaspagar->id,
+                    ]);
+                    return response()->json([
+                        "message" => "Erro ao efetuar a transferência do Título.",
+                        "error" => $e->getMessage()
+                    ], Response::HTTP_FORBIDDEN);
+                }
+            }
+
             if ($contaspagar->banco->wallet == 1) {
                 if (!$contaspagar->fornecedor->pix_fornecedor) {
                     return response()->json([
@@ -2766,7 +3017,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
             $bankType = $emprestimo->banco->resolvedBankType();
 
-            if ($bankType === 'xgate' || $bankType === 'apix') {
+            if ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                 if (!$emprestimo->client->pix_cliente) {
                     return response()->json([
                         "message" => "Erro ao efetuar a transferência do Empréstimo.",
@@ -3751,10 +4002,10 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         }
 
         $emprestimoSaldo = $pagamentoSaldoPendente->emprestimo;
-        $sempreGerarNova = ($bankType === 'apix' || $bankType === 'xgate')
+        $sempreGerarNova = ($bankType === 'apix' || $bankType === 'xgate' || $bankType === 'goldpix')
             && ! $this->emprestimoEhRefinanciamento($emprestimoSaldo);
 
-        if (($bankType === 'apix' || $bankType === 'xgate') && $this->emprestimoEhRefinanciamento($emprestimoSaldo)) {
+        if (($bankType === 'apix' || $bankType === 'xgate' || $bankType === 'goldpix') && $this->emprestimoEhRefinanciamento($emprestimoSaldo)) {
             return ['chave_pix' => $pagamentoSaldoPendente->chave_pix];
         }
 
@@ -3815,7 +4066,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if ($bankType === 'apix' || $bankType === 'xgate') {
+        if ($bankType === 'apix' || $bankType === 'xgate' || $bankType === 'goldpix') {
             if ($this->emprestimoEhRefinanciamento($emprestimo)) {
                 return ['chave_pix' => $quitacao->chave_pix];
             }
@@ -3903,7 +4154,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
 
         $minimo->load(['emprestimo.banco', 'emprestimo.client', 'emprestimo.company']);
 
-        if ($bankType === 'apix' || $bankType === 'xgate') {
+        if ($bankType === 'apix' || $bankType === 'xgate' || $bankType === 'goldpix') {
             if ($this->emprestimoEhRefinanciamento($emprestimo)) {
                 return ['chave_pix' => $minimo->chave_pix];
             }
@@ -3963,11 +4214,11 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
         $banco = $parcela->emprestimo->banco;
         $bankType = $banco->resolvedBankType();
 
-        if ($banco->wallet == 0 && $bankType !== 'xgate' && $bankType !== 'apix') {
+        if ($banco->wallet == 0 && $bankType !== 'xgate' && $bankType !== 'apix' && $bankType !== 'goldpix') {
             return ['chave_pix' => $banco->chave_pix];
         }
 
-        if ($bankType === 'apix' || $bankType === 'xgate') {
+        if ($bankType === 'apix' || $bankType === 'xgate' || $bankType === 'goldpix') {
             if ($this->emprestimoEhRefinanciamento($parcela->emprestimo)) {
                 return ['chave_pix' => $parcela->chave_pix];
             }
@@ -5245,7 +5496,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                 $banco = $parcela->emprestimo->banco;
                 $bankType = $banco->resolvedBankType();
 
-                if ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate') {
+                if ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                     $txId = $parcela->identificador ? $parcela->identificador : null;
                     echo "txId: $txId parcelaId: { $parcela->id }";
                     Log::info(message: "Processando cobranca parcela: txId: $txId parcelaId: { $parcela->id }");
@@ -5268,26 +5519,34 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
                             $parcela->save();
                         }
-                    } elseif ($bankType === 'xgate') {
-                        // Usar XGateService para banco XGate
+                    } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                         try {
-                            $xgateService = new XGateService($banco);
                             $cliente = $parcela->emprestimo->client;
                             $referenceId = $parcela->id . '_' . time();
                             $dueDate = $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null;
-                            
-                            $response = $xgateService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                            if ($bankType === 'xgate') {
+                                $xgateService = new XGateService($banco);
+                                $response = $xgateService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                            } elseif ($bankType === 'apix') {
+                                $apixService = new ApixService($banco);
+                                $response = $apixService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                            } else {
+                                $goldPixService = new GoldPixService($banco);
+                                $response = $goldPixService->criarCobranca($parcela->saldo, $cliente, $referenceId, $dueDate);
+                            }
 
                             if (isset($response['success']) && $response['success']) {
                                 $newTxId = $response['transaction_id'] ?? $referenceId;
-                                Log::channel('xgate')->info("Processando com sucesso cobranca parcela XGate: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
+                                $logChannel = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                                Log::channel($logChannel)->info("Processando com sucesso cobranca parcela {$bankType}: sucesso txId: { $newTxId } parcelaId: { $parcela->id }");
                                 echo "sucesso txId: { $newTxId } parcelaId: { $parcela->id }";
                                 $parcela->identificador = $newTxId;
                                 $parcela->chave_pix = $response['pixCopiaECola'] ?? $response['qr_code'] ?? null;
                                 $parcela->save();
                             }
                         } catch (\Exception $e) {
-                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para parcela: ' . $e->getMessage());
+                            $logChannel = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                            Log::channel($logChannel)->error("Erro ao criar cobrança {$bankType} para parcela: " . $e->getMessage());
                         }
                     } else {
                         // Usar BcodexService para banco Bcodex
@@ -5323,12 +5582,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->emprestimo->quitacao->saldo = $parcela->totalPendente();
                             $parcela->emprestimo->quitacao->save();
                         }
-                    } elseif ($bankType === 'xgate') {
+                    } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                         try {
-                            $xgateService = new XGateService($banco);
                             $cliente = $parcela->emprestimo->client;
                             $referenceId = 'quitacao_' . $parcela->emprestimo->quitacao->id . '_' . time();
-                            $response = $xgateService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                            if ($bankType === 'xgate') {
+                                $xgateService = new XGateService($banco);
+                                $response = $xgateService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                            } elseif ($bankType === 'apix') {
+                                $apixService = new ApixService($banco);
+                                $response = $apixService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                            } else {
+                                $goldPixService = new GoldPixService($banco);
+                                $response = $goldPixService->criarCobranca($parcela->totalPendente(), $cliente, $referenceId, null);
+                            }
 
                             if (isset($response['success']) && $response['success']) {
                                 $parcela->emprestimo->quitacao->identificador = $response['transaction_id'] ?? $referenceId;
@@ -5337,7 +5604,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->quitacao->save();
                             }
                         } catch (\Exception $e) {
-                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para quitação: ' . $e->getMessage());
+                            $logChannel = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                            Log::channel($logChannel)->error("Erro ao criar cobrança {$bankType} para quitação: " . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->quitacao->identificador ? $parcela->emprestimo->quitacao->identificador : null;
@@ -5368,12 +5636,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->emprestimo->pagamentominimo->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
                             $parcela->emprestimo->pagamentominimo->save();
                         }
-                    } elseif ($bankType === 'xgate') {
+                    } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                         try {
-                            $xgateService = new XGateService($banco);
                             $cliente = $parcela->emprestimo->client;
                             $referenceId = 'pagamento_minimo_' . $parcela->emprestimo->pagamentominimo->id . '_' . time();
-                            $response = $xgateService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+                            if ($bankType === 'xgate') {
+                                $xgateService = new XGateService($banco);
+                                $response = $xgateService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+                            } elseif ($bankType === 'apix') {
+                                $apixService = new ApixService($banco);
+                                $response = $apixService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+                            } else {
+                                $goldPixService = new GoldPixService($banco);
+                                $response = $goldPixService->criarCobranca($parcela->emprestimo->pagamentominimo->valor, $cliente, $referenceId, null);
+                            }
 
                             if (isset($response['success']) && $response['success']) {
                                 $parcela->emprestimo->pagamentominimo->identificador = $response['transaction_id'] ?? $referenceId;
@@ -5381,7 +5657,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->pagamentominimo->save();
                             }
                         } catch (\Exception $e) {
-                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para pagamento mínimo: ' . $e->getMessage());
+                            $logChannel = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                            Log::channel($logChannel)->error("Erro ao criar cobrança {$bankType} para pagamento mínimo: " . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->pagamentominimo->identificador ? $parcela->emprestimo->pagamentominimo->identificador : null;
@@ -5413,12 +5690,20 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                             $parcela->emprestimo->pagamentosaldopendente->chave_pix = $responseData['pix']['qr_code'] ?? $responseData['pix']['copy_paste'] ?? null;
                             $parcela->emprestimo->pagamentosaldopendente->save();
                         }
-                    } elseif ($bankType === 'xgate') {
+                    } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                         try {
-                            $xgateService = new XGateService($banco);
                             $cliente = $parcela->emprestimo->client;
                             $referenceId = 'saldo_' . $parcela->emprestimo->pagamentosaldopendente->id . '_' . time();
-                            $response = $xgateService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+                            if ($bankType === 'xgate') {
+                                $xgateService = new XGateService($banco);
+                                $response = $xgateService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+                            } elseif ($bankType === 'apix') {
+                                $apixService = new ApixService($banco);
+                                $response = $apixService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+                            } else {
+                                $goldPixService = new GoldPixService($banco);
+                                $response = $goldPixService->criarCobranca($parcela->emprestimo->pagamentosaldopendente->valor, $cliente, $referenceId, null);
+                            }
 
                             if (isset($response['success']) && $response['success']) {
                                 $parcela->emprestimo->pagamentosaldopendente->identificador = $response['transaction_id'] ?? $referenceId;
@@ -5426,7 +5711,8 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                                 $parcela->emprestimo->pagamentosaldopendente->save();
                             }
                         } catch (\Exception $e) {
-                            Log::channel('xgate')->error('Erro ao criar cobrança XGate para saldo pendente (aplicar multa): ' . $e->getMessage());
+                            $logChannel = $bankType === 'apix' ? 'apix' : ($bankType === 'goldpix' ? 'goldpix' : 'xgate');
+                            Log::channel($logChannel)->error("Erro ao criar cobrança {$bankType} para saldo pendente (aplicar multa): " . $e->getMessage());
                         }
                     } else {
                         $txId = $parcela->emprestimo->pagamentosaldopendente->identificador ? $parcela->emprestimo->pagamentosaldopendente->identificador : null;

@@ -406,7 +406,7 @@ export default {
             try {
                 const response = await this.bancoService.getAll();
                 const todos = response.data?.data ?? response.data ?? [];
-                const permitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora'];
+                const permitidos = ['bcodex', 'apix', 'xgate', 'velana', 'cora', 'goldpix'];
                 this.bancosParaMigrar = (Array.isArray(todos) ? todos : []).filter((b) => {
                     const type = b.bank_type || (b.wallet ? 'bcodex' : 'normal');
                     const ehPermitido = permitidos.includes(type) || b.wallet === true || b.wallet === 1;

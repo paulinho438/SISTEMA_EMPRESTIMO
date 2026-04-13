@@ -120,7 +120,7 @@ class RecalcularParcelas extends Command
 
                     $banco = $parcela->emprestimo->banco;
                     $bankType = $banco ? $banco->resolvedBankType() : 'normal';
-                    $isWalletOuVirtual = $banco && ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate' || $bankType === 'apix');
+                    $isWalletOuVirtual = $banco && ($banco->wallet || $bankType === 'velana' || $bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix');
 
                     // Cobrança principal (parcela) – Bcodex, Velana ou XGate
                     if ($isWalletOuVirtual) {
@@ -131,7 +131,7 @@ class RecalcularParcelas extends Command
                         }
 
                         $txId = $parcela->identificador ?: null;
-                        if ($bankType === 'xgate' || $bankType === 'apix') {
+                        if ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
                             Log::info("[recalcular:Parcelas] Nova cobrança {$bankType} | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | valor_atualizado={$novoValor}");
                         } else {
                             Log::info("[recalcular:Parcelas] Alterando cobrança | parcela={$parcela->id} | emprestimo={$parcela->emprestimo_id} | bankType={$bankType} | valor={$parcela->saldo} | txid={$txId}");
@@ -157,8 +157,8 @@ class RecalcularParcelas extends Command
                                 $parcela->save();
                                 $cobrancaOk = true;
                             }
-                        } elseif ($bankType === 'xgate' || $bankType === 'apix') {
-                            // XGate/APIX: NÃO gera chave PIX aqui – a chave é gerada quando o cliente entrar no site e clicar em "Copiar Chave Pix"
+                        } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
+                            // XGate/APIX/GoldPix: NÃO gera chave PIX aqui – a chave é gerada quando o cliente entrar no site e clicar em "Copiar Chave Pix"
                             // Apenas atualiza saldo, juros e vencimento na parcela
                             $lucroRealAtual = (float) ($parcela->lucro_real ?? 0);
                             $parcela->lucro_real = $lucroRealAtual + $valorJuros;
@@ -218,8 +218,8 @@ class RecalcularParcelas extends Command
                                 $parcela->emprestimo->quitacao->chave_pix = $rd['pix']['qr_code'] ?? $rd['pix']['copy_paste'] ?? null;
                                 $parcela->emprestimo->quitacao->save();
                             }
-                        } elseif ($bankType === 'xgate' || $bankType === 'apix') {
-                            // XGate/APIX: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
+                        } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
+                            // XGate/APIX/GoldPix: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
                             // Quitação: saldo já foi atualizado acima; identificador/chave_pix ficam para serem gerados no site
                             Log::info("[recalcular:Parcelas] {$bankType} quitação | parcela={$parcela->id} | saldo atualizado (chave gerada no site)");
                             // (criação de cobrança XGate comentada – feita sob demanda no front)
@@ -256,8 +256,8 @@ class RecalcularParcelas extends Command
                                 $parcela->emprestimo->pagamentominimo->chave_pix = $rd['pix']['qr_code'] ?? $rd['pix']['copy_paste'] ?? null;
                                 $parcela->emprestimo->pagamentominimo->save();
                             }
-                        } elseif ($bankType === 'xgate' || $bankType === 'apix') {
-                            // XGate/APIX: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
+                        } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
+                            // XGate/APIX/GoldPix: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
                             // Pagamento mínimo: valor já atualizado acima
                             Log::info("[recalcular:Parcelas] {$bankType} pag. mínimo | parcela={$parcela->id} | valor atualizado (chave gerada no site)");
                             // (criação de cobrança XGate comentada – feita sob demanda no front)
@@ -292,8 +292,8 @@ class RecalcularParcelas extends Command
                                     $parcela->emprestimo->pagamentosaldopendente->chave_pix = $rd['pix']['qr_code'] ?? $rd['pix']['copy_paste'] ?? null;
                                     $parcela->emprestimo->pagamentosaldopendente->save();
                                 }
-                            } elseif ($bankType === 'xgate' || $bankType === 'apix') {
-                                // XGate/APIX: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
+                            } elseif ($bankType === 'xgate' || $bankType === 'apix' || $bankType === 'goldpix') {
+                                // XGate/APIX/GoldPix: NÃO gera chave PIX aqui – gerada no site quando o cliente clicar em "Copiar Chave Pix"
                                 // Saldo pendente: valor já atualizado acima
                                 Log::info("[recalcular:Parcelas] {$bankType} saldo pendente | parcela={$parcela->id} | valor atualizado (chave gerada no site)");
                                 // (criação de cobrança XGate comentada – feita sob demanda no front)

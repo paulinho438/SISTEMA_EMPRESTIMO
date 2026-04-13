@@ -100,19 +100,19 @@ export default {
             this.xgateDocumentoTipo = tipo;
             this.displayModalDocumentoXgate = false;
             if (this.pendingXgateConsultaParaConfirmacao) {
-                const { data, valor, isXgate, isApix } = this.pendingXgateConsultaParaConfirmacao;
+                const { data, valor, isXgate, isApix, isGoldpix } = this.pendingXgateConsultaParaConfirmacao;
                 this.pendingXgateConsultaParaConfirmacao = null;
-                this.abrirDialogoConfirmacaoTransferencia(data, valor, isXgate, isApix);
+                this.abrirDialogoConfirmacaoTransferencia(data, valor, isXgate, isApix, isGoldpix);
                 return;
             }
             this.executarConsultaTransferenciaWalletOuPix();
         },
-        abrirDialogoConfirmacaoTransferencia(consultData, valor, isXgate, isApix) {
+        abrirDialogoConfirmacaoTransferencia(consultData, valor, isXgate, isApix, isGoldpix = false) {
             const cliente = this.getClienteEmprestimoDesembrulhado();
             const nomeBeneficiario =
                 consultData?.creditParty?.name ?? cliente?.nome_completo ?? 'Não informado';
             const mensagem = `Tem certeza que deseja realizar a transferência de ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para ${nomeBeneficiario}?`;
-            if ((isXgate || isApix) && consultData?.chave_pix) {
+            if ((isXgate || isApix || isGoldpix) && consultData?.chave_pix) {
                 this.displayConfirmationChavePix = consultData.chave_pix;
                 this.displayConfirmationNome = nomeBeneficiario;
                 this.displayConfirmationValor = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -136,6 +136,7 @@ export default {
             const bancoU = unref(this.banco);
             const isXgate = bancoU?.bank_type === 'xgate';
             const isApix = bancoU?.bank_type === 'apix';
+            const isGoldpix = bancoU?.bank_type === 'goldpix';
 
             this.loadingFullScreen = true;
             this.emprestimoService
@@ -144,11 +145,11 @@ export default {
                     const data = response.data;
                     const requerDoc = data?.requer_escolha_documento_xgate === true;
                     if (isXgate && requerDoc && !this.xgateDocumentoTipo) {
-                        this.pendingXgateConsultaParaConfirmacao = { data, valor, isXgate, isApix };
+                        this.pendingXgateConsultaParaConfirmacao = { data, valor, isXgate, isApix, isGoldpix };
                         this.displayModalDocumentoXgate = true;
                         return;
                     }
-                    this.abrirDialogoConfirmacaoTransferencia(data, valor, isXgate, isApix);
+                    this.abrirDialogoConfirmacaoTransferencia(data, valor, isXgate, isApix, isGoldpix);
                 })
                 .catch((error) => {
                     if (error?.response?.status != 422) {
@@ -219,7 +220,8 @@ export default {
             }
 
             const isApix = bancoU?.bank_type === 'apix';
-            if (bancoU?.wallet || isXgate || isApix) {
+            const isGoldpix = bancoU?.bank_type === 'goldpix';
+            if (bancoU?.wallet || isXgate || isApix || isGoldpix) {
                 this.executarConsultaTransferenciaWalletOuPix();
             } else {
                 this.loadingFullScreen = true;
