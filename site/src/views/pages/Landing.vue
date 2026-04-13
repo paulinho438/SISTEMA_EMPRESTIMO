@@ -158,22 +158,38 @@ export default {
             return !!ctx && ctx.tipo === tipo && ctx.id == id;
         },
         async copiarChavePix(tipo, id, textoAtual) {
+            let idEfetivo = id;
+            let textoEfetivo = textoAtual;
+
+            if (tipo === 'parcela') {
+                const primeira = this.encontrarPrimeiraParcelaPendente();
+                if (!primeira?.id) {
+                    alert('Não há parcela pendente para pagamento.');
+                    return;
+                }
+                idEfetivo = primeira.id;
+                textoEfetivo =
+                    primeira.chave_pix ||
+                    this.products?.data?.emprestimo?.banco?.chavepix ||
+                    '';
+            }
+
             const gerarPixNoServidor =
-                tipo === 'pagamentoMinimo' || ((this.isXGate || this.isApix) && id);
+                tipo === 'pagamentoMinimo' || ((this.isXGate || this.isApix) && idEfetivo);
 
             if (gerarPixNoServidor) {
                 this.loadingPix = true;
-                this.loadingPixContext = { tipo, id };
+                this.loadingPixContext = { tipo, id: idEfetivo };
                 try {
                     let res;
                     if (tipo === 'saldoPendente') {
-                        res = await this.emprestimoService.gerarPixPagamentoSaldoPendente(id);
+                        res = await this.emprestimoService.gerarPixPagamentoSaldoPendente(idEfetivo);
                     } else if (tipo === 'quitacao') {
-                        res = await this.emprestimoService.gerarPixPagamentoQuitacao(id);
+                        res = await this.emprestimoService.gerarPixPagamentoQuitacao(idEfetivo);
                     } else if (tipo === 'pagamentoMinimo') {
                         res = await this.emprestimoService.gerarPixPagamentoMinimo(this.id_pedido);
                     } else {
-                        res = await this.emprestimoService.gerarPixPagamentoParcela(id);
+                        res = await this.emprestimoService.gerarPixPagamentoParcela(idEfetivo);
                     }
                     const chave = res?.data?.chave_pix || res?.chave_pix;
                     if (chave) {
@@ -185,7 +201,7 @@ export default {
                             this.products.data.emprestimo.quitacao.chave_pix = chave;
                         }
                         if (tipo === 'parcela' && this.products?.data?.emprestimo?.parcelas) {
-                            const p = this.products.data.emprestimo.parcelas.find((x) => x.id === id);
+                            const p = this.products.data.emprestimo.parcelas.find((x) => x.id === idEfetivo);
                             if (p) p.chave_pix = chave;
                         }
                         if (tipo === 'pagamentoMinimo' && this.products?.data?.emprestimo?.pagamentominimo) {
@@ -211,25 +227,50 @@ export default {
                     this.loadingPixContext = null;
                 }
             } else {
-                const copiou = await this.copyToClipboard(textoAtual);
+                const copiou = await this.copyToClipboard(textoEfetivo);
                 if (copiou) {
                     this.toast.add({
                         severity: ToastSeverity.SUCCESS,
                         detail: 'Chave PIX copiada para a área de transferência!',
                         life: 3500
                     });
-                } else if (textoAtual) {
-                    this.openPixManualModal(textoAtual);
+                } else if (textoEfetivo) {
+                    this.openPixManualModal(textoEfetivo);
                 }
             }
         },
+        /** Primeira parcela em aberto pela data de vencimento real (mais antiga). */
         encontrarPrimeiraParcelaPendente() {
-            for (let i = 0; i < this.products?.data?.emprestimo?.parcelas.length; i++) {
-                if (this.products?.data?.emprestimo?.parcelas[i].dt_baixa === '') {
-                    return this.products?.data?.emprestimo?.parcelas[i];
-                }
+            const parcelas = this.products?.data?.emprestimo?.parcelas;
+            if (!parcelas || !Array.isArray(parcelas) || parcelas.length === 0) {
+                return null;
             }
-            return {};
+            const pendentes = parcelas.filter((p) => !p.dt_baixa || p.dt_baixa === '');
+            if (pendentes.length === 0) {
+                return null;
+            }
+            const sorted = [...pendentes].sort((a, b) => {
+                const ma = moment(a.venc_real, 'DD/MM/YYYY', true);
+                const mb = moment(b.venc_real, 'DD/MM/YYYY', true);
+                if (ma.isValid() && mb.isValid()) {
+                    return ma.valueOf() - mb.valueOf();
+                }
+                if (ma.isValid()) {
+                    return -1;
+                }
+                if (mb.isValid()) {
+                    return 1;
+                }
+                return 0;
+            });
+            return sorted[0];
+        },
+        chavePixPrimeiraPendenteOuBanco() {
+            const p = this.encontrarPrimeiraParcelaPendente();
+            if (p?.chave_pix != null && String(p.chave_pix).trim() !== '') {
+                return p.chave_pix;
+            }
+            return this.products?.data?.emprestimo?.banco?.chavepix || '';
         },
         calcularValorPendenteHoje() {
             if (!this.products?.data?.emprestimo?.parcelas || !Array.isArray(this.products.data.emprestimo.parcelas)) {
@@ -392,7 +433,7 @@ export default {
             <section v-if="!this.products?.data?.emprestimo?.pagamentominimo && this.products?.data?.emprestimo?.parcelas.length == 1 && this.products?.data?.emprestimo?.liberar_minimo == 1" class="payment-section">
                 <h2>Pagamento Mínimo - Juros</h2>
                 <p>Ao clicar no botão abaixo, Copiará a chave Pix abaixo para pagar o valor mínimo e manter seu empréstimo em dia.</p>
-                <button class="btn-primary" @click="copyToClipboard(this.encontrarPrimeiraParcelaPendente().chave_pix != '' ? this.encontrarPrimeiraParcelaPendente().chave_pix : this.products?.data?.emprestimo?.banco.chavepix)">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.lucro?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })  }}</button>
+                <button class="btn-primary" @click="copyToClipboard(chavePixPrimeiraPendenteOuBanco())">Copiar Chave Pix - Pagamento Mínimo <br />{{ this.products?.data?.emprestimo?.lucro?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })  }}</button>
             </section>
 
             <section v-if="this.products?.data?.emprestimo?.pagamentominimo" class="payment-section">
