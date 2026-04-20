@@ -12,6 +12,7 @@ use App\Models\Quitacao;
 use App\Models\PagamentoPersonalizado;
 use App\Models\PagamentoSaldoPendente;
 use App\Models\Deposito;
+use App\Models\CobrancaPixIdentificadorHistorico;
 use App\Services\GoldPixService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -103,6 +104,12 @@ class ProcessarWebhookGoldpix extends Command
     {
         $pagadorNome = $data['payer']['name'] ?? $data['payerName'] ?? $data['customerName'] ?? 'Não informado';
 
+        // 0) Histórico da cobrança (transaction_id da GoldPix) — evita confundir Parcela::find(id) com
+        // PagamentoSaldoPendente::find(id) quando externalId é só "{id}_{timestamp}" (mesmo número em tabelas diferentes).
+        if ($this->processarPagamentoPorHistoricoCobrancaPix($txId, $valor, $horario, $pagadorNome)) {
+            return true;
+        }
+
         // 1) Parcela (por identificador = transaction_id)
         $parcela = Parcela::where('identificador', $txId)->whereNull('dt_baixa')->first();
         if ($parcela) {
@@ -111,7 +118,10 @@ class ProcessarWebhookGoldpix extends Command
         }
 
         $payloadFull = $registro->payload ?? [];
-        $externalRef = isset($payloadFull['external_id']) ? (string) $payloadFull['external_id'] : (string) ($data['externalRef'] ?? '');
+        $externalRef = isset($payloadFull['external_id']) ? (string) $payloadFull['external_id'] : '';
+        if ($externalRef === '') {
+            $externalRef = (string) ($data['externalId'] ?? $data['external_id'] ?? $data['externalRef'] ?? '');
+        }
 
         // 2) Por external_id (GoldPix) ou txId no formato entidade_id_timestamp
         $refParaRegex = $externalRef !== '' ? $externalRef : $txId;
@@ -182,6 +192,102 @@ class ProcessarWebhookGoldpix extends Command
 
         Log::channel('goldpix')->info('Webhook GoldPix sem entidade associada ao pagamento', ['identificador' => $txId]);
         return false;
+    }
+
+    /**
+     * Usa cobranca_pix_identificador_historicos (preenchido em criarCobrancaPorTipoBanco GoldPix) para saber
+     * se o transaction_id refere-se a parcela, saldo pendente do dia, quitação, etc.
+     */
+    private function processarPagamentoPorHistoricoCobrancaPix(
+        string $txId,
+        float $valor,
+        string $horario,
+        string $pagadorNome
+    ): bool {
+        $hist = CobrancaPixIdentificadorHistorico::where('identificador', $txId)
+            ->where('provedor', 'goldpix')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$hist) {
+            return false;
+        }
+
+        switch ($hist->tipo_entidade) {
+            case 'parcela':
+                $parcela = Parcela::find($hist->entidade_id);
+                if (!$parcela) {
+                    return false;
+                }
+                if ($parcela->dt_baixa) {
+                    return true;
+                }
+                $this->baixaParcela($parcela, $valor, $horario, $pagadorNome, $txId);
+                Log::channel('goldpix')->info('GoldPix: baixa via histórico PIX (parcela)', [
+                    'identificador' => $txId,
+                    'parcela_id' => $parcela->id,
+                ]);
+
+                return true;
+
+            case 'pagamento_saldo_pendente':
+                $psp = PagamentoSaldoPendente::find($hist->entidade_id);
+                if (!$psp) {
+                    return false;
+                }
+                if ($psp->dt_baixa) {
+                    return true;
+                }
+                $this->baixaPagamentoSaldoPendente($psp, $valor, $horario, $pagadorNome, $txId);
+                Log::channel('goldpix')->info('GoldPix: baixa via histórico PIX (pagamento saldo pendente)', [
+                    'identificador' => $txId,
+                    'pagamento_saldo_pendente_id' => $psp->id,
+                ]);
+
+                return true;
+
+            case 'quitacao':
+                $quitacao = Quitacao::find($hist->entidade_id);
+                if (!$quitacao) {
+                    return false;
+                }
+                if ($quitacao->dt_baixa) {
+                    return true;
+                }
+                $this->baixaQuitacao($quitacao, $valor, $horario, $pagadorNome, $txId);
+                Log::channel('goldpix')->info('GoldPix: baixa via histórico PIX (quitação)', ['identificador' => $txId]);
+
+                return true;
+
+            case 'pagamento_minimo':
+                $minimo = PagamentoMinimo::find($hist->entidade_id);
+                if (!$minimo) {
+                    return false;
+                }
+                if ($minimo->dt_baixa) {
+                    return true;
+                }
+                $this->baixaPagamentoMinimo($minimo, $valor, $horario, $pagadorNome, $txId);
+                Log::channel('goldpix')->info('GoldPix: baixa via histórico PIX (pagamento mínimo)', ['identificador' => $txId]);
+
+                return true;
+
+            case 'pagamento_personalizado':
+                $pp = PagamentoPersonalizado::find($hist->entidade_id);
+                if (!$pp) {
+                    return false;
+                }
+                if ($pp->dt_baixa) {
+                    return true;
+                }
+                $this->baixaPagamentoPersonalizado($pp, $valor, $horario, $pagadorNome, $txId);
+                Log::channel('goldpix')->info('GoldPix: baixa via histórico PIX (pagamento personalizado)', ['identificador' => $txId]);
+
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     /**
