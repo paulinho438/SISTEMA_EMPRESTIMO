@@ -29,6 +29,8 @@ class MensagemAutomaticaRenovacao extends Command
             ->get();
 
         foreach ($clients as $client) {
+            $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
+
             if (!$client->company || $client->company->envio_automatico_renovacao != 1) {
                 continue;
             }

@@ -320,22 +320,31 @@ class ClientController extends Controller
         $dtInicio = Carbon::parse($dtInicio)->format('Y-m-d');
         $dtFinal = Carbon::parse($dtFinal)->format('Y-m-d');
 
+        $companyId = $request->header('company-id');
+
         // Buscar clientes e seus empréstimos
-        $clients = Client::whereDoesntHave('emprestimos', function ($query) {
-            $query->whereHas('parcelas', function ($query) {
-                $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
-            });
-        })
-            ->with(['emprestimos' => function ($query) {
-                $query->whereDoesntHave('parcelas', function ($query) {
-                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
-                })->with('company'); // Eager load company relationship
+        $clients = Client::where('company_id', $companyId)
+            ->whereDoesntHave('emprestimos', function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                    ->whereHas('parcelas', function ($query) {
+                        $query->whereNull('dt_baixa');
+                    });
+            })
+            ->with(['emprestimos' => function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                    ->whereDoesntHave('parcelas', function ($query) {
+                        $query->whereNull('dt_baixa');
+                    })
+                    ->with('company');
             }])
-            ->whereHas('emprestimos', function ($query) use ($request) {
-                $query->where('company_id', $request->header('company-id'));
+            ->whereHas('emprestimos', function ($query) use ($companyId) {
+                $query->where('company_id', $companyId);
             })
             ->get();
 
+        $clients->each(function (Client $client) {
+            $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
+        });
 
         // Filtrar os resultados em PHP
         $filteredClients = $clients->filter(function ($client) use ($dtInicio, $dtFinal) {
@@ -464,20 +473,24 @@ class ClientController extends Controller
 
     private function obterClientesDisponiveisFiltrados(Request $request, bool $aplicarRisco = true)
     {
-        $query = Client::where('company_id', $request->header('company-id'))
-            ->whereDoesntHave('emprestimos', function ($query) {
-                $query->whereHas('parcelas', function ($query) {
-                    $query->whereNull('dt_baixa'); // Filtra empréstimos com parcelas pendentes
-                });
+        $companyId = $request->header('company-id');
+
+        $query = Client::where('company_id', $companyId)
+            ->whereDoesntHave('emprestimos', function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                    ->whereHas('parcelas', function ($query) {
+                        $query->whereNull('dt_baixa');
+                    });
             })
-            ->with(['emprestimos' => function ($query) {
-                $query->whereDoesntHave('parcelas', function ($query) {
-                    $query->whereNull('dt_baixa'); // Carrega apenas empréstimos sem parcelas pendentes
-                });
+            ->with(['emprestimos' => function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                    ->whereDoesntHave('parcelas', function ($query) {
+                        $query->whereNull('dt_baixa');
+                    });
                 $query->withCount([
                     'parcelas as count_late_parcels' => function ($q) {
                         $q->where('atrasadas', '>', 0);
-                    }
+                    },
                 ]);
             }]);
 
@@ -486,6 +499,10 @@ class ClientController extends Controller
         }
 
         $clients = $query->get();
+
+        $clients->each(function (Client $client) {
+            $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
+        });
 
         $riscoPagador = strtolower((string) $request->query('risco_pagador', ''));
         if ($aplicarRisco && $riscoPagador !== '') {
