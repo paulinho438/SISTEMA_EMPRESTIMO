@@ -25,6 +25,31 @@ class FornecedorController extends Controller
         $this->custom_log = $custom_log;
     }
 
+    /**
+     * Verifica se já existe fornecedor com o mesmo CPF/CNPJ (normalizado) na empresa.
+     */
+    protected function fornecedorCpfcnpjJaExiste(Request $request, string $cpfcnpj, ?int $ignorarId = null): bool
+    {
+        $companyId = $request->header('company-id');
+        $docNormalizado = preg_replace('/\D/', '', $cpfcnpj);
+
+        $query = Fornecedor::where('company_id', $companyId)
+            ->where(function ($q) use ($cpfcnpj, $docNormalizado) {
+                $q->where('cpfcnpj', $cpfcnpj)
+                    ->orWhere('cpfcnpj', $docNormalizado)
+                    ->orWhereRaw(
+                        'REPLACE(REPLACE(REPLACE(REPLACE(cpfcnpj, ".", ""), "-", ""), "/", ""), " ", "") = ?',
+                        [$docNormalizado]
+                    );
+            });
+
+        if ($ignorarId !== null) {
+            $query->where('id', '!=', $ignorarId);
+        }
+
+        return $query->exists();
+    }
+
     public function id(Request $r, $id){
         return new FornecedorResource(Fornecedor::find($id));
     }
@@ -45,7 +70,14 @@ class FornecedorController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nome_completo' => 'required',
-            'cpfcnpj' => 'required',
+            'cpfcnpj' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($this->fornecedorCpfcnpjJaExiste($request, (string) $value)) {
+                        $fail('O CPF/CNPJ já está em uso para esta empresa.');
+                    }
+                },
+            ],
             'telefone_celular_1' => 'required',
             'telefone_celular_2' => 'required',
             'address' => 'required',
@@ -84,9 +116,18 @@ class FornecedorController extends Controller
 
             $user = auth()->user();
 
+            $idFornecedor = (int) $id;
+
             $validator = Validator::make($request->all(), [
                 'nome_completo' => 'required',
-                'cpfcnpj' => 'required',
+                'cpfcnpj' => [
+                    'required',
+                    function ($attribute, $value, $fail) use ($request, $idFornecedor) {
+                        if ($this->fornecedorCpfcnpjJaExiste($request, (string) $value, $idFornecedor)) {
+                            $fail('O CPF/CNPJ já está em uso para esta empresa.');
+                        }
+                    },
+                ],
                 'telefone_celular_1' => 'required',
                 'telefone_celular_2' => 'required',
                 'address' => 'required',

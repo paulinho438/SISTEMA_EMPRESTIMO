@@ -710,9 +710,29 @@ class ClientController extends Controller
 
             $user = auth()->user();
 
+            $idCliente = (int) $id;
+
             $validator = Validator::make($request->all(), [
                 'nome_completo' => 'required',
-                'cpf' => 'required',
+                'cpf' => [
+                    'required',
+                    function ($attribute, $value, $fail) use ($request, $idCliente) {
+                        $cpfNormalizado = preg_replace('/[^0-9]/', '', $value);
+
+                        $exists = Client::where('company_id', $request->header('company-id'))
+                            ->where('id', '!=', $idCliente)
+                            ->where(function ($query) use ($value, $cpfNormalizado) {
+                                $query->where('cpf', $value)
+                                    ->orWhere('cpf', $cpfNormalizado)
+                                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(cpf, ".", ""), "-", ""), " ", "") = ?', [$cpfNormalizado]);
+                            })
+                            ->exists();
+
+                        if ($exists) {
+                            $fail('O CPF já está em uso para esta empresa.');
+                        }
+                    },
+                ],
                 'rg' => 'required',
                 'data_nascimento' => 'required',
                 'sexo' => 'required',
