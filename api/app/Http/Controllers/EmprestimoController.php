@@ -52,6 +52,7 @@ use App\Jobs\ProcessarPixGoldpixJob;
 use App\Jobs\ProcessarPixJob;
 use App\Jobs\ProcessarPixXgateJob;
 use App\Jobs\EnviarComprovanteFornecedor;
+use App\Jobs\EnviarMensagemWapiBoasVindasParcelaJob;
 
 use App\Mail\ExampleEmail;
 use Illuminate\Support\Facades\Mail;
@@ -1771,6 +1772,9 @@ class EmprestimoController extends Controller
         try {
             $array = ['error' => ''];
 
+            /** @var int|null WhatsApp com link da parcela (fila após commit; não bloquear aprovação) */
+            $parcelaIdWhatsappAposAprovacao = null;
+
             $user = auth()->user();
             $usuarioAuditavel = $user
                 ? "{$user->nome_completo} (ID {$user->id})"
@@ -1859,7 +1863,7 @@ class EmprestimoController extends Controller
                         $emprestimo->banco->saldo -= $valorPagamento;
                         $emprestimo->banco->save();
 
-                        $this->envioMensagem($emprestimo->parcelas[0]);
+                        $parcelaIdWhatsappAposAprovacao = $emprestimo->parcelas[0]->id ?? null;
                     } else {
                         return response()->json([
                             "message" => "Erro ao efetuar a transferencia do Emprestimo.",
@@ -2278,7 +2282,7 @@ class EmprestimoController extends Controller
                 $emprestimo->banco->saldo -= $emprestimo->valor;
                 $emprestimo->banco->save();
 
-                $this->envioMensagem($emprestimo->parcelas[0]);
+                $parcelaIdWhatsappAposAprovacao = $emprestimo->parcelas[0]->id ?? null;
             }
 
             $this->custom_log->create([
@@ -2288,6 +2292,10 @@ class EmprestimoController extends Controller
             ]);
 
             DB::commit();
+
+            if ($parcelaIdWhatsappAposAprovacao !== null) {
+                EnviarMensagemWapiBoasVindasParcelaJob::dispatch($parcelaIdWhatsappAposAprovacao)->afterResponse();
+            }
 
             return $array;
         } catch (\Exception $e) {

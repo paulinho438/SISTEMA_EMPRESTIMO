@@ -22,7 +22,7 @@ class WAPIService
 
         $accessToken = $token;
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(25)->withHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
         ])->post($url, $data);
@@ -40,7 +40,7 @@ class WAPIService
 
         $accessToken = $token;
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(45)->withHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
         ])->post($url, $data);
@@ -58,7 +58,7 @@ class WAPIService
 
         $accessToken = $token;
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(60)->withHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
         ])->post($url, $data);
@@ -76,7 +76,7 @@ class WAPIService
 
         $accessToken = $token;
 
-        $response = Http::withHeaders([
+        $response = Http::timeout(45)->withHeaders([
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $accessToken,
         ])->post($url, $data);
