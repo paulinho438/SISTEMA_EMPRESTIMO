@@ -4,12 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Parcela extends Model
+class Parcela extends Model implements Auditable
 {
     public $table = 'parcelas';
 
     public $timestamps = true;
+
+    use \OwenIt\Auditing\Auditable;
+
+    protected array $auditInclude = [
+        'venc_real',
+        'dt_baixa',
+        'saldo',
+        'valor_recebido',
+        'valor_recebido_pix',
+        'nome_usuario_baixa',
+        'nome_usuario_baixa_pix',
+        'identificador',
+        'chave_pix',
+        'venc_real_audit',
+    ];
 
     protected $fillable = [
         'emprestimo_id',

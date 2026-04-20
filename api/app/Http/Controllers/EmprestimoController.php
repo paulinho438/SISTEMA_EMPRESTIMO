@@ -867,7 +867,7 @@ class EmprestimoController extends Controller
             $this->custom_log->create([
                 'user_id' => auth()->id(),
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' acessou a tela de Empréstimos',
-                'operation' => 'index'
+                'operation' => 'emprestimo.index'
             ]);
         }
 
@@ -3319,7 +3319,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' cancelou a baixa manual da parcela: ' . $id,
-                'operation' => 'index'
+                'operation' => 'parcela.baixa_manual.cancelar'
             ]);
 
             return response()->json(['message' => 'Baixa cancelada com sucesso.']);
@@ -3495,7 +3495,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
             $this->custom_log->create([
                 'user_id' => auth()->user()->id,
                 'content' => 'O usuário: ' . auth()->user()->nome_completo . ' realizou a baixa manual da parcela: ' . $id,
-                'operation' => 'index'
+                'operation' => 'parcela.baixa_manual'
             ]);
 
             DB::commit();
@@ -3624,7 +3624,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $this->custom_log->create([
                         'user_id' => $user->id,
                         'content' => 'Refinanciamento realizado no empréstimo Nº ' . $emprestimo->id . ' por ' . $usuarioAuditavel . '.',
-                        'operation' => 'custom'
+                        'operation' => 'emprestimo.refinanciamento'
                     ]);
                 }
             }
@@ -3689,7 +3689,7 @@ https://sistema.agecontrole.com.br/#/parcela/{$parcela->id}
                     $this->custom_log->create([
                         'user_id' => $user->id,
                         'content' => 'Renovação realizada no empréstimo Nº ' . $emprestimo->id . ' por ' . $usuarioAuditavel . '.',
-                        'operation' => 'custom'
+                        'operation' => 'emprestimo.renovacao'
                     ]);
                 }
             }
