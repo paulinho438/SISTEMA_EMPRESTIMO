@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Emprestimo extends Model
+class Emprestimo extends Model implements Auditable
 {
     public $table = 'emprestimos';
 
+    use \OwenIt\Auditing\Auditable;
     protected $appends = ['count_late_parcels', 'data_quitacao', 'total_pago'];
     protected $fillable = [
         'dt_lancamento',

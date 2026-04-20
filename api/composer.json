@@ -12,10 +12,11 @@
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7",
-        "league/csv": "9.19",
+        "league/csv": "^9.20.1",
         "maatwebsite/excel": "^3.1",
         "mailersend/laravel-driver": "^2.7",
         "monolog/monolog": "^2.9",
+        "owen-it/laravel-auditing": "^13.7",
         "ramsey/uuid": "^4.7",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "tymon/jwt-auth": "^2.0",
@@ -71,7 +72,10 @@
             "php-http/discovery": true
         },
         "platform": {
-            "php": "8.0.30"
+            "php": "8.4.17"
+        },
+        "audit": {
+            "block-insecure": false
         }
     },
     "minimum-stability": "stable",

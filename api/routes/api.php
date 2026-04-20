@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\{
     AuthController,
+    AuditController,
     CompanyController,
     UserController,
     PermgroupController,
@@ -339,6 +340,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::get('/emprestimo/status-counts', [EmprestimoController::class, 'statusCounts']);
     Route::get('/emprestimo/{id}/basico', [EmprestimoController::class, 'basico']);
     Route::get('/emprestimo/{id}/parcelas', [EmprestimoController::class, 'parcelas']);
+    Route::get('/emprestimo/{id}/audits', [AuditController::class, 'emprestimoAudits']);
     Route::get('/emprestimo/{id}/cliente', [EmprestimoController::class, 'cliente']);
     Route::get('/emprestimo/{id}/banco', [EmprestimoController::class, 'banco']);
     Route::get('/emprestimo/{id}/relacionados', [EmprestimoController::class, 'relacionados']);
@@ -354,6 +356,7 @@ Route::middleware(['auth:api', 'single.token'])->group(function () {
     Route::post('/parcela/{id}/infoemprestimo', [EmprestimoController::class, 'infoEmprestimo']);
     Route::post('/parcela/{id}/cobraramanha', [EmprestimoController::class, 'cobrarAmanha']);
     Route::get('/parcela/{id}/cancelarbaixamanual', [EmprestimoController::class, 'cancelarBaixaManual']);
+    Route::get('/parcela/{id}/audits', [AuditController::class, 'parcelaAudits']);
 
     Route::get('/baixa/pendentesparahoje', [EmprestimoController::class, 'parcelasPendentesParaHoje']);
     Route::get('/baixa/parcelasparaextorno', [EmprestimoController::class, 'parcelasParaExtorno']);
