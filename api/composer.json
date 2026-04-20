@@ -72,7 +72,7 @@
             "php-http/discovery": true
         },
         "platform": {
-            "php": "8.4.17"
+            "php": "8.3.30"
         },
         "audit": {
             "block-insecure": false
