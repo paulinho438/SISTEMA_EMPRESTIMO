@@ -23,7 +23,7 @@ class ProcessarWebhookPixgo extends Command
 
     protected $signature = 'webhook:baixaPixgo';
 
-    protected $description = 'Processa webhooks PixGo (payment.completed): baixa parcelas e demais entidades';
+    protected $description = 'Processa webhooks PixGo (pagamento concluído: status completed + payment_id): baixa parcelas e demais entidades';
 
     public function handle(): void
     {
@@ -49,7 +49,7 @@ class ProcessarWebhookPixgo extends Command
                     continue;
                 }
 
-                if ($event !== 'payment.completed' || $status !== 'completed') {
+                if ($status !== 'completed') {
                     Log::channel('pixgo')->info('Webhook PixGo ignorado ou não concluído', [
                         'identificador' => $txId,
                         'event' => $event,
