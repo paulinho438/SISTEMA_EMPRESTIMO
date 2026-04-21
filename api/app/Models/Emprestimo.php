@@ -105,8 +105,38 @@ class Emprestimo extends Model implements Auditable
 
     public function getDataQuitacaoAttribute()
     {
-        $ultimaParcela = $this->parcelas()->orderBy('dt_baixa', 'desc')->first();
-        return $ultimaParcela ? $ultimaParcela->dt_baixa : null;
+        if ($this->relationLoaded('parcelas') && $this->parcelas->isNotEmpty()) {
+            $comBaixa = $this->parcelas->filter(function ($p) {
+                return $p->dt_baixa !== null && $p->dt_baixa !== '';
+            });
+            if ($comBaixa->isNotEmpty()) {
+                return $comBaixa->sortByDesc(function ($p) {
+                    $d = $p->dt_baixa;
+                    if ($d instanceof \DateTimeInterface) {
+                        return $d->getTimestamp();
+                    }
+
+                    return strtotime((string) $d) ?: 0;
+                })->first()->dt_baixa;
+            }
+        }
+
+        $ultimaParcela = $this->parcelas()
+            ->whereNotNull('dt_baixa')
+            ->where('dt_baixa', '!=', '')
+            ->orderBy('dt_baixa', 'desc')
+            ->first();
+        if ($ultimaParcela) {
+            return $ultimaParcela->dt_baixa;
+        }
+
+        if ($this->relationLoaded('quitacao') && $this->quitacao && $this->quitacao->dt_baixa) {
+            return $this->quitacao->dt_baixa;
+        }
+
+        $quit = Quitacao::where('emprestimo_id', $this->id)->first();
+
+        return $quit?->dt_baixa;
     }
 
     public function getTotalPagoAttribute()

@@ -327,13 +327,12 @@ class ClientController extends Controller
             ->whereSemEmprestimoEmAndamentoNaEmpresa($companyId)
             ->with(['emprestimos' => function ($query) use ($companyId) {
                 $query->where('company_id', $companyId)
-                    ->whereHas('parcelas')
                     ->whereDoesntHave('parcelas', function ($p) {
                         $p->where(function ($o) {
                             $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
                         });
                     })
-                    ->with('company');
+                    ->with(['quitacao', 'company']);
             }])
             ->whereHas('emprestimos', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
@@ -479,12 +478,12 @@ class ClientController extends Controller
             ->whereSemEmprestimoEmAndamentoNaEmpresa($companyId)
             ->with(['emprestimos' => function ($query) use ($companyId) {
                 $query->where('company_id', $companyId)
-                    ->whereHas('parcelas')
                     ->whereDoesntHave('parcelas', function ($p) {
                         $p->where(function ($o) {
                             $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
                         });
-                    });
+                    })
+                    ->with('quitacao');
                 $query->withCount([
                     'parcelas as count_late_parcels' => function ($q) {
                         $q->where('atrasadas', '>', 0);

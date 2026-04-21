@@ -24,7 +24,6 @@ class MensagemAutomaticaRenovacao extends Command
                 ->whereSemEmprestimoEmAndamentoNaEmpresa($companyId)
                 ->with(['emprestimos' => function ($query) use ($companyId) {
                     $query->where('company_id', $companyId)
-                        ->whereHas('parcelas')
                         ->whereDoesntHave('parcelas', function ($q) {
                             $q->where(function ($o) {
                                 $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
@@ -35,7 +34,7 @@ class MensagemAutomaticaRenovacao extends Command
                                 $q->where('atrasadas', '>', 0);
                             },
                         ])
-                        ->with('company');
+                        ->with(['quitacao', 'company']);
                 }, 'company'])
                 ->get();
 

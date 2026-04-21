@@ -74,7 +74,7 @@ class Client extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Exclui clientes com empréstimo em andamento na empresa: sem parcelas OU parcela em aberto (dt_baixa nulo/vazio).
+     * Exclui clientes com empréstimo em andamento na empresa: parcela em aberto OU (sem parcelas e sem linha em quitacao).
      * Usa SQL explícito (whereNotExists) para evitar ambiguidade do Eloquent em whereDoesntHave aninhado.
      */
     public function scopeWhereSemEmprestimoEmAndamentoNaEmpresa($query, $companyId)
@@ -87,20 +87,30 @@ class Client extends Authenticatable implements JWTSubject
                 ->whereColumn('emprestimos.client_id', $clientsTable.'.id')
                 ->where('emprestimos.company_id', '=', $companyId)
                 ->where(function ($w) {
-                    $w->whereNotExists(function ($p) {
-                        $p->select(DB::raw(1))
-                            ->from('parcelas')
-                            ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id');
-                    })
-                        ->orWhereExists(function ($p) {
-                            $p->select(DB::raw(1))
-                                ->from('parcelas')
-                                ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id')
-                                ->where(function ($o) {
-                                    $o->whereNull('parcelas.dt_baixa')
-                                        ->orWhere('parcelas.dt_baixa', '');
+                    // Em andamento: parcela em aberto OU (sem parcelas e sem quitação administrativa em quitacao)
+                    $w->where(function ($semParcelasOuAberto) {
+                        $semParcelasOuAberto->where(function ($semFin) {
+                            $semFin->whereNotExists(function ($p) {
+                                $p->select(DB::raw(1))
+                                    ->from('parcelas')
+                                    ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id');
+                            })
+                                ->whereNotExists(function ($q) {
+                                    $q->select(DB::raw(1))
+                                        ->from('quitacao')
+                                        ->whereColumn('quitacao.emprestimo_id', 'emprestimos.id');
                                 });
-                        });
+                        })
+                            ->orWhereExists(function ($p) {
+                                $p->select(DB::raw(1))
+                                    ->from('parcelas')
+                                    ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id')
+                                    ->where(function ($o) {
+                                        $o->whereNull('parcelas.dt_baixa')
+                                            ->orWhere('parcelas.dt_baixa', '');
+                                    });
+                            });
+                    });
                 });
         });
     }
@@ -113,20 +123,29 @@ class Client extends Authenticatable implements JWTSubject
         return DB::table('emprestimos')
             ->where('emprestimos.company_id', '=', $companyId)
             ->where(function ($w) {
-                $w->whereNotExists(function ($p) {
-                    $p->select(DB::raw(1))
-                        ->from('parcelas')
-                        ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id');
-                })
-                    ->orWhereExists(function ($p) {
-                        $p->select(DB::raw(1))
-                            ->from('parcelas')
-                            ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id')
-                            ->where(function ($o) {
-                                $o->whereNull('parcelas.dt_baixa')
-                                    ->orWhere('parcelas.dt_baixa', '');
+                $w->where(function ($semParcelasOuAberto) {
+                    $semParcelasOuAberto->where(function ($semFin) {
+                        $semFin->whereNotExists(function ($p) {
+                            $p->select(DB::raw(1))
+                                ->from('parcelas')
+                                ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id');
+                        })
+                            ->whereNotExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                    ->from('quitacao')
+                                    ->whereColumn('quitacao.emprestimo_id', 'emprestimos.id');
                             });
-                    });
+                    })
+                        ->orWhereExists(function ($p) {
+                            $p->select(DB::raw(1))
+                                ->from('parcelas')
+                                ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id')
+                                ->where(function ($o) {
+                                    $o->whereNull('parcelas.dt_baixa')
+                                        ->orWhere('parcelas.dt_baixa', '');
+                                });
+                        });
+                });
             })
             ->distinct()
             ->pluck('client_id');
