@@ -81,6 +81,12 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
         ],
 
+        'pixgo' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/pixgo.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

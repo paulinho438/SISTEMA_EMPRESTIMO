@@ -30,6 +30,7 @@ class Kernel extends ConsoleKernel
         Commands\ProcessarWebhookXgate::class,
         Commands\ProcessarWebhookApix::class,
         Commands\ProcessarWebhookGoldpix::class,
+        Commands\ProcessarWebhookPixgo::class,
         Commands\RetirarProtestoEmprestimo::class,
         Commands\CorrigirDatasVencimentoFeriados::class
 
@@ -57,6 +58,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('webhook:baixaXgate')->everyMinute()->withoutOverlapping();
         $schedule->command('webhook:baixaApix')->everyMinute()->withoutOverlapping();
         $schedule->command('webhook:baixaGoldpix')->everyMinute()->withoutOverlapping();
+        $schedule->command('webhook:baixaPixgo')->everyMinute()->withoutOverlapping();
 
         //$schedule->command('recalcular:Parcelas')->dailyAt('00:00');
 

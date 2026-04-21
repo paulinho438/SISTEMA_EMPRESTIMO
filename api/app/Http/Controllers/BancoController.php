@@ -136,10 +136,23 @@ class BancoController extends Controller
                 if (isset($dados['goldpix_base_url']) && empty($dados['goldpix_base_url'])) {
                     unset($dados['goldpix_base_url']);
                 }
+            } elseif (($dados['bank_type'] ?? 'normal') === 'pixgo') {
+                if (isset($dados['pixgo_api_key']) && !empty($dados['pixgo_api_key'])) {
+                    $dados['pixgo_api_key'] = Crypt::encryptString($dados['pixgo_api_key']);
+                }
+                if (isset($dados['pixgo_webhook_secret']) && !empty($dados['pixgo_webhook_secret'])) {
+                    $dados['pixgo_webhook_secret'] = Crypt::encryptString($dados['pixgo_webhook_secret']);
+                }
+                if (isset($dados['pixgo_base_url']) && empty($dados['pixgo_base_url'])) {
+                    unset($dados['pixgo_base_url']);
+                }
             } else {
                 $dados['goldpix_api_key'] = null;
                 $dados['goldpix_base_url'] = null;
                 $dados['goldpix_webhook_secret'] = null;
+                $dados['pixgo_api_key'] = null;
+                $dados['pixgo_base_url'] = null;
+                $dados['pixgo_webhook_secret'] = null;
             }
 
             $newGroup = Banco::create($dados);
@@ -269,10 +282,23 @@ class BancoController extends Controller
                     if (isset($dados['goldpix_base_url'])) {
                         $EditBanco->goldpix_base_url = $dados['goldpix_base_url'] ?: null;
                     }
+                } elseif (($EditBanco->bank_type ?? 'normal') === 'pixgo') {
+                    if (isset($dados['pixgo_api_key']) && !empty($dados['pixgo_api_key'])) {
+                        $EditBanco->pixgo_api_key = Crypt::encryptString($dados['pixgo_api_key']);
+                    }
+                    if (isset($dados['pixgo_webhook_secret']) && !empty($dados['pixgo_webhook_secret'])) {
+                        $EditBanco->pixgo_webhook_secret = Crypt::encryptString($dados['pixgo_webhook_secret']);
+                    }
+                    if (isset($dados['pixgo_base_url'])) {
+                        $EditBanco->pixgo_base_url = $dados['pixgo_base_url'] ?: null;
+                    }
                 } else {
                     $EditBanco->goldpix_api_key = null;
                     $EditBanco->goldpix_base_url = null;
                     $EditBanco->goldpix_webhook_secret = null;
+                    $EditBanco->pixgo_api_key = null;
+                    $EditBanco->pixgo_base_url = null;
+                    $EditBanco->pixgo_webhook_secret = null;
                 }
 
                 $EditBanco->save();

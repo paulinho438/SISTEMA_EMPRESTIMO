@@ -39,6 +39,9 @@ class Banco extends Model implements Auditable
         'goldpix_api_key',
         'goldpix_base_url',
         'goldpix_webhook_secret',
+        'pixgo_api_key',
+        'pixgo_base_url',
+        'pixgo_webhook_secret',
     ];
 
     public function company()

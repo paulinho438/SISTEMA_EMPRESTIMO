@@ -214,6 +214,12 @@ const model = ref([
                         permission: 'view_dashboard'
                     },
                     {
+                        label: 'Teste PixGo',
+                        icon: 'pi pi-fw pi-cog',
+                        to: '/pixgo/teste',
+                        permission: 'view_dashboard'
+                    },
+                    {
                         label: 'Teste Cora',
                         icon: 'pi pi-fw pi-cog',
                         to: '/cora/teste',

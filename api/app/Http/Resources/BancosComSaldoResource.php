@@ -101,6 +101,10 @@ class BancosComSaldoResource extends JsonResource
             return null;
         }
 
+        if ($bankType === 'pixgo') {
+            return null;
+        }
+
         if ($this->wallet) {
             $bcodexService = new BcodexService();
             $response = $bcodexService->consultarSaldo($this->accountId);

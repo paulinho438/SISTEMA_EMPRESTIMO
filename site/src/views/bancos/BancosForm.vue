@@ -47,7 +47,8 @@ export default {
 				{ label: 'Velana', value: 'velana' },
 				{ label: 'XGate', value: 'xgate' },
 				{ label: 'APIX', value: 'apix' },
-				{ label: 'GoldPix', value: 'goldpix' }
+				{ label: 'GoldPix', value: 'goldpix' },
+				{ label: 'PixGo', value: 'pixgo' }
 			]
 		}
 	},
@@ -215,7 +216,7 @@ export default {
 		/** Wallet pode ser usado com Bcodex, XGate, APIX ou Velana */
 		walletEditavel() {
 			const t = this.banco?.bank_type;
-			return ['bcodex', 'xgate', 'apix', 'velana', 'goldpix'].includes(t);
+			return ['bcodex', 'xgate', 'apix', 'velana', 'goldpix', 'pixgo'].includes(t);
 		}
 	},
 	mounted() {
@@ -601,6 +602,52 @@ export default {
 						:class="{ 'p-invalid': errors?.goldpix_webhook_secret }"
 					/>
 					<small v-if="errors?.goldpix_webhook_secret" class="text-red-500 pl-2">{{ errors?.goldpix_webhook_secret[0] }}</small>
+				</div>
+			</div>
+
+			<div v-if="banco?.bank_type === 'pixgo'" class="formgrid grid">
+				<div class="field col-12 md:col-12 lg:col-12 xl:col-12">
+					<label for="pixgo_base_url">PixGo — URL base da API</label>
+					<InputText
+						:modelValue="banco?.pixgo_base_url"
+						v-model="banco.pixgo_base_url"
+						id="pixgo_base_url"
+						class="w-full p-inputtext-sm"
+						placeholder="https://pixgo.org/api/v1 (vazio = padrão)"
+						:class="{ 'p-invalid': errors?.pixgo_base_url }"
+					/>
+					<small v-if="errors?.pixgo_base_url" class="text-red-500 pl-2">{{ errors?.pixgo_base_url[0] }}</small>
+					<small class="text-gray-500 pl-2">Documentação: https://pixgo.org/api/v1/docs#endpoints</small>
+				</div>
+			</div>
+			<div v-if="banco?.bank_type === 'pixgo'" class="formgrid grid">
+				<div class="field col-12 md:col-6 lg:col-6 xl:col-6">
+					<label for="pixgo_api_key">PixGo — API Key (X-API-Key)</label>
+					<InputText
+						:modelValue="banco?.pixgo_api_key"
+						v-model="banco.pixgo_api_key"
+						id="pixgo_api_key"
+						type="password"
+						class="w-full p-inputtext-sm"
+						placeholder="pk_…"
+						:class="{ 'p-invalid': errors?.pixgo_api_key }"
+					/>
+					<small v-if="errors?.pixgo_api_key" class="text-red-500 pl-2">{{ errors?.pixgo_api_key[0] }}</small>
+					<small class="text-gray-500 pl-2">Será criptografada no servidor. Não compartilhe.</small>
+				</div>
+				<div class="field col-12 md:col-6 lg:col-6 xl:col-6">
+					<label for="pixgo_webhook_secret">PixGo — segredo do webhook (HMAC)</label>
+					<InputText
+						:modelValue="banco?.pixgo_webhook_secret"
+						v-model="banco.pixgo_webhook_secret"
+						id="pixgo_webhook_secret"
+						type="password"
+						class="w-full p-inputtext-sm"
+						placeholder="whsec_…"
+						:class="{ 'p-invalid': errors?.pixgo_webhook_secret }"
+					/>
+					<small v-if="errors?.pixgo_webhook_secret" class="text-red-500 pl-2">{{ errors?.pixgo_webhook_secret[0] }}</small>
+					<small class="text-gray-500 pl-2">Obrigatório para validar POST /api/webhook/pixgo.</small>
 				</div>
 			</div>
 

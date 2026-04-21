@@ -40,4 +40,8 @@ return [
         'callback_url' => env('GOLDPIX_CALLBACK_URL', 'https://api.agecontrole.com.br/api/webhook/goldpix'),
     ],
 
+    'pixgo' => [
+        'callback_url' => env('PIXGO_CALLBACK_URL', 'https://api.agecontrole.com.br/api/webhook/pixgo'),
+    ],
+
 ];
