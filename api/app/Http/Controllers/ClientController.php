@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Database\Eloquent\Builder;
 
 class ClientController extends Controller
 {
@@ -324,16 +325,17 @@ class ClientController extends Controller
 
         // Buscar clientes e seus empréstimos
         $clients = Client::where('company_id', $companyId)
-            ->whereDoesntHave('emprestimos', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId)
-                    ->whereHas('parcelas', function ($query) {
-                        $query->whereNull('dt_baixa');
-                    });
+            ->whereDoesntHave('emprestimos', function (Builder $query) use ($companyId) {
+                $query->where('company_id', $companyId);
+                $this->escopoEmprestimoEmAndamento($query);
             })
-            ->with(['emprestimos' => function ($query) use ($companyId) {
+            ->with(['emprestimos' => function (Builder $query) use ($companyId) {
                 $query->where('company_id', $companyId)
-                    ->whereDoesntHave('parcelas', function ($query) {
-                        $query->whereNull('dt_baixa');
+                    ->whereHas('parcelas')
+                    ->whereDoesntHave('parcelas', function (Builder $p) {
+                        $p->where(function (Builder $o) {
+                            $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
+                        });
                     })
                     ->with('company');
             }])
@@ -471,21 +473,38 @@ class ClientController extends Controller
         return Excel::download(new ClientesDisponiveisExport($clients->values()), $nomeArquivo);
     }
 
+    /**
+     * Empréstimo ainda em andamento: sem parcelas geradas OU com pelo menos uma parcela em aberto
+     * (dt_baixa nulo ou vazio — alguns registros legados usam string vazia em vez de NULL).
+     */
+    private function escopoEmprestimoEmAndamento(Builder $emprestimoQuery): void
+    {
+        $emprestimoQuery->where(function (Builder $w) {
+            $w->whereDoesntHave('parcelas')
+                ->orWhereHas('parcelas', function (Builder $p) {
+                    $p->where(function (Builder $o) {
+                        $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
+                    });
+                });
+        });
+    }
+
     private function obterClientesDisponiveisFiltrados(Request $request, bool $aplicarRisco = true)
     {
         $companyId = $request->header('company-id');
 
         $query = Client::where('company_id', $companyId)
-            ->whereDoesntHave('emprestimos', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId)
-                    ->whereHas('parcelas', function ($query) {
-                        $query->whereNull('dt_baixa');
-                    });
+            ->whereDoesntHave('emprestimos', function (Builder $query) use ($companyId) {
+                $query->where('company_id', $companyId);
+                $this->escopoEmprestimoEmAndamento($query);
             })
-            ->with(['emprestimos' => function ($query) use ($companyId) {
+            ->with(['emprestimos' => function (Builder $query) use ($companyId) {
                 $query->where('company_id', $companyId)
-                    ->whereDoesntHave('parcelas', function ($query) {
-                        $query->whereNull('dt_baixa');
+                    ->whereHas('parcelas')
+                    ->whereDoesntHave('parcelas', function (Builder $p) {
+                        $p->where(function (Builder $o) {
+                            $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
+                        });
                     });
                 $query->withCount([
                     'parcelas as count_late_parcels' => function ($q) {
