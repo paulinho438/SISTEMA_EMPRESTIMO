@@ -134,7 +134,8 @@ class PixGoWebhookController extends Controller
             'bancos_pixgo_com_segredo' => $bancos->count(),
             'banco_ids' => $bancos->pluck('id')->all(),
             'raw_body_bytes' => strlen($rawBody),
-            'signature_len' => strlen($signatureHeader),
+            'signature_header_len' => strlen($signatureHeader),
+            'signature_hex_len' => strlen(PixGoWebhookSignatureVerifier::normalizarAssinaturaHeader($signatureHeader)),
         ]);
 
         return false;

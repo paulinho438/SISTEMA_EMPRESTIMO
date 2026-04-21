@@ -55,10 +55,12 @@ class PixgoDiagnosticoAssinaturaWebhook extends Command
         }
 
         $this->line('Corpo (bytes): ' . strlen($rawBody));
+        $sigNorm = PixGoWebhookSignatureVerifier::normalizarAssinaturaHeader($signature);
+        $this->line('Assinatura header len: ' . strlen($signature) . ' | hex normalizado len: ' . strlen($sigNorm));
         $signaturePayload = $timestamp . '.' . $rawBody;
         $this->line('signaturePayload len: ' . strlen($signaturePayload));
         $expectedSignature = hash_hmac('sha256', $signaturePayload, trim($secret));
-        $match = hash_equals($expectedSignature, $signature);
+        $match = strlen($sigNorm) === 64 && ctype_xdigit($sigNorm) && hash_equals($expectedSignature, $sigNorm);
 
         $this->line('hash_equals: ' . ($match ? 'sim' : 'não'));
 

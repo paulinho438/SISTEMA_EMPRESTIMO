@@ -15,10 +15,26 @@ use Illuminate\Support\Facades\Crypt;
  * 5. $expectedSignature = hash_hmac('sha256', $signaturePayload, $webhookSecret);
  * 6. hash_equals($expectedSignature, $signature)
  *
+ * A PixGo pode enviar o header no formato `sha256=<hex>` (71 caracteres); o exemplo da doc mostra só o hex (64).
+ * Antes do hash_equals normalizamos o header (trim, opcional `sha256=`, hex em minúsculas).
+ *
  * @see https://pixgo.org/api/v1/docs#webhooks
  */
 class PixGoWebhookSignatureVerifier
 {
+    /**
+     * Valor de X-Webhook-Signature como string hex de 64 caracteres para comparar com hash_hmac (saída hex minúscula).
+     */
+    public static function normalizarAssinaturaHeader(string $signature): string
+    {
+        $s = strtolower(trim(preg_replace('/\s+/', '', $signature)));
+        if (str_starts_with($s, 'sha256=')) {
+            $s = substr($s, 7);
+        }
+
+        return $s;
+    }
+
     /**
      * Valor do segredo no cadastro do banco (texto plano ou legado criptografado com Crypt).
      */
@@ -51,7 +67,11 @@ class PixGoWebhookSignatureVerifier
 
         $signaturePayload = $timestamp . '.' . $rawBody;
         $expectedSignature = hash_hmac('sha256', $signaturePayload, $webhookSecret);
+        $signatureNorm = self::normalizarAssinaturaHeader($signature);
+        if (strlen($signatureNorm) !== 64 || !ctype_xdigit($signatureNorm)) {
+            return false;
+        }
 
-        return hash_equals($expectedSignature, $signature);
+        return hash_equals($expectedSignature, $signatureNorm);
     }
 }
