@@ -14,7 +14,7 @@ class PixGoWebhookController extends Controller
     /**
      * POST /api/webhook/pixgo — eventos payment.* conforme documentação PixGo.
      *
-     * @see https://pixgo.org/api/v1/docs#endpoints
+     * @see https://pixgo.org/api/v1/docs#webhooks
      */
     public function receber(Request $request)
     {
@@ -92,8 +92,6 @@ class PixGoWebhookController extends Controller
     }
 
     /**
-     * HMAC-SHA256: timestamp + "." + corpo bruto, comparar com X-Webhook-Signature (hex).
-     *
      * @see https://pixgo.org/api/v1/docs#webhooks
      */
     protected function validarAssinatura(Request $request, string $rawBody): bool
@@ -121,6 +119,7 @@ class PixGoWebhookController extends Controller
             }
 
             if (PixGoWebhookSignatureVerifier::assinaturaConfere($timestamp, $rawBody, $secret, $signatureHeader)) {
+                // Doc: opcional — rejeitar timestamps antigos (replay), ex.: abs(time() - intval($timestamp)) > 300
                 if (abs(time() - (int) $timestamp) > 300) {
                     Log::channel('pixgo')->warning('Webhook PixGo timestamp fora da janela de 5 minutos');
 
@@ -135,7 +134,7 @@ class PixGoWebhookController extends Controller
             'bancos_pixgo_com_segredo' => $bancos->count(),
             'banco_ids' => $bancos->pluck('id')->all(),
             'raw_body_bytes' => strlen($rawBody),
-            'signature_hex_len' => strlen(PixGoWebhookSignatureVerifier::normalizarAssinatura($signatureHeader)),
+            'signature_len' => strlen($signatureHeader),
         ]);
 
         return false;

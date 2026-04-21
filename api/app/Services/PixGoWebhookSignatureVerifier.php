@@ -5,44 +5,23 @@ namespace App\Services;
 use Illuminate\Support\Facades\Crypt;
 
 /**
- * Verificação HMAC dos webhooks PixGo (documentação: timestamp + "." + corpo bruto).
+ * Verificação HMAC do webhook PixGo — algoritmo conforme documentação oficial.
+ *
+ * Passos (PHP na doc):
+ * 1. $timestamp = header X-Webhook-Timestamp
+ * 2. $signature = header X-Webhook-Signature
+ * 3. $payload = corpo bruto (file_get_contents('php://input') / Request::getContent())
+ * 4. $signaturePayload = $timestamp . '.' . $payload;
+ * 5. $expectedSignature = hash_hmac('sha256', $signaturePayload, $webhookSecret);
+ * 6. hash_equals($expectedSignature, $signature)
+ *
+ * @see https://pixgo.org/api/v1/docs#webhooks
  */
 class PixGoWebhookSignatureVerifier
 {
-    public static function normalizarAssinatura(string $signature): string
-    {
-        $s = strtolower(trim(preg_replace('/\s+/', '', $signature)));
-        if (str_starts_with($s, 'sha256=')) {
-            $s = substr($s, 7);
-        }
-
-        return $s;
-    }
-
     /**
-     * @return list<string> Mensagens a assinar (cada uma: timestamp . '.' . corpo ou variante).
+     * Valor do segredo no cadastro do banco (texto plano ou legado criptografado com Crypt).
      */
-    public static function candidatosPayloadAssinatura(string $timestamp, string $rawBody): array
-    {
-        $candidatos = [];
-        $candidatos[] = $timestamp . '.' . $rawBody;
-
-        $trimmed = rtrim($rawBody, "\r\n");
-        if ($trimmed !== $rawBody) {
-            $candidatos[] = $timestamp . '.' . $trimmed;
-        }
-
-        $decoded = json_decode($rawBody, true);
-        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-            $compact = json_encode($decoded, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            if ($compact !== false && $compact !== $rawBody) {
-                $candidatos[] = $timestamp . '.' . $compact;
-            }
-        }
-
-        return array_values(array_unique($candidatos));
-    }
-
     public static function resolverSegredo(?string $armazenado): string
     {
         if ($armazenado === null || $armazenado === '') {
@@ -51,27 +30,28 @@ class PixGoWebhookSignatureVerifier
         try {
             return trim(Crypt::decryptString($armazenado));
         } catch (\Exception $e) {
-            // Valor em texto plano no banco (ou legado inválido para APP_KEY atual).
             return trim($armazenado);
         }
     }
 
     /**
-     * @return bool true se alguma variante bater com a assinatura recebida
+     * Igual ao exemplo da documentação PixGo (hash_hmac + hash_equals).
+     * Não altere o corpo: deve ser o JSON bruto exatamente como recebido na requisição.
      */
-    public static function assinaturaConfere(string $timestamp, string $rawBody, string $secret, string $signatureHeader): bool
-    {
-        $signature = self::normalizarAssinatura($signatureHeader);
-        if ($signature === '') {
+    public static function assinaturaConfere(
+        string $timestamp,
+        string $rawBody,
+        string $webhookSecret,
+        string $signature
+    ): bool {
+        $webhookSecret = trim($webhookSecret);
+        if ($webhookSecret === '' || $timestamp === '' || $signature === '') {
             return false;
         }
-        foreach (self::candidatosPayloadAssinatura($timestamp, $rawBody) as $payload) {
-            $expected = hash_hmac('sha256', $payload, $secret);
-            if (hash_equals($expected, $signature)) {
-                return true;
-            }
-        }
 
-        return false;
+        $signaturePayload = $timestamp . '.' . $rawBody;
+        $expectedSignature = hash_hmac('sha256', $signaturePayload, $webhookSecret);
+
+        return hash_equals($expectedSignature, $signature);
     }
 }

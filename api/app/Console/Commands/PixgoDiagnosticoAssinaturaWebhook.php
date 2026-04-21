@@ -7,17 +7,19 @@ use App\Services\PixGoWebhookSignatureVerifier;
 use Illuminate\Console\Command;
 
 /**
- * Compara o HMAC esperado com o recebido da PixGo (mesma lógica do PixGoWebhookController).
+ * Mesma verificação do PixGoWebhookController / documentação PixGo.
+ *
+ * @see https://pixgo.org/api/v1/docs#webhooks
  */
 class PixgoDiagnosticoAssinaturaWebhook extends Command
 {
     protected $signature = 'pixgo:diagnostico-assinatura-webhook
                             {banco_id : ID do banco (bank_type=pixgo)}
                             {--timestamp= : Valor do header X-Webhook-Timestamp}
-                            {--signature= : Valor do header X-Webhook-Signature (hex)}
-                            {--body-file= : Arquivo com o JSON bruto exatamente como recebido}';
+                            {--signature= : Valor do header X-Webhook-Signature}
+                            {--body-file= : Arquivo com o JSON bruto exatamente como recebido (php://input)}';
 
-    protected $description = 'Diagnóstico: verifica se timestamp+corpo+segredo do banco reproduzem a assinatura PixGo';
+    protected $description = 'Diagnóstico: hash_hmac(sha256, timestamp.payload, secret) === assinatura (doc PixGo)';
 
     public function handle(): int
     {
@@ -52,28 +54,21 @@ class PixgoDiagnosticoAssinaturaWebhook extends Command
             return self::FAILURE;
         }
 
-        $sigNorm = PixGoWebhookSignatureVerifier::normalizarAssinatura($signature);
         $this->line('Corpo (bytes): ' . strlen($rawBody));
-        $this->line('Assinatura normalizada (len): ' . strlen($sigNorm));
+        $signaturePayload = $timestamp . '.' . $rawBody;
+        $this->line('signaturePayload len: ' . strlen($signaturePayload));
+        $expectedSignature = hash_hmac('sha256', $signaturePayload, trim($secret));
+        $match = hash_equals($expectedSignature, $signature);
 
-        $ok = false;
-        foreach (PixGoWebhookSignatureVerifier::candidatosPayloadAssinatura($timestamp, $rawBody) as $i => $payload) {
-            $expected = hash_hmac('sha256', $payload, $secret);
-            $match = hash_equals($expected, $sigNorm);
-            $this->line(sprintf('Variante %d (payload len %d): %s', $i + 1, strlen($payload), $match ? 'OK' : 'não confere'));
-            if ($match) {
-                $ok = true;
-                break;
-            }
-        }
+        $this->line('hash_equals: ' . ($match ? 'sim' : 'não'));
 
-        if ($ok) {
-            $this->info('Assinatura válida para este banco e corpo.');
+        if ($match) {
+            $this->info('Assinatura válida (conforme doc PixGo).');
 
             return self::SUCCESS;
         }
 
-        $this->warn('Nenhuma variante confere. No painel PixGo (Checkouts), copie de novo o Webhook Secret (whsec_…) da mesma conta da API Key e salve no banco ' . $bancoId . '.');
+        $this->warn('Não confere. Confira Webhook Secret (Checkouts), mesmo checkout da API Key, e corpo bruto idêntico ao POST.');
 
         return self::FAILURE;
     }
