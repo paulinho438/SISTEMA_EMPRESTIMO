@@ -129,6 +129,24 @@ class EmprestimoController extends Controller
     }
 
     /**
+     * Wallet Bcodex ou banco com PIX via API (XGate, APIX, GoldPix, PixGo): cria quitação e pagamento mínimo
+     * como no fluxo antigo só com wallet=1 — PixGo/XGate costumam ter wallet=0.
+     */
+    protected function bancoEmprestimoFluxoQuitacaoComoWallet(array $dadosBanco): bool
+    {
+        if ((int) ($dadosBanco['wallet'] ?? 0) === 1) {
+            return true;
+        }
+        $id = (int) ($dadosBanco['id'] ?? 0);
+        if ($id <= 0) {
+            return false;
+        }
+        $banco = Banco::find($id);
+
+        return $banco && in_array($banco->resolvedBankType(), ['xgate', 'apix', 'goldpix', 'pixgo'], true);
+    }
+
+    /**
      * Valor total para quitação: soma dos saldos das parcelas em aberto.
      * O campo quitacao.saldo no banco pode ficar defasado após pagamentos; não usar só ele.
      */
@@ -1496,7 +1514,7 @@ class EmprestimoController extends Controller
             }
         }
 
-        if ($dados['banco']['wallet'] == 1) {
+        if ($this->bancoEmprestimoFluxoQuitacaoComoWallet($dados['banco'])) {
 
             if (count($emprestimoAdd->parcelas) > 1) {
                 $quitacao = [];
@@ -1518,7 +1536,7 @@ class EmprestimoController extends Controller
             }
         }
 
-        if ($dados['banco']['wallet'] == 1 && count($dados['parcelas']) == 1) {
+        if ($this->bancoEmprestimoFluxoQuitacaoComoWallet($dados['banco']) && count($dados['parcelas']) == 1) {
 
             $pagamentoMinimo = [];
             $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
@@ -1630,7 +1648,7 @@ class EmprestimoController extends Controller
             }
         }
 
-        if ($dados['banco']['wallet'] == 1) {
+        if ($this->bancoEmprestimoFluxoQuitacaoComoWallet($dados['banco'])) {
 
             $quitacao = [];
             $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
@@ -1650,7 +1668,7 @@ class EmprestimoController extends Controller
             Quitacao::create($quitacao);
         }
 
-        if ($dados['banco']['wallet'] == 1 && count($dados['parcelas']) == 1) {
+        if ($this->bancoEmprestimoFluxoQuitacaoComoWallet($dados['banco']) && count($dados['parcelas']) == 1) {
 
             $pagamentoMinimo = [];
             $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
@@ -1758,7 +1776,7 @@ class EmprestimoController extends Controller
             }
         }
 
-        if ($dados['banco']['wallet'] == 1) {
+        if ($this->bancoEmprestimoFluxoQuitacaoComoWallet($dados['banco'])) {
 
             $quitacao = [];
             $quitacao['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
@@ -1778,7 +1796,7 @@ class EmprestimoController extends Controller
             Quitacao::create($quitacao);
         }
 
-        if ($dados['banco']['wallet'] == 1 && count($dados['parcelas']) == 1) {
+        if ($this->bancoEmprestimoFluxoQuitacaoComoWallet($dados['banco']) && count($dados['parcelas']) == 1) {
 
             $pagamentoMinimo = [];
             $pagamentoMinimo['emprestimo_id'] = $emprestimoAdd->parcelas[0]->emprestimo_id;
