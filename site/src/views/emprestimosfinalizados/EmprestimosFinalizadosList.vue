@@ -1,5 +1,4 @@
 <script>
-import {ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {FilterMatchMode, PrimeIcons, ToastSeverity, FilterOperator} from 'primevue/api';
 import ClientService from '@/service/ClientService';
@@ -19,35 +18,36 @@ export default {
     },
     data() {
         return {
-            Clientes: ref([]),
-            loading: ref(false),
-            selectedRiskCategory: ref(null),
+            /** Objetos simples (sem ref em data): o PrimeVue muta `filters` com profundidade e ref + v-model pode travar o menu "Aplicar". */
+            Clientes: [],
+            loading: false,
+            selectedRiskCategory: null,
             _getClientesTimer: null,
             _globalSearchTimer: null,
             _getClientesSeq: 0,
             _lastFetchKey: null,
             /** Texto da busca global; separado de filters.global para o DataTable não filtrar ~500 linhas a cada tecla. */
             globalSearchDraft: '',
-            counts: ref({
+            counts: {
                 total: 0,
                 verde: 0,
                 azul: 0,
                 amarelo: 0,
                 vermelho: 0
-            }),
-            filters: ref({
+            },
+            filters: {
                 global: {value: null, matchMode: FilterMatchMode.CONTAINS},
                 name: {value: null, matchMode: FilterMatchMode.STARTS_WITH},
                 'country.name': {value: null, matchMode: FilterMatchMode.STARTS_WITH},
                 representative: {value: null, matchMode: FilterMatchMode.IN},
                 status: {value: null, matchMode: FilterMatchMode.EQUALS},
                 verified: {value: null, matchMode: FilterMatchMode.EQUALS}
-            }),
-            display: ref(false),
-            form: ref({}),
-            toggleValue: ref(false),
-            mensagemAudioValue: ref(false),
-            filtroComCnpj: ref(false)
+            },
+            display: false,
+            form: {},
+            toggleValue: false,
+            mensagemAudioValue: false,
+            filtroComCnpj: false
         };
     },
     methods: {
@@ -219,7 +219,7 @@ export default {
             this.valorDesconto = 0;
         },
         open() {
-            this.display.value = true;
+            this.display = true;
         },
         goToWhatsApp(telefone, data) {
             let mensagem = `Olá ${data.nome_completo}, estamos entrando em contato para informar sobre seu empréstimo.`;
@@ -332,7 +332,9 @@ export default {
         getClientes() {
             const params = this.buildClientesDisponiveisParams();
             const fetchKey = this.buildParamsKey(params);
-            if (this._lastFetchKey === fetchKey) return;
+            if (this._lastFetchKey === fetchKey) {
+                return;
+            }
             this._lastFetchKey = fetchKey;
             const seq = ++this._getClientesSeq;
             this.loading = true;
@@ -614,7 +616,6 @@ export default {
                         v-model:filters="filters"
                         filterDisplay="menu"
                         :loading="loading"
-                        :filters="filters"
                         responsiveLayout="scroll"
                         :globalFilterFields="[]"
                         @filter="scheduleGetClientes"
@@ -648,7 +649,13 @@ export default {
                         <template #empty> Nenhum Cliente Encontrado.</template>
                         <template #loading> Carregando os Clientes. Aguarde!</template>
 
-                        <Column field="nome_completo" header="Cliente" style="min-width: 12rem">
+                        <Column
+                            field="nome_completo"
+                            header="Cliente"
+                            style="min-width: 12rem"
+                            :showFilterMatchModes="false"
+                            :showFilterOperator="false"
+                        >
                             <template #body="{ data }">
                                 {{ data.nome_completo }}
                             </template>
@@ -667,7 +674,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="cpf" header="CPF" style="min-width: 12rem">
+                        <Column field="cpf" header="CPF" style="min-width: 12rem" :showFilterMatchModes="false" :showFilterOperator="false">
                             <template #body="{ data }">
                                 {{ dadosSensiveis(data.cpf) }}
                             </template>
@@ -677,7 +684,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="rg" header="RG" style="min-width: 12rem">
+                        <Column field="rg" header="RG" style="min-width: 12rem" :showFilterMatchModes="false" :showFilterOperator="false">
                             <template #body="{ data }">
                                 {{ dadosSensiveis(data.rg) }}
                             </template>
@@ -687,7 +694,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="cnpj" header="CNPJ" style="min-width: 12rem">
+                        <Column field="cnpj" header="CNPJ" style="min-width: 12rem" :showFilterMatchModes="false" :showFilterOperator="false">
                             <template #body="{ data }">
                                 {{ dadosSensiveis(formatCnpj(data.cnpj)) }}
                             </template>
@@ -697,7 +704,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="telefone_celular_1" header="Telefone Principal" style="min-width: 12rem">
+                        <Column field="telefone_celular_1" header="Telefone Principal" style="min-width: 12rem" :showFilterMatchModes="false" :showFilterOperator="false">
                             <template #body="{ data }">
                                 {{ dadosSensiveis(data.telefone_celular_1) }}
                             </template>
@@ -707,7 +714,7 @@ export default {
                             </template>
                         </Column>
 
-                        <Column field="telefone_celular_2" header="Telefone Secundário" style="min-width: 12rem">
+                        <Column field="telefone_celular_2" header="Telefone Secundário" style="min-width: 12rem" :showFilterMatchModes="false" :showFilterOperator="false">
                             <template #body="{ data }">
                                 {{ dadosSensiveis(data.telefone_celular_2) }}
                             </template>
@@ -717,8 +724,14 @@ export default {
                             </template>
                         </Column>
 
-                        <Column header="Dt. Nascimento" filterField="data_nascimento" dataType="date"
-                                style="min-width: 10rem">
+                        <Column
+                            header="Dt. Nascimento"
+                            filterField="data_nascimento"
+                            dataType="date"
+                            style="min-width: 10rem"
+                            :showFilterMatchModes="false"
+                            :showFilterOperator="false"
+                        >
                             <template #body="{ data }">
                                 {{ formatDate(data.data_nascimento) }}
                             </template>
@@ -729,7 +742,14 @@ export default {
                             </template>
                         </Column>
 
-                        <Column header="Dt. Criação" filterField="created_at" dataType="date" style="min-width: 10rem">
+                        <Column
+                            header="Dt. Criação"
+                            filterField="created_at"
+                            dataType="date"
+                            style="min-width: 10rem"
+                            :showFilterMatchModes="false"
+                            :showFilterOperator="false"
+                        >
                             <template #body="{ data }">
                                 {{ formatDate(data.created_at) }}
                             </template>
@@ -747,6 +767,8 @@ export default {
                             dataType="date"
                             :sortable="false"
                             style="min-width: 10rem"
+                            :showFilterMatchModes="false"
+                            :showFilterOperator="false"
                         >
                             <template #body="{ data }">
                                 {{ formatDate(data?.data_quitacao) }}
