@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class Client extends Authenticatable implements JWTSubject
@@ -70,6 +71,106 @@ class Client extends Authenticatable implements JWTSubject
     public function emprestimos()
     {
         return $this->hasMany(Emprestimo::class, 'client_id', 'id');
+    }
+
+    /**
+     * Exclui clientes com empréstimo em andamento na empresa: sem parcelas OU parcela em aberto (dt_baixa nulo/vazio).
+     * Usa SQL explícito (whereNotExists) para evitar ambiguidade do Eloquent em whereDoesntHave aninhado.
+     */
+    public function scopeWhereSemEmprestimoEmAndamentoNaEmpresa($query, $companyId)
+    {
+        $clientsTable = $query->getModel()->getTable();
+
+        return $query->whereNotExists(function ($sub) use ($companyId, $clientsTable) {
+            $sub->select(DB::raw(1))
+                ->from('emprestimos')
+                ->whereColumn('emprestimos.client_id', $clientsTable.'.id')
+                ->where('emprestimos.company_id', '=', $companyId)
+                ->where(function ($w) {
+                    $w->whereNotExists(function ($p) {
+                        $p->select(DB::raw(1))
+                            ->from('parcelas')
+                            ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id');
+                    })
+                        ->orWhereExists(function ($p) {
+                            $p->select(DB::raw(1))
+                                ->from('parcelas')
+                                ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id')
+                                ->where(function ($o) {
+                                    $o->whereNull('parcelas.dt_baixa')
+                                        ->orWhere('parcelas.dt_baixa', '');
+                                });
+                        });
+                });
+        });
+    }
+
+    /**
+     * IDs de clientes com empréstimo em andamento (mesma regra de {@see Client::scopeWhereSemEmprestimoEmAndamentoNaEmpresa}).
+     */
+    public static function idsDeClientesComEmprestimoEmAndamentoNaEmpresa($companyId)
+    {
+        return DB::table('emprestimos')
+            ->where('emprestimos.company_id', '=', $companyId)
+            ->where(function ($w) {
+                $w->whereNotExists(function ($p) {
+                    $p->select(DB::raw(1))
+                        ->from('parcelas')
+                        ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id');
+                })
+                    ->orWhereExists(function ($p) {
+                        $p->select(DB::raw(1))
+                            ->from('parcelas')
+                            ->whereColumn('parcelas.emprestimo_id', 'emprestimos.id')
+                            ->where(function ($o) {
+                                $o->whereNull('parcelas.dt_baixa')
+                                    ->orWhere('parcelas.dt_baixa', '');
+                            });
+                    });
+            })
+            ->distinct()
+            ->pluck('client_id');
+    }
+
+    /**
+     * Remove da coleção clientes cujo CPF coincide com o de outro cadastro na empresa que tenha empréstimo ativo.
+     */
+    public static function filtrarColecaoRemovendoCpfComEmprestimoAtivoEmOutroCadastro($clients, $companyId)
+    {
+        if ($clients->isEmpty()) {
+            return $clients;
+        }
+
+        $idsAtivos = self::idsDeClientesComEmprestimoEmAndamentoNaEmpresa($companyId);
+        if ($idsAtivos->isEmpty()) {
+            return $clients;
+        }
+
+        $cpfBloqueados = self::query()
+            ->where('company_id', $companyId)
+            ->whereIn('id', $idsAtivos->all())
+            ->pluck('cpf')
+            ->map(function ($cpf) {
+                return preg_replace('/\D/', '', (string) $cpf);
+            })
+            ->filter()
+            ->unique()
+            ->all();
+
+        if ($cpfBloqueados === []) {
+            return $clients;
+        }
+
+        $bloqueado = array_fill_keys($cpfBloqueados, true);
+
+        return $clients->filter(function (Client $c) use ($bloqueado) {
+            $n = preg_replace('/\D/', '', (string) ($c->cpf ?? ''));
+            if ($n === '') {
+                return true;
+            }
+
+            return empty($bloqueado[$n]);
+        })->values();
     }
 
     /**

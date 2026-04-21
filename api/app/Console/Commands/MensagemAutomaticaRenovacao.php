@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Client;
+use App\Models\Company;
 use App\Services\WAPIService;
 use Illuminate\Support\Facades\Log;
 
@@ -16,73 +17,86 @@ class MensagemAutomaticaRenovacao extends Command
     {
         $this->info('Iniciando envio automático de mensagem de renovação');
 
-        $clients = Client::whereDoesntHave('emprestimos', function ($query) {
-            $query->whereHas('parcelas', function ($q) {
-                $q->whereNull('dt_baixa');
-            });
-        })
-            ->with(['emprestimos' => function ($query) {
-                $query->whereDoesntHave('parcelas', function ($q) {
-                    $q->whereNull('dt_baixa');
-                });
-            }, 'company'])
-            ->get();
+        $companyIds = Company::query()->where('envio_automatico_renovacao', 1)->pluck('id');
 
-        foreach ($clients as $client) {
-            $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
+        foreach ($companyIds as $companyId) {
+            $clients = Client::where('company_id', $companyId)
+                ->whereSemEmprestimoEmAndamentoNaEmpresa($companyId)
+                ->with(['emprestimos' => function ($query) use ($companyId) {
+                    $query->where('company_id', $companyId)
+                        ->whereHas('parcelas')
+                        ->whereDoesntHave('parcelas', function ($q) {
+                            $q->where(function ($o) {
+                                $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
+                            });
+                        })
+                        ->withCount([
+                            'parcelas as count_late_parcels' => function ($q) {
+                                $q->where('atrasadas', '>', 0);
+                            },
+                        ])
+                        ->with('company');
+                }, 'company'])
+                ->get();
 
-            if (!$client->company || $client->company->envio_automatico_renovacao != 1) {
-                continue;
-            }
+            $clients = Client::filtrarColecaoRemovendoCpfComEmprestimoAtivoEmOutroCadastro($clients, $companyId);
 
-            $emprestimo = $client->emprestimos;
+            foreach ($clients as $client) {
+                $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
 
-            if (!is_object($emprestimo)) {
-                continue;
-            }
-
-            if (isset($emprestimo->mensagem_renovacao) && $emprestimo->mensagem_renovacao == 1) {
-                continue;
-            }
-
-            if (!isset($emprestimo->count_late_parcels)) {
-                continue;
-            }
-
-            $valorBase = $emprestimo->valor ?? 0;
-            $temCnpj = !empty(trim($client->cnpj ?? ''));
-            $valorOferta = $valorBase + ($temCnpj ? 300 : 200);
-            $nome = $client->nome_completo;
-            $mensagem = null;
-
-            switch (true) {
-                case ($emprestimo->count_late_parcels <= 2):
-                    $mensagem = "Olá {$nome}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ " . ($valorOferta) . ". Gostaria de contratar?";
-                    break;
-
-                case ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5):
-                    $mensagem = "Olá {$nome}, temos um valor pré-aprovado de R$ {$valorBase} disponível para você. Gostaria de contratar?";
-                    break;
-
-                case ($emprestimo->count_late_parcels >= 6 && $emprestimo->count_late_parcels <= 10):
-                    $mensagem = "Olá {$nome}, mesmo com pequenos atrasos, você ainda pode renovar com valor de R$ " . max(0, $valorBase - 100) . ". Interessado?";
-                    break;
-
-                default:
-                    $mensagem = null;
-                    break;
-            }
-
-            if ($mensagem) {
-                $company = $emprestimo->company;
-                if (empty($company->token_api_wtz) || empty($company->instance_id)) {
-                    Log::warning("Empréstimo ID: {$emprestimo->id} - Company sem token_api_wtz ou instance_id. Mensagem automática de renovação não enviada.");
+                if (!$client->company || $client->company->envio_automatico_renovacao != 1) {
                     continue;
                 }
 
-                $this->enviarMensagem($client, $emprestimo, $mensagem);
-                $emprestimo->mensagem_renovacao = 1;
-                $emprestimo->save();
+                $emprestimo = $client->emprestimos;
+
+                if (!is_object($emprestimo)) {
+                    continue;
+                }
+
+                if (isset($emprestimo->mensagem_renovacao) && $emprestimo->mensagem_renovacao == 1) {
+                    continue;
+                }
+
+                if (!isset($emprestimo->count_late_parcels)) {
+                    continue;
+                }
+
+                $valorBase = $emprestimo->valor ?? 0;
+                $temCnpj = !empty(trim($client->cnpj ?? ''));
+                $valorOferta = $valorBase + ($temCnpj ? 300 : 200);
+                $nome = $client->nome_completo;
+                $mensagem = null;
+
+                switch (true) {
+                    case ($emprestimo->count_late_parcels <= 2):
+                        $mensagem = "Olá {$nome}, estamos entrando em contato para informar sobre seu empréstimo. Temos uma ótima notícia: você possui um valor pré-aprovado de R$ " . ($valorOferta) . ". Gostaria de contratar?";
+                        break;
+
+                    case ($emprestimo->count_late_parcels >= 3 && $emprestimo->count_late_parcels <= 5):
+                        $mensagem = "Olá {$nome}, temos um valor pré-aprovado de R$ {$valorBase} disponível para você. Gostaria de contratar?";
+                        break;
+
+                    case ($emprestimo->count_late_parcels >= 6 && $emprestimo->count_late_parcels <= 10):
+                        $mensagem = "Olá {$nome}, mesmo com pequenos atrasos, você ainda pode renovar com valor de R$ " . max(0, $valorBase - 100) . ". Interessado?";
+                        break;
+
+                    default:
+                        $mensagem = null;
+                        break;
+                }
+
+                if ($mensagem) {
+                    $company = $emprestimo->company;
+                    if (empty($company->token_api_wtz) || empty($company->instance_id)) {
+                        Log::warning("Empréstimo ID: {$emprestimo->id} - Company sem token_api_wtz ou instance_id. Mensagem automática de renovação não enviada.");
+                        continue;
+                    }
+
+                    $this->enviarMensagem($client, $emprestimo, $mensagem);
+                    $emprestimo->mensagem_renovacao = 1;
+                    $emprestimo->save();
+                }
             }
         }
 

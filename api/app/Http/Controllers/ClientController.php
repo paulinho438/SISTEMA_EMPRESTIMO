@@ -324,10 +324,7 @@ class ClientController extends Controller
 
         // Buscar clientes e seus empréstimos
         $clients = Client::where('company_id', $companyId)
-            ->whereDoesntHave('emprestimos', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
-                $this->escopoEmprestimoEmAndamento($query);
-            })
+            ->whereSemEmprestimoEmAndamentoNaEmpresa($companyId)
             ->with(['emprestimos' => function ($query) use ($companyId) {
                 $query->where('company_id', $companyId)
                     ->whereHas('parcelas')
@@ -342,6 +339,8 @@ class ClientController extends Controller
                 $query->where('company_id', $companyId);
             })
             ->get();
+
+        $clients = Client::filtrarColecaoRemovendoCpfComEmprestimoAtivoEmOutroCadastro($clients, $companyId);
 
         $clients->each(function (Client $client) {
             $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
@@ -472,34 +471,12 @@ class ClientController extends Controller
         return Excel::download(new ClientesDisponiveisExport($clients->values()), $nomeArquivo);
     }
 
-    /**
-     * Empréstimo ainda em andamento: sem parcelas geradas OU com pelo menos uma parcela em aberto
-     * (dt_baixa nulo ou vazio — alguns registros legados usam string vazia em vez de NULL).
-     */
-    /**
-     * @param  \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation  $emprestimoQuery
-     */
-    private function escopoEmprestimoEmAndamento($emprestimoQuery): void
-    {
-        $emprestimoQuery->where(function ($w) {
-            $w->whereDoesntHave('parcelas')
-                ->orWhereHas('parcelas', function ($p) {
-                    $p->where(function ($o) {
-                        $o->whereNull('dt_baixa')->orWhere('dt_baixa', '');
-                    });
-                });
-        });
-    }
-
     private function obterClientesDisponiveisFiltrados(Request $request, bool $aplicarRisco = true)
     {
         $companyId = $request->header('company-id');
 
         $query = Client::where('company_id', $companyId)
-            ->whereDoesntHave('emprestimos', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
-                $this->escopoEmprestimoEmAndamento($query);
-            })
+            ->whereSemEmprestimoEmAndamentoNaEmpresa($companyId)
             ->with(['emprestimos' => function ($query) use ($companyId) {
                 $query->where('company_id', $companyId)
                     ->whereHas('parcelas')
@@ -520,6 +497,7 @@ class ClientController extends Controller
         }
 
         $clients = $query->get();
+        $clients = Client::filtrarColecaoRemovendoCpfComEmprestimoAtivoEmOutroCadastro($clients, $companyId);
 
         $clients->each(function (Client $client) {
             $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
