@@ -137,12 +137,6 @@ class BancoController extends Controller
                     unset($dados['goldpix_base_url']);
                 }
             } elseif (($dados['bank_type'] ?? 'normal') === 'pixgo') {
-                if (isset($dados['pixgo_api_key']) && !empty($dados['pixgo_api_key'])) {
-                    $dados['pixgo_api_key'] = Crypt::encryptString($dados['pixgo_api_key']);
-                }
-                if (isset($dados['pixgo_webhook_secret']) && !empty($dados['pixgo_webhook_secret'])) {
-                    $dados['pixgo_webhook_secret'] = Crypt::encryptString($dados['pixgo_webhook_secret']);
-                }
                 if (isset($dados['pixgo_base_url']) && empty($dados['pixgo_base_url'])) {
                     unset($dados['pixgo_base_url']);
                 }
@@ -284,10 +278,10 @@ class BancoController extends Controller
                     }
                 } elseif (($EditBanco->bank_type ?? 'normal') === 'pixgo') {
                     if (isset($dados['pixgo_api_key']) && !empty($dados['pixgo_api_key'])) {
-                        $EditBanco->pixgo_api_key = Crypt::encryptString($dados['pixgo_api_key']);
+                        $EditBanco->pixgo_api_key = $dados['pixgo_api_key'];
                     }
                     if (isset($dados['pixgo_webhook_secret']) && !empty($dados['pixgo_webhook_secret'])) {
-                        $EditBanco->pixgo_webhook_secret = Crypt::encryptString($dados['pixgo_webhook_secret']);
+                        $EditBanco->pixgo_webhook_secret = $dados['pixgo_webhook_secret'];
                     }
                     if (isset($dados['pixgo_base_url'])) {
                         $EditBanco->pixgo_base_url = $dados['pixgo_base_url'] ?: null;

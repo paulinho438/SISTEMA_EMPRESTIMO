@@ -31,6 +31,7 @@ class Kernel extends ConsoleKernel
         Commands\ProcessarWebhookApix::class,
         Commands\ProcessarWebhookGoldpix::class,
         Commands\ProcessarWebhookPixgo::class,
+        Commands\PixgoDiagnosticoAssinaturaWebhook::class,
         Commands\RetirarProtestoEmprestimo::class,
         Commands\CorrigirDatasVencimentoFeriados::class
 

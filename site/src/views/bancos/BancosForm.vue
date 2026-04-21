@@ -647,7 +647,8 @@ export default {
 						:class="{ 'p-invalid': errors?.pixgo_webhook_secret }"
 					/>
 					<small v-if="errors?.pixgo_webhook_secret" class="text-red-500 pl-2">{{ errors?.pixgo_webhook_secret[0] }}</small>
-					<small class="text-gray-500 pl-2">Obrigatório para validar POST /api/webhook/pixgo.</small>
+					<small class="text-gray-500 pl-2">Obrigatório para validar POST /api/webhook/pixgo. Use o valor <code>whsec_…</code> do painel PixGo (mesma conta da API Key). Ao editar, informe de novo se trocou no PixGo.</small>
+					<small v-if="banco?.pixgo_webhook_secret_configured" class="block text-green-700 pl-2">Segredo já cadastrado no servidor (não é exibido por segurança).</small>
 				</div>
 			</div>
 

@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Banco;
 use App\Models\WebhookPixgo;
+use App\Services\PixGoWebhookSignatureVerifier;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -99,10 +99,9 @@ class PixGoWebhookController extends Controller
     protected function validarAssinatura(Request $request, string $rawBody): bool
     {
         $timestamp = $this->primeiroHeaderLinha($request, 'X-Webhook-Timestamp');
-        $signature = $this->primeiroHeaderLinha($request, 'X-Webhook-Signature');
-        $signature = strtolower(preg_replace('/\s+/', '', $signature));
+        $signatureHeader = $this->primeiroHeaderLinha($request, 'X-Webhook-Signature');
 
-        if ($timestamp === '' || $signature === '') {
+        if ($timestamp === '' || $signatureHeader === '') {
             Log::channel('pixgo')->warning('Webhook PixGo sem headers de assinatura');
 
             return false;
@@ -116,14 +115,12 @@ class PixGoWebhookController extends Controller
         }
 
         foreach ($bancos as $banco) {
-            $secret = $this->resolverPixgoWebhookSecret($banco->pixgo_webhook_secret, (int) $banco->id);
+            $secret = PixGoWebhookSignatureVerifier::resolverSegredo($banco->pixgo_webhook_secret);
             if ($secret === '') {
                 continue;
             }
 
-            $signaturePayload = $timestamp . '.' . $rawBody;
-            $expected = hash_hmac('sha256', $signaturePayload, $secret);
-            if (hash_equals($expected, $signature)) {
+            if (PixGoWebhookSignatureVerifier::assinaturaConfere($timestamp, $rawBody, $secret, $signatureHeader)) {
                 if (abs(time() - (int) $timestamp) > 300) {
                     Log::channel('pixgo')->warning('Webhook PixGo timestamp fora da janela de 5 minutos');
 
@@ -138,6 +135,7 @@ class PixGoWebhookController extends Controller
             'bancos_pixgo_com_segredo' => $bancos->count(),
             'banco_ids' => $bancos->pluck('id')->all(),
             'raw_body_bytes' => strlen($rawBody),
+            'signature_hex_len' => strlen(PixGoWebhookSignatureVerifier::normalizarAssinatura($signatureHeader)),
         ]);
 
         return false;
@@ -154,27 +152,5 @@ class PixGoWebhookController extends Controller
         }
 
         return trim((string) $v);
-    }
-
-    /**
-     * Segredo gravado criptografado pelo painel; fallback texto plano whsec_* (ex.: insert manual).
-     */
-    protected function resolverPixgoWebhookSecret(?string $armazenado, int $bancoId): string
-    {
-        if ($armazenado === null || $armazenado === '') {
-            return '';
-        }
-        try {
-            return Crypt::decryptString($armazenado);
-        } catch (\Exception $e) {
-            if (str_starts_with($armazenado, 'whsec_')) {
-                return $armazenado;
-            }
-            Log::channel('pixgo')->warning('Webhook PixGo: pixgo_webhook_secret do banco não descriptografa (APP_KEY ou valor inválido)', [
-                'banco_id' => $bancoId,
-            ]);
-
-            return '';
-        }
     }
 }
