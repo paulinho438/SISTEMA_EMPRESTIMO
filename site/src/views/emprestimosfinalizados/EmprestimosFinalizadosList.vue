@@ -47,8 +47,25 @@ export default {
             form: {},
             toggleValue: false,
             mensagemAudioValue: false,
-            filtroComCnpj: false
+            filtroComCnpj: false,
+            /** Paginação manual: com :lazy no DataTable o valor deve ser só a página atual (evita filtro local em centenas de linhas). */
+            dtFirst: 0,
+            dtRows: 10
         };
+    },
+    computed: {
+        clientesPaginaTable() {
+            const list = Array.isArray(this.Clientes) ? this.Clientes : [];
+            if (!list.length) {
+                return [];
+            }
+            const maxFirst = Math.max(0, (Math.ceil(list.length / this.dtRows) - 1) * this.dtRows);
+            const start = Math.min(this.dtFirst, maxFirst);
+            return list.slice(start, start + this.dtRows);
+        },
+        dtTotalRecords() {
+            return Array.isArray(this.Clientes) ? this.Clientes.length : 0;
+        }
     },
     methods: {
         buildParamsKey(params) {
@@ -74,6 +91,7 @@ export default {
             }
             this._globalSearchTimer = setTimeout(() => {
                 this._globalSearchTimer = null;
+                this.dtFirst = 0;
                 this.getClientes();
             }, 400);
         },
@@ -132,7 +150,12 @@ export default {
         },
         filterByRiskCategory(category) {
             this.selectedRiskCategory = this.selectedRiskCategory === category ? null : category;
+            this.dtFirst = 0;
             this.getClientes();
+        },
+        onLazyFilterSchedule() {
+            this.dtFirst = 0;
+            this.scheduleGetClientes();
         },
         getApiFilterValue(filterKey) {
             if (filterKey === 'global') {
@@ -383,6 +406,9 @@ export default {
                         return Clientes;
                     });
                     this.Clientes = this.sortClientesByDataQuitacaoDesc(mapped);
+                    if (this.dtFirst >= this.Clientes.length) {
+                        this.dtFirst = 0;
+                    }
                 })
                 .catch((error) => {
                     if (seq !== this._getClientesSeq) return;
@@ -522,6 +548,7 @@ export default {
             this.globalSearchDraft = '';
             this.initFilters();
             this.selectedRiskCategory = null;
+            this.dtFirst = 0;
             this.getClientes();
         }
     },
@@ -607,10 +634,13 @@ export default {
                         />
                     </div>
                     <DataTable
-                        :value="Clientes"
+                        :value="clientesPaginaTable"
+                        :lazy="true"
+                        v-model:first="dtFirst"
                         :paginator="true"
                         class="p-datatable-gridlines"
-                        :rows="10"
+                        :rows="dtRows"
+                        :totalRecords="dtTotalRecords"
                         dataKey="id"
                         :rowHover="true"
                         v-model:filters="filters"
@@ -618,7 +648,7 @@ export default {
                         :loading="loading"
                         responsiveLayout="scroll"
                         :globalFilterFields="[]"
-                        @filter="scheduleGetClientes"
+                        @filter="onLazyFilterSchedule"
                     >
                         <template #header>
                             <div class="flex justify-content-between flex-column sm:flex-row flex-wrap gap-2">
@@ -630,7 +660,7 @@ export default {
                                         :label="filtroComCnpj ? 'Todos os clientes' : 'Apenas com CNPJ'"
                                         :class="filtroComCnpj ? 'p-button-outlined p-button-success mb-2' : 'p-button-outlined mb-2'"
                                         icon="pi pi-building"
-                                        @click="filtroComCnpj = !filtroComCnpj; getClientes()"
+                                        @click="filtroComCnpj = !filtroComCnpj; dtFirst = 0; getClientes()"
                                     />
                                     <Button
                                         label="Exportar Excel"
