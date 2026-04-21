@@ -103,21 +103,7 @@ class ProcessarPixPixgoJob implements ShouldQueue
             return;
         }
 
-        foreach ($this->emprestimo->parcelas as $parcela) {
-            $valorParcela = (float) ($parcela->saldo ?? $parcela->valor);
-            if ($valorParcela > 0 && $valorParcela < 10.0) {
-                Log::channel('pixgo')->warning('ProcessarPixPixgoJob: parcela com valor abaixo do mínimo PixGo (R$ 10)', [
-                    'parcela_id' => $parcela->id,
-                    'valor' => $valorParcela,
-                ]);
-                continue;
-            }
-            $this->criarCobrancaPixgo($pixGoService, $parcela, $valorParcela, 'parcela_' . $parcela->id, $parcela->venc_real ? date('Y-m-d', strtotime($parcela->venc_real)) : null, function ($resp) use ($parcela) {
-                $parcela->identificador = $resp['transaction_id'] ?? $resp['txid'] ?? $parcela->identificador;
-                $parcela->chave_pix = $resp['pixCopiaECola'] ?? $resp['qr_code'] ?? $parcela->chave_pix;
-                $parcela->save();
-            });
-        }
+        // Parcelas: cobrança PIX só sob demanda (landing "Copiar Chave Pix" → gerarPixPagamentoParcela), como XGate/APIX.
 
         if ($this->emprestimo->quitacao) {
             $q = $this->emprestimo->quitacao;

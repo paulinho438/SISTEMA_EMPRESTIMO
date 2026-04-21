@@ -14,6 +14,7 @@ import moment from 'moment';
  * Fonte de dados: EmprestimoService.infoEmprestimoFront → POST /parcela/:id/infoemprestimofront
  * (EmprestimoController::infoEmprestimoFront).
  *
+ * - PixGo: igual XGate/APIX/GoldPix — ao copiar, chama a API (`gerarPix*`) para gerar cobrança nova; parcelas não são pré-geradas na aprovação.
  * - Valor pendente do dia: renderiza se `emprestimo.pagamentosaldopendente` existir (a API pode criar
  *   o registro em `pagamento_saldo_pendente` quando faltava, desde que haja parcela aberta e valor > 0).
  * - Quitar empréstimo: renderiza se `emprestimo.quitacao` existir e `quitacao.saldo` > 0 (total em aberto).
@@ -62,6 +63,9 @@ export default {
         },
         isGoldpix() {
             return this.products?.data?.emprestimo?.banco?.bank_type === 'goldpix';
+        },
+        isPixgo() {
+            return this.products?.data?.emprestimo?.banco?.bank_type === 'pixgo';
         },
         valorPendenteHoje() {
             // Retornar o valor calculado e armazenado
@@ -178,7 +182,8 @@ export default {
             }
 
             const gerarPixNoServidor =
-                tipo === 'pagamentoMinimo' || ((this.isXGate || this.isApix || this.isGoldpix) && idEfetivo);
+                tipo === 'pagamentoMinimo' ||
+                ((this.isXGate || this.isApix || this.isGoldpix || this.isPixgo) && idEfetivo);
 
             if (gerarPixNoServidor) {
                 this.loadingPix = true;
