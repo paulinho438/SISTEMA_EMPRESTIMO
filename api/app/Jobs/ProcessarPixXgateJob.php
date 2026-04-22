@@ -26,6 +26,7 @@ class ProcessarPixXgateJob implements ShouldQueue
     /** @var array Dados do comprovante (dados para a view, já com is_xgate etc.) */
     protected $comprovante;
     protected $wapiService;
+    protected string $documentoXgate = 'cpf';
 
     public function __construct(Emprestimo $emprestimo, array $comprovante = [], string $documentoXgate = 'cpf')
     {
