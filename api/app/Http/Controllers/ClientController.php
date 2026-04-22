@@ -502,6 +502,12 @@ class ClientController extends Controller
             $client->definirEmprestimoFinalizadoMaisRecenteCarregado();
         });
 
+        // Regra de negócio: se não houver data de quitação do último empréstimo finalizado, não exibir o cliente nesta tela.
+        $clients = $clients->filter(function ($client) {
+            $quitacao = optional($client->emprestimos)->data_quitacao;
+            return $quitacao !== null && $quitacao !== '';
+        })->values();
+
         $riscoPagador = strtolower((string) $request->query('risco_pagador', ''));
         if ($aplicarRisco && $riscoPagador !== '') {
             $clients = $clients->filter(function ($client) use ($riscoPagador) {
