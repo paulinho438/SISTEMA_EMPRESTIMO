@@ -63,7 +63,7 @@ class ProcessarPixXgateJob implements ShouldQueue
             }
 
             // 2. Cobranças via API XGate (parcelas, quitação, pag. mínimo, saldo pendente)
-            $this->processarCobrancasXgate();
+            // Desativado neste estágio: a cobrança será gerada on-demand ao copiar a chave PIX em outra tela.
 
             // 3. Vídeo (link YouTube)
             $this->envioMensagemVideoYoutube($this->emprestimo->parcelas[0]);

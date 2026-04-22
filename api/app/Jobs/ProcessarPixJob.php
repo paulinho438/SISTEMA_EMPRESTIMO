@@ -245,6 +245,10 @@ class ProcessarPixJob implements ShouldQueue
         $sucesso = false;
 
         $bankType = $this->emprestimo->banco->resolvedBankType();
+        if ($bankType === 'xgate') {
+            // Cobrança XGate será gerada on-demand ao copiar a chave PIX em outra tela.
+            return;
+        }
 
         $tipoOrigem = strtoupper((string) ($this->emprestimo->tipo_origem ?? ''));
         if ($tipoOrigem === 'REFINANCIAMENTO' && in_array($bankType, ['xgate', 'apix', 'goldpix'], true)) {
