@@ -212,7 +212,13 @@ class ProcessarWebhookPixgo extends Command
                     return false;
                 }
                 if ($parcela->dt_baixa) {
-                    return true;
+                    return $this->realocarPagamentoParaProximasParcelas(
+                        (int) $parcela->emprestimo_id,
+                        $valor,
+                        $horario,
+                        $pagadorNome,
+                        $txId
+                    );
                 }
                 $this->baixaParcela($parcela, $valor, $horario, $pagadorNome, $txId);
                 Log::channel('pixgo')->info('PixGo: baixa via histórico PIX (parcela)', [
@@ -280,6 +286,106 @@ class ProcessarWebhookPixgo extends Command
             default:
                 return false;
         }
+    }
+
+    /**
+     * Quando um pagamento refere-se a uma parcela já baixada (ex.: txId antigo no histórico),
+     * aplica o valor nas próximas parcelas em aberto do mesmo empréstimo (ordenadas por vencimento).
+     * Registra uma movimentação única por transação (deduplicada por txId).
+     */
+    private function realocarPagamentoParaProximasParcelas(
+        int $emprestimoId,
+        float $valor,
+        string $horario,
+        string $pagadorNome,
+        string $identificadorTransacao
+    ): bool {
+        $valorRecebido = round((float) $valor, 2);
+        if ($valorRecebido <= 0) {
+            return false;
+        }
+
+        $valorRestante = $valorRecebido;
+
+        $parcelas = Parcela::with(['emprestimo.banco', 'emprestimo.client', 'contasreceber'])
+            ->where('emprestimo_id', $emprestimoId)
+            ->whereNull('dt_baixa')
+            ->orderByRaw('venc_real IS NULL, venc_real ASC, parcela ASC')
+            ->get();
+
+        if ($parcelas->isEmpty()) {
+            Log::channel('pixgo')->info('Realocação PixGo: não há parcelas em aberto para aplicar pagamento', [
+                'identificador' => $identificadorTransacao,
+                'emprestimo_id' => $emprestimoId,
+            ]);
+            return false;
+        }
+
+        $ultimaAfetada = null;
+
+        foreach ($parcelas as $p) {
+            if ($valorRestante <= 0) {
+                break;
+            }
+
+            $saldo = round((float) ($p->saldo ?? 0), 2);
+            if ($saldo <= 0) {
+                continue;
+            }
+
+            if ($valorRestante >= $saldo) {
+                $valorRestante = round($valorRestante - $saldo, 2);
+                $p->saldo = 0;
+                $p->dt_baixa = $horario;
+                $p->save();
+                if ($p->contasreceber) {
+                    $p->contasreceber->status = 'Pago';
+                    $p->contasreceber->dt_baixa = date('Y-m-d');
+                    $p->contasreceber->forma_recebto = 'PIX';
+                    $p->contasreceber->save();
+                }
+            } else {
+                $p->saldo = round($saldo - $valorRestante, 2);
+                $p->dt_baixa = $horario;
+                $p->save();
+                $valorRestante = 0;
+            }
+
+            $ultimaAfetada = $p;
+        }
+
+        if (!$ultimaAfetada) {
+            return false;
+        }
+
+        $emprestimo = $ultimaAfetada->emprestimo;
+        if ($valorRecebido > 0 && $emprestimo && $emprestimo->banco_id && $emprestimo->company_id !== null) {
+            $descricao = sprintf(
+                'Pagamento PIX realocado PixGo - empréstimo Nº %d do cliente %s',
+                $emprestimo->id,
+                $emprestimo->client->nome_completo ?? 'N/I'
+            );
+            $this->registrarMovimentacao(
+                $emprestimo->banco_id,
+                $emprestimo->company_id,
+                null,
+                $valorRecebido,
+                $descricao,
+                $pagadorNome,
+                $identificadorTransacao
+            );
+        }
+
+        $this->recriarCobrancaQuitacaoOuSaldoPendente($ultimaAfetada->emprestimo, $ultimaAfetada);
+
+        Log::channel('pixgo')->info('Realocação PixGo aplicada', [
+            'identificador' => $identificadorTransacao,
+            'emprestimo_id' => $emprestimoId,
+            'valor_recebido' => $valorRecebido,
+            'valor_restante' => $valorRestante,
+        ]);
+
+        return true;
     }
 
     /**

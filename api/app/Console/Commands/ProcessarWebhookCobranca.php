@@ -81,13 +81,30 @@ class ProcessarWebhookCobranca extends Command
 
                         $parcela = Parcela::where('identificador', $txId)->whereNull('dt_baixa')->first();
 
+                        // Se o txId aponta para uma parcela já baixada, realoca para a próxima parcela em aberto
+                        if (!$parcela) {
+                            $parcelaJaBaixada = Parcela::where('identificador', $txId)->first();
+                            if ($parcelaJaBaixada && $parcelaJaBaixada->dt_baixa) {
+                                $aplicou = $this->realocarPagamentoParaProximasParcelas(
+                                    (int) $parcelaJaBaixada->emprestimo_id,
+                                    $valor,
+                                    $horario,
+                                    $pix['pagador']['nome'] ?? 'Não informado',
+                                    $txId
+                                );
+                                $txIdsProcessados[] = $txId;
+                                if ($aplicou) {
+                                    continue;
+                                }
+                            }
+                        }
+
                         if ($parcela) {
-                            // Verifica se já existe movimentação financeira para esta parcela e txId
+                            // Deduplicação por txId (evita bloquear outro pagamento do mesmo valor no dia)
                             $movExistente = Movimentacaofinanceira::where('parcela_id', $parcela->id)
                                 ->where('dt_movimentacao', date('Y-m-d'))
-                                ->where('valor', $valor)
                                 ->where('tipomov', 'E')
-                                ->where('descricao', 'like', '%Baixa automática da parcela Nº ' . $parcela->id . '%')
+                                ->where('descricao', 'like', '%ID transação: ' . $txId . '%')
                                 ->first();
 
                             if ($movExistente) {
@@ -111,18 +128,19 @@ class ProcessarWebhookCobranca extends Command
                                     'banco_id'        => $parcela->emprestimo->banco_id,
                                     'company_id'      => $parcela->emprestimo->company_id,
                                     'descricao'       => sprintf(
-                                        'Baixa automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s',
+                                        'Baixa automática da parcela Nº %d do empréstimo Nº %d do cliente %s, pagador: %s | ID transação: %s',
                                         $parcela->id,
                                         $parcela->emprestimo_id,
                                         $parcela->emprestimo->client->nome_completo,
-                                        $pix['pagador']['nome'] ?? 'Não informado'
+                                        $pix['pagador']['nome'] ?? 'Não informado',
+                                        $txId
                                     ),
                                     'tipomov'         => 'E',
                                     'parcela_id'      => $parcela->id,
                                     'dt_movimentacao' => date('Y-m-d'),
                                     'valor'           => $valor,
                                 ]);
-                                
+
                                 // Marca o txId como processado
                                 $txIdsProcessados[] = $txId;
 
@@ -916,5 +934,146 @@ Segue abaixo link para pagamento parcela e acesso todo o histórico de parcelas:
             }
         }
         return null;
+    }
+
+    /**
+     * Realoca um pagamento cujo txId aponta para parcela já baixada: aplica nas próximas parcelas em aberto por vencimento.
+     * Registra movimentação única por txId e atualiza saldo do banco uma vez.
+     */
+    private function realocarPagamentoParaProximasParcelas(
+        int $emprestimoId,
+        float $valor,
+        string $horario,
+        string $pagadorNome,
+        string $identificadorTransacao
+    ): bool {
+        $valorRecebido = round((float) $valor, 2);
+        if ($valorRecebido <= 0) {
+            return false;
+        }
+
+        $valorRestante = $valorRecebido;
+
+        $parcelas = Parcela::with(['emprestimo.banco', 'emprestimo.client', 'contasreceber'])
+            ->where('emprestimo_id', $emprestimoId)
+            ->whereNull('dt_baixa')
+            ->orderByRaw('venc_real IS NULL, venc_real ASC, parcela ASC')
+            ->get();
+
+        if ($parcelas->isEmpty()) {
+            Log::warning('Realocação Bcodex: nenhuma parcela em aberto para aplicar pagamento', [
+                'emprestimo_id' => $emprestimoId,
+                'identificador' => $identificadorTransacao,
+            ]);
+            return false;
+        }
+
+        $ultimaAfetada = null;
+
+        foreach ($parcelas as $p) {
+            if ($valorRestante <= 0) {
+                break;
+            }
+
+            $saldo = round((float) ($p->saldo ?? 0), 2);
+            if ($saldo <= 0) {
+                continue;
+            }
+
+            if ($valorRestante >= $saldo) {
+                $valorRestante = round($valorRestante - $saldo, 2);
+                $p->saldo = 0;
+                $p->dt_baixa = $horario;
+                $p->save();
+                if ($p->contasreceber) {
+                    $p->contasreceber->status = 'Pago';
+                    $p->contasreceber->dt_baixa = date('Y-m-d');
+                    $p->contasreceber->forma_recebto = 'PIX';
+                    $p->contasreceber->save();
+                }
+            } else {
+                $p->saldo = round($saldo - $valorRestante, 2);
+                $p->dt_baixa = $horario;
+                $p->save();
+                $valorRestante = 0;
+            }
+
+            $ultimaAfetada = $p;
+        }
+
+        if (!$ultimaAfetada) {
+            return false;
+        }
+
+        $emprestimo = $ultimaAfetada->emprestimo;
+        if ($emprestimo && $emprestimo->banco) {
+            $jaTemEntrada = Movimentacaofinanceira::where('banco_id', $emprestimo->banco_id)
+                ->where('dt_movimentacao', date('Y-m-d'))
+                ->where('tipomov', 'E')
+                ->where('descricao', 'like', '%ID transação: ' . $identificadorTransacao . '%')
+                ->exists();
+
+            if (!$jaTemEntrada) {
+                Movimentacaofinanceira::create([
+                    'banco_id'        => $emprestimo->banco_id,
+                    'company_id'      => $emprestimo->company_id,
+                    'descricao'       => sprintf(
+                        'Pagamento PIX realocado (BCodex) - empréstimo Nº %d do cliente %s, pagador: %s | ID transação: %s',
+                        $emprestimo->id,
+                        $emprestimo->client->nome_completo ?? 'N/I',
+                        $pagadorNome,
+                        $identificadorTransacao
+                    ),
+                    'tipomov'         => 'E',
+                    'parcela_id'      => null,
+                    'dt_movimentacao' => date('Y-m-d'),
+                    'valor'           => $valorRecebido,
+                ]);
+
+                $emprestimo->banco->saldo += $valorRecebido;
+                $emprestimo->banco->save();
+            }
+
+            // Recalcula/recobra quitação, se existir
+            if ($emprestimo?->quitacao?->chave_pix) {
+                $totalPendente = $emprestimo->parcelas[0]->totalPendente() ?? 0;
+                $emprestimo->quitacao->valor = $totalPendente;
+                $emprestimo->quitacao->saldo = $totalPendente;
+                $emprestimo->quitacao->save();
+
+                $response = $this->bcodexService->criarCobranca($totalPendente, $emprestimo->banco->document, null);
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                    $emprestimo->quitacao->identificador = $response->json()['txid'] ?? null;
+                    $emprestimo->quitacao->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
+                    $emprestimo->quitacao->save();
+                }
+            }
+
+            // Recalcula/recobra saldo pendente da próxima
+            $proximaParcela = Parcela::where('emprestimo_id', $emprestimoId)
+                ->whereNull('dt_baixa')
+                ->orderByRaw('venc_real IS NULL, venc_real ASC, parcela ASC')
+                ->first();
+            if ($proximaParcela && $emprestimo?->pagamentosaldopendente?->chave_pix) {
+                $emprestimo->pagamentosaldopendente->valor = (float) $proximaParcela->saldo;
+                $emprestimo->pagamentosaldopendente->save();
+
+                $response = $this->bcodexService->criarCobranca($emprestimo->pagamentosaldopendente->valor, $emprestimo->banco->document, null);
+                if (is_object($response) && method_exists($response, 'successful') && $response->successful()) {
+                    $emprestimo->pagamentosaldopendente->identificador = $response->json()['txid'] ?? null;
+                    $emprestimo->pagamentosaldopendente->chave_pix     = $response->json()['pixCopiaECola'] ?? null;
+                    $emprestimo->pagamentosaldopendente->save();
+                }
+            }
+        }
+
+        Log::info('Realocação Bcodex aplicada', [
+            'identificador' => $identificadorTransacao,
+            'emprestimo_id' => $emprestimoId,
+            'valor_recebido' => $valorRecebido,
+            'valor_restante' => $valorRestante,
+        ]);
+
+        return true;
     }
 }
